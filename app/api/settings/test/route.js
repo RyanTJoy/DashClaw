@@ -12,6 +12,8 @@ export async function POST(request) {
     switch (integration) {
       case 'neon':
         return await testNeon(credentials);
+      case 'supabase':
+        return await testSupabase(credentials);
       case 'notion':
         return await testNotion(credentials);
       case 'github':
@@ -20,10 +22,30 @@ export async function POST(request) {
         return await testOpenAI(credentials);
       case 'anthropic':
         return await testAnthropic(credentials);
+      case 'groq':
+        return await testGroq(credentials);
+      case 'together':
+        return await testTogether(credentials);
+      case 'replicate':
+        return await testReplicate(credentials);
       case 'brave':
         return await testBrave(credentials);
       case 'elevenlabs':
         return await testElevenLabs(credentials);
+      case 'discord':
+        return await testDiscord(credentials);
+      case 'slack':
+        return await testSlack(credentials);
+      case 'linear':
+        return await testLinear(credentials);
+      case 'resend':
+        return await testResend(credentials);
+      case 'stripe':
+        return await testStripe(credentials);
+      case 'cloudflare':
+        return await testCloudflare(credentials);
+      case 'vercel':
+        return await testVercel(credentials);
       default:
         // Generic "has value" test for integrations without specific test endpoints
         const hasValues = Object.values(credentials || {}).some(v => v && v.length > 0);
@@ -142,6 +164,174 @@ async function testElevenLabs(credentials) {
       return NextResponse.json({ success: true, message: `Connected! ${data.subscription?.character_count || 0} chars remaining` });
     }
     return NextResponse.json({ success: false, message: 'Invalid ElevenLabs API key' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testSupabase(credentials) {
+  try {
+    const res = await fetch(`${credentials.SUPABASE_URL}/rest/v1/`, {
+      headers: { 
+        'apikey': credentials.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${credentials.SUPABASE_ANON_KEY}`
+      }
+    });
+    if (res.ok || res.status === 200) {
+      return NextResponse.json({ success: true, message: 'Supabase connection successful!' });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Supabase credentials' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testGroq(credentials) {
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { 'Authorization': `Bearer ${credentials.GROQ_API_KEY}` }
+    });
+    if (res.ok) {
+      return NextResponse.json({ success: true, message: 'Groq API key valid!' });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Groq API key' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testTogether(credentials) {
+  try {
+    const res = await fetch('https://api.together.xyz/v1/models', {
+      headers: { 'Authorization': `Bearer ${credentials.TOGETHER_API_KEY}` }
+    });
+    if (res.ok) {
+      return NextResponse.json({ success: true, message: 'Together AI connected!' });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Together API key' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testReplicate(credentials) {
+  try {
+    const res = await fetch('https://api.replicate.com/v1/account', {
+      headers: { 'Authorization': `Token ${credentials.REPLICATE_API_TOKEN}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json({ success: true, message: `Connected as ${data.username}` });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Replicate token' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testDiscord(credentials) {
+  try {
+    const res = await fetch('https://discord.com/api/v10/users/@me', {
+      headers: { 'Authorization': `Bot ${credentials.DISCORD_BOT_TOKEN}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json({ success: true, message: `Connected as ${data.username}` });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Discord bot token' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testSlack(credentials) {
+  try {
+    const res = await fetch('https://slack.com/api/auth.test', {
+      headers: { 'Authorization': `Bearer ${credentials.SLACK_BOT_TOKEN}` }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      return NextResponse.json({ success: true, message: `Connected to ${data.team}` });
+    }
+    return NextResponse.json({ success: false, message: data.error || 'Invalid Slack token' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testLinear(credentials) {
+  try {
+    const res = await fetch('https://api.linear.app/graphql', {
+      method: 'POST',
+      headers: { 
+        'Authorization': credentials.LINEAR_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query: '{ viewer { id name } }' })
+    });
+    const data = await res.json();
+    if (data.data?.viewer) {
+      return NextResponse.json({ success: true, message: `Connected as ${data.data.viewer.name}` });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Linear API key' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testResend(credentials) {
+  try {
+    const res = await fetch('https://api.resend.com/domains', {
+      headers: { 'Authorization': `Bearer ${credentials.RESEND_API_KEY}` }
+    });
+    if (res.ok) {
+      return NextResponse.json({ success: true, message: 'Resend API connected!' });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Resend API key' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testStripe(credentials) {
+  try {
+    const res = await fetch('https://api.stripe.com/v1/balance', {
+      headers: { 'Authorization': `Bearer ${credentials.STRIPE_SECRET_KEY}` }
+    });
+    if (res.ok) {
+      return NextResponse.json({ success: true, message: 'Stripe connected!' });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Stripe secret key' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testCloudflare(credentials) {
+  try {
+    const res = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+      headers: { 'Authorization': `Bearer ${credentials.CLOUDFLARE_API_TOKEN}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      return NextResponse.json({ success: true, message: 'Cloudflare token valid!' });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Cloudflare token' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message });
+  }
+}
+
+async function testVercel(credentials) {
+  try {
+    const res = await fetch('https://api.vercel.com/v2/user', {
+      headers: { 'Authorization': `Bearer ${credentials.VERCEL_TOKEN}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return NextResponse.json({ success: true, message: `Connected as ${data.user?.username || 'Vercel user'}` });
+    }
+    return NextResponse.json({ success: false, message: 'Invalid Vercel token' });
   } catch (error) {
     return NextResponse.json({ success: false, message: error.message });
   }
