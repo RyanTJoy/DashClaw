@@ -98,6 +98,29 @@ All endpoints return JSON and support CORS.
 | `/api/calendar` | Upcoming events |
 | `/api/health` | Database connectivity check |
 
+## 🔒 Security
+
+We take security seriously. OpenClaw Dashboard includes:
+
+- **Encrypted Credentials** - All API keys stored encrypted in your database
+- **No Hardcoded Secrets** - Everything uses environment variables
+- **Security Scanner** - Built-in tool to audit your deployment
+- **Comprehensive Documentation** - Security guides and checklists
+
+### Run Security Scan
+
+Before deploying, scan your codebase:
+
+```bash
+node scripts/security-scan.js
+```
+
+### Security Documentation
+
+- [Security Guide](docs/SECURITY.md) - How we protect your data
+- [Security Checklist](docs/SECURITY-CHECKLIST.md) - Quick deployment checklist
+- [Audit Template](docs/SECURITY-AUDIT-TEMPLATE.md) - Full audit methodology
+
 ## Tech Stack
 
 - **Framework**: Next.js 15 (App Router)
