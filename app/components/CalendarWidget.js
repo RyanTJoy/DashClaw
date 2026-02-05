@@ -18,55 +18,36 @@ export default function CalendarWidget() {
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return '';
     
-    // Database stores times as naive datetimes in EST
-    // If no timezone in string, treat as EST by appending offset
-    let dateStr = timestamp;
-    if (typeof timestamp === 'string' && !timestamp.includes('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
-      // Naive datetime - assume it's already EST, append EST offset
-      dateStr = timestamp + '-05:00';
-    }
-    
-    const date = new Date(dateStr);
     const now = new Date();
     
     // Format in Eastern Time
-    const options = { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' };
+    const timeOptions = { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' };
     const dateOptions = { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' };
     
-    // Get today/tomorrow in EST for comparison
-    const estNowStr = now.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
-    const estDateStr = date.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    // Compare dates in EST
+    const estNow = now.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    const estDate = date.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
     
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const estTomorrowStr = tomorrow.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+    const estTomorrow = tomorrow.toLocaleDateString('en-US', { timeZone: 'America/New_York' });
     
-    const isToday = estDateStr === estNowStr;
-    const isTomorrow = estDateStr === estTomorrowStr;
+    const time = date.toLocaleTimeString('en-US', timeOptions);
     
-    const time = date.toLocaleTimeString('en-US', options);
-    
-    if (isToday) return `Today ${time}`;
-    if (isTomorrow) return `Tomorrow ${time}`;
+    if (estDate === estNow) return `Today ${time}`;
+    if (estDate === estTomorrow) return `Tomorrow ${time}`;
     return date.toLocaleDateString('en-US', dateOptions) + ` ${time}`;
-  };
-
-  const parseEventTime = (timestamp) => {
-    if (!timestamp) return null;
-    // Database stores times as naive datetimes in EST
-    let dateStr = timestamp;
-    if (typeof timestamp === 'string' && !timestamp.includes('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
-      dateStr = timestamp + '-05:00';
-    }
-    return new Date(dateStr);
   };
 
   const getTimeUntil = (timestamp) => {
     if (!timestamp) return '';
     const now = new Date();
-    const event = parseEventTime(timestamp);
-    if (!event) return '';
+    const event = new Date(timestamp);
+    if (isNaN(event.getTime())) return '';
+    
     const diff = event - now;
     
     if (diff < 0) return 'Past';
@@ -82,8 +63,9 @@ export default function CalendarWidget() {
   const isUrgent = (timestamp) => {
     if (!timestamp) return false;
     const now = new Date();
-    const event = parseEventTime(timestamp);
-    if (!event) return false;
+    const event = new Date(timestamp);
+    if (isNaN(event.getTime())) return false;
+    
     const hoursUntil = (event - now) / (1000 * 60 * 60);
     return hoursUntil > 0 && hoursUntil < 24;
   };
