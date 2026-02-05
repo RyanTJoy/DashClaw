@@ -6,6 +6,7 @@ A beautiful, real-time dashboard for monitoring your AI agent's activity. Built 
 
 ## Features
 
+- 🔌 **Integrations Settings** - Configure all your services from the UI
 - 🎯 **Token Budget Tracking** - Monitor usage with visual charts
 - 📊 **Learning Database** - Track decisions and their outcomes
 - 💡 **Inspiration Capture** - Save and score your best ideas
@@ -14,6 +15,7 @@ A beautiful, real-time dashboard for monitoring your AI agent's activity. Built 
 - 🎯 **Goal Tracking** - Progress toward your objectives
 - 🔄 **Real-time Updates** - Auto-refresh with configurable intervals
 - 📱 **Mobile Responsive** - Works great on any device
+- 🔐 **Secure Settings** - Credentials encrypted and stored in your database
 
 ## Quick Start
 
@@ -50,12 +52,38 @@ Open [http://localhost:3000](http://localhost:3000) 🎉
 
 Any platform supporting Next.js 15 will work. Just set the `DATABASE_URL` environment variable.
 
+## Integrations Settings
+
+Configure all your connected services directly from the dashboard:
+
+1. Go to **Integrations** page
+2. Click any service card to configure
+3. Enter your API keys/credentials
+4. Click **Test Connection** to verify
+5. **Save Settings** stores encrypted in your Neon database
+
+Supported integrations:
+- 🗄️ Neon Database
+- 📝 Notion
+- 🐙 GitHub
+- 🤖 OpenAI
+- 🧠 Anthropic
+- 🦁 Brave Search
+- 🎙️ ElevenLabs
+- 💬 Telegram
+- 📅 Google Workspace
+- ▲ Vercel
+- 🐦 Twitter/X
+- 🔥 Moltbook
+
 ## API Endpoints
 
 All endpoints return JSON and support CORS.
 
 | Endpoint | Description |
 |----------|-------------|
+| `/api/settings` | Integration credentials (CRUD) |
+| `/api/settings/test` | Test connection with credentials |
 | `/api/tokens` | Token usage snapshots |
 | `/api/learning` | Decisions and lessons |
 | `/api/inspiration` | Ideas and ratings |
