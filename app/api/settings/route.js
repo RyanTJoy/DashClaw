@@ -50,6 +50,37 @@ export async function GET(request) {
   }
 }
 
+// Allowlist of valid setting keys (security: prevent arbitrary key injection)
+const VALID_SETTING_KEYS = [
+  // AI Providers
+  'OPENAI_API_KEY', 'OPENAI_ORG_ID', 'ANTHROPIC_API_KEY', 'GROQ_API_KEY',
+  'TOGETHER_API_KEY', 'REPLICATE_API_TOKEN', 'HUGGINGFACE_API_KEY',
+  'PERPLEXITY_API_KEY', 'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID',
+  // Databases
+  'DATABASE_URL', 'SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_KEY',
+  'PLANETSCALE_URL', 'MONGODB_URI', 'REDIS_URL', 'PINECONE_API_KEY', 'PINECONE_ENVIRONMENT',
+  // Communication
+  'TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID', 'DISCORD_BOT_TOKEN', 'DISCORD_CLIENT_ID',
+  'DISCORD_GUILD_ID', 'SLACK_BOT_TOKEN', 'SLACK_SIGNING_SECRET', 'SLACK_APP_TOKEN',
+  'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER',
+  'RESEND_API_KEY', 'SENDGRID_API_KEY',
+  // Productivity
+  'GOOGLE_ACCOUNT', 'GOOGLE_CREDENTIALS_PATH', 'NOTION_API_KEY', 'NOTION_PARENT_PAGE_ID',
+  'LINEAR_API_KEY', 'AIRTABLE_API_KEY', 'AIRTABLE_BASE_ID', 'CALENDLY_API_KEY',
+  // Development
+  'GITHUB_TOKEN', 'GITHUB_USERNAME', 'VERCEL_TOKEN', 'VERCEL_PROJECT_ID',
+  'RAILWAY_TOKEN', 'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID',
+  'SENTRY_DSN', 'SENTRY_AUTH_TOKEN',
+  // Social
+  'TWITTER_API_KEY', 'TWITTER_API_SECRET', 'TWITTER_ACCESS_TOKEN', 'TWITTER_ACCESS_SECRET',
+  'BRAVE_API_KEY', 'MOLTBOOK_API_KEY',
+  // Payments
+  'STRIPE_SECRET_KEY', 'STRIPE_PUBLISHABLE_KEY', 'STRIPE_WEBHOOK_SECRET',
+  'LEMONSQUEEZY_API_KEY',
+];
+
+const VALID_CATEGORIES = ['integration', 'general', 'system'];
+
 // POST - Create or update setting
 export async function POST(request) {
   try {
@@ -60,6 +91,21 @@ export async function POST(request) {
     
     if (!key) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
+    }
+    
+    // SECURITY: Validate key against allowlist
+    if (!VALID_SETTING_KEYS.includes(key)) {
+      return NextResponse.json({ error: `Invalid setting key: ${key}` }, { status: 400 });
+    }
+    
+    // SECURITY: Validate category
+    if (!VALID_CATEGORIES.includes(category)) {
+      return NextResponse.json({ error: `Invalid category: ${category}` }, { status: 400 });
+    }
+    
+    // SECURITY: Limit value length
+    if (value && value.length > 10000) {
+      return NextResponse.json({ error: 'Value too long (max 10000 chars)' }, { status: 400 });
     }
     
     await sql`
