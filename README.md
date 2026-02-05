@@ -18,16 +18,29 @@ A beautiful, real-time dashboard for monitoring your AI agent's activity. Built 
 
 ## Features
 
-- 🔌 **Integrations Settings** - Configure all your services from the UI
-- 🎯 **Token Budget Tracking** - Monitor usage with visual charts
-- 📊 **Learning Database** - Track decisions and their outcomes
-- 💡 **Inspiration Capture** - Save and score your best ideas
-- 🤝 **Relationship Tracker** - CRM for contacts and follow-ups
-- 📅 **Calendar Integration** - Upcoming events at a glance
-- 🎯 **Goal Tracking** - Progress toward your objectives
-- 🔄 **Real-time Updates** - Auto-refresh with configurable intervals
-- 📱 **Mobile Responsive** - Works great on any device
-- 🔐 **Secure Settings** - Credentials encrypted and stored in your database
+### 🧠 Memory & Ops Tools
+
+- 🎯 **Token Budget Tracking** — Monitor usage with visual charts
+- 📊 **Learning Database** — Track decisions, lessons, and outcomes over time
+- 🤝 **Relationship Tracker (Mini‑CRM)** — Contacts, interactions, and follow‑up reminders
+- 🎯 **Goal Tracking** — Goals, milestones, and progress
+- 📝 **Content Tracker** — Capture writing ideas and content workflows
+- 🧰 **Workflows / SOPs** — Document repeatable processes and runbooks
+
+### 🔐 Security Tools
+
+- 🔐 **Secure Settings Store** — Credentials encrypted and stored in your database
+- 🧪 **Connection Tests** — Verify integrations before saving
+- 🔍 **Security Scanner** — Pre‑deploy audit script (`node scripts/security-scan.js`)
+- ✅ **Security Checklist** — Quick safe‑deploy reference (`docs/SECURITY-CHECKLIST.md`)
+- 🧾 **Audit Template** — Full production audit methodology (`docs/SECURITY-AUDIT-TEMPLATE.md`)
+
+### ⚡ Platform & UX
+
+- 🔌 **Integrations Settings** — Configure services from the UI
+- 📅 **Calendar Integration** — Upcoming events at a glance
+- 🔄 **Real‑time Updates** — Auto‑refresh with configurable intervals
+- 📱 **Mobile Responsive** — Works great on any device
 
 ## Quick Start
 
