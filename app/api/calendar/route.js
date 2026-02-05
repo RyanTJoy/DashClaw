@@ -6,26 +6,20 @@ const sql = neon(process.env.DATABASE_URL);
 export async function GET() {
   try {
     // Get upcoming calendar events from Neon
-    // Use AT TIME ZONE to properly handle EST timestamps
     const events = await sql`
-      SELECT 
-        id, 
-        summary, 
-        start_time AT TIME ZONE 'America/New_York' AS start_time,
-        end_time AT TIME ZONE 'America/New_York' AS end_time, 
-        location, 
-        description 
+      SELECT id, summary, start_time, end_time, location, description 
       FROM calendar_events 
       WHERE start_time >= NOW() - INTERVAL '1 hour'
       ORDER BY start_time 
       LIMIT 10
     `;
     
-    // Ensure timestamps include EST offset for proper client parsing
+    // Add EST timezone offset to naive timestamps for proper client parsing
     const eventsWithTz = (events || []).map(event => ({
       ...event,
-      start_time: event.start_time ? formatWithEST(event.start_time) : null,
-      end_time: event.end_time ? formatWithEST(event.end_time) : null,
+      // Timestamps from DB are in EST - append offset so JS parses correctly
+      start_time: appendESTOffset(event.start_time),
+      end_time: appendESTOffset(event.end_time),
     }));
     
     return NextResponse.json({
@@ -43,23 +37,21 @@ export async function GET() {
   }
 }
 
-// Format timestamp to include EST timezone offset
-function formatWithEST(timestamp) {
+function appendESTOffset(timestamp) {
   if (!timestamp) return null;
   
-  // If it's already a string with timezone, return as-is
-  if (typeof timestamp === 'string') {
-    if (timestamp.includes('Z') || timestamp.includes('+') || timestamp.match(/-\d{2}:\d{2}$/)) {
-      return timestamp;
-    }
-    // Naive datetime string - append EST offset
-    return timestamp + '-05:00';
+  // If already has timezone info, return as-is
+  const str = String(timestamp);
+  if (str.includes('Z') || str.includes('+') || str.match(/-\d{2}:\d{2}$/)) {
+    return str;
   }
   
-  // If it's a Date object, format it in EST
+  // Convert Date object to ISO string without Z, then add EST offset
   if (timestamp instanceof Date) {
-    return timestamp.toLocaleString('sv-SE', { timeZone: 'America/New_York' }).replace(' ', 'T') + '-05:00';
+    const iso = timestamp.toISOString().replace('Z', '');
+    return iso + '-05:00';
   }
   
-  return timestamp;
+  // Naive datetime string - append EST offset
+  return str + '-05:00';
 }
