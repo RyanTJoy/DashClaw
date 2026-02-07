@@ -34,6 +34,10 @@ From the repo root:
 bash ./clawd-tools/install-mac.sh
 ```
 
+## Extra privacy note
+
+Some tools (like `wes-context`) create local SQLite databases (example: `tools/wes-context/data/wes.db`) that can contain personal notes. Keep those databases private and never commit `*.db` files.
+
 ## Secrets
 
 Do **not** put secrets in this repo.
