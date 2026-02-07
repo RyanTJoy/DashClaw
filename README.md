@@ -46,6 +46,12 @@ A beautiful, real-time dashboard for monitoring your AI agent's activity. Built 
 
 **Where to install it:** anywhere you want (Desktop, Documents, etc). It does **not** need to go inside your Clawdbot/Clawd folder. It’s a normal Next.js app.
 
+**Recommended locations**
+- Windows: `Documents\OpenClaw-OPS-Suite` or `Desktop\OpenClaw-OPS-Suite`
+- Mac/Linux: `~/Desktop/OpenClaw-OPS-Suite` or `~/Projects/OpenClaw-OPS-Suite`
+
+**Avoid** extracting into a very deep folder path on Windows (Node can hit path-length issues inside `node_modules`).
+
 ### 1) Download the project
 
 - GitHub UI: **Code** → **Download ZIP**
@@ -74,6 +80,11 @@ npm run dev
 
 Open http://localhost:3000
 
+## Security quick note (read this)
+
+- **Local-only (http://localhost:3000):** you can run without `DASHBOARD_API_KEY`.
+- **Public deployment (Vercel / any URL on the internet):** set `DASHBOARD_API_KEY` or your dashboard API data may be readable by anyone who has the link.
+
 ## Deployment
 
 ### Vercel (Recommended)
@@ -81,7 +92,7 @@ Open http://localhost:3000
 1. Push to GitHub (or fork this repo)
 2. Import in [Vercel](https://vercel.com)
 3. Add `DATABASE_URL` environment variable
-4. **Strongly recommended:** set `DASHBOARD_API_KEY` (protects your `/api/*` data)
+4. **Set `DASHBOARD_API_KEY`** (protects your `/api/*` data)
 5. Deploy!
 
 ### Other platforms
