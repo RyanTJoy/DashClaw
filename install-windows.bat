@@ -1,4 +1,5 @@
 @echo off
+setlocal EnableExtensions
 title OpenClaw Dashboard Installer
 color 0A
 
@@ -41,15 +42,19 @@ if not exist ".env.local" (
     echo 3. Copy the connection string (starts with postgresql://)
     echo.
     
-    set /p DATABASE_URL="Paste your DATABASE_URL here: "
-    
-    if "!DATABASE_URL!"=="" (
+    echo.
+    echo Paste your DATABASE_URL when prompted.
+    echo.
+
+    for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command "Read-Host 'Paste your DATABASE_URL here'"`) do set "DATABASE_URL=%%A"
+
+    if "%DATABASE_URL%"=="" (
         echo [ERROR] No DATABASE_URL provided. Exiting.
         pause
         exit /b 1
     )
-    
-    echo DATABASE_URL=!DATABASE_URL!> .env.local
+
+    powershell -NoProfile -Command "Set-Content -Path '.env.local' -Value ('DATABASE_URL=' + $env:DATABASE_URL)"
     echo.
     echo [OK] Created .env.local with your database URL
 )
