@@ -44,11 +44,15 @@ Your dashboard needs somewhere to store data. Neon gives you a free database:
 
 ## Step 3: Download & Install
 
+**Where to put it:** extract it anywhere you want (Desktop, Documents, etc). It does **not** need to go in any Clawdbot/Clawd folder.
+
 ### Option A: One-Click Install (Easiest)
 
-1. [Download the ZIP](../../archive/main.zip) from GitHub
+1. Download the ZIP:
+   - GitHub UI: **Code** → **Download ZIP**
+   - Direct link: https://github.com/ucsandman/OpenClaw-OPS-Suite/archive/refs/heads/main.zip
 2. Extract the ZIP to a folder (like Desktop)
-3. Open the folder
+3. Open the extracted folder
 
 **Windows:**
 - Double-click `install-windows.bat`
@@ -67,8 +71,9 @@ Want it running 24/7 without leaving your computer on?
 
 1. Click the **Deploy with Vercel** button in the README
 2. Connect your GitHub account
-3. Paste your DATABASE_URL when prompted
-4. Done! You get a free URL like `your-dashboard.vercel.app`
+3. Paste your `DATABASE_URL` when prompted
+4. **Strongly recommended:** set `DASHBOARD_API_KEY` so your dashboard data isn’t publicly readable
+5. Done! You get a free URL like `your-dashboard.vercel.app`
 
 ---
 
