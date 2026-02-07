@@ -42,36 +42,47 @@ A beautiful, real-time dashboard for monitoring your AI agent's activity. Built 
 - 🔄 **Real‑time Updates** — Auto‑refresh with configurable intervals
 - 📱 **Mobile Responsive** — Works great on any device
 
-## Quick Start
+## Quick Start (Local)
 
-### 1. Set up your database
+**Where to install it:** anywhere you want (Desktop, Documents, etc). It does **not** need to go inside your Clawdbot/Clawd folder. It’s a normal Next.js app.
 
-Create a free [Neon](https://neon.tech) PostgreSQL database. Run the schema from `docs/schema.sql` (coming soon).
+### 1) Download the project
 
-### 2. Configure environment
+- GitHub UI: **Code** → **Download ZIP**
+- Direct ZIP link: https://github.com/ucsandman/OpenClaw-OPS-Suite/archive/refs/heads/main.zip
+
+Extract the ZIP somewhere simple (example: `Desktop/OpenClaw-OPS-Suite`).
+
+### 2) Set up your database
+
+Create a free [Neon](https://neon.tech) PostgreSQL database.
+
+### 3) Configure environment
+
+Create `.env.local` (you can copy `.env.example`) and set:
 
 ```bash
-cp .env.example .env.local
-# Edit .env.local with your Neon connection string
+DATABASE_URL=postgresql://...
 ```
 
-### 3. Install and run
+### 4) Install and run
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) 🎉
+Open http://localhost:3000
 
 ## Deployment
 
 ### Vercel (Recommended)
 
-1. Push to GitHub
+1. Push to GitHub (or fork this repo)
 2. Import in [Vercel](https://vercel.com)
 3. Add `DATABASE_URL` environment variable
-4. Deploy!
+4. **Strongly recommended:** set `DASHBOARD_API_KEY` (protects your `/api/*` data)
+5. Deploy!
 
 ### Other platforms
 
@@ -142,7 +153,7 @@ node scripts/security-scan.js
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 14 (App Router)
 - **Styling**: Tailwind CSS
 - **Database**: Neon PostgreSQL
 - **Charts**: Recharts
