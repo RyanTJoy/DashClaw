@@ -3,10 +3,21 @@ import { neon } from '@neondatabase/serverless';
 
 export const dynamic = 'force-dynamic';
 
-const sql = neon(process.env.DATABASE_URL);
+let _sql;
+function getSql() {
+  if (_sql) return _sql;
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    // Don't throw at import time (Next builds/imports route handlers).
+    // We only error when the endpoint is actually called.
+    throw new Error('DATABASE_URL is not set. Add it to .env.local (or your hosting provider env vars).');
+  }
+  _sql = neon(url);
+  return _sql;
+}
 
 // Initialize settings table if it doesn't exist
-async function ensureSettingsTable() {
+async function ensureSettingsTable(sql) {
   await sql`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
@@ -21,8 +32,9 @@ async function ensureSettingsTable() {
 // GET - Fetch all settings or specific key
 export async function GET(request) {
   try {
-    await ensureSettingsTable();
-    
+    const sql = getSql();
+    await ensureSettingsTable(sql);
+
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
     const category = searchParams.get('category');
@@ -84,8 +96,9 @@ const VALID_CATEGORIES = ['integration', 'general', 'system'];
 // POST - Create or update setting
 export async function POST(request) {
   try {
-    await ensureSettingsTable();
-    
+    const sql = getSql();
+    await ensureSettingsTable(sql);
+
     const body = await request.json();
     const { key, value, category = 'general', encrypted = false } = body;
     
@@ -128,6 +141,9 @@ export async function POST(request) {
 // DELETE - Remove a setting
 export async function DELETE(request) {
   try {
+    const sql = getSql();
+    await ensureSettingsTable(sql);
+
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
     

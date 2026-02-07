@@ -1,8 +1,8 @@
-test# OpenClaw Dashboard
+# OpenClaw Dashboard
 
 A beautiful, real-time dashboard for monitoring your AI agent's activity. Built for the OpenClaw/Clawdbot/Clawd ecosystem. Includes improved memory and security focused tools.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
+![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
 ![Dashboard Preview](docs/images/dashboard-main.jpg)
 
@@ -75,7 +75,7 @@ Open [http://localhost:3000](http://localhost:3000) 🎉
 
 ### Other platforms
 
-Any platform supporting Next.js 15 will work. Just set the `DATABASE_URL` environment variable.
+Any platform supporting Next.js 14+ will work. Just set the `DATABASE_URL` environment variable.
 
 ## Integrations Settings
 
