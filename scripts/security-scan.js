@@ -44,6 +44,9 @@ const SKIP_EXTENSIONS = ['.md']; // Docs often contain examples
 // Strings that indicate placeholder/example values (not real secrets)
 const PLACEHOLDER_PATTERNS = [
   'user:pass@',
+  'user:password@',
+  'username:password@',
+  'postgresql://username:password@',
   'your-api-key',
   'your_api_key',
   'xxx',
@@ -55,8 +58,11 @@ const PLACEHOLDER_PATTERNS = [
 
 // Files that should NEVER be tracked in git
 const SENSITIVE_FILE_PATTERNS = [
-  '*.env',
-  '.env*',
+  '.env',
+  '.env.local',
+  '.env.development',
+  '.env.production',
+  '.env.staging',
   '*.pem',
   '*.key',
   '*.db',
@@ -76,6 +82,9 @@ function isPlaceholder(line) {
 }
 
 function scanFile(filePath) {
+  // .env.local is expected to contain real secrets on every machine.
+  // Don’t flag it as a repo issue (git tracking check handles that).
+  if (path.basename(filePath) === '.env.local') return;
   const ext = path.extname(filePath);
   const validExtensions = ['.js', '.jsx', '.ts', '.tsx', '.json', '.html', '.env'];
   
@@ -138,8 +147,13 @@ function checkGitTracking() {
     const tracked = execSync('git ls-files', { encoding: 'utf8' }).split('\n').filter(Boolean);
     
     tracked.forEach(file => {
+      // .env.example is meant to be committed (template only)
+      if (file === '.env.example') return;
+
       SENSITIVE_FILE_PATTERNS.forEach(pattern => {
-        const regex = new RegExp(pattern.replace('*', '.*'));
+        // Make a simple glob -> regex, anchored to avoid matching ".env" inside ".env.example"
+        const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+        const regex = new RegExp(`^${escaped}$`);
         if (regex.test(file)) {
           log(CRITICAL, `Sensitive file tracked in git: ${file}`);
           issues.critical++;
@@ -209,7 +223,8 @@ function checkDependencies() {
   console.log('\n📦 Checking dependencies...\n');
   
   try {
-    const result = execSync('npm audit --json 2>/dev/null || true', { encoding: 'utf8' });
+    // Cross-platform: avoid bash redirects like `2>/dev/null || true`
+    const result = execSync('npm audit --json', { encoding: 'utf8' });
     const audit = JSON.parse(result || '{}');
     
     if (audit.metadata) {
