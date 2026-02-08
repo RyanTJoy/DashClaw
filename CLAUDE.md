@@ -121,7 +121,8 @@ function getSql() {
 - `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`)
 - `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`
 - Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
-- Production without key returns 503
+- Production without key returns 503 (if `DASHBOARD_API_KEY` not configured)
+- Same-origin dashboard requests (detected via `Sec-Fetch-Site` / `Referer`) allowed without API key → `org_default`
 - Rate limiting: 100 req/min per IP
 - **API key resolution flow**: legacy env key → `org_default` (fast path); otherwise SHA-256 hash → `api_keys` table lookup (5-min cache)
 - Middleware injects `x-org-id` and `x-org-role` headers (external injection stripped)
@@ -168,11 +169,13 @@ ALTER TABLE assumptions ADD COLUMN IF NOT EXISTS invalidated_at TEXT;
 - `GET/POST/DELETE /api/orgs/[orgId]/keys` — manage API keys
 
 ### Resolution Flow
-1. No key + dev mode → `org_default` (admin)
-2. No key + production → 503
-3. Key matches `DASHBOARD_API_KEY` env → `org_default` (admin, fast path)
-4. Key doesn't match env → SHA-256 hash → DB lookup → org_id + role
-5. DB miss or revoked → 401
+1. No key + dev mode (no `DASHBOARD_API_KEY` set) → `org_default` (admin)
+2. No key + production (no `DASHBOARD_API_KEY` set) → 503
+3. No key + same-origin browser request (dashboard UI) → `org_default` (admin)
+4. No key + external request → 401
+5. Key matches `DASHBOARD_API_KEY` env → `org_default` (admin, fast path)
+6. Key doesn't match env → SHA-256 hash → DB lookup → org_id + role
+7. DB miss or revoked → 401
 
 ### SDK
 No code changes needed. The API key determines which organization's data you're accessing.
@@ -181,3 +184,36 @@ No code changes needed. The API key determines which organization's data you're 
 ```bash
 DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 ```
+
+## Deployment
+
+### Vercel (Production)
+- **URL**: https://openclaw-pro.vercel.app
+- **Project**: `ucsandmans-projects/openclaw-pro`
+- **GitHub**: Connected — auto-deploys on push to `main`
+- **Region**: Washington, D.C. (iad1)
+
+### Vercel Environment Variables
+| Variable | Environment | Sensitive |
+|---|---|---|
+| `DATABASE_URL` | Production | Yes |
+| `DASHBOARD_API_KEY` | Production | Yes |
+| `ALLOWED_ORIGIN` | Production | No |
+
+### Deploy Commands
+```bash
+vercel deploy --prod --yes   # Manual deploy
+git push origin main         # Auto-deploy via GitHub integration
+```
+
+### Agent SDK Integration
+Agents connect to the deployed API — they only need the base URL and an API key:
+```js
+const claw = new OpenClawAgent({
+  baseUrl: 'https://openclaw-pro.vercel.app',
+  apiKey: process.env.OPENCLAW_API_KEY,
+  agentId: 'my-agent',
+  agentName: 'My Agent'
+});
+```
+Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
