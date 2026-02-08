@@ -18,7 +18,7 @@ export async function GET() {
     const sql = getSql();
 
     // Run all signal queries in parallel
-    const [autonomySpikes, highImpact, repeatedFailures, staleLoops] = await Promise.all([
+    const [autonomySpikes, highImpact, repeatedFailures, staleLoops, assumptionDrift, staleAssumptions] = await Promise.all([
       // Autonomy spikes: >10 actions in the last hour per agent
       sql`
         SELECT agent_id, agent_name, COUNT(*) as action_count
@@ -58,6 +58,30 @@ export async function GET() {
         WHERE ol.status = 'open'
           AND ol.created_at < NOW() - INTERVAL '48 hours'
         ORDER BY ol.created_at ASC
+        LIMIT 10
+      `,
+      // Assumption drift: agents with multiple invalidations in 7 days
+      sql`
+        SELECT ar.agent_id, ar.agent_name, COUNT(*) as invalidation_count
+        FROM assumptions a
+        LEFT JOIN action_records ar ON a.action_id = ar.action_id
+        WHERE a.invalidated = 1
+          AND a.invalidated_at IS NOT NULL
+          AND a.invalidated_at::timestamptz > NOW() - INTERVAL '7 days'
+        GROUP BY ar.agent_id, ar.agent_name
+        HAVING COUNT(*) >= 2
+        ORDER BY invalidation_count DESC
+      `,
+      // Stale assumptions: unvalidated for more than 14 days
+      sql`
+        SELECT a.assumption_id, a.assumption, a.created_at, a.action_id,
+               ar.agent_id, ar.agent_name
+        FROM assumptions a
+        LEFT JOIN action_records ar ON a.action_id = ar.action_id
+        WHERE a.validated = 0
+          AND a.invalidated = 0
+          AND a.created_at < NOW() - INTERVAL '14 days'
+        ORDER BY a.created_at ASC
         LIMIT 10
       `
     ]);
@@ -108,6 +132,30 @@ export async function GET() {
         detail: `${loop.description}`,
         agent_id: loop.agent_id,
         loop_id: loop.loop_id
+      });
+    }
+
+    // Process assumption drift (multiple invalidations in 7 days)
+    for (const drift of assumptionDrift) {
+      signals.push({
+        type: 'assumption_drift',
+        severity: parseInt(drift.invalidation_count, 10) >= 4 ? 'red' : 'amber',
+        label: `Assumption drift: ${drift.agent_name || drift.agent_id}`,
+        detail: `${drift.invalidation_count} assumptions invalidated in 7 days`,
+        agent_id: drift.agent_id
+      });
+    }
+
+    // Process stale assumptions (unvalidated >14 days)
+    for (const asm of staleAssumptions) {
+      const daysOld = Math.round((Date.now() - new Date(asm.created_at).getTime()) / (1000 * 60 * 60 * 24));
+      signals.push({
+        type: 'stale_assumption',
+        severity: daysOld > 30 ? 'red' : 'amber',
+        label: `Stale assumption (${daysOld}d)`,
+        detail: `${asm.assumption}`,
+        agent_id: asm.agent_id,
+        assumption_id: asm.assumption_id
       });
     }
 

@@ -314,6 +314,7 @@ CREATE TABLE IF NOT EXISTS assumptions (
     validated_at TEXT,
     invalidated INTEGER DEFAULT 0,
     invalidated_reason TEXT,
+    invalidated_at TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -4,60 +4,70 @@ import { useState, useEffect } from 'react';
 
 export default function ProjectsCard() {
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data representing current active projects
-    const mockProjects = [
-      {
-        name: 'Token Efficiency Toolkit',
-        status: 'active',
-        progress: 100,
-        type: 'tool',
-        lastUpdate: '2026-02-04',
-        priority: 'high'
-      },
-      {
-        name: 'Bounty Hunter Assistant',
-        status: 'active',
-        progress: 95,
-        type: 'income',
-        lastUpdate: '2026-02-04',
-        priority: 'high'
-      },
-      {
-        name: 'Content Performance Tracker',
-        status: 'active',
-        progress: 90,
-        type: 'analytics',
-        lastUpdate: '2026-02-04',
-        priority: 'medium'
-      },
-      {
-        name: 'HumanConnect',
-        status: 'active',
-        progress: 70,
-        type: 'research',
-        lastUpdate: '2026-02-03',
-        priority: 'medium'
-      },
-      {
-        name: 'Dashboard Web',
-        status: 'building',
-        progress: 60,
-        type: 'tool',
-        lastUpdate: '2026-02-04',
-        priority: 'high'
-      },
-      {
-        name: 'Practical Systems CRM',
-        status: 'maintaining',
-        progress: 85,
-        type: 'business',
-        lastUpdate: '2026-02-02',
-        priority: 'medium'
+    async function fetchProjects() {
+      try {
+        const res = await fetch('/api/actions?limit=200');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+
+        // Group actions by system into "project" summaries
+        const systemMap = {};
+        for (const action of (data.actions || [])) {
+          let systems = [];
+          try {
+            systems = typeof action.systems_touched === 'string'
+              ? JSON.parse(action.systems_touched || '[]')
+              : (action.systems_touched || []);
+          } catch { systems = []; }
+
+          if (systems.length === 0) systems = ['General'];
+
+          for (const sys of systems) {
+            if (!systemMap[sys]) {
+              systemMap[sys] = { total: 0, completed: 0, failed: 0, running: 0, lastUpdate: null };
+            }
+            systemMap[sys].total++;
+            if (action.status === 'completed') systemMap[sys].completed++;
+            else if (action.status === 'failed') systemMap[sys].failed++;
+            else if (action.status === 'running') systemMap[sys].running++;
+
+            const ts = action.timestamp_start || action.created_at;
+            if (ts && (!systemMap[sys].lastUpdate || ts > systemMap[sys].lastUpdate)) {
+              systemMap[sys].lastUpdate = ts;
+            }
+          }
+        }
+
+        // Convert to project-like objects, sort by most actions
+        const items = Object.entries(systemMap)
+          .map(([name, stats]) => {
+            const progress = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+            let status = 'active';
+            if (stats.running > 0) status = 'building';
+            else if (stats.failed > stats.completed) status = 'paused';
+            else if (progress === 100) status = 'maintaining';
+
+            let priority = 'low';
+            if (stats.running > 0 || stats.failed > 0) priority = 'high';
+            else if (stats.total > 3) priority = 'medium';
+
+            return { name, status, progress, total: stats.total, lastUpdate: stats.lastUpdate, priority };
+          })
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 9);
+
+        setProjects(items);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+        setProjects([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setProjects(mockProjects);
+    }
+    fetchProjects();
   }, []);
 
   const getStatusColor = (status) => {
@@ -70,17 +80,6 @@ export default function ProjectsCard() {
     }
   };
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'tool': return '🔧';
-      case 'income': return '💰';
-      case 'analytics': return '📊';
-      case 'research': return '🔍';
-      case 'business': return '💼';
-      default: return '📁';
-    }
-  };
-
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return 'border-l-red-500';
@@ -89,6 +88,39 @@ export default function ProjectsCard() {
       default: return 'border-l-gray-500';
     }
   };
+
+  const formatDate = (ts) => {
+    if (!ts) return '--';
+    try {
+      return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch { return '--'; }
+  };
+
+  if (loading) {
+    return (
+      <div className="glass-card p-6 h-full">
+        <h2 className="text-xl font-bold text-white flex items-center mb-4">
+          <span className="mr-2">🚀</span>Active Projects
+        </h2>
+        <div className="text-center text-gray-400 py-8">Loading projects...</div>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="glass-card p-6 h-full">
+        <h2 className="text-xl font-bold text-white flex items-center mb-4">
+          <span className="mr-2">🚀</span>Active Projects
+        </h2>
+        <div className="text-center text-gray-500 py-8">
+          <div className="text-4xl mb-2">📁</div>
+          <div>No project activity yet</div>
+          <div className="text-xs mt-1">Projects are derived from action systems_touched</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card p-6 h-full">
@@ -107,35 +139,33 @@ export default function ProjectsCard() {
           <div key={index} className={`glass-card p-4 border-l-4 ${getPriorityColor(project.priority)} hover:bg-opacity-20 transition-all`}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center">
-                <span className="text-xl mr-2">{getTypeIcon(project.type)}</span>
+                <span className="text-xl mr-2">📁</span>
                 <div>
                   <div className="font-semibold text-white text-sm">{project.name}</div>
-                  <div className="text-xs text-gray-400">{project.type}</div>
+                  <div className="text-xs text-gray-400">{project.total} actions</div>
                 </div>
               </div>
               <span className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`}></span>
             </div>
 
-            {/* Progress Bar */}
             <div className="mb-2">
               <div className="flex justify-between text-xs mb-1">
-                <span className="text-gray-400">Progress</span>
+                <span className="text-gray-400">Completion</span>
                 <span className="text-white">{project.progress}%</span>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2">
-                <div 
+                <div
                   className="h-2 fire-gradient rounded-full transition-all duration-500"
                   style={{ width: `${project.progress}%` }}
                 ></div>
               </div>
             </div>
 
-            {/* Status and Last Update */}
             <div className="flex justify-between items-center text-xs">
               <span className={`px-2 py-1 rounded text-white ${getStatusColor(project.status)}`}>
                 {project.status}
               </span>
-              <span className="text-gray-400">{project.lastUpdate}</span>
+              <span className="text-gray-400">{formatDate(project.lastUpdate)}</span>
             </div>
           </div>
         ))}

@@ -13,7 +13,7 @@ export default function RecentActionsCard() {
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setActions((data.actions || []).map(a => ({
-          id: a.id,
+          id: a.action_id,
           type: a.action_type || 'other',
           action: a.declared_goal,
           platform: (() => {

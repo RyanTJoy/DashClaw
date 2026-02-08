@@ -177,6 +177,49 @@ class OpenClawAgent {
   }
 
   /**
+   * Get a single assumption by ID.
+   * @param {string} assumptionId
+   * @returns {Promise<{assumption: Object}>}
+   */
+  async getAssumption(assumptionId) {
+    return this._request(`/api/actions/assumptions/${assumptionId}`, 'GET');
+  }
+
+  /**
+   * Validate or invalidate an assumption.
+   * @param {string} assumptionId - The assumption_id to update
+   * @param {boolean} validated - true to validate, false to invalidate
+   * @param {string} [invalidated_reason] - Required when invalidating
+   * @returns {Promise<{assumption: Object}>}
+   */
+  async validateAssumption(assumptionId, validated, invalidated_reason) {
+    if (typeof validated !== 'boolean') throw new Error('validated must be a boolean');
+    if (validated === false && !invalidated_reason) {
+      throw new Error('invalidated_reason is required when invalidating an assumption');
+    }
+    const body = { validated };
+    if (invalidated_reason !== undefined) body.invalidated_reason = invalidated_reason;
+    return this._request(`/api/actions/assumptions/${assumptionId}`, 'PATCH', body);
+  }
+
+  /**
+   * Get drift report for assumptions with risk scoring.
+   * @param {Object} [filters]
+   * @param {string} [filters.action_id] - Filter by action
+   * @param {number} [filters.limit=50] - Max results
+   * @returns {Promise<{assumptions: Object[], drift_summary: Object}>}
+   */
+  async getDriftReport(filters = {}) {
+    const params = new URLSearchParams({ drift: 'true' });
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, String(value));
+      }
+    }
+    return this._request(`/api/actions/assumptions?${params}`, 'GET');
+  }
+
+  /**
    * Get open loops with optional filters.
    * @param {Object} [filters]
    * @param {string} [filters.status] - Filter by status (open, resolved, cancelled)
@@ -193,6 +236,15 @@ class OpenClawAgent {
       }
     }
     return this._request(`/api/actions/loops?${params}`, 'GET');
+  }
+
+  /**
+   * Get root-cause trace for an action.
+   * @param {string} actionId
+   * @returns {Promise<{action: Object, trace: Object}>}
+   */
+  async getActionTrace(actionId) {
+    return this._request(`/api/actions/${actionId}/trace`, 'GET');
   }
 
   /**
