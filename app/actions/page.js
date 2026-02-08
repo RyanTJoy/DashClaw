@@ -210,7 +210,7 @@ export default function ActionsTimeline() {
           <select
             value={filterAgent}
             onChange={(e) => { setFilterAgent(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
           >
             <option value="">All Agents</option>
             {knownAgents.map(a => (
@@ -220,7 +220,7 @@ export default function ActionsTimeline() {
           <select
             value={filterType}
             onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
           >
             <option value="">All Types</option>
             {['build','deploy','post','apply','security','message','api','calendar','research','review','fix','refactor','test','config','monitor','alert','cleanup','sync','migrate','other'].map(t => (
@@ -230,7 +230,7 @@ export default function ActionsTimeline() {
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
           >
             <option value="">All Statuses</option>
             {['running','completed','failed','cancelled','pending'].map(s => (
@@ -240,7 +240,7 @@ export default function ActionsTimeline() {
           <select
             value={filterRiskMin}
             onChange={(e) => { setFilterRiskMin(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
           >
             <option value="">Any Risk</option>
             <option value="40">Medium+ (40+)</option>
