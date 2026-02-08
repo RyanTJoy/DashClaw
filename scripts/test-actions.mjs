@@ -299,6 +299,79 @@ async function testAssumptions(actionId) {
 }
 
 // ──────────────────────────────────────────────
+// Phase 4b: Assumption Updates
+// ──────────────────────────────────────────────
+
+async function testAssumptionUpdates(actionId) {
+  console.log('\n━━━ Phase 4b: Assumption Updates ━━━');
+
+  // Create an assumption to validate
+  const { status: s1, data: d1 } = await request('POST', '/api/actions/assumptions', {
+    action_id: actionId,
+    assumption: 'Test assumption for validation',
+    basis: 'Testing validate endpoint'
+  });
+  assert(s1 === 201, 'Created assumption for update tests');
+  const asmId = d1.assumption_id;
+
+  // GET single assumption
+  const { status: s2, data: d2 } = await request('GET', `/api/actions/assumptions/${asmId}`);
+  assert(s2 === 200, `GET /api/actions/assumptions/${asmId} returns 200`);
+  assert(d2.assumption.assumption_id === asmId, 'Returned correct assumption');
+  assert(d2.assumption.agent_id, 'Assumption includes parent action agent_id');
+
+  // GET - 404 for missing assumption
+  const { status: s3 } = await request('GET', '/api/actions/assumptions/asm_nonexistent');
+  assert(s3 === 404, 'GET missing assumption returns 404');
+
+  // PATCH - Validate assumption
+  const { status: s4, data: d4 } = await request('PATCH', `/api/actions/assumptions/${asmId}`, {
+    validated: true
+  });
+  assert(s4 === 200, 'PATCH validate assumption returns 200');
+  assert(d4.assumption.validated === 1, 'validated is set to 1');
+  assert(d4.assumption.validated_at, 'validated_at is set');
+
+  // Create another assumption to invalidate
+  const { data: d5 } = await request('POST', '/api/actions/assumptions', {
+    action_id: actionId,
+    assumption: 'Test assumption for invalidation',
+    basis: 'Testing invalidate endpoint'
+  });
+  const asmId2 = d5.assumption_id;
+
+  // PATCH - Invalidate without reason should fail
+  const { status: s6 } = await request('PATCH', `/api/actions/assumptions/${asmId2}`, {
+    validated: false
+  });
+  assert(s6 === 400, 'Invalidate without reason returns 400');
+
+  // PATCH - Invalidate with reason
+  const { status: s7, data: d7 } = await request('PATCH', `/api/actions/assumptions/${asmId2}`, {
+    validated: false,
+    invalidated_reason: 'Schema was actually out of date'
+  });
+  assert(s7 === 200, 'PATCH invalidate assumption returns 200');
+  assert(d7.assumption.invalidated === 1, 'invalidated is set to 1');
+  assert(d7.assumption.invalidated_at, 'invalidated_at is set');
+  assert(d7.assumption.invalidated_reason === 'Schema was actually out of date', 'invalidated_reason is stored');
+
+  // PATCH - Can't update already invalidated
+  const { status: s8 } = await request('PATCH', `/api/actions/assumptions/${asmId2}`, {
+    validated: true
+  });
+  assert(s8 === 409, 'Updating already-invalidated assumption returns 409');
+
+  // PATCH - 404 for missing assumption
+  const { status: s9 } = await request('PATCH', '/api/actions/assumptions/asm_nonexistent', {
+    validated: true
+  });
+  assert(s9 === 404, 'PATCH missing assumption returns 404');
+
+  return { validatedId: asmId, invalidatedId: asmId2 };
+}
+
+// ──────────────────────────────────────────────
 // Phase 5: Risk Signals
 // ──────────────────────────────────────────────
 
@@ -420,6 +493,106 @@ async function testSDK() {
 }
 
 // ──────────────────────────────────────────────
+// Phase 5b: Drift Detection
+// ──────────────────────────────────────────────
+
+async function testDriftDetection() {
+  console.log('\n━━━ Phase 5b: Drift Detection ━━━');
+
+  // GET assumptions with drift scoring
+  const { status: s1, data: d1 } = await request('GET', '/api/actions/assumptions?drift=true&limit=10');
+  assert(s1 === 200, 'GET assumptions with drift=true returns 200');
+  assert(d1.drift_summary !== undefined, 'Response includes drift_summary');
+  assert(typeof d1.drift_summary.total === 'number', 'drift_summary has total count');
+  assert(typeof d1.drift_summary.at_risk === 'number', 'drift_summary has at_risk count');
+
+  // Check that drift_score is present on assumptions
+  if (d1.assumptions.length > 0) {
+    const hasScore = d1.assumptions.some(a => a.drift_score !== undefined);
+    assert(hasScore, 'At least one assumption has drift_score');
+  } else {
+    assert(true, 'No assumptions to check drift_score on (OK)');
+  }
+}
+
+// ──────────────────────────────────────────────
+// Phase 8: Root-Cause Tracing
+// ──────────────────────────────────────────────
+
+async function testRootCauseTrace(actionId) {
+  console.log('\n━━━ Phase 8: Root-Cause Tracing ━━━');
+
+  // GET trace for existing action
+  const { status: s1, data: d1 } = await request('GET', `/api/actions/${actionId}/trace`);
+  assert(s1 === 200, `GET /api/actions/${actionId}/trace returns 200`);
+  assert(d1.action, 'Trace includes action');
+  assert(d1.trace, 'Trace includes trace object');
+  assert(d1.trace.assumptions, 'Trace includes assumptions summary');
+  assert(d1.trace.loops, 'Trace includes loops summary');
+  assert(typeof d1.trace.assumptions.total === 'number', 'assumptions.total is a number');
+  assert(typeof d1.trace.loops.total === 'number', 'loops.total is a number');
+  assert(Array.isArray(d1.trace.parent_chain), 'parent_chain is an array');
+  assert(Array.isArray(d1.trace.related_actions), 'related_actions is an array');
+  assert(Array.isArray(d1.trace.root_cause_indicators), 'root_cause_indicators is an array');
+
+  // GET trace for missing action
+  const { status: s2 } = await request('GET', '/api/actions/act_nonexistent/trace');
+  assert(s2 === 404, 'GET trace for missing action returns 404');
+}
+
+// ──────────────────────────────────────────────
+// Phase 9: SDK Extended Methods
+// ──────────────────────────────────────────────
+
+async function testSDKExtended() {
+  console.log('\n━━━ Phase 9: SDK Extended Methods ━━━');
+
+  const { OpenClawAgent } = await import('../sdk/openclaw-agent.js');
+
+  const agent = new OpenClawAgent({
+    baseUrl: BASE_URL,
+    apiKey: API_KEY || 'dev-mode',
+    agentId: 'sdk-ext-test',
+    agentName: 'SDK Extended Test Agent'
+  });
+
+  // Create action + assumption for testing
+  const created = await agent.createAction({
+    action_type: 'test',
+    declared_goal: 'SDK extended methods test'
+  });
+  const asm = await agent.registerAssumption({
+    action_id: created.action_id,
+    assumption: 'SDK extended test assumption'
+  });
+
+  // getAssumption
+  const fetched = await agent.getAssumption(asm.assumption_id);
+  assert(fetched.assumption.assumption_id === asm.assumption_id, 'SDK getAssumption returns correct assumption');
+
+  // validateAssumption (validate)
+  const validated = await agent.validateAssumption(asm.assumption_id, true);
+  assert(validated.assumption.validated === 1, 'SDK validateAssumption (true) works');
+
+  // Create another to invalidate
+  const asm2 = await agent.registerAssumption({
+    action_id: created.action_id,
+    assumption: 'SDK invalidation test assumption'
+  });
+  const invalidated = await agent.validateAssumption(asm2.assumption_id, false, 'Wrong assumption');
+  assert(invalidated.assumption.invalidated === 1, 'SDK validateAssumption (false) works');
+
+  // getDriftReport
+  const drift = await agent.getDriftReport();
+  assert(drift.drift_summary !== undefined, 'SDK getDriftReport returns drift_summary');
+
+  // getActionTrace
+  const trace = await agent.getActionTrace(created.action_id);
+  assert(trace.trace, 'SDK getActionTrace returns trace');
+  assert(trace.trace.assumptions, 'SDK trace includes assumptions');
+}
+
+// ──────────────────────────────────────────────
 // Phase 7: Detail endpoint with populated data
 // ──────────────────────────────────────────────
 
@@ -458,8 +631,12 @@ async function main() {
     await testValidation();
     await testOpenLoops(actionId);
     await testAssumptions(actionId);
+    await testAssumptionUpdates(actionId);
     await testRiskSignals();
+    await testDriftDetection();
     await testSDK();
+    await testSDKExtended();
+    await testRootCauseTrace(actionId);
     await testDetailEndpoint(actionId);
   } catch (error) {
     console.error('\n💥 Test suite crashed:', error.message);

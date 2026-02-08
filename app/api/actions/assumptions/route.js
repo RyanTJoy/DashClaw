@@ -22,6 +22,7 @@ export async function GET(request) {
 
     const validated = searchParams.get('validated');
     const stale = searchParams.get('stale');
+    const drift = searchParams.get('drift');
     const action_id = searchParams.get('action_id');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
@@ -63,6 +64,39 @@ export async function GET(request) {
       sql.query(query, params),
       sql.query(countQuery, countParams)
     ]);
+
+    // Drift scoring: calculate per-assumption risk score based on age and validation state
+    if (drift === 'true') {
+      const now = Date.now();
+      let atRisk = 0;
+      for (const asm of assumptions) {
+        if (asm.validated === 1) {
+          asm.drift_score = 0;
+        } else if (asm.invalidated === 1) {
+          asm.drift_score = null;
+        } else {
+          // Unvalidated: drift score increases with age (0-100 over 30 days)
+          const createdAt = new Date(asm.created_at).getTime();
+          const daysOld = (now - createdAt) / (1000 * 60 * 60 * 24);
+          asm.drift_score = Math.min(100, Math.round((daysOld / 30) * 100));
+          if (asm.drift_score >= 50) atRisk++;
+        }
+      }
+
+      const total = parseInt(countResult[0]?.total || '0', 10);
+      return NextResponse.json({
+        assumptions,
+        total,
+        drift_summary: {
+          total,
+          at_risk: atRisk,
+          validated: assumptions.filter(a => a.validated === 1).length,
+          invalidated: assumptions.filter(a => a.invalidated === 1).length,
+          unvalidated: assumptions.filter(a => a.validated === 0 && a.invalidated === 0).length
+        },
+        lastUpdated: new Date().toISOString()
+      });
+    }
 
     return NextResponse.json({
       assumptions,
