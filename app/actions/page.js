@@ -18,7 +18,25 @@ export default function ActionsTimeline() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterRiskMin, setFilterRiskMin] = useState('');
   const [page, setPage] = useState(0);
+  const [knownAgents, setKnownAgents] = useState([]);
   const pageSize = 25;
+
+  // Consistent color for each agent based on name hash
+  const getAgentColor = (agentId) => {
+    const colors = [
+      'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      'bg-pink-500/20 text-pink-400 border-pink-500/30',
+      'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+      'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      'bg-red-500/20 text-red-400 border-red-500/30',
+    ];
+    let hash = 0;
+    for (let i = 0; i < (agentId || '').length; i++) hash = ((hash << 5) - hash + agentId.charCodeAt(i)) | 0;
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   const fetchActions = useCallback(async () => {
     try {
@@ -33,10 +51,26 @@ export default function ActionsTimeline() {
       const res = await fetch(`/api/actions?${params}`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setActions(data.actions || []);
+      const actionsList = data.actions || [];
+      setActions(actionsList);
       setStats(data.stats || {});
       setTotal(data.total || 0);
       setLastUpdated(new Date().toLocaleTimeString());
+
+      // Build known agents list from results (only on unfiltered fetches)
+      if (!filterAgent) {
+        const agentMap = new Map();
+        actionsList.forEach(a => {
+          if (a.agent_id && !agentMap.has(a.agent_id)) {
+            agentMap.set(a.agent_id, a.agent_name || a.agent_id);
+          }
+        });
+        setKnownAgents(prev => {
+          const merged = new Map(prev.map(a => [a.id, a.name]));
+          agentMap.forEach((name, id) => merged.set(id, name));
+          return Array.from(merged, ([id, name]) => ({ id, name }));
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch actions:', error);
     } finally {
@@ -173,13 +207,16 @@ export default function ActionsTimeline() {
       {/* Filters */}
       <div className="glass-card p-4 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <input
-            type="text"
-            placeholder="Agent ID..."
+          <select
             value={filterAgent}
             onChange={(e) => { setFilterAgent(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-orange-500"
-          />
+            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500"
+          >
+            <option value="">All Agents</option>
+            {knownAgents.map(a => (
+              <option key={a.id} value={a.id}>{a.name || a.id}</option>
+            ))}
+          </select>
           <select
             value={filterType}
             onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
@@ -268,7 +305,9 @@ export default function ActionsTimeline() {
                         <div className="flex-1 min-w-0">
                           <div className="font-semibold text-white truncate">{action.declared_goal}</div>
                           <div className="flex items-center space-x-3 mt-1 text-xs text-gray-400">
-                            <span>{action.agent_name || action.agent_id}</span>
+                            <span className={`px-1.5 py-0.5 rounded border text-xs font-medium ${getAgentColor(action.agent_id)}`}>
+                              {action.agent_name || action.agent_id}
+                            </span>
                             <span>·</span>
                             <span>{action.action_type}</span>
                             <span>·</span>
