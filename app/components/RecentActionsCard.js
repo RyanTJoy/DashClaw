@@ -4,71 +4,58 @@ import { useState, useEffect } from 'react';
 
 export default function RecentActionsCard() {
   const [actions, setActions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data representing recent actions from action-audit.md
-    const mockActions = [
-      {
-        id: 1,
-        type: 'build',
-        action: 'Created Dashboard Web GUI',
-        platform: 'Local',
-        timestamp: '2026-02-04 12:23 EST',
-        status: 'in-progress'
-      },
-      {
-        id: 2,
-        type: 'apply',
-        action: 'Applied to Technical Solution Architect',
-        platform: 'LinkedIn',
-        timestamp: '2026-02-04 11:20 EST',
-        status: 'completed'
-      },
-      {
-        id: 3,
-        type: 'build',
-        action: 'Token Efficiency Toolkit',
-        platform: 'Local',
-        timestamp: '2026-02-04 11:40 EST',
-        status: 'completed'
-      },
-      {
-        id: 4,
-        type: 'build',
-        action: 'Bounty Hunter Assistant',
-        platform: 'Local',
-        timestamp: '2026-02-04 08:10 EST',
-        status: 'completed'
-      },
-      {
-        id: 5,
-        type: 'post',
-        action: 'HumanConnect philosophy post',
-        platform: 'Moltbook',
-        timestamp: '2026-02-03 17:44 EST',
-        status: 'completed'
-      },
-      {
-        id: 6,
-        type: 'security',
-        action: 'Handled phishing email',
-        platform: 'ProtonMail',
-        timestamp: '2026-02-04 00:51 EST',
-        status: 'completed'
+    async function fetchActions() {
+      try {
+        const res = await fetch('/api/actions?limit=10');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data = await res.json();
+        setActions((data.actions || []).map(a => ({
+          id: a.id,
+          type: a.action_type || 'other',
+          action: a.declared_goal,
+          platform: (() => {
+            try {
+              const systems = JSON.parse(a.systems_touched || '[]');
+              return systems[0] || 'System';
+            } catch { return 'System'; }
+          })(),
+          timestamp: a.timestamp_start,
+          status: a.status === 'running' ? 'in-progress' : a.status
+        })));
+      } catch (error) {
+        console.error('Failed to fetch actions:', error);
+        setActions([]);
+      } finally {
+        setLoading(false);
       }
-    ];
-    setActions(mockActions);
+    }
+    fetchActions();
   }, []);
 
   const getTypeIcon = (type) => {
     switch (type) {
       case 'build': return '🔨';
+      case 'deploy': return '🚀';
       case 'post': return '📝';
       case 'apply': return '💼';
       case 'security': return '🛡️';
       case 'message': return '💬';
       case 'api': return '🔗';
       case 'calendar': return '📅';
+      case 'research': return '🔍';
+      case 'review': return '👀';
+      case 'fix': return '🔧';
+      case 'refactor': return '♻️';
+      case 'test': return '🧪';
+      case 'config': return '⚙️';
+      case 'monitor': return '📡';
+      case 'alert': return '🚨';
+      case 'cleanup': return '🧹';
+      case 'sync': return '🔄';
+      case 'migrate': return '📦';
       default: return '⚡';
     }
   };
@@ -76,12 +63,16 @@ export default function RecentActionsCard() {
   const getTypeColor = (type) => {
     switch (type) {
       case 'build': return 'bg-green-500';
+      case 'deploy': return 'bg-emerald-500';
       case 'post': return 'bg-blue-500';
       case 'apply': return 'bg-purple-500';
       case 'security': return 'bg-red-500';
       case 'message': return 'bg-yellow-500';
       case 'api': return 'bg-orange-500';
       case 'calendar': return 'bg-indigo-500';
+      case 'research': return 'bg-cyan-500';
+      case 'fix': return 'bg-amber-500';
+      case 'test': return 'bg-teal-500';
       default: return 'bg-gray-500';
     }
   };
@@ -92,17 +83,35 @@ export default function RecentActionsCard() {
       case 'in-progress': return '🔄';
       case 'pending': return '⏳';
       case 'failed': return '❌';
+      case 'cancelled': return '🚫';
       default: return '❓';
     }
   };
 
   const formatTimestamp = (timestamp) => {
-    const parts = timestamp.split(' ');
-    return {
-      time: parts[1],
-      date: parts[0]
-    };
+    if (!timestamp) return { time: '--:--', date: '----' };
+    try {
+      const d = new Date(timestamp);
+      return {
+        time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      };
+    } catch {
+      const parts = timestamp.split(' ');
+      return { time: parts[1] || '--:--', date: parts[0] || '----' };
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="glass-card p-6 h-full">
+        <h2 className="text-xl font-bold text-white flex items-center mb-4">
+          <span className="mr-2">⚡</span>Recent Actions
+        </h2>
+        <div className="text-center text-gray-400 py-8">Loading actions...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="glass-card p-6 h-full">
@@ -125,7 +134,7 @@ export default function RecentActionsCard() {
         ) : (
           actions.map((action) => {
             const { time, date } = formatTimestamp(action.timestamp);
-            
+
             return (
               <div key={action.id} className="glass-card p-4 hover:bg-opacity-20 transition-all">
                 <div className="flex items-start justify-between mb-2">
@@ -158,20 +167,20 @@ export default function RecentActionsCard() {
       <div className="mt-4 pt-4 border-t border-gray-700">
         <div className="grid grid-cols-4 gap-2 text-center text-xs">
           <div>
-            <div className="font-semibold text-green-400">{actions.filter(a => a.type === 'build').length}</div>
-            <div className="text-gray-400">Built</div>
+            <div className="font-semibold text-green-400">{actions.filter(a => a.status === 'completed').length}</div>
+            <div className="text-gray-400">Done</div>
           </div>
           <div>
-            <div className="font-semibold text-blue-400">{actions.filter(a => a.type === 'post').length}</div>
-            <div className="text-gray-400">Posted</div>
+            <div className="font-semibold text-blue-400">{actions.filter(a => a.status === 'in-progress').length}</div>
+            <div className="text-gray-400">Running</div>
           </div>
           <div>
-            <div className="font-semibold text-purple-400">{actions.filter(a => a.type === 'apply').length}</div>
-            <div className="text-gray-400">Applied</div>
+            <div className="font-semibold text-yellow-400">{actions.filter(a => a.status === 'pending').length}</div>
+            <div className="text-gray-400">Pending</div>
           </div>
           <div>
-            <div className="font-semibold text-red-400">{actions.filter(a => a.type === 'security').length}</div>
-            <div className="text-gray-400">Security</div>
+            <div className="font-semibold text-red-400">{actions.filter(a => a.status === 'failed').length}</div>
+            <div className="text-gray-400">Failed</div>
           </div>
         </div>
       </div>

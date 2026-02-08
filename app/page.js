@@ -84,6 +84,9 @@ export default function Dashboard() {
           <Link href="/integrations" className="px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-sm md:text-base font-semibold hover:opacity-90 transition-opacity flex items-center space-x-1 md:space-x-2">
             <span>🔌</span><span>Integrations</span>
           </Link>
+          <Link href="/actions" className="px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg text-sm md:text-base font-semibold hover:opacity-90 transition-opacity flex items-center space-x-1 md:space-x-2">
+            <span>⚡</span><span>Actions</span>
+          </Link>
         </div>
       </div>
 

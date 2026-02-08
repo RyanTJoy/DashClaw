@@ -21,6 +21,7 @@ const PROTECTED_ROUTES = [
   '/api/schedules',
   '/api/calendar',
   '/api/memory',
+  '/api/actions',
 ];
 
 // Routes that are always public (health checks, setup)

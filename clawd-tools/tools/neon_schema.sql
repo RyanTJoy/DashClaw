@@ -239,3 +239,83 @@ CREATE TABLE IF NOT EXISTS sync_log (
     status TEXT DEFAULT 'success',
     error TEXT
 );
+
+-- ============================================
+-- ACTION RECORDS (Agent Operations Control Plane)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS action_records (
+    id SERIAL PRIMARY KEY,
+    -- Identity
+    action_id TEXT UNIQUE NOT NULL,
+    agent_id TEXT NOT NULL,
+    agent_name TEXT,
+    swarm_id TEXT,
+    parent_action_id TEXT,
+    -- Intent
+    action_type TEXT NOT NULL,
+    declared_goal TEXT NOT NULL,
+    reasoning TEXT,
+    authorization_scope TEXT,
+    -- Context
+    trigger TEXT,
+    systems_touched TEXT DEFAULT '[]',
+    input_summary TEXT,
+    -- Action
+    status TEXT DEFAULT 'running',
+    reversible INTEGER DEFAULT 1,
+    risk_score INTEGER DEFAULT 0,
+    confidence INTEGER DEFAULT 50,
+    -- Outcome
+    output_summary TEXT,
+    side_effects TEXT DEFAULT '[]',
+    artifacts_created TEXT DEFAULT '[]',
+    error_message TEXT,
+    -- Meta
+    timestamp_start TEXT NOT NULL,
+    timestamp_end TEXT,
+    duration_ms INTEGER,
+    cost_estimate REAL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_action_records_agent_id ON action_records(agent_id);
+CREATE INDEX IF NOT EXISTS idx_action_records_swarm_id ON action_records(swarm_id);
+CREATE INDEX IF NOT EXISTS idx_action_records_status ON action_records(status);
+CREATE INDEX IF NOT EXISTS idx_action_records_action_type ON action_records(action_type);
+CREATE INDEX IF NOT EXISTS idx_action_records_risk_score ON action_records(risk_score);
+CREATE INDEX IF NOT EXISTS idx_action_records_timestamp_start ON action_records(timestamp_start);
+
+CREATE TABLE IF NOT EXISTS open_loops (
+    id SERIAL PRIMARY KEY,
+    loop_id TEXT UNIQUE NOT NULL,
+    action_id TEXT NOT NULL REFERENCES action_records(action_id),
+    loop_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    status TEXT DEFAULT 'open',
+    priority TEXT DEFAULT 'medium',
+    owner TEXT,
+    resolution TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_open_loops_action_id ON open_loops(action_id);
+CREATE INDEX IF NOT EXISTS idx_open_loops_status ON open_loops(status);
+CREATE INDEX IF NOT EXISTS idx_open_loops_priority ON open_loops(priority);
+
+CREATE TABLE IF NOT EXISTS assumptions (
+    id SERIAL PRIMARY KEY,
+    assumption_id TEXT UNIQUE NOT NULL,
+    action_id TEXT NOT NULL REFERENCES action_records(action_id),
+    assumption TEXT NOT NULL,
+    basis TEXT,
+    validated INTEGER DEFAULT 0,
+    validated_at TEXT,
+    invalidated INTEGER DEFAULT 0,
+    invalidated_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_assumptions_action_id ON assumptions(action_id);
+CREATE INDEX IF NOT EXISTS idx_assumptions_validated ON assumptions(validated);
