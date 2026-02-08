@@ -13,6 +13,8 @@ import TokenChart from './TokenChart';
 import GoalsChart from './GoalsChart';
 import IntegrationsCard from './IntegrationsCard';
 import MemoryHealthCard from './MemoryHealthCard';
+import OpenLoopsCard from './OpenLoopsCard';
+import RiskSignalsCard from './RiskSignalsCard';
 
 const allCards = [
   { id: 'tokenBudget', component: TokenBudgetCard, title: '⚡ Token Budget', defaultWidth: 'md:col-span-2' },
@@ -27,6 +29,8 @@ const allCards = [
   { id: 'memoryHealth', component: MemoryHealthCard, title: '🧠 Memory Health', defaultWidth: '' },
   { id: 'tokenChart', component: TokenChart, title: '📊 Token Usage', defaultWidth: 'lg:col-span-1' },
   { id: 'goalsChart', component: GoalsChart, title: '🎯 Goals Progress', defaultWidth: 'lg:col-span-1' },
+  { id: 'openLoops', component: OpenLoopsCard, title: '🔄 Open Loops', defaultWidth: '' },
+  { id: 'riskSignals', component: RiskSignalsCard, title: '🚨 Risk Signals', defaultWidth: '' },
 ];
 
 const defaultOrder = allCards.map(c => c.id);

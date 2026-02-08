@@ -1,0 +1,123 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+import { NextResponse } from 'next/server';
+import { neon } from '@neondatabase/serverless';
+import { validateAssumption } from '../../../lib/validate.js';
+import crypto from 'crypto';
+
+let _sql;
+function getSql() {
+  if (_sql) return _sql;
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  _sql = neon(url);
+  return _sql;
+}
+
+export async function GET(request) {
+  try {
+    const sql = getSql();
+    const { searchParams } = new URL(request.url);
+
+    const validated = searchParams.get('validated');
+    const stale = searchParams.get('stale');
+    const action_id = searchParams.get('action_id');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+
+    const conditions = [];
+    const params = [];
+    let paramIdx = 1;
+
+    if (validated === 'true') {
+      conditions.push(`a.validated = 1`);
+    } else if (validated === 'false') {
+      conditions.push(`a.validated = 0 AND a.invalidated = 0`);
+    }
+    if (stale === 'true') {
+      // Unvalidated assumptions older than 7 days
+      conditions.push(`a.validated = 0 AND a.invalidated = 0 AND a.created_at < NOW() - INTERVAL '7 days'`);
+    }
+    if (action_id) {
+      conditions.push(`a.action_id = $${paramIdx++}`);
+      params.push(action_id);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const query = `
+      SELECT a.*, ar.agent_id, ar.agent_name, ar.declared_goal
+      FROM assumptions a
+      LEFT JOIN action_records ar ON a.action_id = ar.action_id
+      ${where}
+      ORDER BY a.created_at DESC
+      LIMIT $${paramIdx++} OFFSET $${paramIdx++}
+    `;
+    params.push(limit, offset);
+
+    const countQuery = `SELECT COUNT(*) as total FROM assumptions a ${where}`;
+    const countParams = params.slice(0, -2);
+
+    const [assumptions, countResult] = await Promise.all([
+      sql.query(query, params),
+      sql.query(countQuery, countParams)
+    ]);
+
+    return NextResponse.json({
+      assumptions,
+      total: parseInt(countResult[0]?.total || '0', 10),
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Assumptions API GET error:', error);
+    return NextResponse.json(
+      { error: 'An error occurred while fetching assumptions', assumptions: [] },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    const sql = getSql();
+    const body = await request.json();
+
+    const { valid, data, errors } = validateAssumption(body);
+    if (!valid) {
+      return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 });
+    }
+
+    // Verify parent action exists
+    const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id}`;
+    if (action.length === 0) {
+      return NextResponse.json({ error: 'Parent action not found' }, { status: 404 });
+    }
+
+    const assumption_id = data.assumption_id || `asm_${crypto.randomUUID()}`;
+
+    const result = await sql`
+      INSERT INTO assumptions (
+        assumption_id, action_id, assumption, basis,
+        validated, invalidated, invalidated_reason
+      ) VALUES (
+        ${assumption_id},
+        ${data.action_id},
+        ${data.assumption},
+        ${data.basis || null},
+        ${data.validated ? 1 : 0},
+        ${data.invalidated ? 1 : 0},
+        ${data.invalidated_reason || null}
+      )
+      RETURNING *
+    `;
+
+    return NextResponse.json({ assumption: result[0], assumption_id }, { status: 201 });
+  } catch (error) {
+    console.error('Assumptions API POST error:', error);
+    if (error.message?.includes('unique') || error.message?.includes('duplicate')) {
+      return NextResponse.json({ error: 'Assumption with this assumption_id already exists' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'An error occurred while creating the assumption' }, { status: 500 });
+  }
+}
