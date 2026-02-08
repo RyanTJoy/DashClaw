@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,36 +14,41 @@ function getSql() {
   return _sql;
 }
 
-export async function GET() {
+export async function GET(request) {
   const sql = getSql();
+  const orgId = getOrgId(request);
   try {
     // Get latest health snapshot
     const healthSnapshot = await sql`
-      SELECT * FROM health_snapshots 
-      ORDER BY timestamp DESC 
+      SELECT * FROM health_snapshots
+      WHERE org_id = ${orgId}
+      ORDER BY timestamp DESC
       LIMIT 1
     `;
 
     // Get health history (last 7 snapshots)
     const healthHistory = await sql`
       SELECT timestamp, health_score, total_lines, potential_duplicates, stale_facts_count
-      FROM health_snapshots 
-      ORDER BY timestamp DESC 
+      FROM health_snapshots
+      WHERE org_id = ${orgId}
+      ORDER BY timestamp DESC
       LIMIT 7
     `;
 
     // Get top entities
     const topEntities = await sql`
-      SELECT name, type, mention_count 
-      FROM entities 
-      ORDER BY mention_count DESC 
+      SELECT name, type, mention_count
+      FROM entities
+      WHERE org_id = ${orgId}
+      ORDER BY mention_count DESC
       LIMIT 20
     `;
 
     // Get topics
     const topics = await sql`
-      SELECT name, mention_count 
-      FROM topics 
+      SELECT name, mention_count
+      FROM topics
+      WHERE org_id = ${orgId}
       ORDER BY mention_count DESC
     `;
 
@@ -50,6 +56,7 @@ export async function GET() {
     const entityTypes = await sql`
       SELECT type, COUNT(*) as count, SUM(mention_count) as total_mentions
       FROM entities
+      WHERE org_id = ${orgId}
       GROUP BY type
       ORDER BY total_mentions DESC
     `;

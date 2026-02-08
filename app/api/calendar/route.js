@@ -3,20 +3,23 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 // sql initialized inside handler for serverless compatibility
 
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
     // Get upcoming calendar events from Neon
     // Note: DB stores EST times as naive timestamps, so we adjust for timezone
     // by subtracting 6 hours from NOW() to ensure we don't filter out future EST events
     const events = await sql`
-      SELECT id, summary, start_time, end_time, location, description 
-      FROM calendar_events 
+      SELECT id, summary, start_time, end_time, location, description
+      FROM calendar_events
       WHERE start_time >= NOW() - INTERVAL '6 hours'
-      ORDER BY start_time 
+        AND org_id = ${orgId}
+      ORDER BY start_time
       LIMIT 10
     `;
     

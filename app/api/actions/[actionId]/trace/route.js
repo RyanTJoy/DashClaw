@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../../../lib/org.js';
 
 let _sql;
 function getSql() {
@@ -16,11 +17,12 @@ function getSql() {
 export async function GET(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { actionId } = await params;
 
     // Fetch the action
     const actions = await sql`
-      SELECT * FROM action_records WHERE action_id = ${actionId}
+      SELECT * FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId}
     `;
 
     if (actions.length === 0) {
@@ -32,15 +34,16 @@ export async function GET(request, { params }) {
     // Run all trace queries in parallel
     const [assumptions, loops, relatedActions] = await Promise.all([
       // All assumptions for this action
-      sql`SELECT * FROM assumptions WHERE action_id = ${actionId} ORDER BY created_at ASC`,
+      sql`SELECT * FROM assumptions WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
       // All loops for this action
-      sql`SELECT * FROM open_loops WHERE action_id = ${actionId} ORDER BY created_at ASC`,
+      sql`SELECT * FROM open_loops WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
       // Related actions: same agent or overlapping systems, within 1 hour
       sql`
         SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
                risk_score, timestamp_start, error_message
         FROM action_records
         WHERE action_id != ${actionId}
+          AND org_id = ${orgId}
           AND (
             agent_id = ${action.agent_id}
             OR (systems_touched = ${action.systems_touched} AND systems_touched IS NOT NULL AND systems_touched != '[]')
@@ -61,7 +64,7 @@ export async function GET(request, { params }) {
       const parentResult = await sql`
         SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
                risk_score, timestamp_start, error_message, parent_action_id
-        FROM action_records WHERE action_id = ${currentParentId}
+        FROM action_records WHERE action_id = ${currentParentId} AND org_id = ${orgId}
       `;
       if (parentResult.length === 0) break;
       parentChain.push(parentResult[0]);

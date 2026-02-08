@@ -3,14 +3,16 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 // sql initialized inside handler for serverless compatibility
 
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
     // Get all scheduled jobs
-    const schedules = await sql`SELECT * FROM scheduled_jobs ORDER BY next_run ASC NULLS LAST`;
+    const schedules = await sql`SELECT * FROM scheduled_jobs WHERE org_id = ${orgId} ORDER BY next_run ASC NULLS LAST`;
 
     // Stats
     const now = new Date().toISOString();

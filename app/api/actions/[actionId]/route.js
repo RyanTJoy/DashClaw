@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateActionOutcome } from '../../../lib/validate.js';
+import { getOrgId } from '../../../lib/org.js';
 
 let _sql;
 function getSql() {
@@ -17,12 +18,13 @@ function getSql() {
 export async function GET(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { actionId } = await params;
 
     const [actions, loops, assumptions] = await Promise.all([
-      sql`SELECT * FROM action_records WHERE action_id = ${actionId}`,
-      sql`SELECT * FROM open_loops WHERE action_id = ${actionId} ORDER BY created_at DESC`,
-      sql`SELECT * FROM assumptions WHERE action_id = ${actionId} ORDER BY created_at DESC`
+      sql`SELECT * FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId}`,
+      sql`SELECT * FROM open_loops WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at DESC`,
+      sql`SELECT * FROM assumptions WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at DESC`
     ]);
 
     if (actions.length === 0) {
@@ -43,6 +45,7 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { actionId } = await params;
     const body = await request.json();
 
@@ -52,7 +55,7 @@ export async function PATCH(request, { params }) {
     }
 
     // Check action exists
-    const existing = await sql`SELECT action_id FROM action_records WHERE action_id = ${actionId}`;
+    const existing = await sql`SELECT action_id FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId}`;
     if (existing.length === 0) {
       return NextResponse.json({ error: 'Action not found' }, { status: 404 });
     }
@@ -95,8 +98,8 @@ export async function PATCH(request, { params }) {
       values.push(data.cost_estimate);
     }
 
-    const query = `UPDATE action_records SET ${setClauses.join(', ')} WHERE action_id = $${paramIdx++} RETURNING *`;
-    values.push(actionId);
+    const query = `UPDATE action_records SET ${setClauses.join(', ')} WHERE action_id = $${paramIdx++} AND org_id = $${paramIdx++} RETURNING *`;
+    values.push(actionId, orgId);
 
     const result = await sql.query(query, values);
 

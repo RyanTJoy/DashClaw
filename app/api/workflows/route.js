@@ -3,20 +3,22 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 // sql initialized inside handler for serverless compatibility
 
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
     // Get all workflows
-    const workflows = await sql`SELECT * FROM workflows ORDER BY last_run DESC NULLS LAST`;
+    const workflows = await sql`SELECT * FROM workflows WHERE org_id = ${orgId} ORDER BY last_run DESC NULLS LAST`;
 
     // Get recent executions
-    const executions = await sql`SELECT * FROM executions ORDER BY started_at DESC LIMIT 20`;
+    const executions = await sql`SELECT * FROM executions WHERE org_id = ${orgId} ORDER BY started_at DESC LIMIT 20`;
 
     // Get scheduled jobs
-    const scheduledJobs = await sql`SELECT * FROM scheduled_jobs ORDER BY next_run ASC NULLS LAST`;
+    const scheduledJobs = await sql`SELECT * FROM scheduled_jobs WHERE org_id = ${orgId} ORDER BY next_run ASC NULLS LAST`;
 
     // Calculate stats
     const enabled = workflows.filter(w => w.enabled === 1).length;

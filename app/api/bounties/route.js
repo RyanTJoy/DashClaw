@@ -2,11 +2,14 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
+import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 // Bounties API - placeholder until bounty tracking is added to Neon
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
     // Return placeholder data for now
     const bounties = [];
     const cveResearch = [];

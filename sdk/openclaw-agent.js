@@ -8,7 +8,7 @@ class OpenClawAgent {
   /**
    * @param {Object} options
    * @param {string} options.baseUrl - OPS Suite base URL (e.g. "https://your-app.vercel.app")
-   * @param {string} options.apiKey - Dashboard API key for authentication
+   * @param {string} options.apiKey - API key for authentication (determines which org's data you access)
    * @param {string} options.agentId - Unique identifier for this agent
    * @param {string} [options.agentName] - Human-readable agent name
    * @param {string} [options.swarmId] - Swarm/group identifier if part of a multi-agent system

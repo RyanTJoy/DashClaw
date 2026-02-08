@@ -3,17 +3,19 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 // sql initialized inside handler for serverless compatibility
 
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
     // Get all goals
-    const goals = await sql`SELECT * FROM goals ORDER BY created_at DESC`;
+    const goals = await sql`SELECT * FROM goals WHERE org_id = ${orgId} ORDER BY created_at DESC`;
 
     // Get milestones for each goal
-    const milestones = await sql`SELECT * FROM milestones ORDER BY created_at DESC`;
+    const milestones = await sql`SELECT * FROM milestones WHERE org_id = ${orgId} ORDER BY created_at DESC`;
 
     // Attach milestones to goals
     const goalsWithMilestones = goals.map(g => ({

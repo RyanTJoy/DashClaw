@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,18 +35,19 @@ export async function GET(request) {
   try {
     const sql = getSql();
     await ensureSettingsTable(sql);
+    const orgId = getOrgId(request);
 
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
     const category = searchParams.get('category');
-    
+
     let settings;
     if (key) {
-      settings = await sql`SELECT * FROM settings WHERE key = ${key}`;
+      settings = await sql`SELECT * FROM settings WHERE key = ${key} AND org_id = ${orgId}`;
     } else if (category) {
-      settings = await sql`SELECT * FROM settings WHERE category = ${category} ORDER BY key`;
+      settings = await sql`SELECT * FROM settings WHERE category = ${category} AND org_id = ${orgId} ORDER BY key`;
     } else {
-      settings = await sql`SELECT * FROM settings ORDER BY category, key`;
+      settings = await sql`SELECT * FROM settings WHERE org_id = ${orgId} ORDER BY category, key`;
     }
     
     // Mask encrypted values for display
@@ -98,6 +100,7 @@ export async function POST(request) {
   try {
     const sql = getSql();
     await ensureSettingsTable(sql);
+    const orgId = getOrgId(request);
 
     const body = await request.json();
     const { key, value, category = 'general', encrypted = false } = body;
@@ -122,9 +125,9 @@ export async function POST(request) {
     }
     
     await sql`
-      INSERT INTO settings (key, value, category, encrypted, updated_at)
-      VALUES (${key}, ${value}, ${category}, ${encrypted}, NOW())
-      ON CONFLICT (key) DO UPDATE SET
+      INSERT INTO settings (org_id, key, value, category, encrypted, updated_at)
+      VALUES (${orgId}, ${key}, ${value}, ${category}, ${encrypted}, NOW())
+      ON CONFLICT ON CONSTRAINT settings_org_key_unique DO UPDATE SET
         value = ${value},
         category = ${category},
         encrypted = ${encrypted},
@@ -143,15 +146,16 @@ export async function DELETE(request) {
   try {
     const sql = getSql();
     await ensureSettingsTable(sql);
+    const orgId = getOrgId(request);
 
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
-    
+
     if (!key) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
-    
-    await sql`DELETE FROM settings WHERE key = ${key}`;
+
+    await sql`DELETE FROM settings WHERE key = ${key} AND org_id = ${orgId}`;
     
     return NextResponse.json({ success: true, deleted: key });
   } catch (error) {
