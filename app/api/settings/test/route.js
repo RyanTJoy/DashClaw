@@ -3,12 +3,36 @@ import { neon } from '@neondatabase/serverless';
 
 export const dynamic = 'force-dynamic';
 
+// SECURITY: Allowlist of domains for SSRF prevention
+const ALLOWED_URL_PATTERNS = {
+  DATABASE_URL: /^postgres(ql)?:\/\/[^@]+@[^/]*\.neon\.tech\//,
+  SUPABASE_URL: /^https:\/\/[a-z0-9]+\.supabase\.co$/,
+};
+
+function isPrivateIP(hostname) {
+  return /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.|localhost|::1|\[::1\])/.test(hostname);
+}
+
+function validateUrl(url, type) {
+  if (!url || typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    if (isPrivateIP(parsed.hostname)) return false;
+    if (ALLOWED_URL_PATTERNS[type]) return ALLOWED_URL_PATTERNS[type].test(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    // DATABASE_URL uses postgres:// protocol which URL() may not parse
+    if (type === 'DATABASE_URL') return ALLOWED_URL_PATTERNS.DATABASE_URL.test(url);
+    return false;
+  }
+}
+
 // POST - Test a connection with provided credentials
 export async function POST(request) {
   try {
     const body = await request.json();
     const { integration, credentials } = body;
-    
+
     switch (integration) {
       case 'neon':
         return await testNeon(credentials);
@@ -61,20 +85,25 @@ export async function POST(request) {
         });
     }
   } catch (error) {
-    return NextResponse.json({ 
-      success: false, 
-      message: error.message 
+    console.error('Settings test error:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Connection test failed'
     }, { status: 500 });
   }
 }
 
 async function testNeon(credentials) {
   try {
+    if (!validateUrl(credentials.DATABASE_URL, 'DATABASE_URL')) {
+      return NextResponse.json({ success: false, message: 'Invalid database URL. Must be a Neon PostgreSQL connection string.' });
+    }
     const sql = neon(credentials.DATABASE_URL);
     await sql`SELECT 1 as test`;
     return NextResponse.json({ success: true, message: 'Database connection successful!' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: `Database error: ${error.message}` });
+    console.error('Neon test error:', error);
+    return NextResponse.json({ success: false, message: 'Database connection failed' });
   }
 }
 
@@ -92,7 +121,7 @@ async function testNotion(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Notion API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -110,7 +139,7 @@ async function testGitHub(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid GitHub token' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -124,7 +153,7 @@ async function testOpenAI(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid OpenAI API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -136,7 +165,7 @@ async function testAnthropic(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid API key format (should start with sk-ant-)' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -150,7 +179,7 @@ async function testBrave(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Brave API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -165,14 +194,17 @@ async function testElevenLabs(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid ElevenLabs API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
 async function testSupabase(credentials) {
   try {
+    if (!validateUrl(credentials.SUPABASE_URL, 'SUPABASE_URL')) {
+      return NextResponse.json({ success: false, message: 'Invalid Supabase URL. Must be https://<project>.supabase.co' });
+    }
     const res = await fetch(`${credentials.SUPABASE_URL}/rest/v1/`, {
-      headers: { 
+      headers: {
         'apikey': credentials.SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${credentials.SUPABASE_ANON_KEY}`
       }
@@ -182,7 +214,8 @@ async function testSupabase(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Supabase credentials' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    console.error('Supabase test error:', error);
+    return NextResponse.json({ success: false, message: 'Supabase connection failed' });
   }
 }
 
@@ -196,7 +229,7 @@ async function testGroq(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Groq API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -210,7 +243,7 @@ async function testTogether(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Together API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -225,7 +258,7 @@ async function testReplicate(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Replicate token' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -240,7 +273,7 @@ async function testDiscord(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Discord bot token' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -255,7 +288,7 @@ async function testSlack(credentials) {
     }
     return NextResponse.json({ success: false, message: data.error || 'Invalid Slack token' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -275,7 +308,7 @@ async function testLinear(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Linear API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -289,7 +322,7 @@ async function testResend(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Resend API key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -303,7 +336,7 @@ async function testStripe(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Stripe secret key' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -318,7 +351,7 @@ async function testCloudflare(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Cloudflare token' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }
 
@@ -333,6 +366,6 @@ async function testVercel(credentials) {
     }
     return NextResponse.json({ success: false, message: 'Invalid Vercel token' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message });
+    return NextResponse.json({ success: false, message: 'Connection test failed' });
   }
 }

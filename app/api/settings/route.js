@@ -58,7 +58,7 @@ export async function GET(request) {
     return NextResponse.json({ settings: masked });
   } catch (error) {
     console.error('Settings GET error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });
   }
 }
 
@@ -134,7 +134,7 @@ export async function POST(request) {
     return NextResponse.json({ success: true, key });
   } catch (error) {
     console.error('Settings POST error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });
   }
 }
 
@@ -156,7 +156,7 @@ export async function DELETE(request) {
     return NextResponse.json({ success: true, deleted: key });
   } catch (error) {
     console.error('Settings DELETE error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });
   }
 }
 

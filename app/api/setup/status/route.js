@@ -40,10 +40,11 @@ export async function GET() {
     });
 
   } catch (error) {
-    return NextResponse.json({ 
-      configured: false, 
+    console.error('Setup status error:', error);
+    return NextResponse.json({
+      configured: false,
       reason: 'connection_error',
-      message: error.message 
+      message: 'Unable to connect to database'
     });
   }
 }
