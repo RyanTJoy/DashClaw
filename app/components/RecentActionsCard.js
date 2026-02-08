@@ -16,6 +16,8 @@ export default function RecentActionsCard() {
           id: a.action_id,
           type: a.action_type || 'other',
           action: a.declared_goal,
+          agentId: a.agent_id,
+          agentName: a.agent_name || a.agent_id,
           platform: (() => {
             try {
               const systems = JSON.parse(a.systems_touched || '[]');
@@ -34,6 +36,22 @@ export default function RecentActionsCard() {
     }
     fetchActions();
   }, []);
+
+  const getAgentColor = (agentId) => {
+    const colors = [
+      'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      'bg-pink-500/20 text-pink-400 border-pink-500/30',
+      'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+      'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      'bg-red-500/20 text-red-400 border-red-500/30',
+    ];
+    let hash = 0;
+    for (let i = 0; i < (agentId || '').length; i++) hash = ((hash << 5) - hash + agentId.charCodeAt(i)) | 0;
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   const getTypeIcon = (type) => {
     switch (type) {
@@ -147,7 +165,12 @@ export default function RecentActionsCard() {
                     </div>
                     <div className="flex-1">
                       <div className="font-semibold text-white text-sm">{action.action}</div>
-                      <div className="text-xs text-gray-400">{action.platform}</div>
+                      <div className="flex items-center space-x-2 text-xs text-gray-400">
+                        <span className={`px-1.5 py-0.5 rounded border text-xs font-medium ${getAgentColor(action.agentId)}`}>
+                          {action.agentName}
+                        </span>
+                        <span>{action.platform}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="text-right flex items-center space-x-2">
