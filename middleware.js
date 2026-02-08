@@ -213,8 +213,28 @@ export async function middleware(request) {
       return response;
     }
 
-    // No key provided at all
+    // No key provided — check if this is a same-origin dashboard request
     if (!apiKey) {
+      const secFetchSite = request.headers.get('sec-fetch-site');
+      const referer = request.headers.get('referer');
+      const requestOrigin = request.nextUrl.origin;
+
+      // Allow same-origin browser requests (dashboard UI fetching its own API)
+      // Sec-Fetch-Site is set by browsers automatically; Referer is a fallback
+      const isSameOrigin = secFetchSite === 'same-origin' ||
+        (referer && referer.startsWith(requestOrigin));
+
+      if (isSameOrigin) {
+        requestHeaders.set('x-org-id', 'org_default');
+        requestHeaders.set('x-org-role', 'admin');
+        const response = NextResponse.next({ request: { headers: requestHeaders } });
+        response.headers.set('X-Content-Type-Options', 'nosniff');
+        response.headers.set('X-Frame-Options', 'DENY');
+        response.headers.set('X-XSS-Protection', '1; mode=block');
+        for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+        return response;
+      }
+
       console.warn(`[SECURITY] Missing API key: ${pathname} from ${ip}`);
       return NextResponse.json(
         { error: 'Unauthorized - Invalid or missing API key' },
