@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 /**
  * Authentication middleware for OpenClaw Dashboard
  *
- * SECURITY: Protects API routes with API key authentication
- * Set DASHBOARD_API_KEY environment variable in production
+ * SECURITY: Protects API routes with API key authentication.
+ * Resolves API keys to org_id via SHA-256 hash lookup.
+ * Set DASHBOARD_API_KEY environment variable in production.
  */
 
 // Routes that require authentication
@@ -22,6 +23,7 @@ const PROTECTED_ROUTES = [
   '/api/calendar',
   '/api/memory',
   '/api/actions',
+  '/api/orgs',
 ];
 
 // Routes that are always public (health checks, setup)
@@ -63,6 +65,60 @@ function timingSafeEqual(a, b) {
   return result === 0;
 }
 
+// SECURITY: Hash API key using Web Crypto API (Edge-compatible)
+async function hashApiKey(key) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// In-memory cache for API key -> org resolution (5-min TTL)
+const apiKeyCache = new Map();
+const API_KEY_CACHE_TTL = 5 * 60 * 1000;
+
+async function resolveApiKey(keyHash) {
+  const now = Date.now();
+  const cached = apiKeyCache.get(keyHash);
+  if (cached && now - cached.timestamp < API_KEY_CACHE_TTL) {
+    return cached.result;
+  }
+
+  try {
+    const { neon } = require('@neondatabase/serverless');
+    const sql = neon(process.env.DATABASE_URL);
+    const rows = await sql`
+      SELECT ak.org_id, ak.role, ak.revoked_at
+      FROM api_keys ak
+      WHERE ak.key_hash = ${keyHash}
+      LIMIT 1
+    `;
+
+    if (rows.length === 0) {
+      apiKeyCache.set(keyHash, { timestamp: now, result: null });
+      return null;
+    }
+
+    const row = rows[0];
+    if (row.revoked_at) {
+      apiKeyCache.set(keyHash, { timestamp: now, result: null });
+      return null;
+    }
+
+    const result = { orgId: row.org_id, role: row.role };
+    apiKeyCache.set(keyHash, { timestamp: now, result });
+
+    // Update last_used_at (fire and forget)
+    sql`UPDATE api_keys SET last_used_at = CURRENT_TIMESTAMP WHERE key_hash = ${keyHash}`.catch(() => {});
+
+    return result;
+  } catch (err) {
+    console.error('[AUTH] API key lookup failed:', err.message);
+    return null;
+  }
+}
+
 // SECURITY: CORS - restrict to deployment origin
 function getCorsHeaders(request) {
   const origin = request.headers.get('origin');
@@ -86,7 +142,7 @@ function getCorsHeaders(request) {
   return headers;
 }
 
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
   // Skip non-API routes
@@ -130,8 +186,13 @@ export function middleware(request) {
     // Get expected API key from environment
     const expectedKey = process.env.DASHBOARD_API_KEY;
 
+    // SECURITY: Strip any externally-provided org headers (prevent injection)
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.delete('x-org-id');
+    requestHeaders.delete('x-org-role');
+
     // If no API key is configured:
-    // - dev/local: allow (convenience)
+    // - dev/local: allow with org_default (convenience)
     // - production: block (prevents accidentally exposing your dashboard data)
     if (!expectedKey) {
       if (process.env.NODE_ENV === 'production') {
@@ -141,21 +202,61 @@ export function middleware(request) {
           { status: 503 }
         );
       }
-      console.log(`[INFO] DASHBOARD_API_KEY not set (dev) - allowing unauthenticated access to: ${pathname}`);
-      return NextResponse.next();
+      // Dev mode: allow through with default org
+      requestHeaders.set('x-org-id', 'org_default');
+      requestHeaders.set('x-org-role', 'admin');
+      const response = NextResponse.next({ request: { headers: requestHeaders } });
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+      for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+      return response;
     }
 
-    // SECURITY: Timing-safe API key validation
-    if (!apiKey || !timingSafeEqual(apiKey, expectedKey)) {
+    // No key provided at all
+    if (!apiKey) {
+      console.warn(`[SECURITY] Missing API key: ${pathname} from ${ip}`);
+      return NextResponse.json(
+        { error: 'Unauthorized - Invalid or missing API key' },
+        { status: 401 }
+      );
+    }
+
+    // Fast path: legacy DASHBOARD_API_KEY matches → org_default
+    if (timingSafeEqual(apiKey, expectedKey)) {
+      requestHeaders.set('x-org-id', 'org_default');
+      requestHeaders.set('x-org-role', 'admin');
+      const response = NextResponse.next({ request: { headers: requestHeaders } });
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+      for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+      return response;
+    }
+
+    // Slow path: hash the key and look up in api_keys table
+    const keyHash = await hashApiKey(apiKey);
+    const resolved = await resolveApiKey(keyHash);
+
+    if (!resolved) {
       console.warn(`[SECURITY] Unauthorized API access attempt: ${pathname} from ${ip}`);
       return NextResponse.json(
         { error: 'Unauthorized - Invalid or missing API key' },
         { status: 401 }
       );
     }
+
+    requestHeaders.set('x-org-id', resolved.orgId);
+    requestHeaders.set('x-org-role', resolved.role);
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+    return response;
   }
 
-  // Add security headers + CORS
+  // Non-protected API routes: add security headers + CORS
   const response = NextResponse.next();
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');

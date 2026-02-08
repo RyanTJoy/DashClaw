@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateActionRecord } from '../../lib/validate.js';
+import { getOrgId } from '../../lib/org.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -18,6 +19,7 @@ function getSql() {
 export async function GET(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
 
     const agent_id = searchParams.get('agent_id');
@@ -29,9 +31,9 @@ export async function GET(request) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     // Build filtered query
-    const conditions = [];
-    const params = [];
     let paramIdx = 1;
+    const conditions = [`org_id = $${paramIdx++}`];
+    const params = [orgId];
 
     if (agent_id) {
       conditions.push(`agent_id = $${paramIdx++}`);
@@ -78,7 +80,7 @@ export async function GET(request) {
         COUNT(*) FILTER (WHERE risk_score >= 70) as high_risk,
         COALESCE(AVG(risk_score), 0) as avg_risk,
         COALESCE(SUM(cost_estimate), 0) as total_cost
-      FROM action_records
+      FROM action_records WHERE org_id = ${orgId}
     `;
 
     return NextResponse.json({
@@ -99,6 +101,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const body = await request.json();
 
     const { valid, data, errors } = validateActionRecord(body);
@@ -112,13 +115,14 @@ export async function POST(request) {
 
     const result = await sql`
       INSERT INTO action_records (
-        action_id, agent_id, agent_name, swarm_id, parent_action_id,
+        org_id, action_id, agent_id, agent_name, swarm_id, parent_action_id,
         action_type, declared_goal, reasoning, authorization_scope,
         trigger, systems_touched, input_summary,
         status, reversible, risk_score, confidence,
         output_summary, side_effects, artifacts_created, error_message,
         timestamp_start, timestamp_end, duration_ms, cost_estimate
       ) VALUES (
+        ${orgId},
         ${action_id},
         ${data.agent_id},
         ${data.agent_name || null},

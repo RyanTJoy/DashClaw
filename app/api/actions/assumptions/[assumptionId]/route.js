@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../../../lib/org.js';
 
 let _sql;
 function getSql() {
@@ -16,13 +17,14 @@ function getSql() {
 export async function GET(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { assumptionId } = await params;
 
     const assumptions = await sql`
       SELECT a.*, ar.agent_id, ar.agent_name, ar.declared_goal, ar.action_type, ar.status as action_status
       FROM assumptions a
       LEFT JOIN action_records ar ON a.action_id = ar.action_id
-      WHERE a.assumption_id = ${assumptionId}
+      WHERE a.assumption_id = ${assumptionId} AND a.org_id = ${orgId}
     `;
 
     if (assumptions.length === 0) {
@@ -39,6 +41,7 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { assumptionId } = await params;
     const body = await request.json();
 
@@ -66,7 +69,7 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const existing = await sql`SELECT assumption_id, validated, invalidated FROM assumptions WHERE assumption_id = ${assumptionId}`;
+    const existing = await sql`SELECT assumption_id, validated, invalidated FROM assumptions WHERE assumption_id = ${assumptionId} AND org_id = ${orgId}`;
     if (existing.length === 0) {
       return NextResponse.json({ error: 'Assumption not found' }, { status: 404 });
     }
@@ -83,7 +86,7 @@ export async function PATCH(request, { params }) {
         UPDATE assumptions
         SET validated = 1,
             validated_at = ${now}
-        WHERE assumption_id = ${assumptionId}
+        WHERE assumption_id = ${assumptionId} AND org_id = ${orgId}
         RETURNING *
       `;
       return NextResponse.json({ assumption: result[0] });
@@ -94,7 +97,7 @@ export async function PATCH(request, { params }) {
         SET invalidated = 1,
             invalidated_reason = ${invalidated_reason.trim()},
             invalidated_at = ${now}
-        WHERE assumption_id = ${assumptionId}
+        WHERE assumption_id = ${assumptionId} AND org_id = ${orgId}
         RETURNING *
       `;
       return NextResponse.json({ assumption: result[0] });

@@ -3,14 +3,16 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 // sql initialized inside handler for serverless compatibility
 
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
     // Get all ideas
-    const ideas = await sql`SELECT * FROM ideas ORDER BY captured_at DESC LIMIT 50`;
+    const ideas = await sql`SELECT * FROM ideas WHERE org_id = ${orgId} ORDER BY captured_at DESC LIMIT 50`;
 
     // Calculate stats
     const pending = ideas.filter(i => i.status === 'pending').length;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../lib/org.js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,27 +14,30 @@ function getSql() {
   return _sql;
 }
 
-export async function GET() {
+export async function GET(request) {
   const sql = getSql();
+  const orgId = getOrgId(request);
   try {
     // Get latest snapshot (real-time data)
     const latestSnapshot = await sql`
-      SELECT * FROM token_snapshots 
-      ORDER BY timestamp DESC 
+      SELECT * FROM token_snapshots
+      WHERE org_id = ${orgId}
+      ORDER BY timestamp DESC
       LIMIT 1
     `;
 
     // Get today's totals
     const today = new Date().toISOString().split('T')[0];
     const todayTotals = await sql`
-      SELECT * FROM daily_totals 
-      WHERE date = ${today}
+      SELECT * FROM daily_totals
+      WHERE date = ${today} AND org_id = ${orgId}
     `;
 
     // Get 7-day history
     const history = await sql`
-      SELECT * FROM daily_totals 
-      ORDER BY date DESC 
+      SELECT * FROM daily_totals
+      WHERE org_id = ${orgId}
+      ORDER BY date DESC
       LIMIT 7
     `;
 
@@ -41,8 +45,8 @@ export async function GET() {
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const recentSnapshots = await sql`
       SELECT timestamp, tokens_in, tokens_out, context_pct, hourly_pct_left, weekly_pct_left
-      FROM token_snapshots 
-      WHERE timestamp > ${yesterday}
+      FROM token_snapshots
+      WHERE timestamp > ${yesterday} AND org_id = ${orgId}
       ORDER BY timestamp ASC
     `;
 

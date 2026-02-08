@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../../lib/org.js';
 
 let _sql;
 function getSql() {
@@ -13,9 +14,10 @@ function getSql() {
   return _sql;
 }
 
-export async function GET() {
+export async function GET(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
 
     // Run all signal queries in parallel
     const [autonomySpikes, highImpact, repeatedFailures, staleLoops, assumptionDrift, staleAssumptions] = await Promise.all([
@@ -24,6 +26,7 @@ export async function GET() {
         SELECT agent_id, agent_name, COUNT(*) as action_count
         FROM action_records
         WHERE timestamp_start::timestamptz > NOW() - INTERVAL '1 hour'
+          AND org_id = ${orgId}
         GROUP BY agent_id, agent_name
         HAVING COUNT(*) > 10
         ORDER BY action_count DESC
@@ -33,6 +36,7 @@ export async function GET() {
         SELECT action_id, agent_id, agent_name, declared_goal, risk_score, action_type
         FROM action_records
         WHERE reversible = 0
+          AND org_id = ${orgId}
           AND risk_score >= 70
           AND (authorization_scope IS NULL OR authorization_scope = '')
           AND status = 'running'
@@ -44,6 +48,7 @@ export async function GET() {
         SELECT agent_id, agent_name, COUNT(*) as failure_count
         FROM action_records
         WHERE status = 'failed'
+          AND org_id = ${orgId}
           AND timestamp_start::timestamptz > NOW() - INTERVAL '24 hours'
         GROUP BY agent_id, agent_name
         HAVING COUNT(*) > 3
@@ -56,6 +61,7 @@ export async function GET() {
         FROM open_loops ol
         LEFT JOIN action_records ar ON ol.action_id = ar.action_id
         WHERE ol.status = 'open'
+          AND ol.org_id = ${orgId}
           AND ol.created_at < NOW() - INTERVAL '48 hours'
         ORDER BY ol.created_at ASC
         LIMIT 10
@@ -66,6 +72,7 @@ export async function GET() {
         FROM assumptions a
         LEFT JOIN action_records ar ON a.action_id = ar.action_id
         WHERE a.invalidated = 1
+          AND a.org_id = ${orgId}
           AND a.invalidated_at IS NOT NULL
           AND a.invalidated_at::timestamptz > NOW() - INTERVAL '7 days'
         GROUP BY ar.agent_id, ar.agent_name
@@ -79,6 +86,7 @@ export async function GET() {
         FROM assumptions a
         LEFT JOIN action_records ar ON a.action_id = ar.action_id
         WHERE a.validated = 0
+          AND a.org_id = ${orgId}
           AND a.invalidated = 0
           AND a.created_at < NOW() - INTERVAL '14 days'
         ORDER BY a.created_at ASC

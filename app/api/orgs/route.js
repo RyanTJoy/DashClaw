@@ -1,0 +1,120 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+import { NextResponse } from 'next/server';
+import { neon } from '@neondatabase/serverless';
+import { getOrgId, getOrgRole } from '../../lib/org.js';
+import crypto from 'crypto';
+
+let _sql;
+function getSql() {
+  if (_sql) return _sql;
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  _sql = neon(url);
+  return _sql;
+}
+
+// Hash API key using Node crypto (server-side)
+function hashKey(key) {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+// Generate a new API key: oc_live_{32 hex chars}
+function generateApiKey() {
+  const random = crypto.randomBytes(16).toString('hex');
+  return `oc_live_${random}`;
+}
+
+// GET /api/orgs - List organizations (admin only)
+export async function GET(request) {
+  try {
+    const role = getOrgRole(request);
+    if (role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden - admin role required' }, { status: 403 });
+    }
+
+    const sql = getSql();
+    const orgs = await sql`
+      SELECT o.*,
+        (SELECT COUNT(*) FROM api_keys WHERE org_id = o.id AND revoked_at IS NULL) as active_keys
+      FROM organizations o
+      ORDER BY o.created_at DESC
+    `;
+
+    return NextResponse.json({ organizations: orgs });
+  } catch (error) {
+    console.error('Orgs API GET error:', error);
+    return NextResponse.json({ error: 'An error occurred while fetching organizations' }, { status: 500 });
+  }
+}
+
+// POST /api/orgs - Create organization + first API key (admin only)
+export async function POST(request) {
+  try {
+    const role = getOrgRole(request);
+    if (role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden - admin role required' }, { status: 403 });
+    }
+
+    const sql = getSql();
+    const body = await request.json();
+
+    const { name, slug, plan = 'free' } = body;
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json({ error: 'name is required' }, { status: 400 });
+    }
+    if (!slug || typeof slug !== 'string' || !/^[a-z0-9-]+$/.test(slug)) {
+      return NextResponse.json({ error: 'slug is required and must be lowercase alphanumeric with hyphens' }, { status: 400 });
+    }
+    if (slug.length > 64) {
+      return NextResponse.json({ error: 'slug must be 64 characters or fewer' }, { status: 400 });
+    }
+    if (name.length > 256) {
+      return NextResponse.json({ error: 'name must be 256 characters or fewer' }, { status: 400 });
+    }
+
+    const validPlans = ['free', 'pro', 'team', 'enterprise'];
+    if (!validPlans.includes(plan)) {
+      return NextResponse.json({ error: `plan must be one of: ${validPlans.join(', ')}` }, { status: 400 });
+    }
+
+    const orgId = `org_${crypto.randomUUID()}`;
+
+    // Create the organization
+    const orgResult = await sql`
+      INSERT INTO organizations (id, name, slug, plan)
+      VALUES (${orgId}, ${name.trim()}, ${slug}, ${plan})
+      RETURNING *
+    `;
+
+    // Generate first admin API key
+    const rawKey = generateApiKey();
+    const keyHash = hashKey(rawKey);
+    const keyPrefix = rawKey.substring(0, 8);
+    const keyId = `key_${crypto.randomUUID()}`;
+
+    await sql`
+      INSERT INTO api_keys (id, org_id, key_hash, key_prefix, label, role)
+      VALUES (${keyId}, ${orgId}, ${keyHash}, ${keyPrefix}, 'Admin Key', 'admin')
+    `;
+
+    return NextResponse.json({
+      organization: orgResult[0],
+      api_key: {
+        id: keyId,
+        key: rawKey,
+        prefix: keyPrefix,
+        role: 'admin',
+        warning: 'Save this key now. It will not be shown again.'
+      }
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Orgs API POST error:', error);
+    if (error.message?.includes('unique') || error.message?.includes('duplicate')) {
+      return NextResponse.json({ error: 'An organization with this slug already exists' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'An error occurred while creating the organization' }, { status: 500 });
+  }
+}

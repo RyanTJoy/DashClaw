@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateAssumption } from '../../../lib/validate.js';
+import { getOrgId } from '../../../lib/org.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -18,6 +19,7 @@ function getSql() {
 export async function GET(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
 
     const validated = searchParams.get('validated');
@@ -27,9 +29,9 @@ export async function GET(request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    const conditions = [];
-    const params = [];
     let paramIdx = 1;
+    const conditions = [`a.org_id = $${paramIdx++}`];
+    const params = [orgId];
 
     if (validated === 'true') {
       conditions.push(`a.validated = 1`);
@@ -115,6 +117,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const body = await request.json();
 
     const { valid, data, errors } = validateAssumption(body);
@@ -123,7 +126,7 @@ export async function POST(request) {
     }
 
     // Verify parent action exists
-    const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id}`;
+    const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id} AND org_id = ${orgId}`;
     if (action.length === 0) {
       return NextResponse.json({ error: 'Parent action not found' }, { status: 404 });
     }
@@ -132,9 +135,10 @@ export async function POST(request) {
 
     const result = await sql`
       INSERT INTO assumptions (
-        assumption_id, action_id, assumption, basis,
+        org_id, assumption_id, action_id, assumption, basis,
         validated, invalidated, invalidated_reason
       ) VALUES (
+        ${orgId},
         ${assumption_id},
         ${data.action_id},
         ${data.assumption},

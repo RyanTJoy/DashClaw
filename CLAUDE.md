@@ -14,6 +14,7 @@ app/
 ├── layout.js                  # Root layout
 ├── globals.css                # Tailwind globals
 ├── lib/validate.js            # Input validation helpers
+├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole)
 ├── components/                # Dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
 ├── bounty-hunter/             # Bounty hunter page
@@ -28,6 +29,7 @@ app/
 └── api/
     ├── actions/               # ActionRecord Control Plane (CRUD + signals + loops + assumptions + trace)
     ├── bounties/              # Bounty tracking
+    ├── orgs/                  # Organization + API key management (admin only)
     ├── calendar/              # Calendar events
     ├── content/               # Content management
     ├── goals/                 # Goals + milestones
@@ -47,7 +49,9 @@ sdk/
 
 scripts/
 ├── security-scan.js           # Pre-deploy security audit
-└── test-actions.mjs           # ActionRecord test suite (~95 assertions)
+├── test-actions.mjs           # ActionRecord test suite (~95 assertions)
+├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
+└── create-org.mjs             # CLI: create org + admin API key
 
 clawd-tools/                   # Agent workspace tools bundle (memory, security, tokens, etc.)
 ```
@@ -75,6 +79,8 @@ npm run build        # Production build
 npm run lint         # ESLint
 node scripts/security-scan.js   # Security audit
 node scripts/test-actions.mjs   # ActionRecord tests (needs DATABASE_URL)
+node scripts/migrate-multi-tenant.mjs  # Run multi-tenant migration
+node scripts/create-org.mjs --name "Acme" --slug "acme"  # Create org
 ```
 
 ## Environment Variables
@@ -84,7 +90,7 @@ See `.env.example`. Key vars:
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
-| `DASHBOARD_API_KEY` | Prod only | Protects `/api/*` routes |
+| `DASHBOARD_API_KEY` | Prod only | Protects `/api/*` routes (maps to `org_default`) |
 | `ALLOWED_ORIGIN` | No | CORS lock to deployment domain |
 
 ## Key Patterns
@@ -110,13 +116,16 @@ function getSql() {
 }
 ```
 
-### Auth
+### Auth & Multi-Tenancy
 - `middleware.js` gates all `/api/*` routes
-- `PROTECTED_ROUTES` array — prefix matching
+- `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`)
 - `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`
-- Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access
+- Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
 - Production without key returns 503
 - Rate limiting: 100 req/min per IP
+- **API key resolution flow**: legacy env key → `org_default` (fast path); otherwise SHA-256 hash → `api_keys` table lookup (5-min cache)
+- Middleware injects `x-org-id` and `x-org-role` headers (external injection stripped)
+- Every route uses `getOrgId(request)` from `app/lib/org.js` to scope queries
 
 ### Security Headers
 - Set in both `middleware.js` (API routes) and `next.config.js` (all routes)
@@ -141,4 +150,34 @@ function getSql() {
 ### DB Migration (if upgrading from Phase 1)
 ```sql
 ALTER TABLE assumptions ADD COLUMN IF NOT EXISTS invalidated_at TEXT;
+```
+
+## Multi-Tenancy
+
+### Tables
+- `organizations` — id (TEXT PK `org_`), name, slug (unique), plan
+- `api_keys` — id (TEXT PK `key_`), org_id (FK), key_hash (SHA-256), key_prefix, label, role, revoked_at
+- All 28 data tables have `org_id TEXT NOT NULL DEFAULT 'org_default'` + index
+
+### Key Format
+`oc_live_{32_hex_chars}` — stored as SHA-256 hash in `api_keys.key_hash`. First 8 chars in `key_prefix` for display.
+
+### Org Management API (admin only)
+- `GET/POST /api/orgs` — list/create orgs (POST returns raw API key — shown once)
+- `GET/PATCH /api/orgs/[orgId]` — get/update org
+- `GET/POST/DELETE /api/orgs/[orgId]/keys` — manage API keys
+
+### Resolution Flow
+1. No key + dev mode → `org_default` (admin)
+2. No key + production → 503
+3. Key matches `DASHBOARD_API_KEY` env → `org_default` (admin, fast path)
+4. Key doesn't match env → SHA-256 hash → DB lookup → org_id + role
+5. DB miss or revoked → 401
+
+### SDK
+No code changes needed. The API key determines which organization's data you're accessing.
+
+### Migration (from single-tenant)
+```bash
+DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 ```

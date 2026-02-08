@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateOpenLoop } from '../../../lib/validate.js';
+import { getOrgId } from '../../../lib/org.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -18,6 +19,7 @@ function getSql() {
 export async function GET(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
 
     const status = searchParams.get('status');
@@ -26,9 +28,9 @@ export async function GET(request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    const conditions = [];
-    const params = [];
     let paramIdx = 1;
+    const conditions = [`ol.org_id = $${paramIdx++}`];
+    const params = [orgId];
 
     if (status) {
       conditions.push(`ol.status = $${paramIdx++}`);
@@ -75,6 +77,7 @@ export async function GET(request) {
           COUNT(*) FILTER (WHERE priority = 'critical' AND status = 'open') as critical_open,
           COUNT(*) FILTER (WHERE priority = 'high' AND status = 'open') as high_open
         FROM open_loops
+        WHERE org_id = ${orgId}
       `
     ]);
 
@@ -96,6 +99,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const body = await request.json();
 
     const { valid, data, errors } = validateOpenLoop(body);
@@ -104,7 +108,7 @@ export async function POST(request) {
     }
 
     // Verify parent action exists
-    const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id}`;
+    const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id} AND org_id = ${orgId}`;
     if (action.length === 0) {
       return NextResponse.json({ error: 'Parent action not found' }, { status: 404 });
     }
@@ -113,9 +117,10 @@ export async function POST(request) {
 
     const result = await sql`
       INSERT INTO open_loops (
-        loop_id, action_id, loop_type, description,
+        org_id, loop_id, action_id, loop_type, description,
         status, priority, owner
       ) VALUES (
+        ${orgId},
         ${loop_id},
         ${data.action_id},
         ${data.loop_type},

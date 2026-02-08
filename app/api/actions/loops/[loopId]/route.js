@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
+import { getOrgId } from '../../../../lib/org.js';
 
 let _sql;
 function getSql() {
@@ -16,13 +17,14 @@ function getSql() {
 export async function GET(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { loopId } = await params;
 
     const loops = await sql`
       SELECT ol.*, ar.agent_id, ar.agent_name, ar.declared_goal, ar.action_type, ar.status as action_status
       FROM open_loops ol
       LEFT JOIN action_records ar ON ol.action_id = ar.action_id
-      WHERE ol.loop_id = ${loopId}
+      WHERE ol.loop_id = ${loopId} AND ol.org_id = ${orgId}
     `;
 
     if (loops.length === 0) {
@@ -39,6 +41,7 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   try {
     const sql = getSql();
+    const orgId = getOrgId(request);
     const { loopId } = await params;
     const body = await request.json();
 
@@ -66,7 +69,7 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    const existing = await sql`SELECT loop_id, status FROM open_loops WHERE loop_id = ${loopId}`;
+    const existing = await sql`SELECT loop_id, status FROM open_loops WHERE loop_id = ${loopId} AND org_id = ${orgId}`;
     if (existing.length === 0) {
       return NextResponse.json({ error: 'Open loop not found' }, { status: 404 });
     }
@@ -80,7 +83,7 @@ export async function PATCH(request, { params }) {
       SET status = ${status},
           resolution = ${resolution || null},
           resolved_at = ${new Date().toISOString()}
-      WHERE loop_id = ${loopId}
+      WHERE loop_id = ${loopId} AND org_id = ${orgId}
       RETURNING *
     `;
 

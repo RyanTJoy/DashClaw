@@ -1,5 +1,38 @@
--- MoltFire Dashboard Schema for Neon
+-- OpenClaw Pro Dashboard Schema for Neon
 -- Created: 2026-02-04
+-- Updated: 2026-02-08 (multi-tenant: org_id on all tables)
+
+-- ============================================
+-- MULTI-TENANCY
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS organizations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    plan TEXT DEFAULT 'free',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    org_id TEXT NOT NULL REFERENCES organizations(id),
+    key_hash TEXT NOT NULL,
+    key_prefix TEXT NOT NULL,
+    label TEXT DEFAULT 'default',
+    role TEXT DEFAULT 'member',
+    last_used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_api_keys_key_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_org_id ON api_keys(org_id);
+
+-- Seed default organization
+INSERT INTO organizations (id, name, slug, plan)
+VALUES ('org_default', 'Default Organization', 'default', 'pro')
+ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
 -- LEARNING DATABASE
@@ -7,6 +40,7 @@
 
 CREATE TABLE IF NOT EXISTS decisions (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     timestamp TEXT NOT NULL,
     decision TEXT NOT NULL,
     context TEXT,
@@ -14,18 +48,22 @@ CREATE TABLE IF NOT EXISTS decisions (
     tags TEXT,
     outcome TEXT DEFAULT 'pending'
 );
+CREATE INDEX IF NOT EXISTS idx_decisions_org_id ON decisions(org_id);
 
 CREATE TABLE IF NOT EXISTS outcomes (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     decision_id INTEGER NOT NULL REFERENCES decisions(id),
     timestamp TEXT NOT NULL,
     result TEXT NOT NULL,
     notes TEXT,
     impact_score INTEGER DEFAULT 0
 );
+CREATE INDEX IF NOT EXISTS idx_outcomes_org_id ON outcomes(org_id);
 
 CREATE TABLE IF NOT EXISTS lessons (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     timestamp TEXT NOT NULL,
     lesson TEXT NOT NULL,
     source_decisions TEXT,
@@ -34,9 +72,11 @@ CREATE TABLE IF NOT EXISTS lessons (
     times_contradicted INTEGER DEFAULT 0,
     tags TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_lessons_org_id ON lessons(org_id);
 
 CREATE TABLE IF NOT EXISTS patterns (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     pattern_name TEXT NOT NULL,
     description TEXT,
     best_approach TEXT,
@@ -44,6 +84,7 @@ CREATE TABLE IF NOT EXISTS patterns (
     sample_size INTEGER DEFAULT 0,
     tags TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_patterns_org_id ON patterns(org_id);
 
 -- ============================================
 -- INSPIRATION/IDEAS
@@ -51,6 +92,7 @@ CREATE TABLE IF NOT EXISTS patterns (
 
 CREATE TABLE IF NOT EXISTS ideas (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     title TEXT NOT NULL,
     description TEXT,
     tags TEXT,
@@ -66,14 +108,17 @@ CREATE TABLE IF NOT EXISTS ideas (
     shipped_at TEXT,
     shipped_url TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_ideas_org_id ON ideas(org_id);
 
 CREATE TABLE IF NOT EXISTS idea_updates (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     idea_id INTEGER NOT NULL REFERENCES ideas(id),
     timestamp TEXT NOT NULL,
     update_type TEXT,
     content TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_idea_updates_org_id ON idea_updates(org_id);
 
 -- ============================================
 -- GOALS
@@ -81,6 +126,7 @@ CREATE TABLE IF NOT EXISTS idea_updates (
 
 CREATE TABLE IF NOT EXISTS goals (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     title TEXT NOT NULL,
     description TEXT,
     category TEXT,
@@ -91,23 +137,28 @@ CREATE TABLE IF NOT EXISTS goals (
     completed_at TEXT,
     notes TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_goals_org_id ON goals(org_id);
 
 CREATE TABLE IF NOT EXISTS milestones (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     goal_id INTEGER NOT NULL REFERENCES goals(id),
     title TEXT NOT NULL,
     created_at TEXT NOT NULL,
     completed_at TEXT,
     status TEXT DEFAULT 'pending'
 );
+CREATE INDEX IF NOT EXISTS idx_milestones_org_id ON milestones(org_id);
 
 CREATE TABLE IF NOT EXISTS goal_updates (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     goal_id INTEGER NOT NULL REFERENCES goals(id),
     timestamp TEXT NOT NULL,
     update_type TEXT,
     content TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_goal_updates_org_id ON goal_updates(org_id);
 
 -- ============================================
 -- RELATIONSHIPS/CRM
@@ -115,6 +166,7 @@ CREATE TABLE IF NOT EXISTS goal_updates (
 
 CREATE TABLE IF NOT EXISTS contacts (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     name TEXT NOT NULL,
     platform TEXT NOT NULL,
     handle TEXT,
@@ -131,9 +183,11 @@ CREATE TABLE IF NOT EXISTS contacts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_contacts_org_id ON contacts(org_id);
 
 CREATE TABLE IF NOT EXISTS interactions (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     contact_id INTEGER NOT NULL REFERENCES contacts(id),
     date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     type TEXT NOT NULL,
@@ -144,6 +198,7 @@ CREATE TABLE IF NOT EXISTS interactions (
     sentiment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_interactions_org_id ON interactions(org_id);
 
 -- ============================================
 -- WORKFLOWS
@@ -151,17 +206,21 @@ CREATE TABLE IF NOT EXISTS interactions (
 
 CREATE TABLE IF NOT EXISTS workflows (
     id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
+    name TEXT NOT NULL,
     description TEXT,
     steps TEXT NOT NULL,
     created_at TEXT NOT NULL,
     last_run TEXT,
     run_count INTEGER DEFAULT 0,
-    enabled INTEGER DEFAULT 1
+    enabled INTEGER DEFAULT 1,
+    CONSTRAINT workflows_org_name_unique UNIQUE (org_id, name)
 );
+CREATE INDEX IF NOT EXISTS idx_workflows_org_id ON workflows(org_id);
 
 CREATE TABLE IF NOT EXISTS executions (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     workflow_id INTEGER REFERENCES workflows(id),
     started_at TEXT NOT NULL,
     completed_at TEXT,
@@ -171,9 +230,11 @@ CREATE TABLE IF NOT EXISTS executions (
     output TEXT,
     error TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_executions_org_id ON executions(org_id);
 
 CREATE TABLE IF NOT EXISTS step_results (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     execution_id INTEGER REFERENCES executions(id),
     step_index INTEGER,
     step_name TEXT,
@@ -183,9 +244,11 @@ CREATE TABLE IF NOT EXISTS step_results (
     output TEXT,
     error TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_step_results_org_id ON step_results(org_id);
 
 CREATE TABLE IF NOT EXISTS scheduled_jobs (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     workflow_name TEXT NOT NULL,
     schedule TEXT NOT NULL,
     description TEXT,
@@ -195,6 +258,7 @@ CREATE TABLE IF NOT EXISTS scheduled_jobs (
     next_run TEXT,
     run_count INTEGER DEFAULT 0
 );
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_org_id ON scheduled_jobs(org_id);
 
 -- ============================================
 -- TOKEN TRACKING
@@ -202,6 +266,7 @@ CREATE TABLE IF NOT EXISTS scheduled_jobs (
 
 CREATE TABLE IF NOT EXISTS token_usage (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     timestamp TEXT NOT NULL,
     model TEXT,
     tokens_in INTEGER DEFAULT 0,
@@ -210,6 +275,7 @@ CREATE TABLE IF NOT EXISTS token_usage (
     session_id TEXT,
     cost_estimate REAL DEFAULT 0
 );
+CREATE INDEX IF NOT EXISTS idx_token_usage_org_id ON token_usage(org_id);
 
 -- ============================================
 -- CONTENT TRACKING
@@ -217,6 +283,7 @@ CREATE TABLE IF NOT EXISTS token_usage (
 
 CREATE TABLE IF NOT EXISTS content (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     title TEXT NOT NULL,
     platform TEXT NOT NULL,
     url TEXT,
@@ -226,6 +293,7 @@ CREATE TABLE IF NOT EXISTS content (
     engagement_score INTEGER DEFAULT 0,
     notes TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_content_org_id ON content(org_id);
 
 -- ============================================
 -- SYNC METADATA
@@ -233,12 +301,29 @@ CREATE TABLE IF NOT EXISTS content (
 
 CREATE TABLE IF NOT EXISTS sync_log (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     table_name TEXT NOT NULL,
     last_sync TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     records_synced INTEGER DEFAULT 0,
     status TEXT DEFAULT 'success',
     error TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_sync_log_org_id ON sync_log(org_id);
+
+-- ============================================
+-- SETTINGS
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS settings (
+    id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
+    key TEXT NOT NULL,
+    value TEXT,
+    category TEXT DEFAULT 'general',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT settings_org_key_unique UNIQUE (org_id, key)
+);
+CREATE INDEX IF NOT EXISTS idx_settings_org_id ON settings(org_id);
 
 -- ============================================
 -- ACTION RECORDS (Agent Operations Control Plane)
@@ -246,6 +331,7 @@ CREATE TABLE IF NOT EXISTS sync_log (
 
 CREATE TABLE IF NOT EXISTS action_records (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     -- Identity
     action_id TEXT UNIQUE NOT NULL,
     agent_id TEXT NOT NULL,
@@ -279,6 +365,7 @@ CREATE TABLE IF NOT EXISTS action_records (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_action_records_org_id ON action_records(org_id);
 CREATE INDEX IF NOT EXISTS idx_action_records_agent_id ON action_records(agent_id);
 CREATE INDEX IF NOT EXISTS idx_action_records_swarm_id ON action_records(swarm_id);
 CREATE INDEX IF NOT EXISTS idx_action_records_status ON action_records(status);
@@ -288,6 +375,7 @@ CREATE INDEX IF NOT EXISTS idx_action_records_timestamp_start ON action_records(
 
 CREATE TABLE IF NOT EXISTS open_loops (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     loop_id TEXT UNIQUE NOT NULL,
     action_id TEXT NOT NULL REFERENCES action_records(action_id),
     loop_type TEXT NOT NULL,
@@ -300,12 +388,14 @@ CREATE TABLE IF NOT EXISTS open_loops (
     resolved_at TEXT
 );
 
+CREATE INDEX IF NOT EXISTS idx_open_loops_org_id ON open_loops(org_id);
 CREATE INDEX IF NOT EXISTS idx_open_loops_action_id ON open_loops(action_id);
 CREATE INDEX IF NOT EXISTS idx_open_loops_status ON open_loops(status);
 CREATE INDEX IF NOT EXISTS idx_open_loops_priority ON open_loops(priority);
 
 CREATE TABLE IF NOT EXISTS assumptions (
     id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
     assumption_id TEXT UNIQUE NOT NULL,
     action_id TEXT NOT NULL REFERENCES action_records(action_id),
     assumption TEXT NOT NULL,
@@ -318,5 +408,6 @@ CREATE TABLE IF NOT EXISTS assumptions (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_assumptions_org_id ON assumptions(org_id);
 CREATE INDEX IF NOT EXISTS idx_assumptions_action_id ON assumptions(action_id);
 CREATE INDEX IF NOT EXISTS idx_assumptions_validated ON assumptions(validated);
