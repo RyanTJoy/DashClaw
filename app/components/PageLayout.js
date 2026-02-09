@@ -2,6 +2,7 @@
 
 import Sidebar from './Sidebar';
 import NotificationCenter from './NotificationCenter';
+import AgentFilterDropdown from './AgentFilterDropdown';
 
 export default function PageLayout({ title, subtitle, breadcrumbs, actions, children }) {
   return (
@@ -28,6 +29,7 @@ export default function PageLayout({ title, subtitle, breadcrumbs, actions, chil
               {subtitle && <p className="text-sm text-zinc-400 font-normal mt-0.5">{subtitle}</p>}
             </div>
             <div className="flex items-center gap-3">
+              <AgentFilterDropdown />
               {actions}
               <NotificationCenter />
             </div>

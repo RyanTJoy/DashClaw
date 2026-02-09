@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   CircleDot, ClipboardList, HelpCircle, Link, Hand, Eye,
   ArrowRightLeft, RefreshCw, CheckCircle2
@@ -10,6 +10,7 @@ import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 const LOOP_TYPE_ICONS = {
   followup: ClipboardList,
@@ -32,11 +33,14 @@ export default function OpenLoopsCard() {
   const [loops, setLoops] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [resolving, setResolving] = useState(null);
+  const [resolutionText, setResolutionText] = useState('');
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
     async function fetchLoops() {
       try {
-        const res = await fetch('/api/actions/loops?status=open&limit=5');
+        const res = await fetch(`/api/actions/loops?status=open&limit=5${agentId ? `&agent_id=${agentId}` : ''}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setLoops(data.loops || []);
@@ -50,7 +54,31 @@ export default function OpenLoopsCard() {
       }
     }
     fetchLoops();
-  }, []);
+  }, [agentId]);
+
+  const handleResolve = useCallback(async (loopId, status) => {
+    try {
+      const res = await fetch(`/api/actions/loops/${loopId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, resolution: resolutionText || `${status} from dashboard` })
+      });
+      if (!res.ok) throw new Error('Failed');
+      setLoops(prev => prev.filter(l => l.loop_id !== loopId));
+      setResolving(null);
+      setResolutionText('');
+      // Decrement open count
+      setStats(prev => ({
+        ...prev,
+        open_count: String(Math.max(0, parseInt(prev.open_count || '0', 10) - 1)),
+        resolved_count: status === 'resolved'
+          ? String(parseInt(prev.resolved_count || '0', 10) + 1)
+          : prev.resolved_count
+      }));
+    } catch (error) {
+      console.error('Failed to resolve loop:', error);
+    }
+  }, [resolutionText]);
 
   if (loading) {
     return <CardSkeleton />;
@@ -87,30 +115,82 @@ export default function OpenLoopsCard() {
             <EmptyState
               icon={CheckCircle2}
               title="No open loops"
-              description="All loops have been resolved"
+              description="Register open loops via the SDK's registerOpenLoop() or POST /api/actions/loops"
             />
           ) : (
             loops.map((loop) => {
               const TypeIcon = LOOP_TYPE_ICONS[loop.loop_type] || RefreshCw;
+              const isResolving = resolving === loop.loop_id;
 
               return (
                 <div
                   key={loop.loop_id}
-                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-surface-tertiary border border-[rgba(255,255,255,0.06)] transition-colors duration-150 hover:border-[rgba(255,255,255,0.12)]"
+                  className="px-3 py-2.5 rounded-lg bg-surface-tertiary border border-[rgba(255,255,255,0.06)] transition-colors duration-150 hover:border-[rgba(255,255,255,0.12)]"
                 >
-                  <TypeIcon size={14} className="text-zinc-400 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm text-zinc-300 truncate">{loop.description}</div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-zinc-500">
-                        {loop.agent_name || loop.agent_id || 'Unknown agent'}
-                      </span>
-                      <span className="text-[10px] text-zinc-600">{loop.loop_type}</span>
+                  <div className="flex items-start gap-3">
+                    <TypeIcon size={14} className="text-zinc-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-zinc-300 truncate">{loop.description}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-zinc-500">
+                          {loop.agent_name || loop.agent_id || 'Unknown agent'}
+                        </span>
+                        <span className="text-[10px] text-zinc-600">{loop.loop_type}</span>
+                      </div>
                     </div>
+                    <Badge variant={getPriorityVariant(loop.priority)} size="xs">
+                      {loop.priority}
+                    </Badge>
                   </div>
-                  <Badge variant={getPriorityVariant(loop.priority)} size="xs">
-                    {loop.priority}
-                  </Badge>
+
+                  {/* Inline resolution */}
+                  {isResolving ? (
+                    <div className="mt-2 pl-7 space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Resolution note (optional)"
+                        value={resolutionText}
+                        onChange={(e) => setResolutionText(e.target.value)}
+                        className="w-full bg-surface-primary border border-[rgba(255,255,255,0.1)] rounded px-2 py-1 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-brand/50"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleResolve(loop.loop_id, 'resolved')}
+                          className="px-2 py-1 text-xs bg-green-500/10 text-green-400 border border-green-500/20 rounded hover:bg-green-500/20 transition-colors"
+                        >
+                          Resolve
+                        </button>
+                        <button
+                          onClick={() => handleResolve(loop.loop_id, 'cancelled')}
+                          className="px-2 py-1 text-xs bg-red-500/10 text-red-400 border border-red-500/20 rounded hover:bg-red-500/20 transition-colors"
+                        >
+                          Cancel Loop
+                        </button>
+                        <button
+                          onClick={() => { setResolving(null); setResolutionText(''); }}
+                          className="px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-1.5 pl-7 flex gap-1">
+                      <button
+                        onClick={() => setResolving(loop.loop_id)}
+                        className="text-[10px] text-zinc-500 hover:text-green-400 transition-colors"
+                      >
+                        resolve
+                      </button>
+                      <span className="text-[10px] text-zinc-700">|</span>
+                      <button
+                        onClick={() => handleResolve(loop.loop_id, 'cancelled')}
+                        className="text-[10px] text-zinc-500 hover:text-red-400 transition-colors"
+                      >
+                        cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })

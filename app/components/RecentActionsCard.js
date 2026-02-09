@@ -13,6 +13,7 @@ import { StatCompact } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { getAgentColor } from '../lib/colors';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 const TYPE_ICONS = {
   build: Hammer,
@@ -56,11 +57,12 @@ function StatusIcon({ status }) {
 export default function RecentActionsCard() {
   const [actions, setActions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
     async function fetchActions() {
       try {
-        const res = await fetch('/api/actions?limit=10');
+        const res = await fetch(`/api/actions?limit=10${agentId ? `&agent_id=${agentId}` : ''}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setActions((data.actions || []).map(a => ({
@@ -86,7 +88,7 @@ export default function RecentActionsCard() {
       }
     }
     fetchActions();
-  }, []);
+  }, [agentId]);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return { time: '--:--', date: '----' };
@@ -121,7 +123,7 @@ export default function RecentActionsCard() {
             <EmptyState
               icon={Inbox}
               title="No recent actions"
-              description="Actions will appear here as agents report activity"
+              description="Use the SDK's createAction() or POST /api/actions to report agent activity"
             />
           ) : (
             actions.map((action) => {

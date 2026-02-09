@@ -51,3 +51,37 @@ export async function GET(request) {
   }
 }
 
+export async function POST(request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
+    const body = await request.json();
+
+    const { title, category, description, target_date, progress, status } = body;
+
+    if (!title) {
+      return NextResponse.json({ error: 'title is required' }, { status: 400 });
+    }
+
+    const result = await sql`
+      INSERT INTO goals (org_id, title, category, description, target_date, progress, status, created_at)
+      VALUES (
+        ${orgId},
+        ${title},
+        ${category || null},
+        ${description || null},
+        ${target_date || null},
+        ${progress || 0},
+        ${status || 'active'},
+        ${new Date().toISOString()}
+      )
+      RETURNING *
+    `;
+
+    return NextResponse.json({ goal: result[0] }, { status: 201 });
+  } catch (error) {
+    console.error('Goals API POST error:', error);
+    return NextResponse.json({ error: 'An error occurred while creating the goal' }, { status: 500 });
+  }
+}
+

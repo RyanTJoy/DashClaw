@@ -7,8 +7,10 @@ import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
 import { ProgressBar } from './ui/ProgressBar';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function TokenBudgetCard() {
+  const { agentId } = useAgentFilter();
   const [data, setData] = useState({
     hourUsed: 0,
     weekUsed: 0,
@@ -104,6 +106,7 @@ export default function TokenBudgetCard() {
     <Card className="h-full">
       <CardHeader title="Token Usage" icon={Gauge}>
         {getStatusBadge(data.status)}
+        {agentId && <Badge variant="info" size="xs">Org-wide</Badge>}
       </CardHeader>
 
       <CardContent className="space-y-4">

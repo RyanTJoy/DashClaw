@@ -8,6 +8,7 @@ import { StatCompact } from './ui/Stat';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function MemoryHealthCard() {
   const [data, setData] = useState({
@@ -16,6 +17,7 @@ export default function MemoryHealthCard() {
     topics: [],
     loading: true
   });
+  const { agentId } = useAgentFilter();
 
   const fetchData = async () => {
     try {
@@ -85,6 +87,9 @@ export default function MemoryHealthCard() {
           <span className={`text-2xl font-semibold tabular-nums ${getScoreColor(health.score)}`}>
             {health.score}
           </span>
+        )}
+        {agentId && (
+          <span className="text-xs text-zinc-500 border border-zinc-700 rounded px-1.5 py-0.5">Org-wide</span>
         )}
       </CardHeader>
       <CardContent>
@@ -172,7 +177,7 @@ export default function MemoryHealthCard() {
           <EmptyState
             icon={HardDrive}
             title="No health data yet"
-            description="Run memory scan to generate"
+            description="Report memory health via POST /api/memory"
           />
         )}
       </CardContent>

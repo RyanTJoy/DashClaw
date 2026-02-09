@@ -8,6 +8,7 @@ import { StatCompact } from './ui/Stat';
 import { ProgressBar } from './ui/ProgressBar';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 function getStatusVariant(status) {
   switch (status) {
@@ -32,11 +33,12 @@ function getProgressColor(status) {
 export default function ProjectsCard() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
     async function fetchProjects() {
       try {
-        const res = await fetch('/api/actions?limit=200');
+        const res = await fetch(`/api/actions?limit=200${agentId ? `&agent_id=${agentId}` : ''}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
 
@@ -89,7 +91,7 @@ export default function ProjectsCard() {
       }
     }
     fetchProjects();
-  }, []);
+  }, [agentId]);
 
   const formatDate = (ts) => {
     if (!ts) return '--';
@@ -110,7 +112,7 @@ export default function ProjectsCard() {
           <EmptyState
             icon={FolderKanban}
             title="No project activity yet"
-            description="Projects are derived from action systems_touched"
+            description="Projects auto-populate from action systems_touched. Use the SDK's createAction() to start tracking."
           />
         </CardContent>
       </Card>

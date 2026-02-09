@@ -91,7 +91,7 @@ export default function IntegrationsCard() {
           <EmptyState
             icon={Plug}
             title="No integrations configured"
-            description="Add API keys in Settings to connect services"
+            description="Integrations are managed in agent configs. Visit /integrations to add dashboard-level keys."
           />
         ) : (
           <div className="space-y-4">

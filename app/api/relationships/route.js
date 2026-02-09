@@ -76,3 +76,57 @@ export async function GET(request) {
   }
 }
 
+export async function POST(request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
+    const body = await request.json();
+
+    const { contact_name, contact_id, direction, summary, type, platform } = body;
+
+    if (!summary) {
+      return NextResponse.json({ error: 'summary is required' }, { status: 400 });
+    }
+
+    // If contact_name provided but no contact_id, try to find or create contact
+    let resolvedContactId = contact_id || null;
+    if (contact_name && !contact_id) {
+      const existing = await sql`
+        SELECT id FROM contacts WHERE name = ${contact_name} AND org_id = ${orgId} LIMIT 1
+      `;
+      if (existing.length > 0) {
+        resolvedContactId = existing[0].id;
+      }
+    }
+
+    const result = await sql`
+      INSERT INTO interactions (org_id, contact_id, direction, summary, type, platform, date)
+      VALUES (
+        ${orgId},
+        ${resolvedContactId},
+        ${direction || 'outbound'},
+        ${summary},
+        ${type || 'message'},
+        ${platform || null},
+        ${new Date().toISOString()}
+      )
+      RETURNING *
+    `;
+
+    // Update contact's last_contact and increment interaction_count
+    if (resolvedContactId) {
+      await sql`
+        UPDATE contacts
+        SET last_contact = ${new Date().toISOString()},
+            interaction_count = COALESCE(interaction_count, 0) + 1
+        WHERE id = ${resolvedContactId} AND org_id = ${orgId}
+      `;
+    }
+
+    return NextResponse.json({ interaction: result[0] }, { status: 201 });
+  } catch (error) {
+    console.error('Relationships API POST error:', error);
+    return NextResponse.json({ error: 'An error occurred while recording the interaction' }, { status: 500 });
+  }
+}
+

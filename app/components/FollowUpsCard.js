@@ -17,17 +17,17 @@ export default function FollowUpsCard() {
       const data = await res.json();
       if (data.contacts && Array.isArray(data.contacts)) {
         const withFollowUps = data.contacts
-          .filter(c => c.next_followup)
+          .filter(c => c.followUpDate)
           .map(c => {
-            const dueDate = new Date(c.next_followup);
+            const dueDate = new Date(c.followUpDate);
             const today = new Date();
             const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
             return {
               id: c.id || 0,
               name: c.name || 'Unknown',
-              type: c.opportunity_type || c.notes || 'Contact',
+              type: c.context || 'Contact',
               temperature: (c.temperature || 'warm').toUpperCase(),
-              dueDate: c.next_followup,
+              dueDate: c.followUpDate,
               daysLeft
             };
           })

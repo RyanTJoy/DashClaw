@@ -6,10 +6,12 @@ import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function RiskSignalsCard() {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
     async function fetchSignals() {
@@ -32,8 +34,9 @@ export default function RiskSignalsCard() {
     return <CardSkeleton />;
   }
 
-  const redCount = signals.filter(s => s.severity === 'red').length;
-  const amberCount = signals.filter(s => s.severity === 'amber').length;
+  const filteredSignals = agentId ? signals.filter(s => s.agent_id === agentId) : signals;
+  const redCount = filteredSignals.filter(s => s.severity === 'red').length;
+  const amberCount = filteredSignals.filter(s => s.severity === 'amber').length;
 
   return (
     <Card className="h-full">
@@ -51,14 +54,14 @@ export default function RiskSignalsCard() {
 
       <CardContent>
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {signals.length === 0 ? (
+          {filteredSignals.length === 0 ? (
             <EmptyState
               icon={ShieldCheck}
               title="All clear"
               description="All clear - no active risk signals"
             />
           ) : (
-            signals.map((signal, idx) => {
+            filteredSignals.map((signal, idx) => {
               const dotColor = signal.severity === 'red' ? 'bg-red-500' : 'bg-amber-500';
               const titleColor = signal.severity === 'red' ? 'text-red-400' : 'text-amber-400';
 

@@ -147,10 +147,19 @@ function getSql() {
 - **Shared primitives** in `app/components/ui/`: `Card`/`CardHeader`/`CardContent`, `Badge` (6 variants), `Stat`/`StatCompact`, `ProgressBar`, `EmptyState`, `Skeleton`/`CardSkeleton`/`ListSkeleton`
 - **Icons**: All via `lucide-react` — no emoji anywhere in rendered UI
 - **Navigation**: Persistent `Sidebar.js` (w-56 desktop, collapsible to w-14, hamburger on mobile)
-- **Page structure**: `PageLayout.js` wraps every page (breadcrumbs, sticky header, title/subtitle, action buttons, NotificationCenter)
+- **Page structure**: `PageLayout.js` wraps every page (breadcrumbs, sticky header, title/subtitle, action buttons, NotificationCenter, AgentFilterDropdown)
+- **Agent filter**: `AgentFilterContext.js` provides global agent filter; `AgentFilterDropdown.js` renders in PageLayout header (only on dashboard via `AgentFilterProvider` in `page.js`)
 - **Agent colors**: `app/lib/colors.js` — `getAgentColor(agentId)` returns consistent hash-based color from 8-color palette
 - **Typography**: Inter font, `text-sm text-zinc-300` body, `text-xs text-zinc-500` labels, `font-mono text-xs` for timestamps/IDs, stat numbers max `text-2xl tabular-nums`
 - **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` — no drag/customize mode
+
+## Additional API Routes (POST-enabled)
+- `GET /api/agents` — list agents (from action_records, grouped by agent_id)
+- `GET/POST /api/tokens` — token snapshots + daily totals
+- `GET/POST /api/learning` — decisions + lessons
+- `GET/POST /api/goals` — goals + milestones
+- `GET/POST /api/content` — content items
+- `GET/POST /api/relationships` — contacts + interactions
 
 ## ActionRecord Control Plane
 - 3 tables: `action_records`, `open_loops`, `assumptions` (with `invalidated_at` column)
@@ -162,8 +171,8 @@ function getSql() {
   - `GET/PATCH /api/actions/assumptions/[assumptionId]` — single assumption + validate/invalidate
   - `GET/POST /api/actions/loops` — list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` — single loop + resolve/cancel
-  - `GET /api/actions/signals` — 6 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption)
-- SDK: `sdk/openclaw-agent.js` — 14 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, track)
+  - `GET /api/actions/signals` — 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
+- SDK: `sdk/openclaw-agent.js` — 19 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, reportTokenUsage, recordDecision, createGoal, recordContent, recordInteraction, track)
 - Tests: `scripts/test-actions.mjs` — ~95 assertions across 11 phases
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
@@ -237,3 +246,8 @@ const claw = new OpenClawAgent({
 });
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
+
+### SDK Methods (19 total)
+**ActionRecord Control Plane**: `createAction()`, `updateOutcome()`, `registerOpenLoop()`, `resolveOpenLoop()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getActions()`, `getAction()`, `getSignals()`, `getOpenLoops()`, `getDriftReport()`, `getActionTrace()`, `track()`
+
+**Dashboard Data**: `reportTokenUsage()`, `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`

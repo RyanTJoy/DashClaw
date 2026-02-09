@@ -248,6 +248,83 @@ class OpenClawAgent {
   }
 
   /**
+   * Report token usage snapshot.
+   * @param {Object} usage
+   * @param {number} usage.tokens_in - Input tokens consumed
+   * @param {number} usage.tokens_out - Output tokens generated
+   * @param {number} [usage.context_used] - Context window tokens used
+   * @param {number} [usage.context_max] - Context window max capacity
+   * @param {string} [usage.model] - Model name (e.g., 'claude-opus-4')
+   * @returns {Promise<{snapshot: Object}>}
+   */
+  async reportTokenUsage(usage) {
+    return this._request('/api/tokens', 'POST', {
+      ...usage,
+      agent_id: this.agentId
+    });
+  }
+
+  /**
+   * Record a decision for the learning database.
+   * @param {Object} entry
+   * @param {string} entry.decision - What was decided
+   * @param {string} [entry.context] - Context around the decision
+   * @param {string} [entry.reasoning] - Why this decision was made
+   * @param {string} [entry.outcome] - 'success', 'failure', or 'pending'
+   * @param {number} [entry.confidence] - Confidence level 0-100
+   * @returns {Promise<{decision: Object}>}
+   */
+  async recordDecision(entry) {
+    return this._request('/api/learning', 'POST', {
+      ...entry,
+      agent_id: this.agentId
+    });
+  }
+
+  /**
+   * Create a goal.
+   * @param {Object} goal
+   * @param {string} goal.title - Goal title
+   * @param {string} [goal.category] - Goal category
+   * @param {string} [goal.description] - Detailed description
+   * @param {string} [goal.target_date] - Target completion date (ISO string)
+   * @param {number} [goal.progress] - Progress 0-100
+   * @param {string} [goal.status] - 'active', 'completed', 'paused'
+   * @returns {Promise<{goal: Object}>}
+   */
+  async createGoal(goal) {
+    return this._request('/api/goals', 'POST', goal);
+  }
+
+  /**
+   * Record content creation.
+   * @param {Object} content
+   * @param {string} content.title - Content title
+   * @param {string} [content.platform] - Platform (e.g., 'linkedin', 'twitter')
+   * @param {string} [content.status] - 'draft' or 'published'
+   * @param {string} [content.url] - Published URL
+   * @returns {Promise<{content: Object}>}
+   */
+  async recordContent(content) {
+    return this._request('/api/content', 'POST', content);
+  }
+
+  /**
+   * Record a relationship interaction.
+   * @param {Object} interaction
+   * @param {string} interaction.summary - What happened
+   * @param {string} [interaction.contact_name] - Contact name (auto-resolves to contact_id)
+   * @param {string} [interaction.contact_id] - Direct contact ID
+   * @param {string} [interaction.direction] - 'inbound' or 'outbound'
+   * @param {string} [interaction.type] - Interaction type (e.g., 'message', 'meeting', 'email')
+   * @param {string} [interaction.platform] - Platform used
+   * @returns {Promise<{interaction: Object}>}
+   */
+  async recordInteraction(interaction) {
+    return this._request('/api/relationships', 'POST', interaction);
+  }
+
+  /**
    * Helper: Create an action, run a function, and auto-update the outcome.
    * @param {Object} actionDef - Action definition (same as createAction)
    * @param {Function} fn - Async function to execute. Receives { action_id } as argument.
