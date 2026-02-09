@@ -52,7 +52,7 @@ export default function LearningStatsCard() {
           <EmptyState
             icon={BookOpen}
             title="No learning data yet"
-            description="Decisions and lessons will appear as they are tracked"
+            description="Record decisions via the SDK's recordDecision() or POST /api/learning"
           />
         </CardContent>
       </Card>

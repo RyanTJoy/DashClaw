@@ -102,7 +102,7 @@ export default function ContextCard() {
           <EmptyState
             icon={FileText}
             title="No learning data yet"
-            description="Context is drawn from learning decisions"
+            description="Record decisions via the SDK's recordDecision() or POST /api/learning"
           />
         ) : (
           <div className="space-y-4">

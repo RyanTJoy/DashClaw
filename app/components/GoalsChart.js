@@ -68,7 +68,7 @@ export default function GoalsChart() {
           <EmptyState
             icon={Target}
             title="No goals yet"
-            description="Goals will appear here as they are created"
+            description="Create goals via the SDK's createGoal() or POST /api/goals"
           />
         </CardContent>
       </Card>

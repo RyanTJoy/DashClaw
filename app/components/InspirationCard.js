@@ -62,7 +62,7 @@ export default function InspirationCard() {
           <EmptyState
             icon={Lightbulb}
             title="No ideas captured yet"
-            description="Ideas will appear here once you add them"
+            description="Capture ideas via POST /api/inspiration"
           />
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">

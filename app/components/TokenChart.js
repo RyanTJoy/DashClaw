@@ -69,7 +69,7 @@ export default function TokenChart() {
           <EmptyState
             icon={BarChart3}
             title="No token usage data yet"
-            description="Data appears as token snapshots are recorded"
+            description="Report token usage via the SDK's reportTokenUsage() or POST /api/tokens"
           />
         </CardContent>
       </Card>

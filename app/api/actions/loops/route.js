@@ -27,6 +27,7 @@ export async function GET(request) {
     const priority = searchParams.get('priority');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const agent_id = searchParams.get('agent_id');
 
     let paramIdx = 1;
     const conditions = [`ol.org_id = $${paramIdx++}`];
@@ -43,6 +44,10 @@ export async function GET(request) {
     if (priority) {
       conditions.push(`ol.priority = $${paramIdx++}`);
       params.push(priority);
+    }
+    if (agent_id) {
+      conditions.push(`ar.agent_id = $${paramIdx++}`);
+      params.push(agent_id);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

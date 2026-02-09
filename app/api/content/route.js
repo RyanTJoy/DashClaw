@@ -43,3 +43,36 @@ export async function GET(request) {
   }
 }
 
+export async function POST(request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
+    const body = await request.json();
+
+    const { title, platform, status, url, body: contentBody } = body;
+
+    if (!title) {
+      return NextResponse.json({ error: 'title is required' }, { status: 400 });
+    }
+
+    const result = await sql`
+      INSERT INTO content (org_id, title, platform, status, url, body, created_at)
+      VALUES (
+        ${orgId},
+        ${title},
+        ${platform || null},
+        ${status || 'draft'},
+        ${url || null},
+        ${contentBody || null},
+        ${new Date().toISOString()}
+      )
+      RETURNING *
+    `;
+
+    return NextResponse.json({ content: result[0] }, { status: 201 });
+  } catch (error) {
+    console.error('Content API POST error:', error);
+    return NextResponse.json({ error: 'An error occurred while creating content' }, { status: 500 });
+  }
+}
+
