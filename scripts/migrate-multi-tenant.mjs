@@ -486,6 +486,26 @@ async function run() {
     log('⚠️', `topics migration: ${err.message}`);
   }
 
+  // Step 14: Create waitlist table (pre-auth, no org_id)
+  console.log('Step 14: Creating waitlist table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS waitlist (
+        id SERIAL PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        signed_up_at TEXT NOT NULL,
+        signup_count INTEGER DEFAULT 1,
+        source TEXT DEFAULT 'landing_page',
+        notes TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_waitlist_email ON waitlist(email)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_waitlist_signed_up_at ON waitlist(signed_up_at)`;
+    log('✅', 'waitlist table + indexes ready');
+  } catch (err) {
+    log('⚠️', `waitlist migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 

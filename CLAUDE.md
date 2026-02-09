@@ -2,7 +2,10 @@
 
 ## What This Is
 
-AI agent operations dashboard — a Next.js 14 app (JavaScript, not TypeScript) that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
+AI agent observability platform — a Next.js 14 app (JavaScript, not TypeScript) that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
+
+- **`/`** — Public landing page with waitlist signup (server component, no auth)
+- **`/dashboard`** — Authenticated operations dashboard (client component, behind sidebar)
 
 Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included.
 
@@ -10,18 +13,20 @@ Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured ve
 
 ```
 app/
-├── page.js                    # Main dashboard (fixed widget grid)
-├── layout.js                  # Root layout (Inter font, sidebar)
+├── page.js                    # Public landing page (waitlist signup)
+├── layout.js                  # Root layout (Inter font)
 ├── globals.css                # Design tokens (CSS custom properties) + Tailwind
+├── dashboard/page.js          # Authenticated dashboard (fixed widget grid)
 ├── lib/validate.js            # Input validation helpers
 ├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole)
 ├── lib/colors.js              # Agent color hashing, action type icon map
 ├── components/
 │   ├── ui/                    # Shared primitives (Card, Badge, Stat, ProgressBar, EmptyState, Skeleton)
-│   ├── Sidebar.js             # Persistent sidebar navigation
+│   ├── Sidebar.js             # Persistent sidebar navigation (links to /dashboard)
 │   ├── PageLayout.js          # Shared page layout (breadcrumbs, title, actions)
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
 │   ├── DraggableDashboard.js  # Fixed 4-column widget grid (no drag mode)
+│   ├── WaitlistForm.js        # Email capture form (client component)
 │   └── *.js                   # 12 dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
 ├── bounty-hunter/             # Bounty hunter page
@@ -49,6 +54,7 @@ app/
     ├── settings/              # Integration credentials (encrypted)
     ├── setup/                 # Setup status (public)
     ├── tokens/                # Token usage snapshots (disabled — API exists but not used by UI)
+    ├── waitlist/              # Waitlist signups (public — no auth required)
     └── workflows/             # Workflow definitions
 
 sdk/
@@ -133,7 +139,7 @@ function getSql() {
 ### Auth & Multi-Tenancy
 - `middleware.js` gates all `/api/*` routes
 - `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`)
-- `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`
+- `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`, `/api/waitlist`
 - Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
 - Production without key returns 503 (if `DASHBOARD_API_KEY` not configured)
 - Same-origin dashboard requests (detected via `Sec-Fetch-Site` / `Referer`) allowed without API key → `org_default`
@@ -171,6 +177,7 @@ function getSql() {
 - `GET/POST /api/calendar` — calendar events
 - `GET/POST /api/inspiration` — ideas/inspiration
 - `GET/POST /api/memory` — memory health snapshots, entities, topics
+- `GET/POST /api/waitlist` — waitlist signups (public, no auth required; POST upserts by email, GET lists signups)
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -223,6 +230,12 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - `topics` — topics/themes from memory (name, mention_count). Replaced on each POST.
 - POST `/api/memory` accepts `{ health, entities, topics }` — creates snapshot, replaces entities/topics
 - Migration Step 13 in `migrate-multi-tenant.mjs` creates all three tables (idempotent)
+
+### Waitlist Table
+- `waitlist` — email signups from landing page (no `org_id` — pre-authentication, global)
+- Columns: `id` (SERIAL), `email` (TEXT UNIQUE), `signed_up_at` (TEXT), `signup_count` (INTEGER), `source` (TEXT), `notes` (TEXT)
+- POST upserts via `ON CONFLICT (email)` — bumps `signup_count` on duplicates
+- Migration Step 14 in `migrate-multi-tenant.mjs` + auto-create fallback in route
 
 ## Multi-Tenancy
 
