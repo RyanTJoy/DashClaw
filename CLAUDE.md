@@ -59,7 +59,9 @@ scripts/
 ├── test-actions.mjs           # ActionRecord test suite (~95 assertions)
 ├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
 ├── create-org.mjs             # CLI: create org + admin API key
-└── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens
+├── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens
+├── report-action.mjs          # CLI: create/update action records via API
+└── cleanup-actions.mjs        # CLI: delete stale action records from DB
 
 clawd-tools/                   # Agent workspace tools bundle (memory, security, tokens, etc.)
 ```
@@ -91,6 +93,9 @@ node scripts/test-actions.mjs   # ActionRecord tests (needs DATABASE_URL)
 node scripts/migrate-multi-tenant.mjs  # Run multi-tenant migration
 node scripts/create-org.mjs --name "Acme" --slug "acme"  # Create org
 node scripts/report-tokens.mjs --agent-id moltfire --status "..."  # Report token usage
+node scripts/report-action.mjs --agent-id moltfire --type build --goal "Deploy X"  # Create action
+node scripts/report-action.mjs --update act_xxx --status completed --output "Done"  # Update action
+node scripts/cleanup-actions.mjs --before "2026-02-09" --dry-run  # Preview stale record cleanup
 ```
 
 ## Environment Variables

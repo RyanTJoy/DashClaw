@@ -126,6 +126,40 @@ node scripts/security-scan.js
 
 Any platform supporting Next.js 14+ will work. Just set the `DATABASE_URL` environment variable.
 
+## Agent Action Reporting (CLI)
+
+For agents with exec/shell capabilities (e.g. Claude Code agents), use the CLI scripts directly — no SDK integration needed.
+
+### Report an action
+
+```bash
+# Create an action (returns action_id=act_xxx on stdout)
+node scripts/report-action.mjs --agent-id moltfire --type build --goal "Deploy feature X" \
+  --systems "github,vercel" --risk 30 --confidence 80
+
+# Update an action
+node scripts/report-action.mjs --update act_xxx --status completed --output "Deployed successfully"
+
+# One-shot: create + complete in one call
+node scripts/report-action.mjs --agent-id moltfire --type deploy --goal "Push to prod" \
+  --status completed --output "Done"
+```
+
+### Report token usage
+
+```bash
+node scripts/report-tokens.mjs --agent-id moltfire --status "Tokens: 10 in / 885 out ..."
+```
+
+### Cleanup stale records
+
+```bash
+node scripts/cleanup-actions.mjs --before "2026-02-09" --dry-run
+node scripts/cleanup-actions.mjs --before "2026-02-09" --include-loops --include-assumptions
+```
+
+Both CLI scripts load `DASHBOARD_API_KEY` from `.env.local` and default to the Vercel production URL. Use `--local` for localhost, `--dry-run` to preview, `--json` for machine-readable output.
+
 ## API Endpoints
 
 All endpoints return JSON and support CORS.
