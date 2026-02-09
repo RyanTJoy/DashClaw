@@ -303,6 +303,47 @@ async function run() {
     }
   }
 
+  // Step 10: Add agent_id to settings table for per-agent integrations
+  console.log('Step 10: Adding agent_id to settings table...');
+  try {
+    const settingsExists = await sql`
+      SELECT 1 FROM information_schema.tables
+      WHERE table_name = 'settings' AND table_schema = 'public'
+    `;
+    if (settingsExists.length > 0) {
+      // Add agent_id column (nullable — NULL means org-level default)
+      await sql`ALTER TABLE settings ADD COLUMN IF NOT EXISTS agent_id TEXT`;
+
+      // Drop old constraint if it exists
+      await sql`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'settings_org_key_unique'
+          ) THEN
+            ALTER TABLE settings DROP CONSTRAINT settings_org_key_unique;
+          END IF;
+        END $$
+      `;
+
+      // Create new functional unique index (COALESCE handles NULL agent_id)
+      await sql`
+        CREATE UNIQUE INDEX IF NOT EXISTS settings_org_agent_key_unique
+        ON settings (org_id, COALESCE(agent_id, ''), key)
+      `;
+
+      // Add index on agent_id for fast per-agent lookups
+      await sql`CREATE INDEX IF NOT EXISTS idx_settings_agent_id ON settings(agent_id)`;
+
+      log('✅', 'settings: agent_id column + functional unique index ready');
+    } else {
+      log('⚠️', 'settings table does not exist — skipping agent_id migration');
+    }
+  } catch (err) {
+    log('⚠️', `settings agent_id migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 

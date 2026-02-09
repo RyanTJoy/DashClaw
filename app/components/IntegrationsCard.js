@@ -1,40 +1,48 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Plug } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
+import { Badge } from './ui/Badge';
 import { Stat } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function IntegrationsCard() {
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { agentId } = useAgentFilter();
+
+  const fetchIntegrations = useCallback(async () => {
+    try {
+      let url = '/api/settings?category=integration';
+      if (agentId) {
+        url += `&agent_id=${encodeURIComponent(agentId)}`;
+      }
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+
+      const items = (data.settings || []).map(s => ({
+        name: formatKeyName(s.key),
+        key: s.key,
+        status: s.hasValue ? 'connected' : 'configured'
+      }));
+
+      setIntegrations(items);
+    } catch (error) {
+      console.error('Failed to fetch integrations:', error);
+      setIntegrations([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [agentId]);
 
   useEffect(() => {
-    async function fetchIntegrations() {
-      try {
-        const res = await fetch('/api/settings?category=integration');
-        if (!res.ok) throw new Error('Failed to fetch');
-        const data = await res.json();
-
-        const items = (data.settings || []).map(s => ({
-          name: formatKeyName(s.key),
-          key: s.key,
-          status: s.hasValue ? 'connected' : 'configured'
-        }));
-
-        setIntegrations(items);
-      } catch (error) {
-        console.error('Failed to fetch integrations:', error);
-        setIntegrations([]);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchIntegrations();
-  }, []);
+  }, [fetchIntegrations]);
 
   const formatKeyName = (key) => {
     const prefixMap = {
@@ -80,7 +88,8 @@ export default function IntegrationsCard() {
   return (
     <Card className="h-full">
       <CardHeader title="Integrations" icon={Plug} action={total > 0 ? viewAllLink : undefined}>
-        {total === 0 && (
+        {agentId && <Badge variant="info" size="xs">Org-wide</Badge>}
+        {total === 0 && !agentId && (
           <Link href="/integrations" className="text-xs text-brand hover:text-brand-hover transition-colors duration-150">
             Setup
           </Link>
