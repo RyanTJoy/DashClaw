@@ -154,7 +154,8 @@ function getSql() {
 - **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` — no drag/customize mode
 
 ## Additional API Routes (POST-enabled)
-- `GET /api/agents` — list agents (from action_records, grouped by agent_id)
+- `GET /api/agents` — list agents (from action_records, grouped by agent_id; supports `?include_connections=true`)
+- `GET/POST /api/agents/connections` — agent self-reported connections (GET: `?agent_id=X`, `?provider=Y`; POST: upsert connections array)
 - `GET/POST/DELETE /api/settings` — integration credentials (supports `?agent_id=X` for per-agent overrides)
 - `GET/POST /api/tokens` — token snapshots + daily totals
 - `GET/POST /api/learning` — decisions + lessons
@@ -171,6 +172,18 @@ function getSql() {
 - Response includes `is_inherited` boolean per setting (true = value comes from org default)
 - Integrations page has agent selector dropdown for per-agent configuration
 
+### Agent Connections (Self-Reported)
+- Table: `agent_connections` — agents report their active integrations at startup
+- Columns: `id` (TEXT `conn_` prefix), `org_id`, `agent_id`, `provider`, `auth_type`, `plan_name`, `status`, `metadata`, `reported_at`, `updated_at`
+- Unique index: `agent_connections_org_agent_provider_unique` on `(org_id, agent_id, provider)`
+- `auth_type` enum: `api_key`, `subscription`, `oauth`, `pre_configured`, `environment`
+- `status` enum: `active`, `inactive`, `error`
+- `metadata`: optional JSON string (e.g., `{ "cost": "$100/mo" }`)
+- API: `GET/POST /api/agents/connections` — GET supports `?agent_id=X`, `?provider=Y`; POST upserts via `ON CONFLICT`
+- POST body: `{ agent_id, connections: [{ provider, auth_type, plan_name, status, metadata }] }` (max 50 per request)
+- Integrations page + IntegrationsCard widget merge agent-reported connections with credential-based settings
+- Agent-reported connections show blue dot ("Agent Connected") status
+
 ## ActionRecord Control Plane
 - 3 tables: `action_records`, `open_loops`, `assumptions` (with `invalidated_at` column)
 - 13 API routes under `/api/actions/`:
@@ -182,7 +195,7 @@ function getSql() {
   - `GET/POST /api/actions/loops` — list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` — single loop + resolve/cancel
   - `GET /api/actions/signals` — 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/openclaw-agent.js` — 19 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, reportTokenUsage, recordDecision, createGoal, recordContent, recordInteraction, track)
+- SDK: `sdk/openclaw-agent.js` — 20 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, reportTokenUsage, recordDecision, createGoal, recordContent, recordInteraction, reportConnections, track)
 - Tests: `scripts/test-actions.mjs` — ~95 assertions across 11 phases
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
@@ -257,7 +270,15 @@ const claw = new OpenClawAgent({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### SDK Methods (19 total)
+### SDK Methods (20 total)
 **ActionRecord Control Plane**: `createAction()`, `updateOutcome()`, `registerOpenLoop()`, `resolveOpenLoop()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getActions()`, `getAction()`, `getSignals()`, `getOpenLoops()`, `getDriftReport()`, `getActionTrace()`, `track()`
 
-**Dashboard Data**: `reportTokenUsage()`, `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`
+**Dashboard Data**: `reportTokenUsage()`, `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`
+
+**Example: reportConnections()**
+```javascript
+await claw.reportConnections([
+  { provider: 'anthropic', authType: 'subscription', planName: 'Pro Max', status: 'active' },
+  { provider: 'github', authType: 'oauth', status: 'active' }
+]);
+```

@@ -356,6 +356,7 @@ const CATEGORIES = [
 
 export default function IntegrationsPage() {
   const [settings, setSettings] = useState({});
+  const [agentConnections, setAgentConnections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingIntegration, setEditingIntegration] = useState(null);
   const [formData, setFormData] = useState({});
@@ -383,6 +384,25 @@ export default function IntegrationsPage() {
     fetchAgents();
   }, [fetchAgents]);
 
+  const fetchConnections = useCallback(async () => {
+    try {
+      let url = '/api/agents/connections';
+      if (selectedAgentId) {
+        url += `?agent_id=${encodeURIComponent(selectedAgentId)}`;
+      }
+      const res = await fetch(url);
+      if (!res.ok) {
+        setAgentConnections([]);
+        return;
+      }
+      const data = await res.json();
+      setAgentConnections(data.connections || []);
+    } catch (error) {
+      console.error('Failed to fetch agent connections:', error);
+      setAgentConnections([]);
+    }
+  }, [selectedAgentId]);
+
   const fetchSettings = useCallback(async () => {
     try {
       let url = '/api/settings?category=integration';
@@ -405,8 +425,16 @@ export default function IntegrationsPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetchSettings();
-  }, [fetchSettings]);
+    Promise.all([fetchSettings(), fetchConnections()]);
+  }, [fetchSettings, fetchConnections]);
+
+  // Build a map of provider -> connections for quick lookup
+  const connectionsByProvider = {};
+  for (const conn of agentConnections) {
+    const key = conn.provider.toLowerCase();
+    if (!connectionsByProvider[key]) connectionsByProvider[key] = [];
+    connectionsByProvider[key].push(conn);
+  }
 
   const getIntegrationStatus = (integrationKey) => {
     const config = INTEGRATION_CONFIGS[integrationKey];
@@ -415,6 +443,7 @@ export default function IntegrationsPage() {
 
     if (hasAllRequired) return 'connected';
     if (config.fields.some(f => settings[f.key]?.hasValue)) return 'configured';
+    if (connectionsByProvider[integrationKey]?.some(c => c.status === 'active')) return 'agent_connected';
     return 'not_configured';
   };
 
@@ -505,6 +534,8 @@ export default function IntegrationsPage() {
     switch (status) {
       case 'connected':
         return <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />;
+      case 'agent_connected':
+        return <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />;
       case 'configured':
         return <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />;
       default:
@@ -515,6 +546,7 @@ export default function IntegrationsPage() {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'connected': return 'Connected';
+      case 'agent_connected': return 'Agent Connected';
       case 'configured': return 'Partial';
       default: return 'Not Set';
     }
@@ -532,6 +564,7 @@ export default function IntegrationsPage() {
   });
 
   const connectedCount = allIntegrations.filter(([k]) => getIntegrationStatus(k) === 'connected').length;
+  const agentConnectedCount = allIntegrations.filter(([k]) => getIntegrationStatus(k) === 'agent_connected').length;
   const configuredCount = allIntegrations.filter(([k]) => getIntegrationStatus(k) === 'configured').length;
 
   if (loading) {
@@ -615,7 +648,7 @@ export default function IntegrationsPage() {
       )}
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <Card hover={false}>
           <CardContent className="pt-4 pb-4">
             <StatCompact label="Available" value={allIntegrations.length} color="text-white" />
@@ -624,6 +657,11 @@ export default function IntegrationsPage() {
         <Card hover={false}>
           <CardContent className="pt-4 pb-4">
             <StatCompact label="Connected" value={connectedCount} color="text-green-400" />
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-4 pb-4">
+            <StatCompact label="Agent Connected" value={agentConnectedCount} color="text-blue-400" />
           </CardContent>
         </Card>
         <Card hover={false}>
@@ -707,6 +745,24 @@ export default function IntegrationsPage() {
                     Configure
                   </span>
                 </div>
+                {/* Agent connection details */}
+                {connectionsByProvider[key]?.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.04)] space-y-1.5">
+                    {connectionsByProvider[key].map((conn) => (
+                      <div key={conn.id} className="flex items-center gap-2 text-xs">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: getAgentColor(conn.agent_id) }}
+                        />
+                        <span className="text-zinc-400 truncate">{conn.agent_id}</span>
+                        <span className="text-zinc-600">via {conn.auth_type.replace('_', ' ')}</span>
+                        {conn.plan_name && (
+                          <span className="text-[10px] text-blue-400 border border-blue-500/20 rounded px-1 py-0.5">{conn.plan_name}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </Card>
           );

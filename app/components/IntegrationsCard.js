@@ -17,19 +17,44 @@ export default function IntegrationsCard() {
 
   const fetchIntegrations = useCallback(async () => {
     try {
-      let url = '/api/settings?category=integration';
+      // Fetch settings and agent connections in parallel
+      let settingsUrl = '/api/settings?category=integration';
+      let connectionsUrl = '/api/agents/connections';
       if (agentId) {
-        url += `&agent_id=${encodeURIComponent(agentId)}`;
+        settingsUrl += `&agent_id=${encodeURIComponent(agentId)}`;
+        connectionsUrl += `?agent_id=${encodeURIComponent(agentId)}`;
       }
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
 
-      const items = (data.settings || []).map(s => ({
+      const [settingsRes, connectionsRes] = await Promise.all([
+        fetch(settingsUrl),
+        fetch(connectionsUrl).catch(() => null)
+      ]);
+
+      if (!settingsRes.ok) throw new Error('Failed to fetch');
+      const settingsData = await settingsRes.json();
+
+      const items = (settingsData.settings || []).map(s => ({
         name: formatKeyName(s.key),
         key: s.key,
         status: s.hasValue ? 'connected' : 'configured'
       }));
+
+      // Merge agent-reported connections
+      if (connectionsRes?.ok) {
+        const connData = await connectionsRes.json();
+        const existingNames = new Set(items.map(i => i.name.toLowerCase()));
+        for (const conn of (connData.connections || [])) {
+          const providerName = conn.provider.charAt(0).toUpperCase() + conn.provider.slice(1);
+          if (!existingNames.has(conn.provider.toLowerCase())) {
+            existingNames.add(conn.provider.toLowerCase());
+            items.push({
+              name: providerName,
+              key: `agent:${conn.provider}`,
+              status: conn.status === 'active' ? 'agent_connected' : 'configured'
+            });
+          }
+        }
+      }
 
       setIntegrations(items);
     } catch (error) {
@@ -73,6 +98,7 @@ export default function IntegrationsCard() {
   }
 
   const connected = deduped.filter(i => i.status === 'connected').length;
+  const agentConnected = deduped.filter(i => i.status === 'agent_connected').length;
   const total = deduped.length;
 
   if (loading) {
@@ -105,7 +131,7 @@ export default function IntegrationsCard() {
         ) : (
           <div className="space-y-4">
             {/* Connected count */}
-            <Stat label="Connected" value={`${connected}/${total}`} />
+            <Stat label="Connected" value={`${connected + agentConnected}/${total}`} />
 
             {/* Integration grid */}
             <div className="grid grid-cols-4 gap-2">
@@ -113,8 +139,8 @@ export default function IntegrationsCard() {
                 <div
                   key={idx}
                   className={`bg-surface-tertiary p-2 rounded-lg flex flex-col items-center gap-1 border transition-colors duration-150 ${
-                    integration.status === 'connected'
-                      ? 'border-green-500/20'
+                    integration.status === 'connected' ? 'border-green-500/20'
+                      : integration.status === 'agent_connected' ? 'border-blue-500/20'
                       : 'border-zinc-500/20'
                   }`}
                   title={`${integration.name} - ${integration.status}`}
@@ -123,7 +149,9 @@ export default function IntegrationsCard() {
                   <span className="text-[10px] text-zinc-400 truncate w-full text-center">{integration.name}</span>
                   <div
                     className={`w-2 h-2 rounded-full ${
-                      integration.status === 'connected' ? 'bg-green-500' : 'bg-yellow-500'
+                      integration.status === 'connected' ? 'bg-green-500'
+                        : integration.status === 'agent_connected' ? 'bg-blue-500'
+                        : 'bg-yellow-500'
                     }`}
                   />
                 </div>
@@ -136,9 +164,15 @@ export default function IntegrationsCard() {
                 <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
                 {connected} connected
               </span>
+              {agentConnected > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                  {agentConnected} agent
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />
-                {total - connected} configured
+                {total - connected - agentConnected} configured
               </span>
             </div>
           </div>
