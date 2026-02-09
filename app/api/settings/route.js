@@ -21,16 +21,25 @@ function getSql() {
 async function ensureSettingsTable(sql) {
   await sql`
     CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
+      org_id TEXT NOT NULL DEFAULT 'org_default',
+      agent_id TEXT,
+      key TEXT NOT NULL,
       value TEXT,
       category TEXT DEFAULT 'general',
       encrypted BOOLEAN DEFAULT false,
       updated_at TIMESTAMP DEFAULT NOW()
     )
   `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS settings_org_agent_key_unique
+    ON settings (org_id, COALESCE(agent_id, ''), key)
+  `;
 }
 
 // GET - Fetch all settings or specific key
+// When ?agent_id=X is provided, returns merged settings (agent overrides org defaults)
+// When no agent_id, returns only org-level settings (agent_id IS NULL)
 export async function GET(request) {
   try {
     const sql = getSql();
@@ -40,23 +49,55 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
     const category = searchParams.get('category');
+    const agentId = searchParams.get('agent_id');
 
     let settings;
-    if (key) {
-      settings = await sql`SELECT * FROM settings WHERE key = ${key} AND org_id = ${orgId}`;
-    } else if (category) {
-      settings = await sql`SELECT * FROM settings WHERE category = ${category} AND org_id = ${orgId} ORDER BY key`;
+    if (agentId) {
+      // Merged query: agent-specific rows override org-level defaults
+      // DISTINCT ON (key) with ORDER BY agent_id NULLS LAST means agent-specific wins
+      if (key) {
+        settings = await sql`
+          SELECT DISTINCT ON (key) *,
+            CASE WHEN agent_id IS NULL THEN true ELSE false END AS is_inherited
+          FROM settings
+          WHERE org_id = ${orgId} AND (agent_id = ${agentId} OR agent_id IS NULL) AND key = ${key}
+          ORDER BY key, agent_id NULLS LAST
+        `;
+      } else if (category) {
+        settings = await sql`
+          SELECT DISTINCT ON (key) *,
+            CASE WHEN agent_id IS NULL THEN true ELSE false END AS is_inherited
+          FROM settings
+          WHERE org_id = ${orgId} AND (agent_id = ${agentId} OR agent_id IS NULL) AND category = ${category}
+          ORDER BY key, agent_id NULLS LAST
+        `;
+      } else {
+        settings = await sql`
+          SELECT DISTINCT ON (key) *,
+            CASE WHEN agent_id IS NULL THEN true ELSE false END AS is_inherited
+          FROM settings
+          WHERE org_id = ${orgId} AND (agent_id = ${agentId} OR agent_id IS NULL)
+          ORDER BY key, agent_id NULLS LAST
+        `;
+      }
     } else {
-      settings = await sql`SELECT * FROM settings WHERE org_id = ${orgId} ORDER BY category, key`;
+      // Org-level only (no agent filter)
+      if (key) {
+        settings = await sql`SELECT *, false AS is_inherited FROM settings WHERE key = ${key} AND org_id = ${orgId} AND agent_id IS NULL`;
+      } else if (category) {
+        settings = await sql`SELECT *, false AS is_inherited FROM settings WHERE category = ${category} AND org_id = ${orgId} AND agent_id IS NULL ORDER BY key`;
+      } else {
+        settings = await sql`SELECT *, false AS is_inherited FROM settings WHERE org_id = ${orgId} AND agent_id IS NULL ORDER BY category, key`;
+      }
     }
-    
+
     // Mask encrypted values for display
     const masked = settings.map(s => ({
       ...s,
       value: s.encrypted ? maskValue(s.value) : s.value,
       hasValue: !!s.value
     }));
-    
+
     return NextResponse.json({ settings: masked });
   } catch (error) {
     console.error('Settings GET error:', error);
@@ -96,6 +137,7 @@ const VALID_SETTING_KEYS = [
 const VALID_CATEGORIES = ['integration', 'general', 'system'];
 
 // POST - Create or update setting
+// Accepts optional agent_id in body for per-agent settings
 export async function POST(request) {
   try {
     const sql = getSql();
@@ -103,38 +145,44 @@ export async function POST(request) {
     const orgId = getOrgId(request);
 
     const body = await request.json();
-    const { key, value, category = 'general', encrypted = false } = body;
-    
+    const { key, value, category = 'general', encrypted = false, agent_id = null } = body;
+
     if (!key) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
-    
+
     // SECURITY: Validate key against allowlist
     if (!VALID_SETTING_KEYS.includes(key)) {
       return NextResponse.json({ error: `Invalid setting key: ${key}` }, { status: 400 });
     }
-    
+
     // SECURITY: Validate category
     if (!VALID_CATEGORIES.includes(category)) {
       return NextResponse.json({ error: `Invalid category: ${category}` }, { status: 400 });
     }
-    
+
     // SECURITY: Limit value length
     if (value && value.length > 10000) {
       return NextResponse.json({ error: 'Value too long (max 10000 chars)' }, { status: 400 });
     }
-    
+
+    // SECURITY: Validate agent_id length if provided
+    if (agent_id && agent_id.length > 255) {
+      return NextResponse.json({ error: 'agent_id too long (max 255 chars)' }, { status: 400 });
+    }
+
+    // Use COALESCE-based conflict target matching the functional unique index
     await sql`
-      INSERT INTO settings (org_id, key, value, category, encrypted, updated_at)
-      VALUES (${orgId}, ${key}, ${value}, ${category}, ${encrypted}, NOW())
-      ON CONFLICT ON CONSTRAINT settings_org_key_unique DO UPDATE SET
+      INSERT INTO settings (org_id, agent_id, key, value, category, encrypted, updated_at)
+      VALUES (${orgId}, ${agent_id}, ${key}, ${value}, ${category}, ${encrypted}, NOW())
+      ON CONFLICT (org_id, COALESCE(agent_id, ''), key) DO UPDATE SET
         value = ${value},
         category = ${category},
         encrypted = ${encrypted},
         updated_at = NOW()
     `;
-    
-    return NextResponse.json({ success: true, key });
+
+    return NextResponse.json({ success: true, key, agent_id });
   } catch (error) {
     console.error('Settings POST error:', error);
     return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });
@@ -142,6 +190,8 @@ export async function POST(request) {
 }
 
 // DELETE - Remove a setting
+// When ?agent_id=X is provided, deletes agent-specific row only
+// When no agent_id, deletes org-level row (agent_id IS NULL) only
 export async function DELETE(request) {
   try {
     const sql = getSql();
@@ -150,14 +200,19 @@ export async function DELETE(request) {
 
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');
+    const agentId = searchParams.get('agent_id');
 
     if (!key) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
 
-    await sql`DELETE FROM settings WHERE key = ${key} AND org_id = ${orgId}`;
-    
-    return NextResponse.json({ success: true, deleted: key });
+    if (agentId) {
+      await sql`DELETE FROM settings WHERE key = ${key} AND org_id = ${orgId} AND agent_id = ${agentId}`;
+    } else {
+      await sql`DELETE FROM settings WHERE key = ${key} AND org_id = ${orgId} AND agent_id IS NULL`;
+    }
+
+    return NextResponse.json({ success: true, deleted: key, agent_id: agentId || null });
   } catch (error) {
     console.error('Settings DELETE error:', error);
     return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });

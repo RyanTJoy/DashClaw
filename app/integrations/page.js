@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Plug, Bot, Database, MessageSquare, FileText, Wrench, Globe, CreditCard,
-  Search, X, Eye, EyeOff, Info, Shield, Cloud, Settings
+  Search, X, Eye, EyeOff, Info, Shield, Cloud, Settings, Users, ChevronDown
 } from 'lucide-react';
+import { getAgentColor } from '../lib/colors';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -363,14 +364,32 @@ export default function IntegrationsPage() {
   const [showValues, setShowValues] = useState({});
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [agents, setAgents] = useState([]);
+  const [selectedAgentId, setSelectedAgentId] = useState(null); // null = "All Agents (Org Default)"
+  const [agentDropdownOpen, setAgentDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    fetchSettings();
+  const fetchAgents = useCallback(async () => {
+    try {
+      const res = await fetch('/api/agents');
+      if (!res.ok) return;
+      const data = await res.json();
+      setAgents(data.agents || []);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+    }
   }, []);
 
-  const fetchSettings = async () => {
+  useEffect(() => {
+    fetchAgents();
+  }, [fetchAgents]);
+
+  const fetchSettings = useCallback(async () => {
     try {
-      const res = await fetch('/api/settings?category=integration');
+      let url = '/api/settings?category=integration';
+      if (selectedAgentId) {
+        url += `&agent_id=${encodeURIComponent(selectedAgentId)}`;
+      }
+      const res = await fetch(url);
       const data = await res.json();
       const settingsMap = {};
       (data.settings || []).forEach(s => {
@@ -382,7 +401,12 @@ export default function IntegrationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedAgentId]);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchSettings();
+  }, [fetchSettings]);
 
   const getIntegrationStatus = (integrationKey) => {
     const config = INTEGRATION_CONFIGS[integrationKey];
@@ -392,6 +416,12 @@ export default function IntegrationsPage() {
     if (hasAllRequired) return 'connected';
     if (config.fields.some(f => settings[f.key]?.hasValue)) return 'configured';
     return 'not_configured';
+  };
+
+  // Check if any field for an integration is inherited from org defaults
+  const isIntegrationInherited = (integrationKey) => {
+    const config = INTEGRATION_CONFIGS[integrationKey];
+    return selectedAgentId && config.fields.some(f => settings[f.key]?.is_inherited && settings[f.key]?.hasValue);
   };
 
   const openEditor = (integrationKey) => {
@@ -418,15 +448,19 @@ export default function IntegrationsPage() {
 
       for (const field of config.fields) {
         if (formData[field.key] !== undefined) {
+          const payload = {
+            key: field.key,
+            value: formData[field.key],
+            category: 'integration',
+            encrypted: field.type === 'password'
+          };
+          if (selectedAgentId) {
+            payload.agent_id = selectedAgentId;
+          }
           await fetch('/api/settings', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              key: field.key,
-              value: formData[field.key],
-              category: 'integration',
-              encrypted: field.type === 'password'
-            })
+            body: JSON.stringify(payload)
           });
         }
       }
@@ -517,9 +551,69 @@ export default function IntegrationsPage() {
   return (
     <PageLayout
       title="Integrations & Settings"
-      subtitle="Configure your connected services"
+      subtitle={selectedAgentId
+        ? `Per-agent settings for ${agents.find(a => a.agent_id === selectedAgentId)?.agent_name || selectedAgentId}`
+        : 'Configure your connected services'
+      }
       breadcrumbs={['Dashboard', 'Integrations']}
     >
+      {/* Agent Selector */}
+      {agents.length > 0 && (
+        <div className="mb-6 relative">
+          <label className="block text-xs text-zinc-500 mb-1.5">Viewing settings for</label>
+          <button
+            onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
+            className="w-full max-w-xs flex items-center justify-between gap-2 bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-sm text-white hover:border-[rgba(255,255,255,0.12)] transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              {selectedAgentId ? (
+                <>
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: getAgentColor(selectedAgentId) }}
+                  />
+                  <span className="truncate">{agents.find(a => a.agent_id === selectedAgentId)?.agent_name || selectedAgentId}</span>
+                </>
+              ) : (
+                <>
+                  <Users size={14} className="text-zinc-400 shrink-0" />
+                  <span>All Agents (Org Default)</span>
+                </>
+              )}
+            </span>
+            <ChevronDown size={14} className={`text-zinc-400 transition-transform ${agentDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {agentDropdownOpen && (
+            <div className="absolute z-30 mt-1 w-full max-w-xs bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg shadow-xl overflow-hidden">
+              <button
+                onClick={() => { setSelectedAgentId(null); setAgentDropdownOpen(false); }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-surface-tertiary ${
+                  !selectedAgentId ? 'text-brand' : 'text-zinc-300'
+                }`}
+              >
+                <Users size={14} className="text-zinc-400 shrink-0" />
+                All Agents (Org Default)
+              </button>
+              {agents.map(agent => (
+                <button
+                  key={agent.agent_id}
+                  onClick={() => { setSelectedAgentId(agent.agent_id); setAgentDropdownOpen(false); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-surface-tertiary ${
+                    selectedAgentId === agent.agent_id ? 'text-brand' : 'text-zinc-300'
+                  }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: getAgentColor(agent.agent_id) }}
+                  />
+                  {agent.agent_name || agent.agent_id}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <Card hover={false}>
@@ -605,6 +699,9 @@ export default function IntegrationsPage() {
                   <div className="flex items-center gap-2">
                     {getStatusDot(status)}
                     <span className="text-xs text-zinc-500">{getStatusLabel(status)}</span>
+                    {isIntegrationInherited(key) && (
+                      <span className="text-[10px] text-zinc-500 border border-zinc-700 rounded px-1 py-0.5">inherited</span>
+                    )}
                   </div>
                   <span className="text-xs text-zinc-500 group-hover:text-brand transition-colors">
                     Configure
@@ -668,7 +765,12 @@ export default function IntegrationsPage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-500 mt-1">{field.key}</p>
+                    <p className="text-xs text-zinc-500 mt-1">
+                      {field.key}
+                      {selectedAgentId && settings[field.key]?.is_inherited && settings[field.key]?.hasValue && (
+                        <span className="ml-2 text-zinc-600">Inherited from org default</span>
+                      )}
+                    </p>
                   </div>
                 ))}
               </div>

@@ -155,11 +155,21 @@ function getSql() {
 
 ## Additional API Routes (POST-enabled)
 - `GET /api/agents` — list agents (from action_records, grouped by agent_id)
+- `GET/POST/DELETE /api/settings` — integration credentials (supports `?agent_id=X` for per-agent overrides)
 - `GET/POST /api/tokens` — token snapshots + daily totals
 - `GET/POST /api/learning` — decisions + lessons
 - `GET/POST /api/goals` — goals + milestones
 - `GET/POST /api/content` — content items
 - `GET/POST /api/relationships` — contacts + interactions
+
+### Per-Agent Settings
+- Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
+- Unique index: `settings_org_agent_key_unique` on `(org_id, COALESCE(agent_id, ''), key)`
+- `GET /api/settings?category=integration&agent_id=X` — returns merged settings (agent overrides org defaults via `DISTINCT ON`)
+- `POST /api/settings` with `agent_id` in body — saves agent-specific override
+- `DELETE /api/settings?key=X&agent_id=Y` — deletes agent-specific row only
+- Response includes `is_inherited` boolean per setting (true = value comes from org default)
+- Integrations page has agent selector dropdown for per-agent configuration
 
 ## ActionRecord Control Plane
 - 3 tables: `action_records`, `open_loops`, `assumptions` (with `invalidated_at` column)
