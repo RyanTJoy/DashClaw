@@ -26,10 +26,9 @@ const projectRoot = resolve(__dirname, '..');
 // ---------------------------------------------------------------------------
 // Load .env.local
 // ---------------------------------------------------------------------------
-function loadEnv() {
-  const envPath = resolve(projectRoot, '.env.local');
-  if (!existsSync(envPath)) return;
-  const lines = readFileSync(envPath, 'utf8').split('\n');
+function loadEnvFile(filePath) {
+  if (!existsSync(filePath)) return;
+  const lines = readFileSync(filePath, 'utf8').split('\n');
   for (const l of lines) {
     const idx = l.indexOf('=');
     if (idx > 0 && !l.startsWith('#')) {
@@ -39,6 +38,11 @@ function loadEnv() {
       }
     }
   }
+}
+
+function loadEnv() {
+  loadEnvFile(resolve(projectRoot, '.env.local'));
+  loadEnvFile(resolve(projectRoot, '.env'));
 }
 
 // ---------------------------------------------------------------------------
@@ -197,10 +201,10 @@ Options:
   const baseUrl = args.local
     ? 'http://localhost:3000'
     : 'https://openclaw-pro.vercel.app';
-  const apiKey = process.env.DASHBOARD_API_KEY;
+  const apiKey = process.env.DASHBOARD_API_KEY || process.env.OPENCLAW_API_KEY;
 
   if (!apiKey && !args.local) {
-    console.error('Error: DASHBOARD_API_KEY not found in .env.local (required for production)');
+    console.error('Error: DASHBOARD_API_KEY or OPENCLAW_API_KEY not found (required for production)');
     process.exit(1);
   }
 
