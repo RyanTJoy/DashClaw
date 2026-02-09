@@ -2,7 +2,7 @@
 
 ## What This Is
 
-AI agent operations dashboard — a Next.js 14 app (JavaScript, not TypeScript) that gives AI agents (and their operators) a command center for tracking actions, token usage, learning, relationships, goals, content, and workflows.
+AI agent operations dashboard — a Next.js 14 app (JavaScript, not TypeScript) that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
 
 Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included.
 
@@ -22,7 +22,7 @@ app/
 │   ├── PageLayout.js          # Shared page layout (breadcrumbs, title, actions)
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
 │   ├── DraggableDashboard.js  # Fixed 4-column widget grid (no drag mode)
-│   └── *.js                   # 14 dashboard widget cards
+│   └── *.js                   # 12 dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
 ├── bounty-hunter/             # Bounty hunter page
 ├── content/                   # Content tracker page
@@ -31,7 +31,7 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── setup/                     # Guided setup wizard
-├── tokens/                    # Token usage page
+├── tokens/                    # Token usage page (disabled — not linked from UI)
 ├── workflows/                 # Workflows/SOPs page
 └── api/
     ├── actions/               # ActionRecord Control Plane (CRUD + signals + loops + assumptions + trace)
@@ -48,7 +48,7 @@ app/
     ├── schedules/             # Schedule management
     ├── settings/              # Integration credentials (encrypted)
     ├── setup/                 # Setup status (public)
-    ├── tokens/                # Token usage snapshots
+    ├── tokens/                # Token usage snapshots (disabled — API exists but not used by UI)
     └── workflows/             # Workflow definitions
 
 sdk/
@@ -59,7 +59,7 @@ scripts/
 ├── test-actions.mjs           # ActionRecord test suite (~95 assertions)
 ├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
 ├── create-org.mjs             # CLI: create org + admin API key
-├── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens
+├── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens (disabled)
 ├── report-action.mjs          # CLI: create/update action records via API
 └── cleanup-actions.mjs        # CLI: delete stale action records from DB
 
@@ -92,7 +92,6 @@ node scripts/security-scan.js   # Security audit
 node scripts/test-actions.mjs   # ActionRecord tests (needs DATABASE_URL)
 node scripts/migrate-multi-tenant.mjs  # Run multi-tenant migration
 node scripts/create-org.mjs --name "Acme" --slug "acme"  # Create org
-node scripts/report-tokens.mjs --agent-id moltfire --status "..."  # Report token usage
 node scripts/report-action.mjs --agent-id moltfire --type build --goal "Deploy X"  # Create action
 node scripts/report-action.mjs --update act_xxx --status completed --output "Done"  # Update action
 node scripts/cleanup-actions.mjs --before "2026-02-09" --dry-run  # Preview stale record cleanup
@@ -164,7 +163,7 @@ function getSql() {
 - `GET /api/agents` — list agents (from action_records, grouped by agent_id; supports `?include_connections=true`)
 - `GET/POST /api/agents/connections` — agent self-reported connections (GET: `?agent_id=X`, `?provider=Y`; POST: upsert connections array)
 - `GET/POST/DELETE /api/settings` — integration credentials (supports `?agent_id=X` for per-agent overrides)
-- `GET/POST /api/tokens` — token snapshots + daily totals (supports `?agent_id=X` for per-agent filtering)
+- `GET/POST /api/tokens` — token snapshots + daily totals (disabled — API exists but not used by dashboard)
 - `GET/POST /api/learning` — decisions + lessons
 - `GET/POST /api/goals` — goals + milestones
 - `GET/POST /api/content` — content items
@@ -212,14 +211,8 @@ function getSql() {
 ALTER TABLE assumptions ADD COLUMN IF NOT EXISTS invalidated_at TEXT;
 ```
 
-### Token Tables
-- `token_snapshots` — per-snapshot data with `agent_id` (NULL = org-wide aggregate)
-- `daily_totals` — daily aggregated token counts with `agent_id`
-- Unique index on daily_totals: `(org_id, COALESCE(agent_id, ''), date)` — separates per-agent from org-wide rows
-- POST `/api/tokens` with `agent_id` creates both a per-agent snapshot AND an org-wide aggregate snapshot
-- GET `/api/tokens?agent_id=X` returns per-agent data; no param returns org-wide (`agent_id IS NULL`)
-- Migration Step 12 in `migrate-multi-tenant.mjs` creates both tables (idempotent)
-- TokenBudgetCard + TokenChart respect the dashboard agent filter via `useAgentFilter()`
+### Token Tables (Disabled)
+Token tracking is disabled in the dashboard UI pending a better approach. The API route, DB tables, SDK method, and CLI script still exist but are not linked from the UI. Tables: `token_snapshots`, `daily_totals` (created by migration Step 12).
 
 ## Multi-Tenancy
 
@@ -286,10 +279,12 @@ const claw = new OpenClawAgent({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### SDK Methods (20 total)
+### SDK Methods (19 active)
 **ActionRecord Control Plane**: `createAction()`, `updateOutcome()`, `registerOpenLoop()`, `resolveOpenLoop()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getActions()`, `getAction()`, `getSignals()`, `getOpenLoops()`, `getDriftReport()`, `getActionTrace()`, `track()`
 
-**Dashboard Data**: `reportTokenUsage()`, `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`
+**Dashboard Data**: `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`
+
+**Disabled**: `reportTokenUsage()` — exists in SDK but token tracking is disabled in the dashboard
 
 **Example: reportConnections()**
 ```javascript

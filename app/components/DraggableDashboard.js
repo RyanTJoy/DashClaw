@@ -1,6 +1,5 @@
 'use client';
 
-import TokenBudgetCard from './TokenBudgetCard';
 import RiskSignalsCard from './RiskSignalsCard';
 import OpenLoopsCard from './OpenLoopsCard';
 import RecentActionsCard from './RecentActionsCard';
@@ -9,25 +8,21 @@ import GoalsChart from './GoalsChart';
 import LearningStatsCard from './LearningStatsCard';
 import FollowUpsCard from './FollowUpsCard';
 import CalendarWidget from './CalendarWidget';
-import TokenChart from './TokenChart';
 import IntegrationsCard from './IntegrationsCard';
 import MemoryHealthCard from './MemoryHealthCard';
 import InspirationCard from './InspirationCard';
 import ContextCard from './ContextCard';
 
 // Fixed, opinionated layout — no customize mode.
-// Ordered for operational storytelling: status → signals → details → data.
+// Ordered for operational storytelling: signals → activity → details → system.
 export default function DraggableDashboard() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Row 1: Status overview */}
       <div className="md:col-span-2">
-        <TokenBudgetCard />
-      </div>
-      <div>
         <RiskSignalsCard />
       </div>
-      <div>
+      <div className="md:col-span-2">
         <OpenLoopsCard />
       </div>
 
@@ -53,9 +48,9 @@ export default function DraggableDashboard() {
         <CalendarWidget />
       </div>
 
-      {/* Row 4: Trends & System */}
+      {/* Row 4: Context & System */}
       <div className="md:col-span-2">
-        <TokenChart />
+        <ContextCard />
       </div>
       <div>
         <IntegrationsCard />
@@ -67,9 +62,6 @@ export default function DraggableDashboard() {
       {/* Row 5: Extra */}
       <div>
         <InspirationCard />
-      </div>
-      <div className="md:col-span-2">
-        <ContextCard />
       </div>
     </div>
   );
