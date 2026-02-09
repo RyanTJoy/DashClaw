@@ -168,6 +168,9 @@ function getSql() {
 - `GET/POST /api/goals` — goals + milestones
 - `GET/POST /api/content` — content items
 - `GET/POST /api/relationships` — contacts + interactions
+- `GET/POST /api/calendar` — calendar events
+- `GET/POST /api/inspiration` — ideas/inspiration
+- `GET/POST /api/memory` — memory health snapshots, entities, topics
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -213,6 +216,13 @@ ALTER TABLE assumptions ADD COLUMN IF NOT EXISTS invalidated_at TEXT;
 
 ### Token Tables (Disabled)
 Token tracking is disabled in the dashboard UI pending a better approach. The API route, DB tables, SDK method, and CLI script still exist but are not linked from the UI. Tables: `token_snapshots`, `daily_totals` (created by migration Step 12).
+
+### Memory Health Tables
+- `health_snapshots` — periodic health metrics (score, file counts, duplicates, stale facts)
+- `entities` — key entities extracted from memory (name, type, mention_count). Replaced on each POST.
+- `topics` — topics/themes from memory (name, mention_count). Replaced on each POST.
+- POST `/api/memory` accepts `{ health, entities, topics }` — creates snapshot, replaces entities/topics
+- Migration Step 13 in `migrate-multi-tenant.mjs` creates all three tables (idempotent)
 
 ## Multi-Tenancy
 
@@ -279,10 +289,10 @@ const claw = new OpenClawAgent({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### SDK Methods (19 active)
+### SDK Methods (22 active)
 **ActionRecord Control Plane**: `createAction()`, `updateOutcome()`, `registerOpenLoop()`, `resolveOpenLoop()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getActions()`, `getAction()`, `getSignals()`, `getOpenLoops()`, `getDriftReport()`, `getActionTrace()`, `track()`
 
-**Dashboard Data**: `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`
+**Dashboard Data**: `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`, `createCalendarEvent()`, `recordIdea()`, `reportMemoryHealth()`
 
 **Disabled**: `reportTokenUsage()` — exists in SDK but token tracking is disabled in the dashboard
 

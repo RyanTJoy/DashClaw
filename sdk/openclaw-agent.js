@@ -325,6 +325,61 @@ class OpenClawAgent {
   }
 
   /**
+   * Create a calendar event.
+   * @param {Object} event
+   * @param {string} event.summary - Event title/summary
+   * @param {string} event.start_time - Start time (ISO string)
+   * @param {string} [event.end_time] - End time (ISO string)
+   * @param {string} [event.location] - Event location
+   * @param {string} [event.description] - Event description
+   * @returns {Promise<{event: Object}>}
+   */
+  async createCalendarEvent(event) {
+    return this._request('/api/calendar', 'POST', event);
+  }
+
+  /**
+   * Record an idea/inspiration.
+   * @param {Object} idea
+   * @param {string} idea.title - Idea title
+   * @param {string} [idea.description] - Detailed description
+   * @param {string} [idea.category] - Category (e.g., 'feature', 'optimization', 'content')
+   * @param {number} [idea.score] - Priority/quality score 0-100 (default 50)
+   * @param {string} [idea.status] - 'pending', 'in_progress', 'shipped', 'rejected'
+   * @param {string} [idea.source] - Where this idea came from
+   * @returns {Promise<{idea: Object}>}
+   */
+  async recordIdea(idea) {
+    return this._request('/api/inspiration', 'POST', idea);
+  }
+
+  /**
+   * Report memory health snapshot with entities and topics.
+   * Call periodically (e.g., daily) to track memory system health.
+   * @param {Object} report
+   * @param {Object} report.health - Health metrics
+   * @param {number} report.health.score - Health score 0-100
+   * @param {number} [report.health.total_files] - Number of memory files
+   * @param {number} [report.health.total_lines] - Total lines across all files
+   * @param {number} [report.health.total_size_kb] - Total size in KB
+   * @param {number} [report.health.memory_md_lines] - Lines in main MEMORY.md
+   * @param {number} [report.health.days_with_notes] - Days that have notes
+   * @param {number} [report.health.duplicates] - Potential duplicate facts
+   * @param {number} [report.health.stale_count] - Stale facts count
+   * @param {Object[]} [report.entities] - Key entities found in memory
+   * @param {string} report.entities[].name - Entity name
+   * @param {string} [report.entities[].type] - 'person', 'tool', 'service', 'file', 'other'
+   * @param {number} [report.entities[].mentions] - Mention count
+   * @param {Object[]} [report.topics] - Topics/themes found in memory
+   * @param {string} report.topics[].name - Topic name
+   * @param {number} [report.topics[].mentions] - Mention count
+   * @returns {Promise<{snapshot: Object, entities_count: number, topics_count: number}>}
+   */
+  async reportMemoryHealth(report) {
+    return this._request('/api/memory', 'POST', report);
+  }
+
+  /**
    * Report active connections/integrations for this agent.
    * Call at agent startup to register what services the agent is connected to.
    * @param {Object[]} connections - Array of connection objects

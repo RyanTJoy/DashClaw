@@ -115,3 +115,72 @@ export async function GET(request) {
     }, { status: 500 });
   }
 }
+
+export async function POST(request) {
+  const sql = getSql();
+  const orgId = getOrgId(request);
+  try {
+    const body = await request.json();
+    const { health, entities, topics } = body;
+
+    if (!health) {
+      return NextResponse.json({ error: 'health object is required' }, { status: 400 });
+    }
+
+    const now = new Date().toISOString();
+
+    // Upsert health snapshot
+    const snapshot = await sql`
+      INSERT INTO health_snapshots (
+        org_id, timestamp, health_score, total_files, total_lines, total_size_kb,
+        memory_md_lines, oldest_daily_file, newest_daily_file, days_with_notes,
+        avg_lines_per_day, potential_duplicates, stale_facts_count
+      ) VALUES (
+        ${orgId}, ${now},
+        ${health.score ?? health.health_score ?? 0},
+        ${health.total_files ?? 0},
+        ${health.total_lines ?? 0},
+        ${health.total_size_kb ?? 0},
+        ${health.memory_md_lines ?? 0},
+        ${health.oldest_daily ?? null},
+        ${health.newest_daily ?? null},
+        ${health.days_with_notes ?? 0},
+        ${health.avg_lines_per_day ?? 0},
+        ${health.duplicates ?? health.potential_duplicates ?? 0},
+        ${health.stale_count ?? health.stale_facts_count ?? 0}
+      )
+      RETURNING *
+    `;
+
+    // Upsert entities (replace all for this org)
+    if (Array.isArray(entities) && entities.length > 0) {
+      await sql`DELETE FROM entities WHERE org_id = ${orgId}`;
+      for (const e of entities.slice(0, 100)) {
+        await sql`
+          INSERT INTO entities (org_id, name, type, mention_count)
+          VALUES (${orgId}, ${e.name}, ${e.type || 'other'}, ${e.mentions ?? e.mention_count ?? 1})
+        `;
+      }
+    }
+
+    // Upsert topics (replace all for this org)
+    if (Array.isArray(topics) && topics.length > 0) {
+      await sql`DELETE FROM topics WHERE org_id = ${orgId}`;
+      for (const t of topics.slice(0, 100)) {
+        await sql`
+          INSERT INTO topics (org_id, name, mention_count)
+          VALUES (${orgId}, ${t.name}, ${t.mentions ?? t.mention_count ?? 1})
+        `;
+      }
+    }
+
+    return NextResponse.json({
+      snapshot: snapshot[0],
+      entities_count: entities?.length || 0,
+      topics_count: topics?.length || 0
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Memory API POST error:', error);
+    return NextResponse.json({ error: 'An error occurred while reporting memory health' }, { status: 500 });
+  }
+}

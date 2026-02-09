@@ -46,6 +46,38 @@ export async function GET(request) {
   }
 }
 
+export async function POST(request) {
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const orgId = getOrgId(request);
+    const body = await request.json();
+
+    const { summary, start_time, end_time, location, description } = body;
+
+    if (!summary || !start_time) {
+      return NextResponse.json({ error: 'summary and start_time are required' }, { status: 400 });
+    }
+
+    const result = await sql`
+      INSERT INTO calendar_events (org_id, summary, start_time, end_time, location, description)
+      VALUES (
+        ${orgId},
+        ${summary},
+        ${start_time},
+        ${end_time || null},
+        ${location || null},
+        ${description || null}
+      )
+      RETURNING *
+    `;
+
+    return NextResponse.json({ event: result[0] }, { status: 201 });
+  } catch (error) {
+    console.error('Calendar API POST error:', error);
+    return NextResponse.json({ error: 'An error occurred while creating the event' }, { status: 500 });
+  }
+}
+
 function appendESTOffset(timestamp) {
   if (!timestamp) return null;
   
