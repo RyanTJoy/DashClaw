@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Gauge, Clock, CalendarDays, BookOpen, Cpu } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -27,9 +27,10 @@ export default function TokenBudgetCard() {
   });
   const [lastUpdated, setLastUpdated] = useState('');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/tokens');
+      const url = agentId ? `/api/tokens?agent_id=${encodeURIComponent(agentId)}` : '/api/tokens';
+      const res = await fetch(url);
       const json = await res.json();
 
       if (json.current) {
@@ -63,13 +64,13 @@ export default function TokenBudgetCard() {
       console.error('Failed to fetch token data:', error);
       setData(prev => ({ ...prev, status: 'error' }));
     }
-  };
+  }, [agentId]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -106,7 +107,6 @@ export default function TokenBudgetCard() {
     <Card className="h-full">
       <CardHeader title="Token Usage" icon={Gauge}>
         {getStatusBadge(data.status)}
-        {agentId && <Badge variant="info" size="xs">Org-wide</Badge>}
       </CardHeader>
 
       <CardContent className="space-y-4">

@@ -157,7 +157,7 @@ function getSql() {
 - `GET /api/agents` — list agents (from action_records, grouped by agent_id; supports `?include_connections=true`)
 - `GET/POST /api/agents/connections` — agent self-reported connections (GET: `?agent_id=X`, `?provider=Y`; POST: upsert connections array)
 - `GET/POST/DELETE /api/settings` — integration credentials (supports `?agent_id=X` for per-agent overrides)
-- `GET/POST /api/tokens` — token snapshots + daily totals
+- `GET/POST /api/tokens` — token snapshots + daily totals (supports `?agent_id=X` for per-agent filtering)
 - `GET/POST /api/learning` — decisions + lessons
 - `GET/POST /api/goals` — goals + milestones
 - `GET/POST /api/content` — content items
@@ -204,6 +204,15 @@ function getSql() {
 ```sql
 ALTER TABLE assumptions ADD COLUMN IF NOT EXISTS invalidated_at TEXT;
 ```
+
+### Token Tables
+- `token_snapshots` — per-snapshot data with `agent_id` (NULL = org-wide aggregate)
+- `daily_totals` — daily aggregated token counts with `agent_id`
+- Unique index on daily_totals: `(org_id, COALESCE(agent_id, ''), date)` — separates per-agent from org-wide rows
+- POST `/api/tokens` with `agent_id` creates both a per-agent snapshot AND an org-wide aggregate snapshot
+- GET `/api/tokens?agent_id=X` returns per-agent data; no param returns org-wide (`agent_id IS NULL`)
+- Migration Step 12 in `migrate-multi-tenant.mjs` creates both tables (idempotent)
+- TokenBudgetCard + TokenChart respect the dashboard agent filter via `useAgentFilter()`
 
 ## Multi-Tenancy
 

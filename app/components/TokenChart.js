@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 function CustomTooltip({ active, payload, label }) {
   if (active && payload && payload.length) {
@@ -24,38 +25,42 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function TokenChart() {
+  const { agentId } = useAgentFilter();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchTokens() {
-      try {
-        const res = await fetch('/api/tokens');
-        if (!res.ok) throw new Error('Failed to fetch');
-        const json = await res.json();
+  const fetchTokens = useCallback(async () => {
+    try {
+      const url = agentId ? `/api/tokens?agent_id=${encodeURIComponent(agentId)}` : '/api/tokens';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to fetch');
+      const json = await res.json();
 
-        if (json.history && json.history.length > 0) {
-          const points = [...json.history].reverse().map(day => {
-            const d = new Date(day.date);
-            return {
-              date: d.toLocaleDateString('en-US', { weekday: 'short' }),
-              tokens: day.totalTokens || (day.tokensIn + day.tokensOut),
-              cost: day.estimatedCost || 0
-            };
-          });
-          setData(points);
-        } else {
-          setData([]);
-        }
-      } catch (error) {
-        console.error('Failed to fetch token data:', error);
+      if (json.history && json.history.length > 0) {
+        const points = [...json.history].reverse().map(day => {
+          const d = new Date(day.date);
+          return {
+            date: d.toLocaleDateString('en-US', { weekday: 'short' }),
+            tokens: day.totalTokens || (day.tokensIn + day.tokensOut),
+            cost: day.estimatedCost || 0
+          };
+        });
+        setData(points);
+      } else {
         setData([]);
-      } finally {
-        setLoading(false);
       }
+    } catch (error) {
+      console.error('Failed to fetch token data:', error);
+      setData([]);
+    } finally {
+      setLoading(false);
     }
+  }, [agentId]);
+
+  useEffect(() => {
+    setLoading(true);
     fetchTokens();
-  }, []);
+  }, [fetchTokens]);
 
   if (loading) {
     return <CardSkeleton />;
