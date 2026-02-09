@@ -8,8 +8,8 @@ const inter = Inter({
 })
 
 export const metadata = {
-  title: 'OpenClaw Pro',
-  description: 'AI Agent Operations Control Plane',
+  title: 'OpenClaw Pro — AI Agent Observability',
+  description: 'See what your AI agents are actually doing. Real-time observability, risk signals, and operational control for autonomous AI agents.',
 }
 
 export const viewport = {

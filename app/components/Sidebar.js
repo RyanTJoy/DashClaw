@@ -14,7 +14,7 @@ const navGroups = [
   {
     label: 'Overview',
     items: [
-      { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+      { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     ],
   },
   {
@@ -55,7 +55,7 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isActive = (href) => {
-    if (href === '/') return pathname === '/';
+    if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   };
 

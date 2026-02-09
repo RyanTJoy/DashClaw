@@ -31,6 +31,7 @@ const PROTECTED_ROUTES = [
 const PUBLIC_ROUTES = [
   '/api/health',
   '/api/setup/status',
+  '/api/waitlist',
 ];
 
 // Simple in-memory rate limiting (resets on deploy)
