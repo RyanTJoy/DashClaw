@@ -58,7 +58,8 @@ scripts/
 ├── security-scan.js           # Pre-deploy security audit
 ├── test-actions.mjs           # ActionRecord test suite (~95 assertions)
 ├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
-└── create-org.mjs             # CLI: create org + admin API key
+├── create-org.mjs             # CLI: create org + admin API key
+└── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens
 
 clawd-tools/                   # Agent workspace tools bundle (memory, security, tokens, etc.)
 ```
@@ -89,6 +90,7 @@ node scripts/security-scan.js   # Security audit
 node scripts/test-actions.mjs   # ActionRecord tests (needs DATABASE_URL)
 node scripts/migrate-multi-tenant.mjs  # Run multi-tenant migration
 node scripts/create-org.mjs --name "Acme" --slug "acme"  # Create org
+node scripts/report-tokens.mjs --agent-id moltfire --status "..."  # Report token usage
 ```
 
 ## Environment Variables
