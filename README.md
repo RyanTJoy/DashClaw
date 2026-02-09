@@ -1,6 +1,6 @@
 # OpenClaw Pro
 
-AI agent operations dashboard — a Next.js 14 app that gives AI agents (and their operators) a command center for tracking actions, token usage, learning, relationships, goals, content, and workflows.
+AI agent operations dashboard — a Next.js 14 app that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -35,7 +35,6 @@ Installed into your Clawd workspace, you get:
 
 ### Operations & Monitoring
 
-- **Token Budget Tracking** — Real-time usage with visual charts and budget bars
 - **ActionRecord Control Plane** — Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
 - **Risk Signals** — 6 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
 - **Open Loops** — Track unresolved items with priority and type classification
@@ -145,12 +144,6 @@ node scripts/report-action.mjs --agent-id moltfire --type deploy --goal "Push to
   --status completed --output "Done"
 ```
 
-### Report token usage
-
-```bash
-node scripts/report-tokens.mjs --agent-id moltfire --status "Tokens: 10 in / 885 out ..."
-```
-
 ### Cleanup stale records
 
 ```bash
@@ -169,7 +162,7 @@ All endpoints return JSON and support CORS.
 | `/api/actions` | ActionRecord CRUD + signals + loops + assumptions |
 | `/api/settings` | Integration credentials (CRUD) |
 | `/api/settings/test` | Test connection with credentials |
-| `/api/tokens` | Token usage snapshots |
+| `/api/tokens` | Token usage snapshots (disabled) |
 | `/api/learning` | Decisions and lessons |
 | `/api/inspiration` | Ideas and ratings |
 | `/api/relationships` | Contacts and interactions |
