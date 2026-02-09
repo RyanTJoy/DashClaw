@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { Badge } from './ui/Badge';
+import { EmptyState } from './ui/EmptyState';
+import { ListSkeleton } from './ui/Skeleton';
 
 export default function FollowUpsCard() {
   const [followUps, setFollowUps] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
@@ -31,6 +37,8 @@ export default function FollowUpsCard() {
       }
     } catch (error) {
       console.error('Failed to fetch follow-ups:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,12 +48,12 @@ export default function FollowUpsCard() {
     return () => clearInterval(interval);
   }, []);
 
-  const getTempColor = (temp) => {
+  const getTempVariant = (temp) => {
     switch (temp) {
-      case 'HOT': return 'bg-red-500 text-white';
-      case 'WARM': return 'bg-yellow-500 text-black';
-      case 'COLD': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'HOT': return 'error';
+      case 'WARM': return 'warning';
+      case 'COLD': return 'info';
+      default: return 'default';
     }
   };
 
@@ -56,44 +64,42 @@ export default function FollowUpsCard() {
   };
 
   return (
-    <div className="glass-card p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">👥</span>
-          Follow-ups
-        </h2>
-        <span className="bg-fire-orange text-white px-2 py-1 rounded-full text-sm font-semibold">
-          {followUps.length}
-        </span>
-      </div>
-
-      <div className="space-y-3">
-        {followUps.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">
-            <div className="text-4xl mb-2">✅</div>
-            <div>All caught up!</div>
-          </div>
+    <Card className="h-full">
+      <CardHeader title="Follow-ups" icon={CheckCircle2} count={followUps.length} />
+      <CardContent>
+        {loading ? (
+          <ListSkeleton rows={3} />
+        ) : followUps.length === 0 ? (
+          <EmptyState
+            icon={CheckCircle2}
+            title="All caught up!"
+            description="No pending follow-ups"
+          />
         ) : (
-          followUps.map((followUp) => (
-            <div key={followUp.id} className="glass-card p-4 hover:bg-opacity-20 transition-all">
-              <div className="flex items-center justify-between mb-2">
-                <div className="font-semibold text-white">{followUp.name}</div>
-                <span className={`px-2 py-1 rounded text-xs font-bold ${getTempColor(followUp.temperature)}`}>
-                  {followUp.temperature}
-                </span>
+          <div className="space-y-2">
+            {followUps.map((followUp) => (
+              <div
+                key={followUp.id}
+                className="bg-surface-tertiary rounded-lg p-3 transition-colors duration-150"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-medium text-white truncate mr-2">{followUp.name}</span>
+                  <Badge variant={getTempVariant(followUp.temperature)} size="xs">
+                    {followUp.temperature}
+                  </Badge>
+                </div>
+                <div className="text-xs text-zinc-400 mb-1.5">{followUp.type}</div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-500">Due: {followUp.dueDate}</span>
+                  <span className={`font-medium ${getDaysColor(followUp.daysLeft)}`}>
+                    {followUp.daysLeft}d left
+                  </span>
+                </div>
               </div>
-              <div className="text-sm text-gray-300 mb-2">{followUp.type}</div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-400">Due: {followUp.dueDate}</span>
-                <span className={`font-semibold ${getDaysColor(followUp.daysLeft)}`}>
-                  {followUp.daysLeft} days left
-                </span>
-              </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
-      </div>
-
-    </div>
+      </CardContent>
+    </Card>
   );
 }

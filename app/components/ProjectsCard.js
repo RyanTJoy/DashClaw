@@ -1,6 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { FolderKanban } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { Badge } from './ui/Badge';
+import { StatCompact } from './ui/Stat';
+import { ProgressBar } from './ui/ProgressBar';
+import { EmptyState } from './ui/EmptyState';
+import { CardSkeleton } from './ui/Skeleton';
+
+function getStatusVariant(status) {
+  switch (status) {
+    case 'active': return 'success';
+    case 'building': return 'warning';
+    case 'maintaining': return 'info';
+    case 'paused': return 'default';
+    default: return 'default';
+  }
+}
+
+function getProgressColor(status) {
+  switch (status) {
+    case 'active': return 'brand';
+    case 'building': return 'warning';
+    case 'maintaining': return 'info';
+    case 'paused': return 'brand';
+    default: return 'brand';
+  }
+}
 
 export default function ProjectsCard() {
   const [projects, setProjects] = useState([]);
@@ -13,7 +40,6 @@ export default function ProjectsCard() {
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
 
-        // Group actions by system into "project" summaries
         const systemMap = {};
         for (const action of (data.actions || [])) {
           let systems = [];
@@ -41,7 +67,6 @@ export default function ProjectsCard() {
           }
         }
 
-        // Convert to project-like objects, sort by most actions
         const items = Object.entries(systemMap)
           .map(([name, stats]) => {
             const progress = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
@@ -50,11 +75,7 @@ export default function ProjectsCard() {
             else if (stats.failed > stats.completed) status = 'paused';
             else if (progress === 100) status = 'maintaining';
 
-            let priority = 'low';
-            if (stats.running > 0 || stats.failed > 0) priority = 'high';
-            else if (stats.total > 3) priority = 'medium';
-
-            return { name, status, progress, total: stats.total, lastUpdate: stats.lastUpdate, priority };
+            return { name, status, progress, total: stats.total, lastUpdate: stats.lastUpdate };
           })
           .sort((a, b) => b.total - a.total)
           .slice(0, 9);
@@ -70,25 +91,6 @@ export default function ProjectsCard() {
     fetchProjects();
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'building': return 'bg-yellow-500';
-      case 'maintaining': return 'bg-blue-500';
-      case 'paused': return 'bg-gray-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'border-l-red-500';
-      case 'medium': return 'border-l-yellow-500';
-      case 'low': return 'border-l-green-500';
-      default: return 'border-l-gray-500';
-    }
-  };
-
   const formatDate = (ts) => {
     if (!ts) return '--';
     try {
@@ -97,96 +99,70 @@ export default function ProjectsCard() {
   };
 
   if (loading) {
-    return (
-      <div className="glass-card p-6 h-full">
-        <h2 className="text-xl font-bold text-white flex items-center mb-4">
-          <span className="mr-2">🚀</span>Active Projects
-        </h2>
-        <div className="text-center text-gray-400 py-8">Loading projects...</div>
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   if (projects.length === 0) {
     return (
-      <div className="glass-card p-6 h-full">
-        <h2 className="text-xl font-bold text-white flex items-center mb-4">
-          <span className="mr-2">🚀</span>Active Projects
-        </h2>
-        <div className="text-center text-gray-500 py-8">
-          <div className="text-4xl mb-2">📁</div>
-          <div>No project activity yet</div>
-          <div className="text-xs mt-1">Projects are derived from action systems_touched</div>
-        </div>
-      </div>
+      <Card className="h-full">
+        <CardHeader title="Active Projects" icon={FolderKanban} />
+        <CardContent>
+          <EmptyState
+            icon={FolderKanban}
+            title="No project activity yet"
+            description="Projects are derived from action systems_touched"
+          />
+        </CardContent>
+      </Card>
     );
   }
 
+  const activeCount = projects.filter(p => p.status === 'active').length;
+  const buildingCount = projects.filter(p => p.status === 'building').length;
+  const maintainingCount = projects.filter(p => p.status === 'maintaining').length;
+
   return (
-    <div className="glass-card p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">🚀</span>
-          Active Projects
-        </h2>
-        <span className="bg-fire-orange text-white px-2 py-1 rounded-full text-sm font-semibold">
-          {projects.length}
-        </span>
-      </div>
+    <Card className="h-full">
+      <CardHeader title="Active Projects" icon={FolderKanban} count={projects.length} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-        {projects.map((project, index) => (
-          <div key={index} className={`glass-card p-4 border-l-4 ${getPriorityColor(project.priority)} hover:bg-opacity-20 transition-all`}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center">
-                <span className="text-xl mr-2">📁</span>
-                <div>
-                  <div className="font-semibold text-white text-sm">{project.name}</div>
-                  <div className="text-xs text-gray-400">{project.total} actions</div>
-                </div>
+      <CardContent>
+        <div className="space-y-1 max-h-80 overflow-y-auto">
+          {projects.map((project, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-white/[0.03]"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-sm text-zinc-300 truncate">{project.name}</div>
               </div>
-              <span className={`w-3 h-3 rounded-full ${getStatusColor(project.status)}`}></span>
-            </div>
 
-            <div className="mb-2">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-gray-400">Completion</span>
-                <span className="text-white">{project.progress}%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div
-                  className="h-2 fire-gradient rounded-full transition-all duration-500"
-                  style={{ width: `${project.progress}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center text-xs">
-              <span className={`px-2 py-1 rounded text-white ${getStatusColor(project.status)}`}>
-                {project.status}
+              <span className="text-xs text-zinc-500 tabular-nums flex-shrink-0 w-10 text-right">
+                {project.total}
               </span>
-              <span className="text-gray-400">{formatDate(project.lastUpdate)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-700">
-        <div className="grid grid-cols-3 gap-4 text-center text-sm">
-          <div>
-            <div className="font-semibold text-green-400">{projects.filter(p => p.status === 'active').length}</div>
-            <div className="text-gray-400">Active</div>
-          </div>
-          <div>
-            <div className="font-semibold text-yellow-400">{projects.filter(p => p.status === 'building').length}</div>
-            <div className="text-gray-400">Building</div>
-          </div>
-          <div>
-            <div className="font-semibold text-blue-400">{projects.filter(p => p.status === 'maintaining').length}</div>
-            <div className="text-gray-400">Maintaining</div>
+              <div className="w-20 flex-shrink-0">
+                <ProgressBar value={project.progress} color={getProgressColor(project.status)} />
+              </div>
+
+              <Badge variant={getStatusVariant(project.status)} size="xs" className="flex-shrink-0 w-[72px] justify-center">
+                {project.status}
+              </Badge>
+
+              <span className="font-mono text-[10px] text-zinc-600 flex-shrink-0 w-14 text-right">
+                {formatDate(project.lastUpdate)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+          <div className="grid grid-cols-3 gap-2">
+            <StatCompact label="Active" value={activeCount} color="text-green-400" />
+            <StatCompact label="Building" value={buildingCount} color="text-yellow-400" />
+            <StatCompact label="Maintaining" value={maintainingCount} color="text-blue-400" />
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

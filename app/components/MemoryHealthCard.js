@@ -1,6 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { HardDrive, User, Wrench, Globe, File, Pin, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { ProgressBar } from './ui/ProgressBar';
+import { StatCompact } from './ui/Stat';
+import { Badge } from './ui/Badge';
+import { EmptyState } from './ui/EmptyState';
+import { CardSkeleton } from './ui/Skeleton';
 
 export default function MemoryHealthCard() {
   const [data, setData] = useState({
@@ -39,147 +46,136 @@ export default function MemoryHealthCard() {
     return 'text-red-400';
   };
 
-  const getScoreGradient = (score) => {
-    if (score >= 80) return 'from-green-500 to-emerald-500';
-    if (score >= 60) return 'from-yellow-500 to-orange-500';
-    return 'from-red-500 to-pink-500';
+  const getScoreBarColor = (score) => {
+    if (score >= 80) return 'success';
+    if (score >= 60) return 'warning';
+    return 'error';
   };
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'person': return '👤';
-      case 'tool': return '🔧';
-      case 'service': return '🌐';
-      case 'file': return '📄';
-      default: return '📌';
+      case 'person': return User;
+      case 'tool': return Wrench;
+      case 'service': return Globe;
+      case 'file': return File;
+      default: return Pin;
     }
   };
 
   const getTypeColor = (type) => {
     switch (type) {
-      case 'person': return 'bg-blue-500/20 text-blue-400';
-      case 'tool': return 'bg-purple-500/20 text-purple-400';
-      case 'service': return 'bg-green-500/20 text-green-400';
-      case 'file': return 'bg-yellow-500/20 text-yellow-400';
-      default: return 'bg-gray-500/20 text-gray-400';
+      case 'person': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'tool': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case 'service': return 'bg-green-500/10 text-green-400 border-green-500/20';
+      case 'file': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+      default: return 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
     }
   };
 
   if (data.loading) {
-    return (
-      <div className="glass-card p-6 h-full flex items-center justify-center">
-        <div className="text-gray-400">Loading memory health...</div>
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   const health = data.health;
 
   return (
-    <div className="glass-card p-4 md:p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg md:text-xl font-bold text-white flex items-center">
-          <span className="mr-2">🧠</span>
-          Memory Health
-        </h2>
+    <Card className="h-full">
+      <CardHeader title="Memory Health" icon={HardDrive}>
         {health && (
-          <div className={`text-2xl md:text-3xl font-bold ${getScoreColor(health.score)}`}>
+          <span className={`text-2xl font-semibold tabular-nums ${getScoreColor(health.score)}`}>
             {health.score}
-          </div>
+          </span>
         )}
-      </div>
-
-      {health ? (
-        <div className="space-y-4">
-          {/* Health Score Bar */}
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="text-gray-400">Health Score</span>
-              <span className="text-gray-300">{health.score}/100</span>
-            </div>
-            <div className="w-full bg-gray-700 rounded-full h-3">
-              <div 
-                className={`h-3 rounded-full transition-all duration-500 bg-gradient-to-r ${getScoreGradient(health.score)}`}
-                style={{ width: `${health.score}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="glass-card p-2">
-              <div className="text-lg font-bold text-white">{health.totalFiles}</div>
-              <div className="text-[10px] text-gray-400">Files</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="text-lg font-bold text-white">{(health.totalLines / 1000).toFixed(1)}k</div>
-              <div className="text-[10px] text-gray-400">Lines</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="text-lg font-bold text-white">{health.daysWithNotes}</div>
-              <div className="text-[10px] text-gray-400">Days</div>
-            </div>
-          </div>
-
-          {/* Issues */}
-          <div className="flex gap-4 text-sm">
-            <div className={`flex items-center ${health.duplicates > 5 ? 'text-yellow-400' : 'text-green-400'}`}>
-              <span className="mr-1">{health.duplicates > 5 ? '⚠️' : '✅'}</span>
-              {health.duplicates} duplicates
-            </div>
-            <div className={`flex items-center ${health.staleCount > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
-              <span className="mr-1">{health.staleCount > 0 ? '⚠️' : '✅'}</span>
-              {health.staleCount} stale
-            </div>
-          </div>
-
-          {/* Top Entities */}
-          {data.entities.length > 0 && (
+      </CardHeader>
+      <CardContent>
+        {health ? (
+          <div className="space-y-4">
+            {/* Health Score Bar */}
             <div>
-              <div className="text-xs text-gray-400 mb-2">Top Entities</div>
-              <div className="flex flex-wrap gap-1">
-                {data.entities.slice(0, 8).map((entity, i) => (
-                  <span 
-                    key={i}
-                    className={`px-2 py-0.5 rounded text-xs ${getTypeColor(entity.type)}`}
-                    title={`${entity.type}: ${entity.mentions} mentions`}
-                  >
-                    {getTypeIcon(entity.type)} {entity.name}
-                  </span>
-                ))}
+              <div className="flex justify-between text-xs mb-1.5">
+                <span className="text-zinc-500">Health Score</span>
+                <span className="text-zinc-400 tabular-nums">{health.score}/100</span>
+              </div>
+              <ProgressBar value={health.score} color={getScoreBarColor(health.score)} />
+            </div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-3 gap-2 bg-surface-tertiary rounded-lg p-3">
+              <StatCompact label="Files" value={health.totalFiles} />
+              <StatCompact label="Lines" value={`${(health.totalLines / 1000).toFixed(1)}k`} />
+              <StatCompact label="Days" value={health.daysWithNotes} />
+            </div>
+
+            {/* Issues */}
+            <div className="flex gap-4 text-xs">
+              <div className={`flex items-center gap-1 ${health.duplicates > 5 ? 'text-yellow-400' : 'text-green-400'}`}>
+                {health.duplicates > 5
+                  ? <AlertTriangle size={14} />
+                  : <CheckCircle2 size={14} />
+                }
+                {health.duplicates} duplicates
+              </div>
+              <div className={`flex items-center gap-1 ${health.staleCount > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+                {health.staleCount > 0
+                  ? <AlertTriangle size={14} />
+                  : <CheckCircle2 size={14} />
+                }
+                {health.staleCount} stale
               </div>
             </div>
-          )}
 
-          {/* Topics */}
-          {data.topics.length > 0 && (
-            <div>
-              <div className="text-xs text-gray-400 mb-2">Topics</div>
-              <div className="flex flex-wrap gap-1">
-                {data.topics.map((topic, i) => (
-                  <span 
-                    key={i}
-                    className="px-2 py-0.5 rounded text-xs bg-fire-orange/20 text-fire-orange"
-                  >
-                    #{topic.name}
-                  </span>
-                ))}
+            {/* Top Entities */}
+            {data.entities.length > 0 && (
+              <div>
+                <div className="text-xs text-zinc-500 mb-2">Top Entities</div>
+                <div className="flex flex-wrap gap-1">
+                  {data.entities.slice(0, 8).map((entity, i) => {
+                    const TypeIcon = getTypeIcon(entity.type);
+                    return (
+                      <span
+                        key={i}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${getTypeColor(entity.type)}`}
+                        title={`${entity.type}: ${entity.mentions} mentions`}
+                      >
+                        <TypeIcon size={10} />
+                        {entity.name}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Last Updated */}
-          <div className="text-xs text-gray-500">
-            Updated: {new Date(health.updatedAt).toLocaleString()}
+            {/* Topics */}
+            {data.topics.length > 0 && (
+              <div>
+                <div className="text-xs text-zinc-500 mb-2">Topics</div>
+                <div className="flex flex-wrap gap-1">
+                  {data.topics.map((topic, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded text-xs bg-brand-subtle text-brand"
+                    >
+                      #{topic.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Last Updated */}
+            <div className="text-[10px] text-zinc-600">
+              Updated: {new Date(health.updatedAt).toLocaleString()}
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="text-center text-gray-400 py-8">
-          <div className="text-4xl mb-2">📊</div>
-          <div>No health data yet</div>
-          <div className="text-xs mt-2">Run memory scan to generate</div>
-        </div>
-      )}
-    </div>
+        ) : (
+          <EmptyState
+            icon={HardDrive}
+            title="No health data yet"
+            description="Run memory scan to generate"
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 }

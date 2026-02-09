@@ -1,7 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { TrendingUp, BarChart3 } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { EmptyState } from './ui/EmptyState';
+import { CardSkeleton } from './ui/Skeleton';
+
+function CustomTooltip({ active, payload, label }) {
+  if (active && payload && payload.length) {
+    const tokens = payload[0]?.value || 0;
+    const cost = payload[0]?.payload?.cost || 0;
+
+    return (
+      <div className="bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-sm shadow-lg">
+        <p className="text-white font-medium">{label}</p>
+        <p className="text-zinc-400 mt-0.5">Tokens: <span className="text-white tabular-nums">{tokens.toLocaleString()}</span></p>
+        <p className="text-zinc-500 mt-0.5">Cost: <span className="text-zinc-300 tabular-nums">${cost.toFixed(4)}</span></p>
+      </div>
+    );
+  }
+  return null;
+}
 
 export default function TokenChart() {
   const [data, setData] = useState([]);
@@ -15,7 +35,6 @@ export default function TokenChart() {
         const json = await res.json();
 
         if (json.history && json.history.length > 0) {
-          // Use real 7-day history from API (comes in DESC order, reverse for chart)
           const points = [...json.history].reverse().map(day => {
             const d = new Date(day.date);
             return {
@@ -38,85 +57,76 @@ export default function TokenChart() {
     fetchTokens();
   }, []);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const tokens = payload[0]?.value || 0;
-      const cost = payload[0]?.payload?.cost || 0;
-
-      return (
-        <div className="glass-card p-3 text-sm">
-          <p className="text-white font-semibold">{label}</p>
-          <p className="text-cyan-400">Tokens: {tokens.toLocaleString()}</p>
-          <p className="text-gray-400">Cost: ${cost.toFixed(4)}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (loading) {
-    return (
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">📈</span>Token Usage Trend (7 Days)
-        </h3>
-        <div className="h-64 flex items-center justify-center text-gray-400">Loading token data...</div>
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   if (data.length === 0) {
     return (
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">📈</span>Token Usage Trend (7 Days)
-        </h3>
-        <div className="h-64 flex items-center justify-center text-gray-500">
-          <div className="text-center">
-            <div className="text-4xl mb-2">📊</div>
-            <div>No token usage data yet</div>
-            <div className="text-xs mt-1">Data appears as token snapshots are recorded</div>
-          </div>
-        </div>
-      </div>
+      <Card className="h-full">
+        <CardHeader title="Token Usage (7 Days)" icon={TrendingUp} />
+        <CardContent>
+          <EmptyState
+            icon={BarChart3}
+            title="No token usage data yet"
+            description="Data appears as token snapshots are recorded"
+          />
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-        <span className="mr-2">📈</span>
-        Token Usage Trend (7 Days)
-      </h3>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="tokenGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-            <YAxis stroke="#9ca3af" fontSize={12} tickFormatter={(val) => `${(val/1000).toFixed(0)}k`} />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="tokens"
-              stroke="#06b6d4"
-              strokeWidth={2}
-              fill="url(#tokenGradient)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="flex justify-center space-x-6 mt-4 text-sm">
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-cyan-500 rounded mr-2"></div>
-          <span className="text-gray-400">Daily Usage</span>
+    <Card className="h-full">
+      <CardHeader title="Token Usage (7 Days)" icon={TrendingUp} />
+
+      <CardContent>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="tokenGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.06)"
+              />
+              <XAxis
+                dataKey="date"
+                stroke="#71717a"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#71717a"
+                fontSize={12}
+                tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
+              <Area
+                type="monotone"
+                dataKey="tokens"
+                stroke="#f97316"
+                strokeWidth={2}
+                fill="url(#tokenGradient)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
-      </div>
-    </div>
+
+        <div className="flex justify-center mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-brand rounded-full" />
+            <span className="text-zinc-400">Daily Usage</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

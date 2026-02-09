@@ -1,18 +1,41 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Target } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { EmptyState } from './ui/EmptyState';
+import { CardSkeleton } from './ui/Skeleton';
+
+function getBarColor(progress) {
+  if (progress >= 100) return '#22c55e';
+  if (progress > 0) return '#f97316';
+  return '#52525b';
+}
+
+function CustomTooltip({ active, payload }) {
+  if (active && payload && payload.length) {
+    const { name, progress } = payload[0].payload;
+    return (
+      <div className="bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-sm shadow-lg">
+        <p className="text-white font-medium">{name}</p>
+        <p className="text-zinc-400 mt-0.5">Progress: <span className="text-white tabular-nums">{progress}%</span></p>
+      </div>
+    );
+  }
+  return null;
+}
 
 export default function GoalsChart() {
   const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch goals data
-    const fetchGoals = async () => {
+    async function fetchGoals() {
       try {
         const res = await fetch('/api/goals');
         const result = await res.json();
-        
+
         if (result.goals && result.goals.length > 0) {
           const chartData = result.goals.map(goal => ({
             name: goal.title?.substring(0, 20) || 'Goal',
@@ -21,67 +44,77 @@ export default function GoalsChart() {
           }));
           setData(chartData);
         } else {
-          // Fallback sample data
-          setData([
-            { name: 'Get Wes a job', progress: 25, target: 100 },
-            { name: 'Generate income', progress: 15, target: 100 },
-            { name: 'Build PS pipeline', progress: 30, target: 100 },
-          ]);
+          setData([]);
         }
       } catch (error) {
-        // Fallback sample data
-        setData([
-          { name: 'Get Wes a job', progress: 25, target: 100 },
-          { name: 'Generate income', progress: 15, target: 100 },
-          { name: 'Build PS pipeline', progress: 30, target: 100 },
-        ]);
+        console.error('Failed to fetch goals:', error);
+        setData([]);
+      } finally {
+        setLoading(false);
       }
-    };
-
+    }
     fetchGoals();
   }, []);
 
-  const getBarColor = (progress) => {
-    if (progress >= 75) return '#22c55e';
-    if (progress >= 50) return '#eab308';
-    if (progress >= 25) return '#f97316';
-    return '#ef4444';
-  };
+  if (loading) {
+    return <CardSkeleton />;
+  }
 
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const { name, progress } = payload[0].payload;
-      return (
-        <div className="glass-card p-3 text-sm">
-          <p className="text-white font-semibold">{name}</p>
-          <p className="text-cyan-400">Progress: {progress}%</p>
-        </div>
-      );
-    }
-    return null;
-  };
+  if (data.length === 0) {
+    return (
+      <Card className="h-full">
+        <CardHeader title="Goal Progress" icon={Target} />
+        <CardContent>
+          <EmptyState
+            icon={Target}
+            title="No goals yet"
+            description="Goals will appear here as they are created"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-lg font-bold text-white mb-4 flex items-center">
-        <span className="mr-2">🎯</span>
-        Goal Progress
-      </h3>
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" horizontal={false} />
-            <XAxis type="number" domain={[0, 100]} stroke="#9ca3af" fontSize={12} />
-            <YAxis dataKey="name" type="category" stroke="#9ca3af" fontSize={11} width={100} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="progress" radius={[0, 4, 4, 0]}>
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={getBarColor(entry.progress)} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <Card className="h-full">
+      <CardHeader title="Goal Progress" icon={Target} count={data.length} />
+
+      <CardContent>
+        <div className="h-48">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} layout="vertical">
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.06)"
+                horizontal={false}
+              />
+              <XAxis
+                type="number"
+                domain={[0, 100]}
+                stroke="#71717a"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                dataKey="name"
+                type="category"
+                stroke="#71717a"
+                fontSize={11}
+                width={100}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+              <Bar dataKey="progress" radius={[0, 4, 4, 0]}>
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={getBarColor(entry.progress)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

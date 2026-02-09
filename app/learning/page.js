@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { BookOpen, Zap, Lightbulb, Sparkles, FileText, RotateCw, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import PageLayout from '../components/PageLayout';
+import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export default function LearningDashboard() {
   const [decisions, setDecisions] = useState([]);
@@ -33,23 +37,23 @@ export default function LearningDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const getOutcomeColor = (outcome) => {
+  const getOutcomeVariant = (outcome) => {
     switch (outcome) {
-      case 'success': return 'bg-green-500 text-white';
-      case 'failure': return 'bg-red-500 text-white';
-      case 'mixed': return 'bg-yellow-500 text-black';
-      case 'pending': return 'bg-blue-500 text-white';
-      default: return 'bg-gray-500 text-white';
+      case 'success': return 'success';
+      case 'failure': return 'error';
+      case 'mixed': return 'warning';
+      case 'pending': return 'info';
+      default: return 'default';
     }
   };
 
   const getOutcomeIcon = (outcome) => {
     switch (outcome) {
-      case 'success': return '✅';
-      case 'failure': return '❌';
-      case 'mixed': return '⚠️';
-      case 'pending': return '⏳';
-      default: return '❓';
+      case 'success': return CheckCircle2;
+      case 'failure': return XCircle;
+      case 'mixed': return AlertTriangle;
+      case 'pending': return Clock;
+      default: return Clock;
     }
   };
 
@@ -68,188 +72,197 @@ export default function LearningDashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <nav className="mb-6">
-        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
-          ← Back to Dashboard
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-2xl">
-              🧠
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Learning Database</h1>
-              <p className="text-gray-400">Decisions, Outcomes & Lessons {lastUpdated && `• Updated ${lastUpdated}`}</p>
-            </div>
-          </div>
-          <button onClick={fetchData} className="px-3 py-2 glass-card hover:bg-opacity-20 transition-all rounded-lg">
-            🔄 Refresh
-          </button>
-        </div>
-      </header>
-
+    <PageLayout
+      title="Learning Database"
+      subtitle={`Decisions, Outcomes & Lessons${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
+      breadcrumbs={['Dashboard', 'Learning']}
+      actions={
+        <button
+          onClick={fetchData}
+          className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+        >
+          <RotateCw size={14} />
+          Refresh
+        </button>
+      }
+    >
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-purple-400">{stats.totalDecisions}</div>
-          <div className="text-sm text-gray-400">Decisions Tracked</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-blue-400">{stats.totalLessons}</div>
-          <div className="text-sm text-gray-400">Lessons Learned</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-green-400">{stats.successRate}%</div>
-          <div className="text-sm text-gray-400">Success Rate</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-yellow-400">{stats.patterns}</div>
-          <div className="text-sm text-gray-400">Patterns Found</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.totalDecisions}</div>
+            <div className="text-xs text-zinc-500 mt-1">Decisions Tracked</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.totalLessons}</div>
+            <div className="text-xs text-zinc-500 mt-1">Lessons Learned</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.successRate}%</div>
+            <div className="text-xs text-zinc-500 mt-1">Success Rate</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.patterns}</div>
+            <div className="text-xs text-zinc-500 mt-1">Patterns Found</div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Decisions */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-            <span className="mr-2">⚡</span>
-            Recent Decisions
-          </h2>
-          <div className="space-y-4 max-h-[500px] overflow-y-auto">
-            {decisions.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
-                <div className="text-4xl mb-2">🤔</div>
-                <div>No decisions logged yet</div>
-              </div>
-            ) : (
-              decisions.map((decision) => (
-                <div key={decision.id} className="glass-card p-4 hover:bg-opacity-20 transition-all">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-start space-x-2">
-                      <span className="text-xl">{getOutcomeIcon(decision.outcome)}</span>
-                      <div>
-                        <div className="font-semibold text-white">{decision.decision}</div>
-                        <div className="text-xs text-gray-400">{decision.timestamp || decision.date}</div>
+        <Card>
+          <CardHeader title="Recent Decisions" icon={Zap} count={decisions.length} />
+          <CardContent>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {decisions.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title="No decisions logged yet"
+                  description="Start tracking decisions to build your knowledge base."
+                />
+              ) : (
+                decisions.map((decision) => {
+                  const OutcomeIcon = getOutcomeIcon(decision.outcome);
+                  return (
+                    <div key={decision.id} className="bg-surface-tertiary rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-start gap-2">
+                          <OutcomeIcon size={16} className="text-zinc-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-medium text-white">{decision.decision}</div>
+                            <div className="text-xs text-zinc-500">{decision.timestamp || decision.date}</div>
+                          </div>
+                        </div>
+                        <Badge variant={getOutcomeVariant(decision.outcome)} size="xs">
+                          {decision.outcome || 'pending'}
+                        </Badge>
                       </div>
+
+                      {decision.context && (
+                        <div className="text-sm text-zinc-400 mb-3 pl-6">{decision.context}</div>
+                      )}
+
+                      {parseTags(decision.tags).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3 pl-6">
+                          {parseTags(decision.tags).map((tag, index) => (
+                            <span key={index} className="px-2 py-0.5 bg-white/5 rounded text-xs text-zinc-400">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs font-bold ${getOutcomeColor(decision.outcome)}`}>
-                      {decision.outcome || 'pending'}
-                    </span>
-                  </div>
-                  
-                  {decision.context && (
-                    <div className="text-sm text-gray-400 mb-3 pl-7">{decision.context}</div>
-                  )}
-                  
-                  {parseTags(decision.tags).length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-3 pl-7">
-                      {parseTags(decision.tags).map((tag, index) => (
-                        <span key={index} className="px-2 py-1 bg-gray-700 rounded text-xs text-gray-300">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Lessons */}
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-            <span className="mr-2">💡</span>
-            Distilled Lessons
-          </h2>
-          <div className="space-y-4 max-h-[500px] overflow-y-auto">
-            {lessons.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
-                <div className="text-4xl mb-2">📚</div>
-                <div>No lessons captured yet</div>
-              </div>
-            ) : (
-              lessons.map((lesson) => (
-                <div key={lesson.id} className="glass-card p-4 hover:bg-opacity-20 transition-all">
-                  <div className="font-semibold text-white mb-2">{lesson.lesson}</div>
-                  
-                  {lesson.source_decisions && (
-                    <div className="text-sm text-gray-400 mb-3">{lesson.source_decisions}</div>
-                  )}
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <div className="text-xs text-gray-400">Confidence</div>
-                        <div className={`font-bold ${getConfidenceColor(lesson.confidence)}`}>
-                          {lesson.confidence || 0}%
+        <Card>
+          <CardHeader title="Distilled Lessons" icon={Lightbulb} count={lessons.length} />
+          <CardContent>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {lessons.length === 0 ? (
+                <EmptyState
+                  icon={BookOpen}
+                  title="No lessons captured yet"
+                  description="Lessons are distilled from your tracked decisions."
+                />
+              ) : (
+                lessons.map((lesson) => (
+                  <div key={lesson.id} className="bg-surface-tertiary rounded-lg p-4">
+                    <div className="text-sm font-medium text-white mb-2">{lesson.lesson}</div>
+
+                    {lesson.source_decisions && (
+                      <div className="text-sm text-zinc-400 mb-3">{lesson.source_decisions}</div>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <div className="text-xs text-zinc-500">Confidence</div>
+                          <div className={`text-sm font-semibold tabular-nums ${getConfidenceColor(lesson.confidence)}`}>
+                            {lesson.confidence || 0}%
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-zinc-500">Validated</div>
+                          <div className="text-sm font-semibold text-white tabular-nums">{lesson.times_validated || 0}x</div>
                         </div>
                       </div>
-                      <div>
-                        <div className="text-xs text-gray-400">Validated</div>
-                        <div className="font-bold text-white">{lesson.times_validated || 0}x</div>
-                      </div>
-                    </div>
-                    
-                    <div className="w-24">
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${(lesson.confidence || 0) >= 90 ? 'bg-green-500' : (lesson.confidence || 0) >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                          style={{ width: `${lesson.confidence || 0}%` }}
-                        ></div>
+
+                      <div className="w-24">
+                        <div className="w-full bg-white/5 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full ${(lesson.confidence || 0) >= 90 ? 'bg-green-500' : (lesson.confidence || 0) >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                            style={{ width: `${lesson.confidence || 0}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Actions */}
-      <div className="glass-card p-6 mt-6">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">⚡</span>
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText('cd tools/learning-database && python learner.py patterns');
-              alert('Command copied!');
-            }}
-            className="glass-card p-4 hover:bg-opacity-20 transition-all text-left"
-          >
-            <div className="text-purple-400 font-semibold">🔮 View Patterns</div>
-            <div className="text-xs text-gray-400">Analyze decision patterns</div>
-          </button>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText('cd tools/learning-database && python learner.py log "decision" --context "context"');
-              alert('Command copied! Edit and paste.');
-            }}
-            className="glass-card p-4 hover:bg-opacity-20 transition-all text-left"
-          >
-            <div className="text-blue-400 font-semibold">📝 Log Decision</div>
-            <div className="text-xs text-gray-400">Record a new decision</div>
-          </button>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText('cd tools/learning-database && python learner.py lesson "learned X" --confidence 80');
-              alert('Command copied! Edit and paste.');
-            }}
-            className="glass-card p-4 hover:bg-opacity-20 transition-all text-left"
-          >
-            <div className="text-yellow-400 font-semibold">💡 Add Lesson</div>
-            <div className="text-xs text-gray-400">Capture a new lesson</div>
-          </button>
-        </div>
-      </div>
-    </div>
+      <Card className="mt-6">
+        <CardHeader title="Quick Actions" icon={Zap} />
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('cd tools/learning-database && python learner.py patterns');
+                alert('Command copied!');
+              }}
+              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-purple-400 flex items-center gap-1.5">
+                <Sparkles size={14} />
+                View Patterns
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Analyze decision patterns</div>
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('cd tools/learning-database && python learner.py log "decision" --context "context"');
+                alert('Command copied! Edit and paste.');
+              }}
+              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-blue-400 flex items-center gap-1.5">
+                <FileText size={14} />
+                Log Decision
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Record a new decision</div>
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('cd tools/learning-database && python learner.py lesson "learned X" --confidence 80');
+                alert('Command copied! Edit and paste.');
+              }}
+              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-yellow-400 flex items-center gap-1.5">
+                <Lightbulb size={14} />
+                Add Lesson
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Capture a new lesson</div>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 }

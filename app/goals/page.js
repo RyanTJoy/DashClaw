@@ -1,7 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { Target, Briefcase, DollarSign, Building, BookOpen, Pin, RotateCw, CheckCircle2, Circle, Search, Plus, BarChart3 } from 'lucide-react';
+import PageLayout from '../components/PageLayout';
+import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export default function GoalsDashboard() {
   const [goals, setGoals] = useState([]);
@@ -35,23 +40,23 @@ export default function GoalsDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (status) => {
+  const getStatusVariant = (status) => {
     switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'completed': return 'bg-blue-500';
-      case 'paused': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
+      case 'active': return 'success';
+      case 'completed': return 'info';
+      case 'paused': return 'warning';
+      default: return 'default';
     }
   };
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'work': return '💼';
-      case 'income': return '💰';
-      case 'business': return '🏢';
-      case 'learning': return '📚';
-      case 'personal': return '🎯';
-      default: return '📌';
+      case 'work': return Briefcase;
+      case 'income': return DollarSign;
+      case 'business': return Building;
+      case 'learning': return BookOpen;
+      case 'personal': return Target;
+      default: return Pin;
     }
   };
 
@@ -64,170 +69,185 @@ export default function GoalsDashboard() {
 
   const getProgressColor = (progress) => {
     const p = progress || 0;
-    if (p >= 75) return 'bg-green-500';
-    if (p >= 50) return 'bg-yellow-500';
-    if (p >= 25) return 'bg-orange-500';
-    return 'bg-red-500';
+    if (p >= 75) return 'success';
+    if (p >= 50) return 'warning';
+    if (p >= 25) return 'warning';
+    return 'error';
   };
 
   return (
-    <div className="min-h-screen p-6">
-      <nav className="mb-6">
-        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
-          ← Back to Dashboard
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center text-2xl">
-              🎯
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Goal Tracker</h1>
-              <p className="text-gray-400">Progress & Milestone Tracking {lastUpdated && `• Updated ${lastUpdated}`}</p>
-            </div>
-          </div>
-          <button onClick={fetchData} className="px-3 py-2 glass-card hover:bg-opacity-20 transition-all rounded-lg">
-            🔄 Refresh
-          </button>
-        </div>
-      </header>
-
+    <PageLayout
+      title="Goal Tracker"
+      subtitle={`Progress & Milestone Tracking${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
+      breadcrumbs={['Dashboard', 'Goals']}
+      actions={
+        <button
+          onClick={fetchData}
+          className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+        >
+          <RotateCw size={14} />
+          Refresh
+        </button>
+      }
+    >
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-white">{stats.totalGoals}</div>
-          <div className="text-sm text-gray-400">Total Goals</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-green-400">{stats.active}</div>
-          <div className="text-sm text-gray-400">Active</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-blue-400">{stats.completed}</div>
-          <div className="text-sm text-gray-400">Completed</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-yellow-400">{stats.avgProgress}%</div>
-          <div className="text-sm text-gray-400">Avg Progress</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.totalGoals}</div>
+            <div className="text-xs text-zinc-500 mt-1">Total Goals</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.active}</div>
+            <div className="text-xs text-zinc-500 mt-1">Active</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.completed}</div>
+            <div className="text-xs text-zinc-500 mt-1">Completed</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.avgProgress}%</div>
+            <div className="text-xs text-zinc-500 mt-1">Avg Progress</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Goals */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {goals.length === 0 ? (
-          <div className="glass-card p-8 text-center">
-            <div className="text-4xl mb-4">🎯</div>
-            <div className="text-gray-400">No goals yet. Add one to get started!</div>
-          </div>
+          <Card>
+            <CardContent className="pt-5">
+              <EmptyState
+                icon={Target}
+                title="No goals yet"
+                description="Add one to get started!"
+              />
+            </CardContent>
+          </Card>
         ) : (
           goals.map((goal) => {
             const daysRemaining = getDaysRemaining(goal.target_date);
             const milestones = goal.milestones || [];
             const progress = goal.progress || 0;
-            
+            const CategoryIcon = getCategoryIcon(goal.category);
+
             return (
-              <div key={goal.id} className="glass-card p-6 border-l-4 border-l-orange-500">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-3xl">{getCategoryIcon(goal.category)}</span>
-                    <div>
-                      <h3 className="text-xl font-bold text-white">{goal.title}</h3>
-                      <div className="text-sm text-gray-400">
-                        {goal.target_date && `Target: ${goal.target_date}`}
-                        {daysRemaining !== null && ` • ${daysRemaining} days remaining`}
+              <Card key={goal.id} className="border-l-4 border-l-brand">
+                <CardContent className="pt-5">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-surface-tertiary flex items-center justify-center">
+                        <CategoryIcon size={18} className="text-zinc-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-white">{goal.title}</h3>
+                        <div className="text-xs text-zinc-500">
+                          {goal.target_date && `Target: ${goal.target_date}`}
+                          {daysRemaining !== null && ` -- ${daysRemaining} days remaining`}
+                        </div>
                       </div>
                     </div>
+                    <Badge variant={getStatusVariant(goal.status)}>
+                      {goal.status || 'active'}
+                    </Badge>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold text-white ${getStatusColor(goal.status)}`}>
-                    {goal.status || 'active'}
-                  </span>
-                </div>
 
-                {/* Description */}
-                {goal.description && (
-                  <p className="text-gray-300 mb-4">{goal.description}</p>
-                )}
+                  {/* Description */}
+                  {goal.description && (
+                    <p className="text-sm text-zinc-300 mb-4">{goal.description}</p>
+                  )}
 
-                {/* Main Progress Bar */}
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-400">Overall Progress</span>
-                    <span className="text-white font-bold">{progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-4">
-                    <div 
-                      className={`h-4 rounded-full transition-all duration-500 ${getProgressColor(progress)}`}
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Milestones */}
-                {milestones.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-300 mb-3">Milestones</h4>
-                    <div className="space-y-2">
-                      {milestones.map((milestone) => (
-                        <div key={milestone.id} className="glass-card p-3 flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span>{milestone.status === 'completed' ? '✅' : '⬜'}</span>
-                            <span className={`text-sm ${milestone.status === 'completed' ? 'text-gray-400 line-through' : 'text-white'}`}>
-                              {milestone.title}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                  {/* Main Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-xs mb-2">
+                      <span className="text-zinc-500">Overall Progress</span>
+                      <span className="text-white font-medium tabular-nums">{progress}%</span>
                     </div>
+                    <ProgressBar value={progress} color={getProgressColor(progress)} className="h-2" />
                   </div>
-                )}
-              </div>
+
+                  {/* Milestones */}
+                  {milestones.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-3">Milestones</h4>
+                      <div className="space-y-2">
+                        {milestones.map((milestone) => (
+                          <div key={milestone.id} className="bg-surface-tertiary rounded-lg p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {milestone.status === 'completed' ? (
+                                <CheckCircle2 size={16} className="text-green-400" />
+                              ) : (
+                                <Circle size={16} className="text-zinc-600" />
+                              )}
+                              <span className={`text-sm ${milestone.status === 'completed' ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                                {milestone.title}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             );
           })
         )}
       </div>
 
       {/* Quick Actions */}
-      <div className="glass-card p-6 mt-6">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">⚡</span>
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText('cd tools/goal-tracker && python goals.py check');
-              alert('Command copied! Paste in terminal.');
-            }}
-            className="glass-card p-4 hover:bg-opacity-20 transition-all text-left"
-          >
-            <div className="text-green-400 font-semibold">🔍 Health Check</div>
-            <div className="text-xs text-gray-400">Review all goal status</div>
-          </button>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText('cd tools/goal-tracker && python goals.py add "New Goal" --category work --target 2026-04-01');
-              alert('Command copied! Edit and paste in terminal.');
-            }}
-            className="glass-card p-4 hover:bg-opacity-20 transition-all text-left"
-          >
-            <div className="text-blue-400 font-semibold">➕ Add Goal</div>
-            <div className="text-xs text-gray-400">Create a new goal</div>
-          </button>
-          <button 
-            onClick={() => {
-              navigator.clipboard.writeText('cd tools/goal-tracker && python goals.py progress 1 30');
-              alert('Command copied! Adjust goal ID and percentage, then paste.');
-            }}
-            className="glass-card p-4 hover:bg-opacity-20 transition-all text-left"
-          >
-            <div className="text-yellow-400 font-semibold">📊 Update Progress</div>
-            <div className="text-xs text-gray-400">Log goal progress</div>
-          </button>
-        </div>
-      </div>
-    </div>
+      <Card className="mt-6">
+        <CardHeader title="Quick Actions" icon={Target} />
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('cd tools/goal-tracker && python goals.py check');
+                alert('Command copied! Paste in terminal.');
+              }}
+              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-green-400 flex items-center gap-1.5">
+                <Search size={14} />
+                Health Check
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Review all goal status</div>
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('cd tools/goal-tracker && python goals.py add "New Goal" --category work --target 2026-04-01');
+                alert('Command copied! Edit and paste in terminal.');
+              }}
+              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-blue-400 flex items-center gap-1.5">
+                <Plus size={14} />
+                Add Goal
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Create a new goal</div>
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText('cd tools/goal-tracker && python goals.py progress 1 30');
+                alert('Command copied! Adjust goal ID and percentage, then paste.');
+              }}
+              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-yellow-400 flex items-center gap-1.5">
+                <BarChart3 size={14} />
+                Update Progress
+              </div>
+              <div className="text-xs text-zinc-500 mt-1">Log goal progress</div>
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 }

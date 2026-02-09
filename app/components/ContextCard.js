@@ -1,6 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { FileText, Zap, Lightbulb, Heart, BarChart3 } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { Badge } from './ui/Badge';
+import { ProgressBar } from './ui/ProgressBar';
+import { StatCompact } from './ui/Stat';
+import { EmptyState } from './ui/EmptyState';
+import { CardSkeleton } from './ui/Skeleton';
 
 export default function ContextCard() {
   const [contextData, setContextData] = useState({
@@ -60,119 +67,83 @@ export default function ContextCard() {
 
   const getCategoryIcon = (category) => {
     switch (category) {
-      case 'decision': return '⚡';
-      case 'insight': return '💡';
-      case 'preference': return '❤️';
-      case 'status': return '📊';
-      default: return '💭';
+      case 'decision': return Zap;
+      case 'insight': return Lightbulb;
+      case 'preference': return Heart;
+      case 'status': return BarChart3;
+      default: return FileText;
     }
   };
 
-  const getCategoryColor = (category) => {
+  const getCategoryVariant = (category) => {
     switch (category) {
-      case 'decision': return 'bg-red-500';
-      case 'insight': return 'bg-yellow-500';
-      case 'preference': return 'bg-pink-500';
-      case 'status': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+      case 'decision': return 'error';
+      case 'insight': return 'warning';
+      case 'preference': return 'brand';
+      case 'status': return 'info';
+      default: return 'default';
     }
   };
-
-  const getImportanceWidth = (importance) => `${importance * 10}%`;
 
   if (loading) {
-    return (
-      <div className="glass-card p-6 h-full">
-        <h2 className="text-xl font-bold text-white flex items-center mb-4">
-          <span className="mr-2">🧵</span>Context
-        </h2>
-        <div className="text-center text-gray-400 py-8">Loading context...</div>
-      </div>
-    );
-  }
-
-  if (contextData.recentPoints.length === 0) {
-    return (
-      <div className="glass-card p-6 h-full">
-        <h2 className="text-xl font-bold text-white flex items-center mb-4">
-          <span className="mr-2">🧵</span>Context
-        </h2>
-        <div className="text-center text-gray-500 py-8">
-          <div className="text-4xl mb-2">🧠</div>
-          <div>No learning data yet</div>
-          <div className="text-xs mt-1">Context is drawn from learning decisions</div>
-        </div>
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   return (
-    <div className="glass-card p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">🧵</span>
-          Context
-        </h2>
-        <div className="flex space-x-2">
-          <span className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-            {contextData.todayPoints} decisions
-          </span>
-          {contextData.stats.totalLessons > 0 && (
-            <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-              {contextData.stats.totalLessons} lessons
-            </span>
-          )}
-        </div>
-      </div>
+    <Card className="h-full">
+      <CardHeader title="Context" icon={FileText}>
+        <Badge variant="success" size="sm">{contextData.todayPoints} decisions</Badge>
+        {contextData.stats.totalLessons > 0 && (
+          <Badge variant="info" size="sm">{contextData.stats.totalLessons} lessons</Badge>
+        )}
+      </CardHeader>
+      <CardContent>
+        {contextData.recentPoints.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="No learning data yet"
+            description="Context is drawn from learning decisions"
+          />
+        ) : (
+          <div className="space-y-4">
+            {/* Stats Row */}
+            {contextData.stats.successRate !== undefined && (
+              <div className="grid grid-cols-3 gap-2 bg-surface-tertiary rounded-lg p-3">
+                <StatCompact label="Success" value={`${contextData.stats.successRate}%`} color="text-green-400" />
+                <StatCompact label="Decisions" value={contextData.stats.totalDecisions || 0} />
+                <StatCompact label="Patterns" value={contextData.stats.patterns || 0} color="text-purple-400" />
+              </div>
+            )}
 
-      <div className="space-y-4">
-        {/* Stats Row */}
-        {contextData.stats.successRate !== undefined && (
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="glass-card p-2">
-              <div className="font-bold text-green-400">{contextData.stats.successRate}%</div>
-              <div className="text-gray-400">Success</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="font-bold text-white">{contextData.stats.totalDecisions || 0}</div>
-              <div className="text-gray-400">Decisions</div>
-            </div>
-            <div className="glass-card p-2">
-              <div className="font-bold text-purple-400">{contextData.stats.patterns || 0}</div>
-              <div className="text-gray-400">Patterns</div>
+            {/* Recent Decisions */}
+            <div>
+              <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Decisions</div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {contextData.recentPoints.map((point) => {
+                  const IconComponent = getCategoryIcon(point.category);
+                  return (
+                    <div key={point.id} className="bg-surface-tertiary rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <IconComponent size={14} className="text-zinc-400" />
+                          <Badge variant={getCategoryVariant(point.category)} size="xs">
+                            {point.category}
+                          </Badge>
+                        </div>
+                        <span className="text-[10px] text-zinc-500">{point.timestamp}</span>
+                      </div>
+
+                      <div className="text-sm text-zinc-200 mb-2">{point.text}</div>
+
+                      <ProgressBar value={point.importance * 10} color="brand" />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
-
-        {/* Recent Key Points */}
-        <div>
-          <div className="text-sm font-semibold text-gray-300 mb-2">Recent Decisions</div>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {contextData.recentPoints.map((point) => (
-              <div key={point.id} className="glass-card p-3">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center">
-                    <span className="mr-2">{getCategoryIcon(point.category)}</span>
-                    <span className={`px-2 py-1 rounded text-xs font-bold text-white ${getCategoryColor(point.category)}`}>
-                      {point.category}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400">{point.timestamp}</span>
-                </div>
-
-                <div className="text-sm text-white mb-2">{point.text}</div>
-
-                <div className="w-full bg-gray-700 rounded-full h-1">
-                  <div
-                    className="h-1 fire-gradient rounded-full"
-                    style={{ width: getImportanceWidth(point.importance) }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

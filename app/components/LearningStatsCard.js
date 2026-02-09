@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { BookOpen } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { StatCompact } from './ui/Stat';
+import { ProgressBar } from './ui/ProgressBar';
+import { EmptyState } from './ui/EmptyState';
+import { CardSkeleton } from './ui/Skeleton';
 
 export default function LearningStatsCard() {
-  const [stats, setStats] = useState({
-    decisions: 0,
-    lessons: 0,
-    successRate: 0,
-    recentLessons: []
-  });
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
@@ -21,9 +23,14 @@ export default function LearningStatsCard() {
           successRate: data.stats.successRate || 0,
           recentLessons: data.lessons.slice(0, 4).map(l => l.lesson || l.text || 'Lesson')
         });
+      } else {
+        setStats({ decisions: 0, lessons: 0, successRate: 0, recentLessons: [] });
       }
     } catch (error) {
       console.error('Failed to fetch learning stats:', error);
+      setStats({ decisions: 0, lessons: 0, successRate: 0, recentLessons: [] });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,63 +40,64 @@ export default function LearningStatsCard() {
     return () => clearInterval(interval);
   }, []);
 
+  if (loading) {
+    return <CardSkeleton />;
+  }
+
+  if (!stats || (stats.decisions === 0 && stats.lessons === 0)) {
+    return (
+      <Card className="h-full">
+        <CardHeader title="Learning" icon={BookOpen} />
+        <CardContent>
+          <EmptyState
+            icon={BookOpen}
+            title="No learning data yet"
+            description="Decisions and lessons will appear as they are tracked"
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="glass-card p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">🧠</span>
-          Learning
-        </h2>
-        <div className="text-right">
-          <div className="text-sm text-gray-400">Success Rate</div>
-          <div className="text-xl font-bold text-green-400">{stats.successRate}%</div>
-        </div>
-      </div>
+    <Card className="h-full">
+      <CardHeader title="Learning" icon={BookOpen}>
+        <span className="text-xs text-zinc-500">{stats.successRate}% success</span>
+      </CardHeader>
 
-      <div className="space-y-4">
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="text-3xl font-bold fire-gradient bg-clip-text text-transparent">
-              {stats.decisions}
-            </div>
-            <div className="text-xs text-gray-400">Decisions Tracked</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl font-bold fire-gradient bg-clip-text text-transparent">
-              {stats.lessons}
-            </div>
-            <div className="text-xs text-gray-400">Lessons Learned</div>
+      <CardContent>
+        {/* Stats row */}
+        <div className="bg-surface-tertiary rounded-lg p-3 mb-4">
+          <div className="grid grid-cols-2 gap-4">
+            <StatCompact label="Decisions Tracked" value={stats.decisions} color="text-white" />
+            <StatCompact label="Lessons Learned" value={stats.lessons} color="text-white" />
           </div>
         </div>
 
-        {/* Success Rate Visualization */}
-        <div className="glass-card p-3">
+        {/* Success rate bar */}
+        <div className="mb-4">
           <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-300">Decision Success</span>
-            <span className="text-white font-semibold">{stats.successRate}%</span>
+            <span className="text-zinc-300">Decision Success</span>
+            <span className="text-white font-medium tabular-nums">{stats.successRate}%</span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="h-2 bg-green-500 rounded-full transition-all duration-500"
-              style={{ width: `${stats.successRate}%` }}
-            ></div>
-          </div>
+          <ProgressBar value={stats.successRate} color="success" />
         </div>
 
-        {/* Recent Lessons */}
-        <div>
-          <div className="text-sm font-semibold text-gray-300 mb-2">Recent Lessons</div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {stats.recentLessons.map((lesson, index) => (
-              <div key={index} className="text-xs text-gray-400 flex items-start">
-                <span className="text-yellow-400 mr-2">•</span>
-                <span>{lesson}</span>
-              </div>
-            ))}
+        {/* Recent lessons */}
+        {stats.recentLessons.length > 0 && (
+          <div>
+            <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Lessons</div>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {stats.recentLessons.map((lesson, index) => (
+                <div key={index} className="text-xs text-zinc-400 flex items-start gap-2">
+                  <span className="text-brand mt-1 flex-shrink-0">&#8226;</span>
+                  <span className="transition-colors duration-150">{lesson}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

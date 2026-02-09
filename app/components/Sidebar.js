@@ -1,0 +1,158 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert,
+  FileText, Users, BookOpen, Target, Gauge, Plug,
+  GitBranch, Settings, Crosshair, Calendar,
+  PanelLeftClose, PanelLeft, Menu, X,
+} from 'lucide-react';
+
+const navGroups = [
+  {
+    label: 'Overview',
+    items: [
+      { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { href: '/actions', icon: Zap, label: 'Actions' },
+      // Open Loops and Risk Signals are dashboard widgets, no dedicated page yet
+    ],
+  },
+  {
+    label: 'Data',
+    items: [
+      { href: '/content', icon: FileText, label: 'Content' },
+      { href: '/relationships', icon: Users, label: 'Relationships' },
+      { href: '/learning', icon: BookOpen, label: 'Learning' },
+      { href: '/goals', icon: Target, label: 'Goals' },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { href: '/tokens', icon: Gauge, label: 'Tokens' },
+      { href: '/integrations', icon: Plug, label: 'Integrations' },
+      { href: '/workflows', icon: GitBranch, label: 'Workflows' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { href: '/bounty-hunter', icon: Crosshair, label: 'Bounty Hunter' },
+      { href: '/calendar', icon: Calendar, label: 'Calendar' },
+    ],
+  },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (href) => {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  };
+
+  const sidebarContent = (
+    <>
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-4 py-5 border-b border-[rgba(255,255,255,0.06)]">
+        <Flame size={20} className="text-brand flex-shrink-0" />
+        {!collapsed && <span className="text-lg font-semibold text-white">OpenClaw</span>}
+      </div>
+
+      {/* Nav Groups */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2">
+        {navGroups.map((group) => (
+          <div key={group.label} className="mb-4">
+            {!collapsed && (
+              <div className="px-3 mb-1.5 text-[10px] font-medium text-zinc-500 uppercase tracking-widest">
+                {group.label}
+              </div>
+            )}
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors duration-150 mb-0.5 relative ${
+                    active
+                      ? 'bg-white/5 text-white'
+                      : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  {active && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-brand rounded-r" />
+                  )}
+                  <Icon size={16} className="flex-shrink-0" />
+                  {!collapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
+
+      {/* Bottom */}
+      <div className="border-t border-[rgba(255,255,255,0.06)] px-4 py-3">
+        {!collapsed && (
+          <div className="text-[10px] text-zinc-600">OpenClaw Pro v1.0</div>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden md:flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors duration-150 mt-1 text-xs"
+        >
+          {collapsed ? <PanelLeft size={14} /> : <PanelLeftClose size={14} />}
+          {!collapsed && <span>Collapse</span>}
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-surface-secondary border border-[rgba(255,255,255,0.06)]"
+      >
+        <Menu size={18} className="text-zinc-400" />
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-56 bg-surface-secondary border-r border-[rgba(255,255,255,0.06)] flex flex-col">
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-3 right-3 p-1.5 text-zinc-500 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <div
+        className={`hidden md:flex flex-col flex-shrink-0 bg-surface-secondary border-r border-[rgba(255,255,255,0.06)] h-screen sticky top-0 transition-all duration-200 ${
+          collapsed ? 'w-14' : 'w-56'
+        }`}
+      >
+        {sidebarContent}
+      </div>
+    </>
+  );
+}

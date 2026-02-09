@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Rocket, Zap, Cloud, CheckCircle2, Lightbulb, PartyPopper } from 'lucide-react';
 
 const STEPS = [
   { id: 'welcome', title: 'Welcome' },
@@ -14,7 +15,7 @@ const STEPS = [
 export default function SetupWizard() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState('welcome');
-  const [setupMode, setSetupMode] = useState(null); // 'quick' or 'full'
+  const [setupMode, setSetupMode] = useState(null);
   const [databaseUrl, setDatabaseUrl] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -145,30 +146,30 @@ CREATE TABLE IF NOT EXISTS calendar_events (
   synced_at TIMESTAMP DEFAULT NOW()
 );`;
 
+  const stepIndex = STEPS.findIndex(s => s.id === currentStep);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-4 md:p-8">
+    <div className="min-h-screen bg-surface-primary p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-        
+
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between mb-2">
             {STEPS.map((step, i) => (
-              <div 
+              <div
                 key={step.id}
                 className={`flex items-center ${i < STEPS.length - 1 ? 'flex-1' : ''}`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                  STEPS.findIndex(s => s.id === currentStep) >= i 
-                    ? 'bg-cyan-500 text-white' 
-                    : 'bg-gray-700 text-gray-400'
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                  stepIndex >= i
+                    ? 'bg-brand text-white'
+                    : 'bg-surface-tertiary text-zinc-500'
                 }`}>
                   {i + 1}
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-1 mx-2 ${
-                    STEPS.findIndex(s => s.id === currentStep) > i
-                      ? 'bg-cyan-500'
-                      : 'bg-gray-700'
+                  <div className={`flex-1 h-1 mx-2 transition-colors ${
+                    stepIndex > i ? 'bg-brand' : 'bg-surface-tertiary'
                   }`} />
                 )}
               </div>
@@ -177,21 +178,23 @@ CREATE TABLE IF NOT EXISTS calendar_events (
         </div>
 
         {/* Step Content */}
-        <div className="glass-card p-8 rounded-2xl">
-          
+        <div className="bg-surface-secondary border border-[rgba(255,255,255,0.06)] p-8 rounded-2xl">
+
           {/* Welcome */}
           {currentStep === 'welcome' && (
             <div className="text-center">
-              <div className="text-6xl mb-4">🚀</div>
-              <h1 className="text-3xl font-bold text-white mb-4">Welcome to OpenClaw Dashboard</h1>
-              <p className="text-gray-300 mb-8">
-                Your AI agent's command center. Let's get you set up in under 5 minutes.
+              <div className="flex justify-center mb-4">
+                <Rocket size={48} className="text-brand" />
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-white mb-4">Welcome to OpenClaw Pro</h1>
+              <p className="text-sm text-zinc-300 mb-8">
+                Your AI agent operations control plane. Let&apos;s get you set up in under 5 minutes.
               </p>
               <button
                 onClick={nextStep}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all"
+                className="bg-brand hover:bg-brand-hover text-white px-8 py-3 rounded-xl font-semibold text-sm transition-colors duration-150"
               >
-                Let's Go →
+                Get Started
               </button>
             </div>
           )}
@@ -199,23 +202,23 @@ CREATE TABLE IF NOT EXISTS calendar_events (
           {/* Choose Mode */}
           {currentStep === 'mode' && (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">How do you want to use the dashboard?</h2>
-              <p className="text-gray-400 mb-8">Choose based on your needs. You can upgrade anytime.</p>
-              
+              <h2 className="text-xl font-semibold text-white mb-2">How do you want to use the dashboard?</h2>
+              <p className="text-sm text-zinc-400 mb-8">Choose based on your needs. You can upgrade anytime.</p>
+
               <div className="grid gap-4">
                 <button
                   onClick={() => { setSetupMode('quick'); goToStep('complete'); }}
-                  className="p-6 rounded-xl border-2 border-gray-700 hover:border-cyan-500 text-left transition-all group"
+                  className="p-5 rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-brand/40 text-left transition-colors duration-150 group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="text-4xl">⚡</div>
+                    <Zap size={28} className="text-brand mt-0.5" />
                     <div>
-                      <h3 className="text-xl font-bold text-white group-hover:text-cyan-400">Quick Start (Try It Now)</h3>
-                      <p className="text-gray-400 mt-1">Data stored in your browser. Perfect for trying it out.</p>
+                      <h3 className="text-sm font-semibold text-white group-hover:text-brand transition-colors">Quick Start (Try It Now)</h3>
+                      <p className="text-xs text-zinc-400 mt-1">Data stored in your browser. Perfect for trying it out.</p>
                       <div className="flex gap-2 mt-3">
-                        <span className="px-2 py-1 bg-green-900 text-green-300 text-xs rounded">No signup</span>
-                        <span className="px-2 py-1 bg-green-900 text-green-300 text-xs rounded">Instant</span>
-                        <span className="px-2 py-1 bg-yellow-900 text-yellow-300 text-xs rounded">Browser only</span>
+                        <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] rounded font-medium">No signup</span>
+                        <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 text-[10px] rounded font-medium">Instant</span>
+                        <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-[10px] rounded font-medium">Browser only</span>
                       </div>
                     </div>
                   </div>
@@ -223,17 +226,17 @@ CREATE TABLE IF NOT EXISTS calendar_events (
 
                 <button
                   onClick={() => { setSetupMode('full'); nextStep(); }}
-                  className="p-6 rounded-xl border-2 border-gray-700 hover:border-cyan-500 text-left transition-all group"
+                  className="p-5 rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-brand/40 text-left transition-colors duration-150 group"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="text-4xl">☁️</div>
+                    <Cloud size={28} className="text-blue-400 mt-0.5" />
                     <div>
-                      <h3 className="text-xl font-bold text-white group-hover:text-cyan-400">Full Setup (Recommended)</h3>
-                      <p className="text-gray-400 mt-1">Cloud database + hosting. Access from anywhere, sync with your agent.</p>
+                      <h3 className="text-sm font-semibold text-white group-hover:text-brand transition-colors">Full Setup (Recommended)</h3>
+                      <p className="text-xs text-zinc-400 mt-1">Cloud database + hosting. Access from anywhere, sync with your agent.</p>
                       <div className="flex gap-2 mt-3">
-                        <span className="px-2 py-1 bg-cyan-900 text-cyan-300 text-xs rounded">Cloud sync</span>
-                        <span className="px-2 py-1 bg-cyan-900 text-cyan-300 text-xs rounded">Multi-device</span>
-                        <span className="px-2 py-1 bg-cyan-900 text-cyan-300 text-xs rounded">5 min setup</span>
+                        <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] rounded font-medium">Cloud sync</span>
+                        <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] rounded font-medium">Multi-device</span>
+                        <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-[10px] rounded font-medium">5 min setup</span>
                       </div>
                     </div>
                   </div>
@@ -245,85 +248,82 @@ CREATE TABLE IF NOT EXISTS calendar_events (
           {/* Database Setup */}
           {currentStep === 'database' && (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">Set Up Your Database</h2>
-              <p className="text-gray-400 mb-6">We'll use Neon - a free serverless PostgreSQL database.</p>
-              
+              <h2 className="text-xl font-semibold text-white mb-2">Set Up Your Database</h2>
+              <p className="text-sm text-zinc-400 mb-6">We&apos;ll use Neon - a free serverless PostgreSQL database.</p>
+
               <div className="space-y-6">
-                {/* Step 1 */}
-                <div className="p-4 bg-gray-800 rounded-xl">
+                <div className="p-4 bg-surface-tertiary rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center font-bold">1</span>
-                    <h3 className="font-bold text-white">Create a Neon Account (Free)</h3>
+                    <span className="w-7 h-7 bg-brand rounded-full flex items-center justify-center text-xs font-bold text-white">1</span>
+                    <h3 className="text-sm font-semibold text-white">Create a Neon Account (Free)</h3>
                   </div>
-                  <p className="text-gray-400 text-sm mb-3">Click below to open Neon. Sign up with GitHub or Google - takes 30 seconds.</p>
-                  <a 
-                    href="https://console.neon.tech/signup" 
+                  <p className="text-xs text-zinc-400 mb-3">Click below to open Neon. Sign up with GitHub or Google.</p>
+                  <a
+                    href="https://console.neon.tech/signup"
                     target="_blank"
-                    className="inline-block bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors"
                   >
-                    Open Neon Console →
+                    Open Neon Console
                   </a>
                 </div>
 
-                {/* Step 2 */}
-                <div className="p-4 bg-gray-800 rounded-xl">
+                <div className="p-4 bg-surface-tertiary rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center font-bold">2</span>
-                    <h3 className="font-bold text-white">Create a New Project</h3>
+                    <span className="w-7 h-7 bg-brand rounded-full flex items-center justify-center text-xs font-bold text-white">2</span>
+                    <h3 className="text-sm font-semibold text-white">Create a New Project</h3>
                   </div>
-                  <p className="text-gray-400 text-sm">
-                    Name it anything (e.g., "openclaw-dashboard"). Choose the region closest to you.
+                  <p className="text-xs text-zinc-400">
+                    Name it anything (e.g., &quot;openclaw-dashboard&quot;). Choose the region closest to you.
                   </p>
                 </div>
 
-                {/* Step 3 */}
-                <div className="p-4 bg-gray-800 rounded-xl">
+                <div className="p-4 bg-surface-tertiary rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center font-bold">3</span>
-                    <h3 className="font-bold text-white">Copy Your Connection String</h3>
+                    <span className="w-7 h-7 bg-brand rounded-full flex items-center justify-center text-xs font-bold text-white">3</span>
+                    <h3 className="text-sm font-semibold text-white">Copy Your Connection String</h3>
                   </div>
-                  <p className="text-gray-400 text-sm mb-3">
-                    In your Neon dashboard, find the connection string (starts with <code className="bg-gray-700 px-1 rounded">postgresql://</code>). Paste it below:
+                  <p className="text-xs text-zinc-400 mb-3">
+                    In your Neon dashboard, find the connection string (starts with <code className="bg-surface-elevated px-1 rounded text-zinc-300">postgresql://</code>). Paste it below:
                   </p>
                   <input
                     type="password"
                     value={databaseUrl}
                     onChange={(e) => setDatabaseUrl(e.target.value)}
                     placeholder="postgresql://user:password@host/database"
-                    className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 mb-3"
+                    className="w-full bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg px-4 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand mb-3 transition-colors"
                   />
                   <button
                     onClick={testConnection}
                     disabled={!databaseUrl || testing}
-                    className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    className="bg-brand hover:bg-brand-hover disabled:bg-zinc-700 disabled:text-zinc-500 text-white px-4 py-2 rounded-lg text-xs font-medium transition-colors"
                   >
                     {testing ? 'Testing...' : 'Test Connection'}
                   </button>
                   {testResult && (
-                    <div className={`mt-3 p-3 rounded-lg ${testResult.success ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
-                      {testResult.success ? '✓ ' : '✗ '}{testResult.message}
+                    <div className={`mt-3 p-3 rounded-lg text-sm ${testResult.success ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                      {testResult.success ? <CheckCircle2 size={14} className="inline mr-1" /> : null}
+                      {testResult.message}
                     </div>
                   )}
                 </div>
 
-                {/* Step 4 */}
-                <div className="p-4 bg-gray-800 rounded-xl">
+                <div className="p-4 bg-surface-tertiary rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center font-bold">4</span>
-                    <h3 className="font-bold text-white">Create Tables</h3>
+                    <span className="w-7 h-7 bg-brand rounded-full flex items-center justify-center text-xs font-bold text-white">4</span>
+                    <h3 className="text-sm font-semibold text-white">Create Tables</h3>
                   </div>
-                  <p className="text-gray-400 text-sm mb-3">
-                    Go to the <strong>SQL Editor</strong> in Neon and run this script:
+                  <p className="text-xs text-zinc-400 mb-3">
+                    Go to the <strong className="text-zinc-200">SQL Editor</strong> in Neon and run this script:
                   </p>
                   <div className="relative">
-                    <pre className="bg-gray-900 p-4 rounded-lg text-xs text-gray-300 overflow-x-auto max-h-48 overflow-y-auto">
+                    <pre className="bg-surface-elevated p-4 rounded-lg text-xs text-zinc-400 font-mono overflow-x-auto max-h-48 overflow-y-auto">
                       {neonSchema}
                     </pre>
                     <button
                       onClick={() => copyToClipboard(neonSchema, 'schema')}
-                      className="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs"
+                      className="absolute top-2 right-2 bg-surface-tertiary hover:bg-surface-elevated border border-[rgba(255,255,255,0.06)] px-3 py-1 rounded text-xs text-zinc-400 transition-colors"
                     >
-                      {copied === 'schema' ? '✓ Copied!' : 'Copy'}
+                      {copied === 'schema' ? 'Copied' : 'Copy'}
                     </button>
                   </div>
                 </div>
@@ -331,16 +331,16 @@ CREATE TABLE IF NOT EXISTS calendar_events (
                 <div className="flex gap-4">
                   <button
                     onClick={() => goToStep('mode')}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium"
+                    className="flex-1 bg-surface-tertiary hover:bg-surface-elevated border border-[rgba(255,255,255,0.06)] text-white py-3 rounded-lg text-sm font-medium transition-colors"
                   >
-                    ← Back
+                    Back
                   </button>
                   <button
                     onClick={nextStep}
                     disabled={!testResult?.success}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 text-white py-3 rounded-lg font-medium"
+                    className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-zinc-800 disabled:text-zinc-600 text-white py-3 rounded-lg text-sm font-medium transition-colors"
                   >
-                    Continue →
+                    Continue
                   </button>
                 </div>
               </div>
@@ -350,34 +350,34 @@ CREATE TABLE IF NOT EXISTS calendar_events (
           {/* Deploy */}
           {currentStep === 'deploy' && (
             <div>
-              <h2 className="text-2xl font-bold text-white mb-2">Deploy Your Dashboard</h2>
-              <p className="text-gray-400 mb-6">One click to deploy on Vercel (free tier available).</p>
-              
+              <h2 className="text-xl font-semibold text-white mb-2">Deploy Your Dashboard</h2>
+              <p className="text-sm text-zinc-400 mb-6">One click to deploy on Vercel (free tier available).</p>
+
               <div className="space-y-6">
-                <div className="p-4 bg-gray-800 rounded-xl">
+                <div className="p-4 bg-surface-tertiary rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center font-bold">1</span>
-                    <h3 className="font-bold text-white">Deploy to Vercel</h3>
+                    <span className="w-7 h-7 bg-brand rounded-full flex items-center justify-center text-xs font-bold text-white">1</span>
+                    <h3 className="text-sm font-semibold text-white">Deploy to Vercel</h3>
                   </div>
-                  <p className="text-gray-400 text-sm mb-4">
+                  <p className="text-xs text-zinc-400 mb-4">
                     Click below to deploy. When asked for environment variables, paste your DATABASE_URL.
                   </p>
                   <a
                     href="https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/OpenClaw-Dashboard&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string"
                     target="_blank"
-                    className="inline-flex items-center gap-2 bg-black hover:bg-gray-900 text-white px-6 py-3 rounded-lg font-medium border border-gray-700 transition-all"
+                    className="inline-flex items-center gap-2 bg-white text-black hover:bg-zinc-200 px-5 py-2.5 rounded-lg text-xs font-medium transition-colors"
                   >
-                    <svg height="20" viewBox="0 0 76 65" fill="currentColor"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg>
+                    <svg height="16" viewBox="0 0 76 65" fill="currentColor"><path d="M37.5274 0L75.0548 65H0L37.5274 0Z"/></svg>
                     Deploy with Vercel
                   </a>
                 </div>
 
-                <div className="p-4 bg-gray-800 rounded-xl">
+                <div className="p-4 bg-surface-tertiary rounded-xl">
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center font-bold">2</span>
-                    <h3 className="font-bold text-white">Set Environment Variable</h3>
+                    <span className="w-7 h-7 bg-brand rounded-full flex items-center justify-center text-xs font-bold text-white">2</span>
+                    <h3 className="text-sm font-semibold text-white">Set Environment Variable</h3>
                   </div>
-                  <p className="text-gray-400 text-sm mb-3">
+                  <p className="text-xs text-zinc-400 mb-3">
                     When Vercel asks, paste your DATABASE_URL:
                   </p>
                   <div className="relative">
@@ -385,36 +385,39 @@ CREATE TABLE IF NOT EXISTS calendar_events (
                       type="text"
                       value={databaseUrl}
                       readOnly
-                      className="w-full bg-gray-900 border border-gray-600 rounded-lg px-4 py-3 text-white pr-20"
+                      className="w-full bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg px-4 py-2.5 text-sm text-white pr-20"
                     />
                     <button
                       onClick={() => copyToClipboard(databaseUrl, 'url')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-surface-tertiary hover:bg-surface-elevated px-3 py-1 rounded text-xs text-zinc-400 transition-colors"
                     >
-                      {copied === 'url' ? '✓ Copied!' : 'Copy'}
+                      {copied === 'url' ? 'Copied' : 'Copy'}
                     </button>
                   </div>
                 </div>
 
-                <div className="p-4 bg-emerald-900/30 border border-emerald-700 rounded-xl">
-                  <p className="text-emerald-300 text-sm">
-                    💡 <strong>Tip:</strong> Vercel will give you a URL like <code>your-app.vercel.app</code>. 
-                    Bookmark it - that's your dashboard!
-                  </p>
+                <div className="p-4 bg-brand-subtle border border-brand/20 rounded-xl">
+                  <div className="flex items-start gap-2">
+                    <Lightbulb size={14} className="text-brand mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-zinc-300">
+                      <strong className="text-white">Tip:</strong> Vercel will give you a URL like <code className="bg-surface-elevated px-1 rounded text-zinc-300">your-app.vercel.app</code>.
+                      Bookmark it - that&apos;s your dashboard.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex gap-4">
                   <button
                     onClick={() => goToStep('database')}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium"
+                    className="flex-1 bg-surface-tertiary hover:bg-surface-elevated border border-[rgba(255,255,255,0.06)] text-white py-3 rounded-lg text-sm font-medium transition-colors"
                   >
-                    ← Back
+                    Back
                   </button>
                   <button
                     onClick={nextStep}
-                    className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3 rounded-lg font-medium"
+                    className="flex-1 bg-brand hover:bg-brand-hover text-white py-3 rounded-lg text-sm font-medium transition-colors"
                   >
-                    I've Deployed →
+                    I&apos;ve Deployed
                   </button>
                 </div>
               </div>
@@ -424,47 +427,48 @@ CREATE TABLE IF NOT EXISTS calendar_events (
           {/* Complete */}
           {currentStep === 'complete' && (
             <div className="text-center">
-              <div className="text-6xl mb-4">🎉</div>
-              <h1 className="text-3xl font-bold text-white mb-4">You're All Set!</h1>
-              
+              <div className="flex justify-center mb-4">
+                <CheckCircle2 size={48} className="text-green-400" />
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight text-white mb-4">You&apos;re All Set</h1>
+
               {setupMode === 'quick' ? (
                 <div>
-                  <p className="text-gray-300 mb-6">
+                  <p className="text-sm text-zinc-300 mb-6">
                     Quick Start mode is active. Your data will be stored in this browser.
                   </p>
-                  <p className="text-gray-400 text-sm mb-8">
+                  <p className="text-xs text-zinc-500 mb-8">
                     Want to sync across devices? You can set up cloud storage anytime from the Integrations page.
                   </p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-gray-300 mb-6">
-                    Your dashboard is deployed and connected to your database!
+                  <p className="text-sm text-zinc-300 mb-6">
+                    Your dashboard is deployed and connected to your database.
                   </p>
-                  <div className="bg-gray-800 p-4 rounded-xl text-left mb-8">
-                    <h3 className="font-bold text-white mb-2">Next Steps:</h3>
-                    <ul className="text-gray-300 text-sm space-y-2">
-                      <li>✓ Visit your Vercel URL to see your dashboard</li>
-                      <li>✓ Go to Integrations to connect your services</li>
-                      <li>✓ Set up Clawdbot to sync data automatically</li>
+                  <div className="bg-surface-tertiary p-4 rounded-xl text-left mb-8">
+                    <h3 className="text-sm font-semibold text-white mb-3">Next Steps:</h3>
+                    <ul className="text-xs text-zinc-300 space-y-2">
+                      <li className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-400" /> Visit your Vercel URL to see your dashboard</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-400" /> Go to Integrations to connect your services</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-400" /> Configure your agent SDK to sync data</li>
                     </ul>
                   </div>
                 </div>
               )}
-              
+
               <button
                 onClick={() => router.push('/')}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all"
+                className="bg-brand hover:bg-brand-hover text-white px-8 py-3 rounded-xl font-semibold text-sm transition-colors duration-150"
               >
-                Go to Dashboard →
+                Go to Dashboard
               </button>
             </div>
           )}
         </div>
 
-        {/* Help Link */}
-        <p className="text-center text-gray-500 text-sm mt-6">
-          Need help? <a href="https://docs.clawd.bot" target="_blank" className="text-cyan-400 hover:underline">Read the docs</a> or <a href="https://discord.com/invite/clawd" target="_blank" className="text-cyan-400 hover:underline">join Discord</a>
+        <p className="text-center text-zinc-600 text-xs mt-6">
+          Need help? <a href="https://docs.clawd.bot" target="_blank" className="text-brand hover:text-brand-hover transition-colors">Read the docs</a> or <a href="https://discord.com/invite/clawd" target="_blank" className="text-brand hover:text-brand-hover transition-colors">join Discord</a>
         </p>
       </div>
     </div>
