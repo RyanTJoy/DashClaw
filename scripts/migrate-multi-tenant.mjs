@@ -62,6 +62,7 @@ const TENANT_TABLES = [
   'entities',
   'topics',
   'calendar_events',
+  'agent_connections',
 ];
 
 async function run() {
@@ -342,6 +343,33 @@ async function run() {
     }
   } catch (err) {
     log('⚠️', `settings agent_id migration: ${err.message}`);
+  }
+
+  // Step 11: Create agent_connections table
+  console.log('Step 11: Creating agent_connections table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS agent_connections (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        auth_type TEXT NOT NULL DEFAULT 'api_key',
+        plan_name TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        metadata TEXT,
+        reported_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS agent_connections_org_agent_provider_unique
+      ON agent_connections (org_id, agent_id, provider)
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_agent_connections_agent_id ON agent_connections(agent_id)`;
+    log('✅', 'agent_connections table + indexes ready');
+  } catch (err) {
+    log('⚠️', `agent_connections migration: ${err.message}`);
   }
 
   // Verification

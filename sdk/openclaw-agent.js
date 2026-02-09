@@ -325,6 +325,30 @@ class OpenClawAgent {
   }
 
   /**
+   * Report active connections/integrations for this agent.
+   * Call at agent startup to register what services the agent is connected to.
+   * @param {Object[]} connections - Array of connection objects
+   * @param {string} connections[].provider - Service name (e.g., 'anthropic', 'github')
+   * @param {string} [connections[].authType] - Auth method: api_key, subscription, oauth, pre_configured, environment
+   * @param {string} [connections[].planName] - Plan name (e.g., 'Pro Max')
+   * @param {string} [connections[].status] - Connection status: active, inactive, error
+   * @param {Object|string} [connections[].metadata] - Optional metadata (e.g., { cost: "$100/mo" })
+   * @returns {Promise<{connections: Object[], created: number}>}
+   */
+  async reportConnections(connections) {
+    return this._request('/api/agents/connections', 'POST', {
+      agent_id: this.agentId,
+      connections: connections.map(c => ({
+        provider: c.provider,
+        auth_type: c.authType || c.auth_type || 'api_key',
+        plan_name: c.planName || c.plan_name || null,
+        status: c.status || 'active',
+        metadata: c.metadata || null
+      }))
+    });
+  }
+
+  /**
    * Helper: Create an action, run a function, and auto-update the outcome.
    * @param {Object} actionDef - Action definition (same as createAction)
    * @param {Function} fn - Async function to execute. Receives { action_id } as argument.

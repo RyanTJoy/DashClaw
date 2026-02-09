@@ -28,6 +28,32 @@ export async function GET(request) {
       ORDER BY last_active DESC
     `;
 
+    const url = new URL(request.url);
+    const includeConnections = url.searchParams.get('include_connections') === 'true';
+
+    if (includeConnections && agents.length > 0) {
+      try {
+        const connections = await sql`
+          SELECT * FROM agent_connections
+          WHERE org_id = ${orgId}
+          ORDER BY updated_at DESC
+        `;
+        const connMap = {};
+        for (const conn of (connections || [])) {
+          if (!connMap[conn.agent_id]) connMap[conn.agent_id] = [];
+          connMap[conn.agent_id].push(conn);
+        }
+        for (const agent of agents) {
+          agent.connections = connMap[agent.agent_id] || [];
+        }
+      } catch (err) {
+        // Table may not exist yet — attach empty arrays
+        for (const agent of agents) {
+          agent.connections = [];
+        }
+      }
+    }
+
     return NextResponse.json({
       agents: agents || [],
       lastUpdated: new Date().toISOString()
