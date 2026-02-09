@@ -372,6 +372,61 @@ async function run() {
     log('⚠️', `agent_connections migration: ${err.message}`);
   }
 
+  // Step 12: Create token_snapshots + daily_totals tables (with agent_id)
+  console.log('Step 12: Creating token_snapshots + daily_totals tables...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS token_snapshots (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        timestamp TEXT NOT NULL,
+        tokens_in INTEGER,
+        tokens_out INTEGER,
+        context_used INTEGER,
+        context_max INTEGER,
+        context_pct REAL,
+        hourly_pct_left REAL,
+        weekly_pct_left REAL,
+        compactions INTEGER,
+        model TEXT,
+        session_key TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_token_snapshots_org_id ON token_snapshots(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_token_snapshots_agent_id ON token_snapshots(agent_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_token_snapshots_timestamp ON token_snapshots(timestamp)`;
+    log('✅', 'token_snapshots table + indexes ready');
+  } catch (err) {
+    log('⚠️', `token_snapshots migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS daily_totals (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        date TEXT NOT NULL,
+        total_tokens_in INTEGER DEFAULT 0,
+        total_tokens_out INTEGER DEFAULT 0,
+        total_tokens INTEGER DEFAULT 0,
+        peak_context_pct REAL DEFAULT 0,
+        snapshots_count INTEGER DEFAULT 0
+      )
+    `;
+    // Functional unique: per-agent daily totals (NULL agent_id = org-wide aggregate)
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS daily_totals_org_agent_date_unique
+      ON daily_totals (org_id, COALESCE(agent_id, ''), date)
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_daily_totals_org_id ON daily_totals(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_daily_totals_agent_id ON daily_totals(agent_id)`;
+    log('✅', 'daily_totals table + indexes ready');
+  } catch (err) {
+    log('⚠️', `daily_totals migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 

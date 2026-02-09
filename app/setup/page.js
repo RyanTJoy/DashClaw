@@ -68,14 +68,35 @@ CREATE TABLE IF NOT EXISTS settings (
 
 CREATE TABLE IF NOT EXISTS token_snapshots (
   id SERIAL PRIMARY KEY,
-  timestamp TIMESTAMP DEFAULT NOW(),
+  org_id TEXT NOT NULL DEFAULT 'org_default',
+  agent_id TEXT,
+  timestamp TEXT NOT NULL,
   tokens_in INTEGER,
   tokens_out INTEGER,
+  context_used INTEGER,
+  context_max INTEGER,
+  context_pct REAL,
+  hourly_pct_left REAL,
+  weekly_pct_left REAL,
+  compactions INTEGER,
   model TEXT,
-  session_key TEXT,
-  daily_remaining TEXT,
-  weekly_remaining TEXT
+  session_key TEXT
 );
+
+CREATE TABLE IF NOT EXISTS daily_totals (
+  id SERIAL PRIMARY KEY,
+  org_id TEXT NOT NULL DEFAULT 'org_default',
+  agent_id TEXT,
+  date TEXT NOT NULL,
+  total_tokens_in INTEGER DEFAULT 0,
+  total_tokens_out INTEGER DEFAULT 0,
+  total_tokens INTEGER DEFAULT 0,
+  peak_context_pct REAL DEFAULT 0,
+  snapshots_count INTEGER DEFAULT 0
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS daily_totals_org_agent_date_unique
+ON daily_totals (org_id, COALESCE(agent_id, ''), date);
 
 CREATE TABLE IF NOT EXISTS decisions (
   id SERIAL PRIMARY KEY,
