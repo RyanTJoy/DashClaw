@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import {
+  Plug, Bot, Database, MessageSquare, FileText, Wrench, Globe, CreditCard,
+  Search, X, Eye, EyeOff, Info, Shield, Cloud, Settings
+} from 'lucide-react';
+import PageLayout from '../components/PageLayout';
+import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { StatCompact } from '../components/ui/Stat';
 
 // Integration configurations with their settings fields
 const INTEGRATION_CONFIGS = {
   // === AI PROVIDERS ===
   openai: {
     name: 'OpenAI',
-    icon: '🤖',
-    color: 'from-teal-400 to-teal-600',
     category: 'AI',
     description: 'GPT models & embeddings',
     fields: [
@@ -19,8 +24,6 @@ const INTEGRATION_CONFIGS = {
   },
   anthropic: {
     name: 'Anthropic',
-    icon: '🧠',
-    color: 'from-amber-400 to-orange-600',
     category: 'AI',
     description: 'Claude models',
     fields: [
@@ -29,8 +32,6 @@ const INTEGRATION_CONFIGS = {
   },
   groq: {
     name: 'Groq',
-    icon: '⚡',
-    color: 'from-orange-500 to-red-600',
     category: 'AI',
     description: 'Ultra-fast LLM inference',
     fields: [
@@ -39,8 +40,6 @@ const INTEGRATION_CONFIGS = {
   },
   together: {
     name: 'Together AI',
-    icon: '🤝',
-    color: 'from-blue-500 to-purple-600',
     category: 'AI',
     description: 'Open source model hosting',
     fields: [
@@ -49,8 +48,6 @@ const INTEGRATION_CONFIGS = {
   },
   replicate: {
     name: 'Replicate',
-    icon: '🔄',
-    color: 'from-gray-600 to-gray-800',
     category: 'AI',
     description: 'Run ML models in the cloud',
     fields: [
@@ -59,8 +56,6 @@ const INTEGRATION_CONFIGS = {
   },
   huggingface: {
     name: 'Hugging Face',
-    icon: '🤗',
-    color: 'from-yellow-400 to-orange-500',
     category: 'AI',
     description: 'Models, datasets, spaces',
     fields: [
@@ -69,8 +64,6 @@ const INTEGRATION_CONFIGS = {
   },
   perplexity: {
     name: 'Perplexity',
-    icon: '🔍',
-    color: 'from-cyan-400 to-blue-600',
     category: 'AI',
     description: 'AI-powered search',
     fields: [
@@ -79,8 +72,6 @@ const INTEGRATION_CONFIGS = {
   },
   elevenlabs: {
     name: 'ElevenLabs',
-    icon: '🎙️',
-    color: 'from-pink-400 to-pink-600',
     category: 'AI',
     description: 'Text-to-speech voice generation',
     fields: [
@@ -92,8 +83,6 @@ const INTEGRATION_CONFIGS = {
   // === DATABASES ===
   neon: {
     name: 'Neon',
-    icon: '🗄️',
-    color: 'from-emerald-400 to-emerald-600',
     category: 'Database',
     description: 'Serverless PostgreSQL',
     fields: [
@@ -102,8 +91,6 @@ const INTEGRATION_CONFIGS = {
   },
   supabase: {
     name: 'Supabase',
-    icon: '⚡',
-    color: 'from-green-500 to-emerald-600',
     category: 'Database',
     description: 'Postgres + Auth + Storage',
     fields: [
@@ -114,8 +101,6 @@ const INTEGRATION_CONFIGS = {
   },
   planetscale: {
     name: 'PlanetScale',
-    icon: '🌍',
-    color: 'from-gray-700 to-gray-900',
     category: 'Database',
     description: 'Serverless MySQL',
     fields: [
@@ -124,8 +109,6 @@ const INTEGRATION_CONFIGS = {
   },
   mongodb: {
     name: 'MongoDB',
-    icon: '🍃',
-    color: 'from-green-600 to-green-800',
     category: 'Database',
     description: 'NoSQL document database',
     fields: [
@@ -134,8 +117,6 @@ const INTEGRATION_CONFIGS = {
   },
   redis: {
     name: 'Redis',
-    icon: '🔴',
-    color: 'from-red-500 to-red-700',
     category: 'Database',
     description: 'In-memory cache & data store',
     fields: [
@@ -144,8 +125,6 @@ const INTEGRATION_CONFIGS = {
   },
   pinecone: {
     name: 'Pinecone',
-    icon: '🌲',
-    color: 'from-teal-500 to-cyan-600',
     category: 'Database',
     description: 'Vector database for AI',
     fields: [
@@ -157,8 +136,6 @@ const INTEGRATION_CONFIGS = {
   // === COMMUNICATION ===
   telegram: {
     name: 'Telegram',
-    icon: '💬',
-    color: 'from-blue-400 to-blue-600',
     category: 'Communication',
     description: 'Chat bot interface',
     fields: [
@@ -168,8 +145,6 @@ const INTEGRATION_CONFIGS = {
   },
   discord: {
     name: 'Discord',
-    icon: '🎮',
-    color: 'from-indigo-500 to-purple-600',
     category: 'Communication',
     description: 'Community & bot platform',
     fields: [
@@ -180,8 +155,6 @@ const INTEGRATION_CONFIGS = {
   },
   slack: {
     name: 'Slack',
-    icon: '💼',
-    color: 'from-purple-500 to-pink-500',
     category: 'Communication',
     description: 'Workspace messaging',
     fields: [
@@ -192,8 +165,6 @@ const INTEGRATION_CONFIGS = {
   },
   twilio: {
     name: 'Twilio',
-    icon: '📱',
-    color: 'from-red-400 to-red-600',
     category: 'Communication',
     description: 'SMS & voice APIs',
     fields: [
@@ -204,8 +175,6 @@ const INTEGRATION_CONFIGS = {
   },
   resend: {
     name: 'Resend',
-    icon: '📧',
-    color: 'from-gray-800 to-black',
     category: 'Communication',
     description: 'Developer-first email API',
     fields: [
@@ -214,8 +183,6 @@ const INTEGRATION_CONFIGS = {
   },
   sendgrid: {
     name: 'SendGrid',
-    icon: '✉️',
-    color: 'from-blue-500 to-blue-700',
     category: 'Communication',
     description: 'Email delivery service',
     fields: [
@@ -226,8 +193,6 @@ const INTEGRATION_CONFIGS = {
   // === PRODUCTIVITY ===
   google: {
     name: 'Google Workspace',
-    icon: '📅',
-    color: 'from-green-400 to-green-600',
     category: 'Productivity',
     description: 'Calendar, Gmail, Drive',
     fields: [
@@ -237,8 +202,6 @@ const INTEGRATION_CONFIGS = {
   },
   notion: {
     name: 'Notion',
-    icon: '📝',
-    color: 'from-gray-400 to-gray-600',
     category: 'Productivity',
     description: 'Workspace & documentation',
     fields: [
@@ -248,8 +211,6 @@ const INTEGRATION_CONFIGS = {
   },
   linear: {
     name: 'Linear',
-    icon: '📐',
-    color: 'from-indigo-400 to-indigo-600',
     category: 'Productivity',
     description: 'Issue tracking for teams',
     fields: [
@@ -258,8 +219,6 @@ const INTEGRATION_CONFIGS = {
   },
   airtable: {
     name: 'Airtable',
-    icon: '📊',
-    color: 'from-yellow-400 to-yellow-600',
     category: 'Productivity',
     description: 'Spreadsheet-database hybrid',
     fields: [
@@ -269,8 +228,6 @@ const INTEGRATION_CONFIGS = {
   },
   calendly: {
     name: 'Calendly',
-    icon: '🗓️',
-    color: 'from-blue-400 to-cyan-500',
     category: 'Productivity',
     description: 'Scheduling automation',
     fields: [
@@ -281,8 +238,6 @@ const INTEGRATION_CONFIGS = {
   // === DEV & HOSTING ===
   github: {
     name: 'GitHub',
-    icon: '🐙',
-    color: 'from-purple-400 to-purple-600',
     category: 'Development',
     description: 'Code repos & version control',
     fields: [
@@ -292,8 +247,6 @@ const INTEGRATION_CONFIGS = {
   },
   vercel: {
     name: 'Vercel',
-    icon: '▲',
-    color: 'from-white to-gray-400',
     category: 'Development',
     description: 'Frontend deployment',
     fields: [
@@ -303,8 +256,6 @@ const INTEGRATION_CONFIGS = {
   },
   railway: {
     name: 'Railway',
-    icon: '🚂',
-    color: 'from-purple-600 to-pink-600',
     category: 'Development',
     description: 'Full-stack deployment',
     fields: [
@@ -313,8 +264,6 @@ const INTEGRATION_CONFIGS = {
   },
   cloudflare: {
     name: 'Cloudflare',
-    icon: '☁️',
-    color: 'from-orange-400 to-orange-600',
     category: 'Development',
     description: 'CDN, DNS, Workers',
     fields: [
@@ -324,8 +273,6 @@ const INTEGRATION_CONFIGS = {
   },
   sentry: {
     name: 'Sentry',
-    icon: '🐛',
-    color: 'from-pink-500 to-purple-600',
     category: 'Development',
     description: 'Error tracking & monitoring',
     fields: [
@@ -337,8 +284,6 @@ const INTEGRATION_CONFIGS = {
   // === SOCIAL & SEARCH ===
   twitter: {
     name: 'Twitter/X',
-    icon: '🐦',
-    color: 'from-sky-400 to-sky-600',
     category: 'Social',
     description: 'Social media integration',
     fields: [
@@ -350,8 +295,6 @@ const INTEGRATION_CONFIGS = {
   },
   brave: {
     name: 'Brave Search',
-    icon: '🦁',
-    color: 'from-orange-400 to-orange-600',
     category: 'Social',
     description: 'Web search API',
     fields: [
@@ -360,8 +303,6 @@ const INTEGRATION_CONFIGS = {
   },
   moltbook: {
     name: 'Moltbook',
-    icon: '🔥',
-    color: 'from-orange-400 to-red-600',
     category: 'Social',
     description: 'AI social platform',
     fields: [
@@ -372,8 +313,6 @@ const INTEGRATION_CONFIGS = {
   // === PAYMENTS ===
   stripe: {
     name: 'Stripe',
-    icon: '💳',
-    color: 'from-indigo-500 to-purple-600',
     category: 'Payments',
     description: 'Payment processing',
     fields: [
@@ -384,8 +323,6 @@ const INTEGRATION_CONFIGS = {
   },
   lemonsqueezy: {
     name: 'Lemon Squeezy',
-    icon: '🍋',
-    color: 'from-yellow-400 to-lime-500',
     category: 'Payments',
     description: 'Merchant of record',
     fields: [
@@ -394,15 +331,26 @@ const INTEGRATION_CONFIGS = {
   }
 };
 
+const CATEGORY_ICONS = {
+  all: Plug,
+  AI: Bot,
+  Database: Database,
+  Communication: MessageSquare,
+  Productivity: FileText,
+  Development: Wrench,
+  Social: Globe,
+  Payments: CreditCard
+};
+
 const CATEGORIES = [
-  { id: 'all', name: 'All', icon: '🔌' },
-  { id: 'AI', name: 'AI Providers', icon: '🤖' },
-  { id: 'Database', name: 'Databases', icon: '🗄️' },
-  { id: 'Communication', name: 'Communication', icon: '💬' },
-  { id: 'Productivity', name: 'Productivity', icon: '📝' },
-  { id: 'Development', name: 'Dev & Hosting', icon: '🛠️' },
-  { id: 'Social', name: 'Social & Search', icon: '🌐' },
-  { id: 'Payments', name: 'Payments', icon: '💳' }
+  { id: 'all', name: 'All' },
+  { id: 'AI', name: 'AI Providers' },
+  { id: 'Database', name: 'Databases' },
+  { id: 'Communication', name: 'Communication' },
+  { id: 'Productivity', name: 'Productivity' },
+  { id: 'Development', name: 'Dev & Hosting' },
+  { id: 'Social', name: 'Social & Search' },
+  { id: 'Payments', name: 'Payments' }
 ];
 
 export default function IntegrationsPage() {
@@ -440,7 +388,7 @@ export default function IntegrationsPage() {
     const config = INTEGRATION_CONFIGS[integrationKey];
     const requiredFields = config.fields.filter(f => f.required);
     const hasAllRequired = requiredFields.every(f => settings[f.key]?.hasValue);
-    
+
     if (hasAllRequired) return 'connected';
     if (config.fields.some(f => settings[f.key]?.hasValue)) return 'configured';
     return 'not_configured';
@@ -467,7 +415,7 @@ export default function IntegrationsPage() {
     setSaving(true);
     try {
       const config = INTEGRATION_CONFIGS[editingIntegration];
-      
+
       for (const field of config.fields) {
         if (formData[field.key] !== undefined) {
           await fetch('/api/settings', {
@@ -482,7 +430,7 @@ export default function IntegrationsPage() {
           });
         }
       }
-      
+
       await fetchSettings();
       closeEditor();
     } catch (error) {
@@ -495,7 +443,7 @@ export default function IntegrationsPage() {
 
   const testConnection = async () => {
     setTestResult({ status: 'testing', message: 'Testing connection...' });
-    
+
     try {
       const res = await fetch('/api/settings/test', {
         method: 'POST',
@@ -506,12 +454,12 @@ export default function IntegrationsPage() {
         })
       });
       const data = await res.json();
-      setTestResult({ 
-        status: data.success ? 'success' : 'error', 
-        message: data.success ? `✓ ${data.message}` : `✗ ${data.message}`
+      setTestResult({
+        status: data.success ? 'success' : 'error',
+        message: data.success ? data.message : data.message
       });
     } catch (error) {
-      setTestResult({ status: 'error', message: `✗ Test failed: ${error.message}` });
+      setTestResult({ status: 'error', message: `Test failed: ${error.message}` });
     }
   };
 
@@ -519,109 +467,114 @@ export default function IntegrationsPage() {
     setShowValues(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusDot = (status) => {
     switch (status) {
       case 'connected':
-        return <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-bold">● Connected</span>;
+        return <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />;
       case 'configured':
-        return <span className="px-2 py-1 bg-yellow-500 text-black text-xs rounded-full font-bold">◐ Partial</span>;
+        return <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />;
       default:
-        return <span className="px-2 py-1 bg-gray-600 text-white text-xs rounded-full font-bold">○ Not Set</span>;
+        return <span className="w-2 h-2 rounded-full bg-zinc-500 inline-block" />;
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'connected': return 'Connected';
+      case 'configured': return 'Partial';
+      default: return 'Not Set';
     }
   };
 
   const allIntegrations = Object.entries(INTEGRATION_CONFIGS);
-  
+
   // Filter by category and search
   const integrationsList = allIntegrations.filter(([key, config]) => {
     const matchesCategory = activeCategory === 'all' || config.category === activeCategory;
-    const matchesSearch = !searchQuery || 
+    const matchesSearch = !searchQuery ||
       config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       config.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-  
+
   const connectedCount = allIntegrations.filter(([k]) => getIntegrationStatus(k) === 'connected').length;
   const configuredCount = allIntegrations.filter(([k]) => getIntegrationStatus(k) === 'configured').length;
 
   if (loading) {
     return (
-      <div className="min-h-screen p-6 flex items-center justify-center">
-        <div className="text-gray-400">Loading integrations...</div>
-      </div>
+      <PageLayout
+        title="Integrations & Settings"
+        subtitle="Configure your connected services"
+        breadcrumbs={['Dashboard', 'Integrations']}
+      >
+        <div className="flex items-center justify-center py-20">
+          <div className="text-sm text-zinc-500">Loading integrations...</div>
+        </div>
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-6">
-      {/* Navigation */}
-      <nav className="mb-6">
-        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
-          ← Back to Dashboard
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-2xl">
-              🔌
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">Integrations & Settings</h1>
-              <p className="text-gray-400">Configure your connected services</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <PageLayout
+      title="Integrations & Settings"
+      subtitle="Configure your connected services"
+      breadcrumbs={['Dashboard', 'Integrations']}
+    >
       {/* Stats Overview */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-white">{allIntegrations.length}</div>
-          <div className="text-sm text-gray-400">Available</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-green-400">{connectedCount}</div>
-          <div className="text-sm text-gray-400">Connected</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-yellow-400">{configuredCount}</div>
-          <div className="text-sm text-gray-400">Partial</div>
-        </div>
+        <Card hover={false}>
+          <CardContent className="pt-4 pb-4">
+            <StatCompact label="Available" value={allIntegrations.length} color="text-white" />
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-4 pb-4">
+            <StatCompact label="Connected" value={connectedCount} color="text-green-400" />
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-4 pb-4">
+            <StatCompact label="Partial" value={configuredCount} color="text-yellow-400" />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-4">
+      <div className="mb-4 relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
         <input
           type="text"
-          placeholder="🔍 Search integrations..."
+          placeholder="Search integrations..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
+          className="w-full bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg pl-10 pr-4 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-brand transition-colors"
         />
       </div>
 
       {/* Category Tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeCategory === cat.id
-                ? 'bg-cyan-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-            }`}
-          >
-            {cat.icon} {cat.name}
-          </button>
-        ))}
+        {CATEGORIES.map((cat) => {
+          const CatIcon = CATEGORY_ICONS[cat.id];
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center gap-1.5 ${
+                activeCategory === cat.id
+                  ? 'bg-brand text-white'
+                  : 'bg-surface-tertiary text-zinc-400 border border-[rgba(255,255,255,0.06)] hover:text-white hover:border-[rgba(255,255,255,0.12)]'
+              }`}
+            >
+              <CatIcon size={14} />
+              {cat.name}
+            </button>
+          );
+        })}
       </div>
 
       {/* Results count */}
       {(activeCategory !== 'all' || searchQuery) && (
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-xs text-zinc-500 mb-4">
           Showing {integrationsList.length} of {allIntegrations.length} integrations
         </p>
       )}
@@ -631,64 +584,69 @@ export default function IntegrationsPage() {
         {integrationsList.map(([key, config]) => {
           const status = getIntegrationStatus(key);
           return (
-            <div 
-              key={key} 
-              className="glass-card p-5 hover:bg-opacity-20 transition-all cursor-pointer group"
-              onClick={() => openEditor(key)}
+            <Card
+              key={key}
+              className="cursor-pointer group"
+              hover={true}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 bg-gradient-to-br ${config.color} rounded-xl flex items-center justify-center text-2xl`}>
-                    {config.icon}
-                  </div>
-                  <div>
-                    <div className="font-bold text-white text-lg">{config.name}</div>
-                    <div className="text-xs text-gray-400">{config.description}</div>
+              <div className="p-5" onClick={() => openEditor(key)}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-surface-tertiary rounded-lg flex items-center justify-center">
+                      <Plug size={16} className="text-zinc-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">{config.name}</div>
+                      <div className="text-xs text-zinc-500">{config.description}</div>
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex items-center gap-2">
+                    {getStatusDot(status)}
+                    <span className="text-xs text-zinc-500">{getStatusLabel(status)}</span>
+                  </div>
+                  <span className="text-xs text-zinc-500 group-hover:text-brand transition-colors">
+                    Configure
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center justify-between mt-4">
-                {getStatusBadge(status)}
-                <span className="text-xs text-gray-500 group-hover:text-cyan-400 transition-colors">
-                  Click to configure →
-                </span>
-              </div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {/* Edit Modal */}
       {editingIntegration && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 bg-gradient-to-br ${INTEGRATION_CONFIGS[editingIntegration].color} rounded-xl flex items-center justify-center text-xl`}>
-                    {INTEGRATION_CONFIGS[editingIntegration].icon}
+                  <div className="w-10 h-10 bg-surface-tertiary rounded-lg flex items-center justify-center">
+                    <Plug size={16} className="text-zinc-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">
+                    <h2 className="text-lg font-semibold text-white">
                       {INTEGRATION_CONFIGS[editingIntegration].name}
                     </h2>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-zinc-400">
                       {INTEGRATION_CONFIGS[editingIntegration].description}
                     </p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={closeEditor}
-                  className="text-gray-400 hover:text-white text-2xl"
+                  className="text-zinc-400 hover:text-white transition-colors"
                 >
-                  ×
+                  <X size={20} />
                 </button>
               </div>
 
               <div className="space-y-4">
                 {INTEGRATION_CONFIGS[editingIntegration].fields.map((field) => (
                   <div key={field.key}>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-zinc-300 mb-1">
                       {field.label}
                       {field.required && <span className="text-red-400 ml-1">*</span>}
                     </label>
@@ -698,29 +656,29 @@ export default function IntegrationsPage() {
                         value={formData[field.key] || ''}
                         onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                         placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                        className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
+                        className="w-full bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg px-4 py-2.5 text-white text-sm placeholder-zinc-500 focus:outline-none focus:border-brand transition-colors"
                       />
                       {field.type === 'password' && (
                         <button
                           type="button"
                           onClick={() => toggleShowValue(field.key)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white transition-colors"
                         >
-                          {showValues[field.key] ? '🙈' : '👁️'}
+                          {showValues[field.key] ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{field.key}</p>
+                    <p className="text-xs text-zinc-500 mt-1">{field.key}</p>
                   </div>
                 ))}
               </div>
 
               {/* Test Result */}
               {testResult && (
-                <div className={`mt-4 p-3 rounded-lg ${
-                  testResult.status === 'success' ? 'bg-green-900 text-green-300' :
-                  testResult.status === 'error' ? 'bg-red-900 text-red-300' :
-                  'bg-gray-800 text-gray-300'
+                <div className={`mt-4 p-3 rounded-lg text-sm ${
+                  testResult.status === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                  testResult.status === 'error' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                  'bg-surface-tertiary text-zinc-300'
                 }`}>
                   {testResult.message}
                 </div>
@@ -730,14 +688,14 @@ export default function IntegrationsPage() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={testConnection}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium transition-colors"
+                  className="flex-1 px-3 py-2.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 font-medium"
                 >
                   Test Connection
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 bg-brand hover:bg-brand/90 text-white py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : 'Save Settings'}
                 </button>
@@ -748,17 +706,25 @@ export default function IntegrationsPage() {
       )}
 
       {/* Info Section */}
-      <div className="glass-card p-6 mt-8">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">ℹ️</span>
-          About Settings
-        </h2>
-        <div className="text-gray-300 space-y-2 text-sm">
-          <p><strong>🔒 Security:</strong> Sensitive values are encrypted and masked in the UI</p>
-          <p><strong>☁️ Cloud Sync:</strong> Settings are stored in your Neon database</p>
-          <p><strong>🔧 Environment:</strong> For Clawdbot gateway settings, update your config file</p>
-        </div>
-      </div>
-    </div>
+      <Card hover={false} className="mt-8">
+        <CardHeader title="About Settings" icon={Info} />
+        <CardContent>
+          <div className="text-sm text-zinc-300 space-y-2">
+            <p className="flex items-center gap-2">
+              <Shield size={14} className="text-zinc-400 shrink-0" />
+              <span><strong className="text-white">Security:</strong> Sensitive values are encrypted and masked in the UI</span>
+            </p>
+            <p className="flex items-center gap-2">
+              <Cloud size={14} className="text-zinc-400 shrink-0" />
+              <span><strong className="text-white">Cloud Sync:</strong> Settings are stored in your Neon database</span>
+            </p>
+            <p className="flex items-center gap-2">
+              <Settings size={14} className="text-zinc-400 shrink-0" />
+              <span><strong className="text-white">Environment:</strong> For Clawdbot gateway settings, update your config file</span>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 }

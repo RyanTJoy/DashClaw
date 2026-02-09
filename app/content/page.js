@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { BarChart3, Lightbulb, FileText, Target, RotateCw, Heart, MessageCircle, Repeat2, CheckCircle2, XCircle } from 'lucide-react';
+import PageLayout from '../components/PageLayout';
+import { Card, CardHeader, CardContent } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
 
 export default function ContentDashboard() {
   const [posts, setPosts] = useState([]);
@@ -32,12 +35,12 @@ export default function ContentDashboard() {
     return 'text-red-400';
   };
 
-  const getPlatformColor = (platform) => {
+  const getPlatformVariant = (platform) => {
     switch (platform) {
-      case 'LinkedIn': return 'bg-blue-600';
-      case 'Moltbook': return 'bg-purple-600';
-      case 'Twitter': return 'bg-sky-500';
-      default: return 'bg-gray-600';
+      case 'LinkedIn': return 'info';
+      case 'Moltbook': return 'brand';
+      case 'Twitter': return 'default';
+      default: return 'default';
     }
   };
 
@@ -48,159 +51,165 @@ export default function ContentDashboard() {
   };
 
   return (
-    <div className="min-h-screen p-6">
-      {/* Navigation */}
-      <nav className="mb-6">
-        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
-          ← Back to Dashboard
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-2xl">
-              📊
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Content Performance</h1>
-              <p className="text-gray-400">Analytics & ROI Tracking {lastUpdated && `• Updated ${lastUpdated}`}</p>
-            </div>
-          </div>
-          <button onClick={fetchData} className="px-3 py-2 glass-card hover:bg-opacity-20 transition-all rounded-lg">
-            🔄 Refresh
-          </button>
-        </div>
-      </header>
-
+    <PageLayout
+      title="Content Performance"
+      subtitle={`Analytics & ROI Tracking${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
+      breadcrumbs={['Dashboard', 'Content']}
+      actions={
+        <button
+          onClick={fetchData}
+          className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+        >
+          <RotateCw size={14} />
+          Refresh
+        </button>
+      }
+    >
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-blue-400">{formatNumber(stats.totalImpressions)}</div>
-          <div className="text-sm text-gray-400">Total Impressions</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-green-400">{stats.totalEngagement}</div>
-          <div className="text-sm text-gray-400">Total Engagement</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-yellow-400">{stats.engagementRate}%</div>
-          <div className="text-sm text-gray-400">Avg Engagement Rate</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-purple-400">${formatNumber(stats.businessValue)}</div>
-          <div className="text-sm text-gray-400">Business Value</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{formatNumber(stats.totalImpressions)}</div>
+            <div className="text-xs text-zinc-500 mt-1">Total Impressions</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.totalEngagement}</div>
+            <div className="text-xs text-zinc-500 mt-1">Total Engagement</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">{stats.engagementRate}%</div>
+            <div className="text-xs text-zinc-500 mt-1">Avg Engagement Rate</div>
+          </CardContent>
+        </Card>
+        <Card hover={false}>
+          <CardContent className="pt-5 text-center">
+            <div className="text-2xl font-semibold tabular-nums text-white">${formatNumber(stats.businessValue)}</div>
+            <div className="text-xs text-zinc-500 mt-1">Business Value</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Key Insights */}
-      <div className="glass-card p-6 mb-6">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">💡</span>
-          Key Insights
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="glass-card p-4 border-l-4 border-l-green-500">
-            <div className="text-sm font-semibold text-green-400 mb-1">Best Performing</div>
-            <div className="text-white">Services posts</div>
-            <div className="text-xs text-gray-400">2.4% engagement rate</div>
+      <Card className="mb-6">
+        <CardHeader title="Key Insights" icon={Lightbulb} />
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-surface-tertiary rounded-lg p-4 border-l-4 border-l-green-500">
+              <div className="text-sm font-medium text-green-400 mb-1">Best Performing</div>
+              <div className="text-sm text-white">Services posts</div>
+              <div className="text-xs text-zinc-500">2.4% engagement rate</div>
+            </div>
+            <div className="bg-surface-tertiary rounded-lg p-4 border-l-4 border-l-yellow-500">
+              <div className="text-sm font-medium text-yellow-400 mb-1">Key Finding</div>
+              <div className="text-sm text-white">Viral != Engagement</div>
+              <div className="text-xs text-zinc-500">High reach, low rate</div>
+            </div>
+            <div className="bg-surface-tertiary rounded-lg p-4 border-l-4 border-l-purple-500">
+              <div className="text-sm font-medium text-purple-400 mb-1">Top ROI</div>
+              <div className="text-sm text-white">Partnership stories</div>
+              <div className="text-xs text-zinc-500">$15K from one post</div>
+            </div>
           </div>
-          <div className="glass-card p-4 border-l-4 border-l-yellow-500">
-            <div className="text-sm font-semibold text-yellow-400 mb-1">Key Finding</div>
-            <div className="text-white">Viral ≠ Engagement</div>
-            <div className="text-xs text-gray-400">High reach, low rate</div>
-          </div>
-          <div className="glass-card p-4 border-l-4 border-l-purple-500">
-            <div className="text-sm font-semibold text-purple-400 mb-1">Top ROI</div>
-            <div className="text-white">Partnership stories</div>
-            <div className="text-xs text-gray-400">$15K from one post</div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Posts Table */}
-      <div className="glass-card p-6">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">📝</span>
-          Content Performance
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-gray-400 text-sm border-b border-gray-700">
-                <th className="pb-3">Post</th>
-                <th className="pb-3">Platform</th>
-                <th className="pb-3">Impressions</th>
-                <th className="pb-3">Engagement</th>
-                <th className="pb-3">Rate</th>
-                <th className="pb-3">Business Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((post) => (
-                <tr key={post.id} className="border-b border-gray-800 hover:bg-white hover:bg-opacity-5">
-                  <td className="py-4">
-                    <div className="font-semibold text-white">{post.title}</div>
-                    <div className="text-xs text-gray-400">{post.date}</div>
-                  </td>
-                  <td className="py-4">
-                    <span className={`px-2 py-1 rounded text-xs font-bold text-white ${getPlatformColor(post.platform)}`}>
-                      {post.platform}
-                    </span>
-                  </td>
-                  <td className="py-4 text-white">{formatNumber(post.impressions)}</td>
-                  <td className="py-4">
-                    <div className="flex items-center space-x-2 text-sm">
-                      <span className="text-red-400">❤️ {post.likes}</span>
-                      <span className="text-blue-400">💬 {post.comments}</span>
-                      <span className="text-green-400">🔄 {post.shares}</span>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <span className={`font-bold ${getEngagementColor(post.engagementRate)}`}>
-                      {post.engagementRate}%
-                    </span>
-                  </td>
-                  <td className="py-4">
-                    <div className="text-white text-sm">{post.businessOutcome}</div>
-                    {post.outcomeValue > 0 && (
-                      <div className="text-green-400 text-xs font-bold">${formatNumber(post.outcomeValue)}</div>
-                    )}
-                  </td>
+      <Card>
+        <CardHeader title="Content Performance" icon={FileText} count={posts.length} />
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left text-xs text-zinc-500 border-b border-[rgba(255,255,255,0.06)]">
+                  <th className="pb-3 font-medium">Post</th>
+                  <th className="pb-3 font-medium">Platform</th>
+                  <th className="pb-3 font-medium">Impressions</th>
+                  <th className="pb-3 font-medium">Engagement</th>
+                  <th className="pb-3 font-medium">Rate</th>
+                  <th className="pb-3 font-medium">Business Outcome</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {posts.map((post) => (
+                  <tr key={post.id} className="border-b border-[rgba(255,255,255,0.04)] hover:bg-surface-tertiary transition-colors duration-150">
+                    <td className="py-3">
+                      <div className="text-sm font-medium text-white">{post.title}</div>
+                      <div className="text-xs text-zinc-500">{post.date}</div>
+                    </td>
+                    <td className="py-3">
+                      <Badge variant={getPlatformVariant(post.platform)} size="xs">
+                        {post.platform}
+                      </Badge>
+                    </td>
+                    <td className="py-3 text-sm text-white tabular-nums">{formatNumber(post.impressions)}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-red-400 flex items-center gap-1">
+                          <Heart size={12} /> {post.likes}
+                        </span>
+                        <span className="text-blue-400 flex items-center gap-1">
+                          <MessageCircle size={12} /> {post.comments}
+                        </span>
+                        <span className="text-green-400 flex items-center gap-1">
+                          <Repeat2 size={12} /> {post.shares}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <span className={`text-sm font-semibold tabular-nums ${getEngagementColor(post.engagementRate)}`}>
+                        {post.engagementRate}%
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <div className="text-sm text-zinc-300">{post.businessOutcome}</div>
+                      {post.outcomeValue > 0 && (
+                        <div className="text-xs font-semibold text-green-400 tabular-nums">${formatNumber(post.outcomeValue)}</div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Content Strategy */}
-      <div className="glass-card p-6 mt-6">
-        <h2 className="text-xl font-bold text-white mb-4 flex items-center">
-          <span className="mr-2">🎯</span>
-          Content Strategy
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass-card p-4">
-            <div className="text-sm font-semibold text-green-400 mb-2">✅ What Works</div>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>• Service-focused posts (highest conversion)</li>
-              <li>• Strong technical opinions</li>
-              <li>• Business storytelling with outcomes</li>
-              <li>• Specific ROI numbers and examples</li>
-            </ul>
+      <Card className="mt-6">
+        <CardHeader title="Content Strategy" icon={Target} />
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-surface-tertiary rounded-lg p-4">
+              <div className="text-sm font-medium text-green-400 mb-2 flex items-center gap-1.5">
+                <CheckCircle2 size={14} />
+                What Works
+              </div>
+              <ul className="text-sm text-zinc-300 space-y-1">
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Service-focused posts (highest conversion)</li>
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Strong technical opinions</li>
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Business storytelling with outcomes</li>
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Specific ROI numbers and examples</li>
+              </ul>
+            </div>
+            <div className="bg-surface-tertiary rounded-lg p-4">
+              <div className="text-sm font-medium text-red-400 mb-2 flex items-center gap-1.5">
+                <XCircle size={14} />
+                Avoid
+              </div>
+              <ul className="text-sm text-zinc-300 space-y-1">
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Chasing viral reach over engagement</li>
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Generic AI hype content</li>
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Posts without clear value prop</li>
+                <li className="flex items-start gap-2"><span className="text-zinc-500 mt-0.5">--</span> Too much self-promotion</li>
+              </ul>
+            </div>
           </div>
-          <div className="glass-card p-4">
-            <div className="text-sm font-semibold text-red-400 mb-2">❌ Avoid</div>
-            <ul className="text-sm text-gray-300 space-y-1">
-              <li>• Chasing viral reach over engagement</li>
-              <li>• Generic AI hype content</li>
-              <li>• Posts without clear value prop</li>
-              <li>• Too much self-promotion</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 }

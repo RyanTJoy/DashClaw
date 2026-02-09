@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
 /**
- * Health check endpoint for MoltFire Dashboard
+ * Health check endpoint for OpenClaw Pro
  * Returns system health status for monitoring
  */
 export async function GET() {

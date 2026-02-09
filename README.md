@@ -1,16 +1,12 @@
-# OpenClaw Dashboard
+# OpenClaw Pro
 
-A beautiful, real-time dashboard for monitoring your AI agent's activity. Built for the OpenClaw/Clawdbot/Clawd ecosystem. Includes improved memory and security focused tools.
+AI agent operations dashboard — a Next.js 14 app that gives AI agents (and their operators) a command center for tracking actions, token usage, learning, relationships, goals, content, and workflows.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
-![Dashboard Preview](docs/images/dashboard-main.jpg)
+## One-Click Deploy
 
-*Your AI agent's command center - token tracking, learning insights, project status, calendar, and more.*
-
-## 🚀 One-Click Deploy
-
-[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/OpenClaw-OPS-Suite&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)
+[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/OpenClaw-Pro&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)
 
 **New to this?** Check out our [Quick Start Guide](QUICK-START.md) - no coding required!
 
@@ -37,46 +33,44 @@ Installed into your Clawd workspace, you get:
 
 ## Features
 
-### 🧠 Memory & Ops Tools
+### Operations & Monitoring
 
-- 🎯 **Token Budget Tracking** — Monitor usage with visual charts
-- 📊 **Learning Database** — Track decisions, lessons, and outcomes over time
-- 🤝 **Relationship Tracker (Mini‑CRM)** — Contacts, interactions, and follow‑up reminders
-- 🎯 **Goal Tracking** — Goals, milestones, and progress
-- 📝 **Content Tracker** — Capture writing ideas and content workflows
-- 🧰 **Workflows / SOPs** — Document repeatable processes and runbooks
+- **Token Budget Tracking** — Real-time usage with visual charts and budget bars
+- **ActionRecord Control Plane** — Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
+- **Risk Signals** — 6 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
+- **Open Loops** — Track unresolved items with priority and type classification
 
-### 🔐 Security Tools
+### Data & Insights
 
-- 🔐 **Secure Settings Store** — Credentials encrypted and stored in your database
-- 🧪 **Connection Tests** — Verify integrations before saving
-- 🔍 **Security Scanner** — Pre‑deploy audit script (`node scripts/security-scan.js`)
-- ✅ **Security Checklist** — Quick safe‑deploy reference (`docs/SECURITY-CHECKLIST.md`)
-- 🧾 **Audit Template** — Full production audit methodology (`docs/SECURITY-AUDIT-TEMPLATE.md`)
+- **Learning Database** — Track decisions, lessons, and outcomes over time
+- **Relationship Tracker (Mini-CRM)** — Contacts, interactions, and follow-up reminders
+- **Goal Tracking** — Goals, milestones, and progress visualization
+- **Content Tracker** — Capture writing ideas and content workflows
+- **Workflows / SOPs** — Document repeatable processes and runbooks
 
-### ⚡ Platform & UX
+### Security
 
-- 🔌 **Integrations Settings** — Configure services from the UI
-- 📅 **Calendar Integration** — Upcoming events at a glance
-- 🔄 **Real‑time Updates** — Auto‑refresh with configurable intervals
-- 📱 **Mobile Responsive** — Works great on any device
+- **Secure Settings Store** — Credentials encrypted and stored in your database
+- **Connection Tests** — Verify integrations before saving
+- **Security Scanner** — Pre-deploy audit script (`node scripts/security-scan.js`)
+- **Multi-Tenant Isolation** — Org-scoped data with API key authentication
+
+### Platform & UX
+
+- **Integrations Settings** — Configure services from the UI
+- **Calendar Integration** — Upcoming events at a glance
+- **Real-time Updates** — Auto-refresh with configurable intervals
+- **Mobile Responsive** — Collapsible sidebar, works on any device
+- **Dark Theme** — Flat surface design with Inter font and Lucide icons
 
 ## Quick Start (Local)
 
-**Where to install it:** anywhere you want (Desktop, Documents, etc). It does **not** need to go inside your Clawdbot/Clawd folder. It’s a normal Next.js app.
+### 1) Clone the project
 
-**Recommended locations**
-- Windows: `Documents\OpenClaw-OPS-Suite` or `Desktop\OpenClaw-OPS-Suite`
-- Mac/Linux: `~/Desktop/OpenClaw-OPS-Suite` or `~/Projects/OpenClaw-OPS-Suite`
-
-**Avoid** extracting into a very deep folder path on Windows (Node can hit path-length issues inside `node_modules`).
-
-### 1) Download the project
-
-- GitHub UI: **Code** → **Download ZIP**
-- Direct ZIP link: https://github.com/ucsandman/OpenClaw-OPS-Suite/archive/refs/heads/main.zip
-
-Extract the ZIP somewhere simple (example: `Desktop/OpenClaw-OPS-Suite`).
+```bash
+git clone git@github.com:ucsandman/OpenClaw-Pro.git
+cd OpenClaw-Pro
+```
 
 ### 2) Set up your database
 
@@ -99,73 +93,10 @@ npm run dev
 
 Open http://localhost:3000
 
-## Security quick note (read this)
+## Security
 
 - **Local-only (http://localhost:3000):** you can run without `DASHBOARD_API_KEY`.
 - **Public deployment (Vercel / any URL on the internet):** set `DASHBOARD_API_KEY` or your dashboard API data may be readable by anyone who has the link.
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push to GitHub (or fork this repo)
-2. Import in [Vercel](https://vercel.com)
-3. Add `DATABASE_URL` environment variable
-4. **Set `DASHBOARD_API_KEY`** (protects your `/api/*` data)
-5. Deploy!
-
-### Other platforms
-
-Any platform supporting Next.js 14+ will work. Just set the `DATABASE_URL` environment variable.
-
-## Integrations Settings
-
-Configure all your connected services directly from the dashboard:
-
-1. Go to **Integrations** page
-2. Click any service card to configure
-3. Enter your API keys/credentials
-4. Click **Test Connection** to verify
-5. **Save Settings** stores encrypted in your Neon database
-
-Supported integrations:
-- 🗄️ Neon Database
-- 📝 Notion
-- 🐙 GitHub
-- 🤖 OpenAI
-- 🧠 Anthropic
-- 🦁 Brave Search
-- 🎙️ ElevenLabs
-- 💬 Telegram
-- 📅 Google Workspace
-- ▲ Vercel
-- 🐦 Twitter/X
-- 🔥 Moltbook
-
-## API Endpoints
-
-All endpoints return JSON and support CORS.
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/settings` | Integration credentials (CRUD) |
-| `/api/settings/test` | Test connection with credentials |
-| `/api/tokens` | Token usage snapshots |
-| `/api/learning` | Decisions and lessons |
-| `/api/inspiration` | Ideas and ratings |
-| `/api/relationships` | Contacts and interactions |
-| `/api/goals` | Goals and milestones |
-| `/api/calendar` | Upcoming events |
-| `/api/health` | Database connectivity check |
-
-## 🔒 Security
-
-We take security seriously. OpenClaw Dashboard includes:
-
-- **Encrypted Credentials** - All API keys stored encrypted in your database
-- **No Hardcoded Secrets** - Everything uses environment variables
-- **Security Scanner** - Built-in tool to audit your deployment
-- **Comprehensive Documentation** - Security guides and checklists
 
 ### Run Security Scan
 
@@ -181,10 +112,47 @@ node scripts/security-scan.js
 - [Security Checklist](docs/SECURITY-CHECKLIST.md) - Quick deployment checklist
 - [Audit Template](docs/SECURITY-AUDIT-TEMPLATE.md) - Full audit methodology
 
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push to GitHub (or fork this repo)
+2. Import in [Vercel](https://vercel.com)
+3. Add `DATABASE_URL` environment variable
+4. **Set `DASHBOARD_API_KEY`** (protects your `/api/*` data)
+5. Deploy!
+
+### Other platforms
+
+Any platform supporting Next.js 14+ will work. Just set the `DATABASE_URL` environment variable.
+
+## API Endpoints
+
+All endpoints return JSON and support CORS.
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/actions` | ActionRecord CRUD + signals + loops + assumptions |
+| `/api/settings` | Integration credentials (CRUD) |
+| `/api/settings/test` | Test connection with credentials |
+| `/api/tokens` | Token usage snapshots |
+| `/api/learning` | Decisions and lessons |
+| `/api/inspiration` | Ideas and ratings |
+| `/api/relationships` | Contacts and interactions |
+| `/api/goals` | Goals and milestones |
+| `/api/calendar` | Upcoming events |
+| `/api/bounties` | Bounty tracking |
+| `/api/workflows` | Workflow definitions |
+| `/api/orgs` | Organization management (admin) |
+| `/api/health` | Database connectivity check |
+
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS
+- **Language**: JavaScript
+- **Styling**: Tailwind CSS 3 + CSS custom properties
+- **Icons**: lucide-react
+- **Font**: Inter (next/font/google)
 - **Database**: Neon PostgreSQL
 - **Charts**: Recharts
 - **Deployment**: Vercel
@@ -199,4 +167,4 @@ MIT
 
 ---
 
-Built with 🔥 by [MoltFire](https://github.com/MoltFire)
+Built by [ucsandman](https://github.com/ucsandman)

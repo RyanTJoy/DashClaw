@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Bell, AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react';
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState([]);
@@ -8,7 +9,6 @@ export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Check notification permission
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setPermission(Notification.permission);
     }
@@ -19,12 +19,12 @@ export default function NotificationCenter() {
       const result = await Notification.requestPermission();
       setPermission(result);
       if (result === 'granted') {
-        addNotification('success', 'Notifications enabled! You\'ll get alerts for important events.');
+        addNotification('success', 'Notifications enabled.');
       }
     }
   };
 
-  const addNotification = (type, message, title = 'MoltFire') => {
+  const addNotification = useCallback((type, message, title = 'OpenClaw') => {
     const newNotif = {
       id: Date.now(),
       type,
@@ -34,50 +34,39 @@ export default function NotificationCenter() {
       read: false
     };
     setNotifications(prev => [newNotif, ...prev].slice(0, 10));
-    
-    // Send browser notification if permitted
-    if (permission === 'granted' && type !== 'info') {
-      new Notification(title, {
-        body: message,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png'
-      });
-    }
-  };
 
-  // Check for alerts periodically
+    if (permission === 'granted' && type !== 'info') {
+      new Notification(title, { body: message });
+    }
+  }, [permission]);
+
   useEffect(() => {
     const checkAlerts = async () => {
       try {
-        // Check token budget
         const tokenRes = await fetch('/api/tokens');
         const tokenData = await tokenRes.json();
-        
+
         if (tokenData.dailyPct > 100) {
-          addNotification('error', `Token budget exceeded! ${tokenData.dailyPct.toFixed(0)}% of daily limit used.`, '🚨 Token Alert');
+          addNotification('error', `Token budget exceeded! ${tokenData.dailyPct.toFixed(0)}% of daily limit used.`, 'Token Alert');
         } else if (tokenData.dailyPct > 75) {
-          addNotification('warning', `Token budget at ${tokenData.dailyPct.toFixed(0)}%. Consider conservation mode.`, '⚠️ Token Warning');
+          addNotification('warning', `Token budget at ${tokenData.dailyPct.toFixed(0)}%. Consider conservation mode.`, 'Token Warning');
         }
 
-        // Check follow-ups
         const relRes = await fetch('/api/relationships');
         const relData = await relRes.json();
-        
+
         if (relData.stats?.followUpsDue > 0) {
-          addNotification('info', `You have ${relData.stats.followUpsDue} follow-up(s) due!`, '📅 Follow-up Reminder');
+          addNotification('info', `You have ${relData.stats.followUpsDue} follow-up(s) due!`, 'Follow-up Reminder');
         }
       } catch (error) {
-        // Silently fail - APIs might not be available
+        // Silently fail
       }
     };
 
-    // Check immediately on load
     checkAlerts();
-    
-    // Then check every 5 minutes
     const interval = setInterval(checkAlerts, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [permission]);
+  }, [addNotification]);
 
   const markAllRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -89,63 +78,52 @@ export default function NotificationCenter() {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const getTypeStyles = (type) => {
+  const getTypeIcon = (type) => {
     switch (type) {
-      case 'error': return 'border-l-red-500 bg-red-900 bg-opacity-20';
-      case 'warning': return 'border-l-yellow-500 bg-yellow-900 bg-opacity-20';
-      case 'success': return 'border-l-green-500 bg-green-900 bg-opacity-20';
-      default: return 'border-l-blue-500 bg-blue-900 bg-opacity-20';
+      case 'error': return <XCircle size={14} className="text-red-400" />;
+      case 'warning': return <AlertTriangle size={14} className="text-yellow-400" />;
+      case 'success': return <CheckCircle2 size={14} className="text-green-400" />;
+      default: return <Info size={14} className="text-blue-400" />;
     }
   };
 
-  const getTypeIcon = (type) => {
+  const getTypeBorder = (type) => {
     switch (type) {
-      case 'error': return '🚨';
-      case 'warning': return '⚠️';
-      case 'success': return '✅';
-      default: return 'ℹ️';
+      case 'error': return 'border-l-red-500';
+      case 'warning': return 'border-l-yellow-500';
+      case 'success': return 'border-l-green-500';
+      default: return 'border-l-blue-500';
     }
   };
 
   return (
     <div className="relative">
-      {/* Notification Bell */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 glass-card rounded-lg hover:bg-opacity-20 transition-all"
+        className="relative p-2 rounded-lg hover:bg-white/5 transition-colors duration-150"
       >
-        <span className="text-xl">🔔</span>
+        <Bell size={18} className="text-zinc-400" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
             {unreadCount}
           </span>
         )}
       </button>
 
-      {/* Notification Panel */}
       {isOpen && (
-        <div className="absolute right-0 top-12 w-80 glass-card rounded-lg shadow-2xl z-50 max-h-96 overflow-hidden">
-          <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-            <h3 className="font-semibold text-white">Notifications</h3>
-            <div className="flex space-x-2">
+        <div className="absolute right-0 top-11 w-80 bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden">
+          <div className="px-4 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+            <h3 className="text-sm font-medium text-white">Notifications</h3>
+            <div className="flex gap-3">
               {permission !== 'granted' && (
-                <button
-                  onClick={requestPermission}
-                  className="text-xs text-cyan-400 hover:text-cyan-300"
-                >
+                <button onClick={requestPermission} className="text-xs text-brand hover:text-brand-hover transition-colors">
                   Enable
                 </button>
               )}
-              <button
-                onClick={markAllRead}
-                className="text-xs text-gray-400 hover:text-white"
-              >
+              <button onClick={markAllRead} className="text-xs text-zinc-500 hover:text-white transition-colors">
                 Mark read
               </button>
-              <button
-                onClick={clearAll}
-                className="text-xs text-gray-400 hover:text-white"
-              >
+              <button onClick={clearAll} className="text-xs text-zinc-500 hover:text-white transition-colors">
                 Clear
               </button>
             </div>
@@ -153,25 +131,25 @@ export default function NotificationCenter() {
 
           <div className="max-h-72 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-gray-400">
-                <div className="text-3xl mb-2">🔕</div>
-                <div>No notifications</div>
+              <div className="flex flex-col items-center py-8 text-zinc-500">
+                <Bell size={24} className="mb-2 text-zinc-600" />
+                <span className="text-sm">No notifications</span>
               </div>
             ) : (
               notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  className={`p-3 border-l-4 ${getTypeStyles(notif.type)} ${!notif.read ? 'bg-opacity-30' : ''}`}
+                  className={`px-4 py-3 border-l-2 ${getTypeBorder(notif.type)} ${!notif.read ? 'bg-white/[0.02]' : ''} transition-colors`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-2">
-                      <span>{getTypeIcon(notif.type)}</span>
-                      <div>
-                        <div className="text-sm font-semibold text-white">{notif.title}</div>
-                        <div className="text-xs text-gray-300">{notif.message}</div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <div className="mt-0.5 flex-shrink-0">{getTypeIcon(notif.type)}</div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-white">{notif.title}</div>
+                        <div className="text-xs text-zinc-400 mt-0.5">{notif.message}</div>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-500">{notif.timestamp}</span>
+                    <span className="text-[10px] text-zinc-600 flex-shrink-0">{notif.timestamp}</span>
                   </div>
                 </div>
               ))
@@ -179,12 +157,9 @@ export default function NotificationCenter() {
           </div>
 
           {permission !== 'granted' && (
-            <div className="p-3 bg-gray-800 text-center">
-              <button
-                onClick={requestPermission}
-                className="text-sm text-cyan-400 hover:text-cyan-300"
-              >
-                🔔 Enable browser notifications
+            <div className="px-4 py-2.5 border-t border-[rgba(255,255,255,0.06)] text-center">
+              <button onClick={requestPermission} className="text-xs text-brand hover:text-brand-hover transition-colors">
+                Enable browser notifications
               </button>
             </div>
           )}

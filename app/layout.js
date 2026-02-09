@@ -1,8 +1,15 @@
+import { Inter } from 'next/font/google'
 import './globals.css'
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+
 export const metadata = {
-  title: 'MoltFire Dashboard',
-  description: 'Personal AI Assistant Control Center',
+  title: 'OpenClaw Pro',
+  description: 'AI Agent Operations Control Plane',
 }
 
 export const viewport = {
@@ -10,17 +17,17 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#ff6b35',
+  themeColor: '#f97316',
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="theme-color" content="#ff6b35" />
+        <meta name="theme-color" content="#f97316" />
       </head>
-      <body>{children}</body>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }

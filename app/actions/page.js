@@ -2,6 +2,35 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import PageLayout from '../components/PageLayout';
+import { Card, CardContent } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { StatCompact } from '../components/ui/Stat';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Skeleton } from '../components/ui/Skeleton';
+import { getAgentColor } from '../lib/colors';
+import {
+  Zap, Hammer, Rocket, FileText, Briefcase, Shield, MessageSquare,
+  Link as LinkIcon, Calendar, Search, Eye, Wrench, RefreshCw, FlaskConical,
+  Settings, Radio, AlertTriangle, Trash2, Package, Inbox,
+  CheckCircle2, XCircle, Clock, Loader2, Ban,
+  ChevronUp, ChevronDown, ChevronLeft, ChevronRight, RotateCw,
+} from 'lucide-react';
+
+const typeIconMap = {
+  build: Hammer, deploy: Rocket, post: FileText, apply: Briefcase, security: Shield,
+  message: MessageSquare, api: LinkIcon, calendar: Calendar, research: Search, review: Eye,
+  fix: Wrench, refactor: RefreshCw, test: FlaskConical, config: Settings, monitor: Radio,
+  alert: AlertTriangle, cleanup: Trash2, sync: RefreshCw, migrate: Package,
+};
+
+const statusIconMap = {
+  completed: CheckCircle2, failed: XCircle, pending: Clock, running: Loader2, cancelled: Ban,
+};
+
+const statusVariantMap = {
+  completed: 'success', failed: 'error', running: 'warning', cancelled: 'default', pending: 'info',
+};
 
 export default function ActionsTimeline() {
   const [actions, setActions] = useState([]);
@@ -12,7 +41,6 @@ export default function ActionsTimeline() {
   const [expandedId, setExpandedId] = useState(null);
   const [expandedData, setExpandedData] = useState({});
 
-  // Filters
   const [filterAgent, setFilterAgent] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
@@ -20,23 +48,6 @@ export default function ActionsTimeline() {
   const [page, setPage] = useState(0);
   const [knownAgents, setKnownAgents] = useState([]);
   const pageSize = 25;
-
-  // Consistent color for each agent based on name hash
-  const getAgentColor = (agentId) => {
-    const colors = [
-      'bg-orange-500/20 text-orange-400 border-orange-500/30',
-      'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-      'bg-purple-500/20 text-purple-400 border-purple-500/30',
-      'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-      'bg-pink-500/20 text-pink-400 border-pink-500/30',
-      'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      'bg-blue-500/20 text-blue-400 border-blue-500/30',
-      'bg-red-500/20 text-red-400 border-red-500/30',
-    ];
-    let hash = 0;
-    for (let i = 0; i < (agentId || '').length; i++) hash = ((hash << 5) - hash + agentId.charCodeAt(i)) | 0;
-    return colors[Math.abs(hash) % colors.length];
-  };
 
   const fetchActions = useCallback(async () => {
     try {
@@ -57,7 +68,6 @@ export default function ActionsTimeline() {
       setTotal(data.total || 0);
       setLastUpdated(new Date().toLocaleTimeString());
 
-      // Build known agents list from results (only on unfiltered fetches)
       if (!filterAgent) {
         const agentMap = new Map();
         actionsList.forEach(a => {
@@ -103,24 +113,14 @@ export default function ActionsTimeline() {
   };
 
   const getTypeIcon = (type) => {
-    const icons = {
-      build: '🔨', deploy: '🚀', post: '📝', apply: '💼', security: '🛡️',
-      message: '💬', api: '🔗', calendar: '📅', research: '🔍', review: '👀',
-      fix: '🔧', refactor: '♻️', test: '🧪', config: '⚙️', monitor: '📡',
-      alert: '🚨', cleanup: '🧹', sync: '🔄', migrate: '📦'
-    };
-    return icons[type] || '⚡';
+    const Icon = typeIconMap[type] || Zap;
+    return <Icon size={16} className="text-zinc-400" />;
   };
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      completed: 'bg-green-500/20 text-green-400 border-green-500/30',
-      running: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-      failed: 'bg-red-500/20 text-red-400 border-red-500/30',
-      cancelled: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-      pending: 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-    };
-    return styles[status] || styles.pending;
+  const getStatusIcon = (status) => {
+    const Icon = statusIconMap[status] || Clock;
+    const colors = { completed: 'text-green-400', failed: 'text-red-400', running: 'text-yellow-400', pending: 'text-blue-400', cancelled: 'text-zinc-500' };
+    return <Icon size={14} className={colors[status] || 'text-zinc-400'} />;
   };
 
   const getRiskColor = (score) => {
@@ -153,311 +153,240 @@ export default function ActionsTimeline() {
 
   const totalPages = Math.ceil(total / pageSize);
 
+  const selectClass = 'px-3 py-2 bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg text-white text-sm focus:outline-none focus:border-brand transition-colors duration-150';
+
   return (
-    <div className="min-h-screen p-6">
-      <nav className="mb-6">
-        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
-          ← Back to Dashboard
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center text-2xl">
-              ⚡
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Action Timeline</h1>
-              <p className="text-gray-400">Agent Operations Control Plane {lastUpdated && `• Updated ${lastUpdated}`}</p>
-            </div>
-          </div>
-          <button onClick={() => { setLoading(true); fetchActions(); }} className="px-3 py-2 glass-card hover:bg-opacity-20 transition-all rounded-lg">
-            🔄 Refresh
-          </button>
-        </div>
-      </header>
-
+    <PageLayout
+      title="Action Timeline"
+      subtitle={`Agent Operations Control Plane${lastUpdated ? ` \u00B7 Updated ${lastUpdated}` : ''}`}
+      breadcrumbs={['Dashboard', 'Actions']}
+      actions={
+        <button
+          onClick={() => { setLoading(true); fetchActions(); }}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+        >
+          <RotateCw size={14} />
+          Refresh
+        </button>
+      }
+    >
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-white">{stats.total || 0}</div>
-          <div className="text-sm text-gray-400">Total Actions</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-green-400">{successRate}%</div>
-          <div className="text-sm text-gray-400">Success Rate</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-yellow-400">{stats.running || 0}</div>
-          <div className="text-sm text-gray-400">Running</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className={`text-3xl font-bold ${parseInt(stats.high_risk, 10) > 0 ? 'text-red-400' : 'text-green-400'}`}>
-            {stats.high_risk || 0}
-          </div>
-          <div className="text-sm text-gray-400">High Risk</div>
-        </div>
-        <div className="glass-card p-4 text-center">
-          <div className="text-3xl font-bold text-purple-400">${parseFloat(stats.total_cost || 0).toFixed(2)}</div>
-          <div className="text-sm text-gray-400">Total Cost</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        {[
+          { label: 'Total', value: stats.total || 0, color: 'text-white' },
+          { label: 'Success Rate', value: `${successRate}%`, color: 'text-green-400' },
+          { label: 'Running', value: stats.running || 0, color: 'text-yellow-400' },
+          { label: 'High Risk', value: stats.high_risk || 0, color: parseInt(stats.high_risk, 10) > 0 ? 'text-red-400' : 'text-green-400' },
+          { label: 'Total Cost', value: `$${parseFloat(stats.total_cost || 0).toFixed(2)}`, color: 'text-purple-400' },
+        ].map((stat) => (
+          <Card key={stat.label} hover={false}>
+            <div className="p-4 text-center">
+              <div className={`text-2xl font-semibold tabular-nums ${stat.color}`}>{stat.value}</div>
+              <div className="text-xs text-zinc-500 mt-1">{stat.label}</div>
+            </div>
+          </Card>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="glass-card p-4 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <select
-            value={filterAgent}
-            onChange={(e) => { setFilterAgent(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
-          >
-            <option value="">All Agents</option>
-            {knownAgents.map(a => (
-              <option key={a.id} value={a.id}>{a.name || a.id}</option>
-            ))}
-          </select>
-          <select
-            value={filterType}
-            onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
-          >
-            <option value="">All Types</option>
-            {['build','deploy','post','apply','security','message','api','calendar','research','review','fix','refactor','test','config','monitor','alert','cleanup','sync','migrate','other'].map(t => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          <select
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
-          >
-            <option value="">All Statuses</option>
-            {['running','completed','failed','cancelled','pending'].map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          <select
-            value={filterRiskMin}
-            onChange={(e) => { setFilterRiskMin(e.target.value); setPage(0); }}
-            className="px-3 py-2 bg-white/5 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-orange-500 [&>option]:bg-gray-900 [&>option]:text-white"
-          >
-            <option value="">Any Risk</option>
-            <option value="40">Medium+ (40+)</option>
-            <option value="70">High (70+)</option>
-            <option value="90">Critical (90+)</option>
-          </select>
+      <Card hover={false} className="mb-6">
+        <div className="p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <select value={filterAgent} onChange={(e) => { setFilterAgent(e.target.value); setPage(0); }} className={selectClass}>
+              <option value="">All Agents</option>
+              {knownAgents.map(a => <option key={a.id} value={a.id}>{a.name || a.id}</option>)}
+            </select>
+            <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(0); }} className={selectClass}>
+              <option value="">All Types</option>
+              {['build','deploy','post','apply','security','message','api','calendar','research','review','fix','refactor','test','config','monitor','alert','cleanup','sync','migrate','other'].map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <select value={filterStatus} onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }} className={selectClass}>
+              <option value="">All Statuses</option>
+              {['running','completed','failed','cancelled','pending'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={filterRiskMin} onChange={(e) => { setFilterRiskMin(e.target.value); setPage(0); }} className={selectClass}>
+              <option value="">Any Risk</option>
+              <option value="40">Medium+ (40+)</option>
+              <option value="70">High (70+)</option>
+              <option value="90">Critical (90+)</option>
+            </select>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Actions List */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">
-            Actions <span className="text-sm font-normal text-gray-400">({total} total)</span>
+      <Card hover={false}>
+        <div className="px-5 pt-5 pb-3 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-zinc-200 uppercase tracking-wider">
+            Actions <span className="text-xs font-normal text-zinc-500 normal-case ml-2">({total} total)</span>
           </h2>
           {totalPages > 1 && (
-            <div className="flex items-center space-x-2 text-sm">
-              <button
-                onClick={() => setPage(p => Math.max(0, p - 1))}
-                disabled={page === 0}
-                className="px-2 py-1 glass-card rounded disabled:opacity-30 hover:bg-opacity-20 text-white"
-              >
-                ←
+            <div className="flex items-center gap-2 text-sm">
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="p-1 rounded hover:bg-white/5 disabled:opacity-30 text-zinc-400 transition-colors">
+                <ChevronLeft size={16} />
               </button>
-              <span className="text-gray-400">{page + 1} / {totalPages}</span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                disabled={page >= totalPages - 1}
-                className="px-2 py-1 glass-card rounded disabled:opacity-30 hover:bg-opacity-20 text-white"
-              >
-                →
+              <span className="text-xs text-zinc-500 tabular-nums">{page + 1} / {totalPages}</span>
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="p-1 rounded hover:bg-white/5 disabled:opacity-30 text-zinc-400 transition-colors">
+                <ChevronRight size={16} />
               </button>
             </div>
           )}
         </div>
 
-        {loading ? (
-          <div className="text-center text-gray-400 py-12">Loading actions...</div>
-        ) : actions.length === 0 ? (
-          <div className="text-center text-gray-400 py-12">
-            <div className="text-4xl mb-2">📭</div>
-            <div>No actions found</div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {actions.map((action) => {
-              const isExpanded = expandedId === action.action_id;
-              const detail = expandedData[action.action_id];
-              const systems = parseJsonArray(action.systems_touched);
-              const sideEffects = parseJsonArray(action.side_effects);
-              const artifacts = parseJsonArray(action.artifacts_created);
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : actions.length === 0 ? (
+            <EmptyState icon={Inbox} title="No actions found" description="Adjust filters or wait for agent activity" />
+          ) : (
+            <div className="space-y-2">
+              {actions.map((action) => {
+                const isExpanded = expandedId === action.action_id;
+                const detail = expandedData[action.action_id];
+                const systems = parseJsonArray(action.systems_touched);
+                const sideEffects = parseJsonArray(action.side_effects);
+                const artifacts = parseJsonArray(action.artifacts_created);
 
-              return (
-                <div key={action.action_id} className="glass-card overflow-hidden">
-                  <button
-                    onClick={() => toggleExpand(action.action_id)}
-                    className="w-full p-4 text-left hover:bg-white/5 transition-all"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3 flex-1 min-w-0">
-                        <span className="text-xl mt-0.5">{getTypeIcon(action.action_type)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-white truncate">{action.declared_goal}</div>
-                          <div className="flex items-center space-x-3 mt-1 text-xs text-gray-400">
-                            <span className={`px-1.5 py-0.5 rounded border text-xs font-medium ${getAgentColor(action.agent_id)}`}>
-                              {action.agent_name || action.agent_id}
-                            </span>
-                            <span>·</span>
-                            <span>{action.action_type}</span>
-                            <span>·</span>
-                            <span>{formatTime(action.timestamp_start)}</span>
-                            {systems.length > 0 && (
-                              <>
-                                <span>·</span>
-                                <span>{systems.slice(0, 2).join(', ')}{systems.length > 2 ? ` +${systems.length - 2}` : ''}</span>
-                              </>
-                            )}
+                return (
+                  <div key={action.action_id} className="bg-surface-tertiary rounded-lg border border-[rgba(255,255,255,0.04)] overflow-hidden">
+                    <button
+                      onClick={() => toggleExpand(action.action_id)}
+                      className="w-full p-4 text-left hover:bg-white/[0.02] transition-colors duration-150"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {getTypeIcon(action.action_type)}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm text-white truncate">{action.declared_goal}</div>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500 flex-wrap">
+                              <span className={`px-1.5 py-0.5 rounded border text-xs font-medium ${getAgentColor(action.agent_id)}`}>
+                                {action.agent_name || action.agent_id}
+                              </span>
+                              <span>{action.action_type}</span>
+                              <span className="text-zinc-600">{formatTime(action.timestamp_start)}</span>
+                              {systems.length > 0 && (
+                                <span className="text-zinc-600">{systems.slice(0, 2).join(', ')}{systems.length > 2 ? ` +${systems.length - 2}` : ''}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3 ml-3">
-                        <span className={`text-sm font-bold ${getRiskColor(action.risk_score)}`}>
-                          R:{action.risk_score || 0}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded text-xs font-bold border ${getStatusBadge(action.status)}`}>
-                          {action.status}
-                        </span>
-                        <span className="text-gray-500 text-sm">{isExpanded ? '▲' : '▼'}</span>
-                      </div>
-                    </div>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="border-t border-gray-700 p-4 bg-white/5 space-y-4">
-                      {/* Intent */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-xs text-gray-500 uppercase mb-1">Reasoning</div>
-                          <div className="text-sm text-gray-300">{action.reasoning || 'Not specified'}</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-gray-500 uppercase mb-1">Authorization</div>
-                          <div className="text-sm text-gray-300">{action.authorization_scope || 'Not specified'}</div>
-                        </div>
-                      </div>
-
-                      {/* Meta */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-500">Confidence: </span>
-                          <span className="text-white">{action.confidence || 50}%</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Reversible: </span>
-                          <span className={action.reversible ? 'text-green-400' : 'text-red-400'}>
-                            {action.reversible ? 'Yes' : 'No'}
+                        <div className="flex items-center gap-3 ml-3">
+                          <span className={`text-xs font-mono font-medium ${getRiskColor(action.risk_score)}`}>
+                            R:{action.risk_score || 0}
                           </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Duration: </span>
-                          <span className="text-white">{action.duration_ms ? `${(action.duration_ms / 1000).toFixed(1)}s` : '--'}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Cost: </span>
-                          <span className="text-white">${parseFloat(action.cost_estimate || 0).toFixed(4)}</span>
+                          <Badge variant={statusVariantMap[action.status] || 'default'} size="xs">
+                            {action.status}
+                          </Badge>
+                          {isExpanded ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
                         </div>
                       </div>
+                    </button>
 
-                      {/* Outcome */}
-                      {action.output_summary && (
-                        <div>
-                          <div className="text-xs text-gray-500 uppercase mb-1">Output</div>
-                          <div className="text-sm text-gray-300 bg-black/20 p-2 rounded">{action.output_summary}</div>
-                        </div>
-                      )}
-
-                      {action.error_message && (
-                        <div>
-                          <div className="text-xs text-gray-500 uppercase mb-1">Error</div>
-                          <div className="text-sm text-red-400 bg-red-900/20 p-2 rounded">{action.error_message}</div>
-                        </div>
-                      )}
-
-                      {/* Side Effects & Artifacts */}
-                      {sideEffects.length > 0 && (
-                        <div>
-                          <div className="text-xs text-gray-500 uppercase mb-1">Side Effects ({sideEffects.length})</div>
-                          <div className="flex flex-wrap gap-1">
-                            {sideEffects.map((se, i) => (
-                              <span key={i} className="px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-300">{se}</span>
-                            ))}
+                    {isExpanded && (
+                      <div className="border-t border-[rgba(255,255,255,0.04)] p-4 bg-surface-secondary space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Reasoning</div>
+                            <div className="text-sm text-zinc-300">{action.reasoning || 'Not specified'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Authorization</div>
+                            <div className="text-sm text-zinc-300">{action.authorization_scope || 'Not specified'}</div>
                           </div>
                         </div>
-                      )}
 
-                      {artifacts.length > 0 && (
-                        <div>
-                          <div className="text-xs text-gray-500 uppercase mb-1">Artifacts ({artifacts.length})</div>
-                          <div className="flex flex-wrap gap-1">
-                            {artifacts.map((a, i) => (
-                              <span key={i} className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-300">{a}</span>
-                            ))}
-                          </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          <div><span className="text-zinc-500">Confidence: </span><span className="text-white">{action.confidence || 50}%</span></div>
+                          <div><span className="text-zinc-500">Reversible: </span><span className={action.reversible ? 'text-green-400' : 'text-red-400'}>{action.reversible ? 'Yes' : 'No'}</span></div>
+                          <div><span className="text-zinc-500">Duration: </span><span className="text-white">{action.duration_ms ? `${(action.duration_ms / 1000).toFixed(1)}s` : '--'}</span></div>
+                          <div><span className="text-zinc-500">Cost: </span><span className="text-white font-mono">${parseFloat(action.cost_estimate || 0).toFixed(4)}</span></div>
                         </div>
-                      )}
 
-                      {/* Open Loops & Assumptions from detail fetch */}
-                      {detail && (
-                        <>
-                          {detail.open_loops?.length > 0 && (
-                            <div>
-                              <div className="text-xs text-gray-500 uppercase mb-1">Open Loops ({detail.open_loops.length})</div>
-                              <div className="space-y-1">
-                                {detail.open_loops.map(loop => (
-                                  <div key={loop.loop_id} className="flex items-center space-x-2 text-sm">
-                                    <span className={`w-2 h-2 rounded-full ${loop.status === 'open' ? 'bg-yellow-500' : 'bg-green-500'}`} />
-                                    <span className="text-gray-300">{loop.description}</span>
-                                    <span className="text-xs text-gray-500">({loop.loop_type} · {loop.priority})</span>
-                                  </div>
-                                ))}
-                              </div>
+                        {action.output_summary && (
+                          <div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Output</div>
+                            <div className="text-sm text-zinc-300 bg-black/20 p-2 rounded font-mono">{action.output_summary}</div>
+                          </div>
+                        )}
+
+                        {action.error_message && (
+                          <div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Error</div>
+                            <div className="text-sm text-red-400 bg-red-500/5 border border-red-500/10 p-2 rounded font-mono">{action.error_message}</div>
+                          </div>
+                        )}
+
+                        {sideEffects.length > 0 && (
+                          <div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Side Effects ({sideEffects.length})</div>
+                            <div className="flex flex-wrap gap-1">
+                              {sideEffects.map((se, i) => <Badge key={i} variant="warning" size="xs">{se}</Badge>)}
                             </div>
-                          )}
+                          </div>
+                        )}
 
-                          {detail.assumptions?.length > 0 && (
-                            <div>
-                              <div className="text-xs text-gray-500 uppercase mb-1">Assumptions ({detail.assumptions.length})</div>
-                              <div className="space-y-1">
-                                {detail.assumptions.map(asm => (
-                                  <div key={asm.assumption_id} className="flex items-center space-x-2 text-sm">
-                                    <span>{asm.validated ? '✅' : asm.invalidated ? '❌' : '❓'}</span>
-                                    <span className="text-gray-300">{asm.assumption}</span>
-                                  </div>
-                                ))}
-                              </div>
+                        {artifacts.length > 0 && (
+                          <div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Artifacts ({artifacts.length})</div>
+                            <div className="flex flex-wrap gap-1">
+                              {artifacts.map((a, i) => <Badge key={i} variant="info" size="xs">{a}</Badge>)}
                             </div>
-                          )}
-                        </>
-                      )}
+                          </div>
+                        )}
 
-                      {/* Link to full detail */}
-                      <div className="pt-2">
-                        <Link
-                          href={`/actions/${action.action_id}`}
-                          className="text-sm text-orange-400 hover:text-orange-300 transition-colors"
-                        >
-                          View full post-mortem →
-                        </Link>
+                        {detail && (
+                          <>
+                            {detail.open_loops?.length > 0 && (
+                              <div>
+                                <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Open Loops ({detail.open_loops.length})</div>
+                                <div className="space-y-1">
+                                  {detail.open_loops.map(loop => (
+                                    <div key={loop.loop_id} className="flex items-center gap-2 text-sm">
+                                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${loop.status === 'open' ? 'bg-yellow-500' : 'bg-green-500'}`} />
+                                      <span className="text-zinc-300">{loop.description}</span>
+                                      <span className="text-xs text-zinc-600">({loop.loop_type} / {loop.priority})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {detail.assumptions?.length > 0 && (
+                              <div>
+                                <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Assumptions ({detail.assumptions.length})</div>
+                                <div className="space-y-1">
+                                  {detail.assumptions.map(asm => (
+                                    <div key={asm.assumption_id} className="flex items-center gap-2 text-sm">
+                                      {asm.validated ? <CheckCircle2 size={14} className="text-green-400" /> : asm.invalidated ? <XCircle size={14} className="text-red-400" /> : <Clock size={14} className="text-zinc-500" />}
+                                      <span className="text-zinc-300">{asm.assumption}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        <div className="pt-2">
+                          <Link href={`/actions/${action.action_id}`} className="text-sm text-brand hover:text-brand-hover transition-colors duration-150">
+                            View full post-mortem
+                          </Link>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </PageLayout>
   );
 }

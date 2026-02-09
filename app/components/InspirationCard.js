@@ -1,9 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Lightbulb } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { Badge } from './ui/Badge';
+import { EmptyState } from './ui/EmptyState';
+import { ListSkeleton } from './ui/Skeleton';
 
 export default function InspirationCard() {
   const [ideas, setIdeas] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
@@ -23,6 +29,8 @@ export default function InspirationCard() {
       }
     } catch (error) {
       console.error('Failed to fetch ideas:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,64 +46,64 @@ export default function InspirationCard() {
     return 'text-red-400';
   };
 
-  const getTotalScoreColor = (total) => {
-    if (total >= 24) return 'bg-green-500';
-    if (total >= 20) return 'bg-yellow-500';
-    return 'bg-red-500';
+  const getTotalScoreVariant = (total) => {
+    if (total >= 24) return 'success';
+    if (total >= 20) return 'warning';
+    return 'error';
   };
 
   return (
-    <div className="glass-card p-6 h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-white flex items-center">
-          <span className="mr-2">💡</span>
-          Inspiration
-        </h2>
-        <span className="bg-fire-orange text-white px-2 py-1 rounded-full text-sm font-semibold">
-          {ideas.length}
-        </span>
-      </div>
-
-      <div className="space-y-3 max-h-80 overflow-y-auto">
-        {ideas.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">
-            <div className="text-4xl mb-2">🤔</div>
-            <div>No ideas captured yet</div>
-          </div>
+    <Card className="h-full">
+      <CardHeader title="Inspiration" icon={Lightbulb} count={ideas.length} />
+      <CardContent>
+        {loading ? (
+          <ListSkeleton rows={3} />
+        ) : ideas.length === 0 ? (
+          <EmptyState
+            icon={Lightbulb}
+            title="No ideas captured yet"
+            description="Ideas will appear here once you add them"
+          />
         ) : (
-          ideas.map((idea) => (
-            <div key={idea.id} className="glass-card p-4 hover:bg-opacity-20 transition-all">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="font-semibold text-white text-sm mb-1">{idea.title}</div>
-                  {idea.description && (
-                    <div className="text-xs text-gray-300 mb-2">{idea.description.substring(0, 80)}</div>
-                  )}
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {ideas.map((idea) => (
+              <div
+                key={idea.id}
+                className="bg-surface-tertiary rounded-lg p-3 transition-colors duration-150"
+              >
+                <div className="flex items-start justify-between mb-1.5">
+                  <div className="flex-1 min-w-0 mr-2">
+                    <div className="text-sm font-medium text-white truncate">{idea.title}</div>
+                    {idea.description && (
+                      <div className="text-xs text-zinc-400 mt-0.5 line-clamp-2">
+                        {idea.description.substring(0, 80)}
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant={getTotalScoreVariant(idea.totalScore)} size="xs">
+                    {idea.totalScore}
+                  </Badge>
                 </div>
-                <span className={`px-2 py-1 rounded text-white text-xs font-bold ml-2 ${getTotalScoreColor(idea.totalScore)}`}>
-                  {idea.totalScore}
-                </span>
-              </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="text-center">
-                  <div className={`font-semibold ${getScoreColor(idea.funScore)}`}>{idea.funScore}</div>
-                  <div className="text-gray-400">Fun</div>
-                </div>
-                <div className="text-center">
-                  <div className={`font-semibold ${getScoreColor(idea.learningScore)}`}>{idea.learningScore}</div>
-                  <div className="text-gray-400">Learn</div>
-                </div>
-                <div className="text-center">
-                  <div className={`font-semibold ${getScoreColor(idea.incomeScore)}`}>{idea.incomeScore}</div>
-                  <div className="text-gray-400">Income</div>
+                <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+                  <div className="text-center">
+                    <div className={`font-semibold tabular-nums ${getScoreColor(idea.funScore)}`}>{idea.funScore}</div>
+                    <div className="text-zinc-500">Fun</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`font-semibold tabular-nums ${getScoreColor(idea.learningScore)}`}>{idea.learningScore}</div>
+                    <div className="text-zinc-500">Learn</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`font-semibold tabular-nums ${getScoreColor(idea.incomeScore)}`}>{idea.incomeScore}</div>
+                    <div className="text-zinc-500">Income</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         )}
-      </div>
-
-    </div>
+      </CardContent>
+    </Card>
   );
 }

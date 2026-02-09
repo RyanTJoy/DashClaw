@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Gauge, Clock, CalendarDays, BookOpen, Cpu } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { Badge } from './ui/Badge';
+import { StatCompact } from './ui/Stat';
+import { ProgressBar } from './ui/ProgressBar';
+import { CardSkeleton } from './ui/Skeleton';
 
 export default function TokenBudgetCard() {
   const [data, setData] = useState({
@@ -23,15 +29,15 @@ export default function TokenBudgetCard() {
     try {
       const res = await fetch('/api/tokens');
       const json = await res.json();
-      
+
       if (json.current) {
         const current = json.current;
         const today = json.today;
-        
+
         let status = 'ok';
         if (current.hourlyPctLeft < 10 || current.weeklyPctLeft < 10) status = 'critical';
         else if (current.hourlyPctLeft < 30 || current.weeklyPctLeft < 30) status = 'warning';
-        
+
         setData({
           hourUsed: current.hourlyUsed || 0,
           weekUsed: current.weeklyUsed || 0,
@@ -63,23 +69,13 @@ export default function TokenBudgetCard() {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusColor = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
-      case 'critical': return 'bg-red-500';
-      case 'warning': return 'bg-yellow-500';
-      case 'error': return 'bg-gray-500';
-      case 'no-data': return 'bg-gray-500';
-      default: return 'bg-green-500';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'critical': return '🔴 Low Capacity!';
-      case 'warning': return '🟡 Moderate';
-      case 'error': return '❌ Error';
-      case 'no-data': return '⏳ Awaiting Data';
-      default: return '🟢 Good';
+      case 'critical': return <Badge variant="error" size="sm">Low Capacity</Badge>;
+      case 'warning': return <Badge variant="warning" size="sm">Moderate</Badge>;
+      case 'error': return <Badge variant="default" size="sm">Error</Badge>;
+      case 'no-data': return <Badge variant="default" size="sm">Awaiting Data</Badge>;
+      default: return <Badge variant="success" size="sm">Good</Badge>;
     }
   };
 
@@ -88,124 +84,106 @@ export default function TokenBudgetCard() {
     return `$${cost.toFixed(2)}`;
   };
 
-  return (
-    <div className="glass-card p-4 md:p-6 h-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-        <h2 className="text-lg md:text-xl font-bold text-white flex items-center">
-          <span className="mr-2">⚡</span>
-          Token Usage
-        </h2>
-        <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-          <span className={`px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-semibold ${getStatusColor(data.status)}`}>
-            {getStatusText(data.status)}
-          </span>
-          {lastUpdated && (
-            <div className="text-xs text-gray-500">{lastUpdated}</div>
-          )}
-        </div>
-      </div>
+  const getBarColor = (pctRemaining) => {
+    if (pctRemaining < 20) return 'error';
+    if (pctRemaining < 40) return 'warning';
+    return 'success';
+  };
 
-      <div className="space-y-4">
-        {/* Context Window - Most important! */}
+  const getContextBarColor = () => {
+    if (data.contextPct > 80) return 'error';
+    if (data.contextPct > 60) return 'warning';
+    return 'purple';
+  };
+
+  if (data.status === 'loading') {
+    return <CardSkeleton />;
+  }
+
+  return (
+    <Card className="h-full">
+      <CardHeader title="Token Usage" icon={Gauge}>
+        {getStatusBadge(data.status)}
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* Compact stat row */}
+        <div className="bg-surface-tertiary rounded-lg px-3 py-2.5">
+          <div className="grid grid-cols-4 gap-2">
+            <StatCompact label="Hour" value={`${data.hourRemaining}%`} color="text-green-400" />
+            <StatCompact label="Week" value={`${data.weekRemaining}%`} color="text-blue-400" />
+            <StatCompact label="Context" value={`${data.contextPct}%`} color="text-purple-400" />
+            <StatCompact label="Compacts" value={data.compactions} color="text-zinc-300" />
+          </div>
+        </div>
+
+        {/* Context Window */}
         <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-300">📚 Context Window</span>
-            <span className="text-white font-semibold">
-              {Math.round(data.contextUsed/1000)}k / {Math.round(data.contextMax/1000)}k ({data.contextPct}%)
+          <div className="flex justify-between items-center mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <BookOpen size={12} className="text-zinc-500" />
+              <span className="text-xs text-zinc-500">Context Window</span>
+            </div>
+            <span className="text-xs text-zinc-300 tabular-nums">
+              {Math.round(data.contextUsed / 1000)}k / {Math.round(data.contextMax / 1000)}k
             </span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-4">
-            <div 
-              className={`h-4 rounded-full transition-all duration-500 ${
-                data.contextPct > 80 ? 'bg-red-500' : 
-                data.contextPct > 60 ? 'bg-yellow-500' : 
-                'bg-gradient-to-r from-purple-500 to-pink-500'
-              }`}
-              style={{ width: `${data.contextPct}%` }}
-            ></div>
-          </div>
+          <ProgressBar value={data.contextPct} color={getContextBarColor()} />
         </div>
 
-        {/* Hourly Usage */}
+        {/* Hourly Budget */}
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-300">⏱️ Hourly Budget</span>
-            <span className="text-white font-semibold">{data.hourRemaining}% left</span>
+          <div className="flex justify-between items-center mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <Clock size={12} className="text-zinc-500" />
+              <span className="text-xs text-zinc-500">Hourly Budget</span>
+            </div>
+            <span className="text-xs text-zinc-300 tabular-nums">{data.hourRemaining}% left</span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full transition-all duration-500 ${
-                data.hourRemaining < 20 ? 'bg-red-500' : 
-                data.hourRemaining < 40 ? 'bg-yellow-500' : 
-                'bg-green-500'
-              }`}
-              style={{ width: `${data.hourRemaining}%` }}
-            ></div>
-          </div>
+          <ProgressBar value={data.hourRemaining} color={getBarColor(data.hourRemaining)} />
         </div>
 
-        {/* Weekly Usage */}
+        {/* Weekly Budget */}
         <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-300">📅 Weekly Budget</span>
-            <span className="text-white font-semibold">{data.weekRemaining}% left</span>
+          <div className="flex justify-between items-center mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <CalendarDays size={12} className="text-zinc-500" />
+              <span className="text-xs text-zinc-500">Weekly Budget</span>
+            </div>
+            <span className="text-xs text-zinc-300 tabular-nums">{data.weekRemaining}% left</span>
           </div>
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full transition-all duration-500 ${
-                data.weekRemaining < 20 ? 'bg-red-500' : 
-                data.weekRemaining < 40 ? 'bg-yellow-500' : 
-                'bg-blue-500'
-              }`}
-              style={{ width: `${data.weekRemaining}%` }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-2 text-center">
-          <div className="glass-card p-2">
-            <div className="text-lg md:text-xl font-bold text-green-400">{data.hourRemaining}%</div>
-            <div className="text-[10px] text-gray-400">Hour</div>
-          </div>
-          <div className="glass-card p-2">
-            <div className="text-lg md:text-xl font-bold text-blue-400">{data.weekRemaining}%</div>
-            <div className="text-[10px] text-gray-400">Week</div>
-          </div>
-          <div className="glass-card p-2">
-            <div className="text-lg md:text-xl font-bold text-purple-400">{data.contextPct}%</div>
-            <div className="text-[10px] text-gray-400">Context</div>
-          </div>
-          <div className="glass-card p-2">
-            <div className="text-lg md:text-xl font-bold text-fire-orange">{data.compactions}</div>
-            <div className="text-[10px] text-gray-400">Compacts</div>
-          </div>
+          <ProgressBar value={data.weekRemaining} color={getBarColor(data.weekRemaining)} />
         </div>
 
         {/* Today's Stats */}
-        <div className="bg-gray-800/50 rounded-lg p-3">
+        <div className="bg-surface-tertiary rounded-lg px-3 py-2.5">
           <div className="flex justify-between items-center">
             <div>
-              <div className="text-xs text-gray-400">Today's Usage</div>
-              <div className="text-white font-semibold">
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Today</div>
+              <div className="text-sm font-semibold tabular-nums text-white">
                 {(data.todayTokens / 1000).toFixed(1)}k tokens
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-gray-400">Est. Cost</div>
-              <div className="text-green-400 font-semibold">
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Est. Cost</div>
+              <div className="text-sm font-semibold tabular-nums text-green-400">
                 {formatCost(data.todayCost)}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Model Info */}
-        <div className="text-xs text-gray-500 flex justify-between items-center">
-          <span>🧠 {data.model}</span>
-          <span className="text-fire-orange">Live from Clawdbot</span>
+        {/* Model + Last Updated */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-1.5">
+            <Cpu size={11} className="text-zinc-600" />
+            <span className="font-mono text-xs text-zinc-500">{data.model}</span>
+          </div>
+          {lastUpdated && (
+            <span className="text-xs text-zinc-600">Last updated: {lastUpdated}</span>
+          )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

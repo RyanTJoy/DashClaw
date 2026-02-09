@@ -8,9 +8,42 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'fire-orange': '#ff6b35',
-        'fire-red': '#f7931e',
-        'fire-yellow': '#ffd23f',
+        brand: {
+          DEFAULT: 'var(--color-brand)',
+          subtle: 'var(--color-brand-subtle)',
+          hover: 'var(--color-brand-hover)',
+        },
+        surface: {
+          primary: 'var(--color-bg-primary)',
+          secondary: 'var(--color-bg-secondary)',
+          tertiary: 'var(--color-bg-tertiary)',
+          elevated: 'var(--color-bg-elevated)',
+        },
+        border: {
+          DEFAULT: 'var(--color-border)',
+          hover: 'var(--color-border-hover)',
+          active: 'var(--color-border-active)',
+        },
+        text: {
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          tertiary: 'var(--color-text-tertiary)',
+          disabled: 'var(--color-text-disabled)',
+        },
+        status: {
+          success: 'var(--color-success)',
+          warning: 'var(--color-warning)',
+          error: 'var(--color-error)',
+          info: 'var(--color-info)',
+          'success-subtle': 'var(--color-success-subtle)',
+          'warning-subtle': 'var(--color-warning-subtle)',
+          'error-subtle': 'var(--color-error-subtle)',
+          'info-subtle': 'var(--color-info-subtle)',
+        },
+      },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
     },
   },

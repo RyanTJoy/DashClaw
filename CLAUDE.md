@@ -10,12 +10,19 @@ Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured ve
 
 ```
 app/
-├── page.js                    # Main dashboard (draggable widget grid)
-├── layout.js                  # Root layout
-├── globals.css                # Tailwind globals
+├── page.js                    # Main dashboard (fixed widget grid)
+├── layout.js                  # Root layout (Inter font, sidebar)
+├── globals.css                # Design tokens (CSS custom properties) + Tailwind
 ├── lib/validate.js            # Input validation helpers
 ├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole)
-├── components/                # Dashboard widget cards
+├── lib/colors.js              # Agent color hashing, action type icon map
+├── components/
+│   ├── ui/                    # Shared primitives (Card, Badge, Stat, ProgressBar, EmptyState, Skeleton)
+│   ├── Sidebar.js             # Persistent sidebar navigation
+│   ├── PageLayout.js          # Shared page layout (breadcrumbs, title, actions)
+│   ├── NotificationCenter.js  # Alert bell + notification dropdown
+│   ├── DraggableDashboard.js  # Fixed 4-column widget grid (no drag mode)
+│   └── *.js                   # 14 dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
 ├── bounty-hunter/             # Bounty hunter page
 ├── content/                   # Content tracker page
@@ -61,13 +68,14 @@ clawd-tools/                   # Agent workspace tools bundle (memory, security,
 - **Runtime**: Node.js (no specific version pinned — use 18+)
 - **Framework**: Next.js 14 (App Router, `pages/` not used)
 - **Language**: JavaScript (not TypeScript)
-- **Styling**: Tailwind CSS 3
+- **Styling**: Tailwind CSS 3 + CSS custom properties (design tokens)
+- **Icons**: lucide-react (all iconography — no emoji in UI)
+- **Font**: Inter (via `next/font/google`, CSS variable `--font-inter`)
 - **Database**: Neon PostgreSQL (`@neondatabase/serverless`)
-- **Charts**: Recharts
-- **Layout**: react-grid-layout (draggable dashboard)
+- **Charts**: Recharts (brand orange theme)
 - **Local DB**: better-sqlite3 (for wes-context tools only)
 - **Package Manager**: npm
-- **Linter**: ESLint (next config)
+- **Linter**: ESLint (`next/core-web-vitals` — `.eslintrc.json`)
 - **Deploy Target**: Vercel
 
 ## Commands
@@ -131,6 +139,18 @@ function getSql() {
 ### Security Headers
 - Set in both `middleware.js` (API routes) and `next.config.js` (all routes)
 - CSP, HSTS, X-Frame-Options DENY, nosniff, referrer policy
+
+### UI/Design System
+- **Dark-only theme** — flat surfaces, no glassmorphism or gradients
+- **Design tokens** in `globals.css` as CSS custom properties (`--color-brand`, `--color-bg-primary`, `--color-border`, etc.)
+- **Tailwind extension** in `tailwind.config.js` maps CSS variables to utility classes (`bg-brand`, `bg-surface-secondary`, `text-zinc-300`, etc.)
+- **Shared primitives** in `app/components/ui/`: `Card`/`CardHeader`/`CardContent`, `Badge` (6 variants), `Stat`/`StatCompact`, `ProgressBar`, `EmptyState`, `Skeleton`/`CardSkeleton`/`ListSkeleton`
+- **Icons**: All via `lucide-react` — no emoji anywhere in rendered UI
+- **Navigation**: Persistent `Sidebar.js` (w-56 desktop, collapsible to w-14, hamburger on mobile)
+- **Page structure**: `PageLayout.js` wraps every page (breadcrumbs, sticky header, title/subtitle, action buttons, NotificationCenter)
+- **Agent colors**: `app/lib/colors.js` — `getAgentColor(agentId)` returns consistent hash-based color from 8-color palette
+- **Typography**: Inter font, `text-sm text-zinc-300` body, `text-xs text-zinc-500` labels, `font-mono text-xs` for timestamps/IDs, stat numbers max `text-2xl tabular-nums`
+- **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` — no drag/customize mode
 
 ## ActionRecord Control Plane
 - 3 tables: `action_records`, `open_loops`, `assumptions` (with `invalidated_at` column)
