@@ -427,6 +427,65 @@ async function run() {
     log('⚠️', `daily_totals migration: ${err.message}`);
   }
 
+  // Step 13: Create health_snapshots, entities, topics tables (memory health)
+  console.log('Step 13: Creating memory health tables...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS health_snapshots (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        timestamp TEXT NOT NULL,
+        health_score INTEGER DEFAULT 0,
+        total_files INTEGER DEFAULT 0,
+        total_lines INTEGER DEFAULT 0,
+        total_size_kb INTEGER DEFAULT 0,
+        memory_md_lines INTEGER DEFAULT 0,
+        oldest_daily_file TEXT,
+        newest_daily_file TEXT,
+        days_with_notes INTEGER DEFAULT 0,
+        avg_lines_per_day REAL DEFAULT 0,
+        potential_duplicates INTEGER DEFAULT 0,
+        stale_facts_count INTEGER DEFAULT 0
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_health_snapshots_org_id ON health_snapshots(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_health_snapshots_timestamp ON health_snapshots(timestamp)`;
+    log('✅', 'health_snapshots table + indexes ready');
+  } catch (err) {
+    log('⚠️', `health_snapshots migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS entities (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        name TEXT NOT NULL,
+        type TEXT DEFAULT 'other',
+        mention_count INTEGER DEFAULT 1
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_entities_org_id ON entities(org_id)`;
+    log('✅', 'entities table + index ready');
+  } catch (err) {
+    log('⚠️', `entities migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS topics (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        name TEXT NOT NULL,
+        mention_count INTEGER DEFAULT 1
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_topics_org_id ON topics(org_id)`;
+    log('✅', 'topics table + index ready');
+  } catch (err) {
+    log('⚠️', `topics migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 
