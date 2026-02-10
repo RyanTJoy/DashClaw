@@ -368,6 +368,8 @@ export const config = {
     '/notifications/:path*',
     '/messages',
     '/messages/:path*',
+    '/workspace',
+    '/workspace/:path*',
     '/invite/:path*',
     '/login',
   ],

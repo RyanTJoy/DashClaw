@@ -7,6 +7,7 @@ AI agent observability platform — a Next.js 14 app (JavaScript, not TypeScript
 - **`/`** — Public landing page with waitlist signup (server component, no auth)
 - **`/docs`** — Public SDK documentation (server component, no auth)
 - **`/dashboard`** — Authenticated operations dashboard (client component, behind sidebar)
+- **`/workspace`** — Agent workspace with 6 tabs: digest, context, handoffs, snippets, preferences, memory
 
 Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included.
 
@@ -51,6 +52,7 @@ app/
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
 ├── messages/                  # Agent communication hub (inbox, threads, shared docs)
+├── workspace/                 # Agent workspace (digest, context, handoffs, snippets, preferences, memory)
 ├── activity/                  # Activity log page (audit trail)
 ├── webhooks/                  # Webhook management page
 ├── notifications/             # Notification preferences page
@@ -545,6 +547,20 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - `shared_docs` (`sd_`) — collaborative workspace documents
 - Columns: `id`, `org_id`, `name`, `content`, `created_by`, `last_edited_by`, `version` (auto-incrementing on upsert), `created_at`, `updated_at`
 - Indexes: org_id; UNIQUE (org_id, name) for upsert
+
+## Agent Workspace Page (Implemented)
+- Route: `/workspace` — single tabbed interface for agent operational state
+- 6 tabs: Overview (Digest), Context (Points + Threads), Handoffs, Snippets, Preferences, Memory
+- No backend changes — consumes existing DashClaw API routes
+- **Overview**: Daily digest with date picker, 7-stat grid (actions, decisions, lessons, content, ideas, interactions, goals), per-category item lists, quick links to Messages/Security
+- **Context**: Two-column layout — key points with category badges + importance pills (add form), threads with expandable entries (create form)
+- **Handoffs**: Timeline cards with expandable sections for key decisions, open tasks, next priorities, mood notes; JSON TEXT fields parsed with `safeParseJson()`
+- **Snippets**: Search (300ms debounce) + language filter dropdown, code blocks with copy/use buttons, optimistic use_count increment
+- **Preferences**: 2x2 summary grid with drill-down views for observations, preferences (confidence ProgressBar), moods (energy ProgressBar), approaches (success/fail ratios)
+- **Memory**: Health score hero (color-coded >=80 green, 50-79 yellow, <50 red), 8-metric grid (StatCompact), entities + topics two-column; "Org-wide" badge when agent filter active
+- Respects global agent filter, lazy tab loading, manual refresh button
+- Sidebar: FolderKanban icon in Operations group (after Messages)
+- Middleware matcher includes `/workspace` and `/workspace/:path*`
 
 ## Deployment
 
