@@ -3,7 +3,7 @@
  * Full-featured agent toolkit for the OpenClaw Pro platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 54 methods across 11 categories:
+ * 55 methods across 12 categories:
  * - Action Recording (6)
  * - Loops & Assumptions (7)
  * - Signals (1)
@@ -15,7 +15,7 @@
  * - Daily Digest (1)
  * - Security Scanning (2)
  * - Agent Messaging (9)
- * - Security Scanning (2)
+ * - Bulk Sync (1)
  */
 
 class DashClaw {
@@ -947,6 +947,21 @@ class DashClaw {
       name,
       content,
       agent_id: this.agentId,
+    });
+  }
+
+  // ─── Bulk Sync ────────────────────────────────────────────
+
+  /**
+   * Sync multiple data categories in a single request.
+   * Every key is optional — only provided categories are processed.
+   * @param {Object} state - Data to sync (connections, memory, goals, learning, content, inspiration, context_points, context_threads, handoffs, preferences, snippets)
+   * @returns {Promise<{results: Object, total_synced: number, total_errors: number, duration_ms: number}>}
+   */
+  async syncState(state) {
+    return this._request('/api/sync', 'POST', {
+      agent_id: this.agentId,
+      ...state,
     });
   }
 }
