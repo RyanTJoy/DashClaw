@@ -63,6 +63,7 @@ const TENANT_TABLES = [
   'topics',
   'calendar_events',
   'agent_connections',
+  'usage_meters',
 ];
 
 async function run() {
@@ -567,6 +568,45 @@ async function run() {
     log('✅', 'invites table + indexes ready');
   } catch (err) {
     log('⚠️', `invites migration: ${err.message}`);
+  }
+
+  // Step 18: Add Stripe billing columns to organizations
+  console.log('Step 18: Adding Stripe billing columns to organizations...');
+  try {
+    await sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT`;
+    await sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT`;
+    await sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active'`;
+    await sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS current_period_end TEXT`;
+    await sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS trial_ends_at TEXT`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_organizations_stripe_customer_id ON organizations(stripe_customer_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_organizations_stripe_subscription_id ON organizations(stripe_subscription_id)`;
+    log('✅', 'organizations: Stripe billing columns + indexes ready');
+  } catch (err) {
+    log('⚠️', `organizations Stripe columns: ${err.message}`);
+  }
+
+  // Step 19: Create usage_meters table (billing quota fast path)
+  console.log('Step 19: Creating usage_meters table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS usage_meters (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        period TEXT NOT NULL,
+        resource TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        last_reconciled_at TEXT,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS usage_meters_org_period_resource_unique
+      ON usage_meters (org_id, period, resource)
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_usage_meters_org_id ON usage_meters(org_id)`;
+    log('✅', 'usage_meters table + indexes ready');
+  } catch (err) {
+    log('⚠️', `usage_meters migration: ${err.message}`);
   }
 
   // Verification

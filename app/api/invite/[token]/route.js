@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getUserId } from '../../../lib/org.js';
+import { incrementMeter } from '../../../lib/billing.js';
 
 let _sql;
 function getSql() {
@@ -149,6 +150,9 @@ export async function POST(request, { params }) {
       SET org_id = ${invite.org_id}, role = ${invite.role}
       WHERE id = ${userId}
     `;
+
+    // Fire-and-forget meter increment
+    incrementMeter(invite.org_id, 'members', sql).catch(() => {});
 
     return NextResponse.json({
       success: true,

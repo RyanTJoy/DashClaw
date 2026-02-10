@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
+import { incrementMeter } from '../../../lib/billing.js';
 
 let _sql;
 function getSql() {
@@ -137,6 +138,9 @@ export async function DELETE(request, { params }) {
     await sql`
       UPDATE users SET org_id = 'org_default', role = 'member' WHERE id = ${userId}
     `;
+
+    // Fire-and-forget meter decrement
+    incrementMeter(orgId, 'members', sql, -1).catch(() => {});
 
     return NextResponse.json({ success: true, removed: userId });
   } catch (error) {
