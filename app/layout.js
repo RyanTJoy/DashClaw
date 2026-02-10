@@ -1,5 +1,6 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
+import SessionWrapper from './components/SessionWrapper'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,7 +28,9 @@ export default function RootLayout({ children }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#f97316" />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <SessionWrapper>{children}</SessionWrapper>
+      </body>
     </html>
   )
 }

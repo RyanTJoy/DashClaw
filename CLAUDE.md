@@ -14,11 +14,12 @@ Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured ve
 ```
 app/
 ├── page.js                    # Public landing page (waitlist signup)
-├── layout.js                  # Root layout (Inter font)
+├── layout.js                  # Root layout (Inter font, SessionWrapper)
 ├── globals.css                # Design tokens (CSS custom properties) + Tailwind
 ├── dashboard/page.js          # Authenticated dashboard (fixed widget grid)
 ├── lib/validate.js            # Input validation helpers
 ├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole)
+├── lib/auth.js                # NextAuth config (GitHub + Google, JWT, user upsert)
 ├── lib/colors.js              # Agent color hashing, action type icon map
 ├── components/
 │   ├── ui/                    # Shared primitives (Card, Badge, Stat, ProgressBar, EmptyState, Skeleton)
@@ -27,8 +28,11 @@ app/
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
 │   ├── DraggableDashboard.js  # Fixed 4-column widget grid (no drag mode)
 │   ├── WaitlistForm.js        # Email capture form (client component)
+│   ├── SessionWrapper.js      # NextAuth SessionProvider wrapper (client component)
+│   ├── UserMenu.js            # User avatar + sign-out dropdown (client component)
 │   └── *.js                   # 12 dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
+├── login/page.js              # Custom login page (GitHub + Google OAuth)
 ├── bounty-hunter/             # Bounty hunter page
 ├── content/                   # Content tracker page
 ├── goals/                     # Goals page
@@ -39,6 +43,7 @@ app/
 ├── tokens/                    # Token usage page (disabled — not linked from UI)
 ├── workflows/                 # Workflows/SOPs page
 └── api/
+    ├── auth/[...nextauth]/    # NextAuth route handler (GitHub + Google OAuth)
     ├── actions/               # ActionRecord Control Plane (CRUD + signals + loops + assumptions + trace)
     ├── bounties/              # Bounty tracking
     ├── orgs/                  # Organization + API key management (admin only)
@@ -112,6 +117,12 @@ See `.env.example`. Key vars:
 | `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
 | `DASHBOARD_API_KEY` | Prod only | Protects `/api/*` routes (maps to `org_default`) |
 | `ALLOWED_ORIGIN` | No | CORS lock to deployment domain |
+| `NEXTAUTH_URL` | Yes | Canonical URL (e.g. `http://localhost:3000`) |
+| `NEXTAUTH_SECRET` | Yes | Random 32+ char secret for JWT signing |
+| `GITHUB_ID` | For GitHub login | GitHub OAuth App client ID |
+| `GITHUB_SECRET` | For GitHub login | GitHub OAuth App client secret |
+| `GOOGLE_ID` | For Google login | Google OAuth client ID |
+| `GOOGLE_SECRET` | For Google login | Google OAuth client secret |
 
 ## Key Patterns
 
@@ -137,14 +148,23 @@ function getSql() {
 ```
 
 ### Auth & Multi-Tenancy
-- `middleware.js` gates all `/api/*` routes
+- **User auth**: NextAuth.js v4 with GitHub + Google OAuth (JWT strategy, no DB sessions)
+- **Login flow**: `/login` → OAuth → callback → JWT cookie → redirect to `/dashboard`
+- **Config**: `app/lib/auth.js` (providers, callbacks, user upsert), `app/api/auth/[...nextauth]/route.js`
+- **Session**: `SessionWrapper.js` wraps layout; `UserMenu.js` in PageLayout header (avatar + sign out)
+- **Users table**: `users` (id `usr_` prefix, org_id, email, provider, provider_account_id, role)
+- **New user default**: mapped to `org_default` with role `member`
+- `middleware.js` gates all `/api/*` routes AND all dashboard page routes
+- Middleware matcher includes both API routes and all authenticated page routes (`/dashboard`, `/actions`, `/goals`, etc.)
+- Page routes use `getToken()` from `next-auth/jwt` (Edge-compatible) for session checks
 - `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`)
-- `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`, `/api/waitlist`
+- `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`, `/api/waitlist`, `/api/auth`
 - Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
 - Production without key returns 503 (if `DASHBOARD_API_KEY` not configured)
-- Same-origin dashboard requests (detected via `Sec-Fetch-Site` / `Referer`) allowed without API key → `org_default`
+- Same-origin dashboard requests resolve org from NextAuth JWT token (falls back to `org_default`)
 - Rate limiting: 100 req/min per IP
 - **API key resolution flow**: legacy env key → `org_default` (fast path); otherwise SHA-256 hash → `api_keys` table lookup (5-min cache)
+- **Dual auth**: Browser uses NextAuth cookies; external SDK uses `x-api-key` headers. Both inject `x-org-id`/`x-org-role`
 - Middleware injects `x-org-id` and `x-org-role` headers (external injection stripped)
 - Every route uses `getOrgId(request)` from `app/lib/org.js` to scope queries
 
@@ -237,6 +257,13 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - POST upserts via `ON CONFLICT (email)` — bumps `signup_count` on duplicates
 - Migration Step 14 in `migrate-multi-tenant.mjs` + auto-create fallback in route
 
+### Users Table (NextAuth)
+- `users` — OAuth users for dashboard access (managed by auth, not tenant-scoped)
+- Columns: `id` (TEXT `usr_` prefix), `org_id` (TEXT, default `org_default`), `email`, `name`, `image`, `provider`, `provider_account_id`, `role`, `created_at`, `last_login_at`
+- Unique index: `users_provider_account_unique` on `(provider, provider_account_id)`
+- Upserted on every login via `signIn` callback in `app/lib/auth.js`
+- Migration Step 15 in `migrate-multi-tenant.mjs`
+
 ## Multi-Tenancy
 
 ### Tables
@@ -283,6 +310,12 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 | `DATABASE_URL` | Production | Yes |
 | `DASHBOARD_API_KEY` | Production | Yes |
 | `ALLOWED_ORIGIN` | Production | No |
+| `NEXTAUTH_URL` | Production | No |
+| `NEXTAUTH_SECRET` | Production | Yes |
+| `GITHUB_ID` | Production | Yes |
+| `GITHUB_SECRET` | Production | Yes |
+| `GOOGLE_ID` | Production | Yes |
+| `GOOGLE_SECRET` | Production | Yes |
 
 ### Deploy Commands
 ```bash

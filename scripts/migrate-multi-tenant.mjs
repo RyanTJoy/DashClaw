@@ -506,6 +506,31 @@ async function run() {
     log('⚠️', `waitlist migration: ${err.message}`);
   }
 
+  // Step 15: Users table (NextAuth integration)
+  console.log('Step 15: Creating users table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        email TEXT NOT NULL,
+        name TEXT,
+        image TEXT,
+        provider TEXT NOT NULL,
+        provider_account_id TEXT NOT NULL,
+        role TEXT DEFAULT 'member',
+        created_at TEXT NOT NULL,
+        last_login_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS users_provider_account_unique ON users(provider, provider_account_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_users_org_id ON users(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`;
+    log('✅', 'users table + indexes ready');
+  } catch (err) {
+    log('⚠️', `users migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 

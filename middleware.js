@@ -27,11 +27,12 @@ const PROTECTED_ROUTES = [
   '/api/agents',
 ];
 
-// Routes that are always public (health checks, setup)
+// Routes that are always public (health checks, setup, auth)
 const PUBLIC_ROUTES = [
   '/api/health',
   '/api/setup/status',
   '/api/waitlist',
+  '/api/auth',
 ];
 
 // Simple in-memory rate limiting (resets on deploy)
@@ -147,8 +148,21 @@ function getCorsHeaders(request) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // Skip non-API routes
+  // Page routes (non-API): check NextAuth session
   if (!pathname.startsWith('/api/')) {
+    const { getToken } = require('next-auth/jwt');
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+
+    // /login — redirect to dashboard if already logged in
+    if (pathname === '/login') {
+      if (token) return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.next();
+    }
+
+    // All other matched page routes — require session
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
     return NextResponse.next();
   }
 
@@ -227,8 +241,13 @@ export async function middleware(request) {
         (referer && referer.startsWith(requestOrigin));
 
       if (isSameOrigin) {
-        requestHeaders.set('x-org-id', 'org_default');
-        requestHeaders.set('x-org-role', 'admin');
+        // Resolve org from NextAuth session token if available
+        const { getToken } = require('next-auth/jwt');
+        const sessionToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+        const orgId = sessionToken?.orgId || 'org_default';
+        const role = sessionToken?.role || 'admin';
+        requestHeaders.set('x-org-id', orgId);
+        requestHeaders.set('x-org-role', role);
         const response = NextResponse.next({ request: { headers: requestHeaders } });
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('X-Frame-Options', 'DENY');
@@ -289,5 +308,32 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    '/api/:path*',
+    '/dashboard',
+    '/dashboard/:path*',
+    '/actions',
+    '/actions/:path*',
+    '/goals',
+    '/goals/:path*',
+    '/learning',
+    '/learning/:path*',
+    '/content',
+    '/content/:path*',
+    '/relationships',
+    '/relationships/:path*',
+    '/integrations',
+    '/integrations/:path*',
+    '/workflows',
+    '/workflows/:path*',
+    '/bounty-hunter',
+    '/bounty-hunter/:path*',
+    '/calendar',
+    '/calendar/:path*',
+    '/tokens',
+    '/tokens/:path*',
+    '/setup',
+    '/setup/:path*',
+    '/login',
+  ],
 };
