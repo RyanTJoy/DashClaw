@@ -1,20 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Users, Contact, MessageSquare, Zap, Flame, Calendar, Search, ArrowUpRight, ArrowDownLeft, RotateCw } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function RelationshipsDashboard() {
+  const { agentId } = useAgentFilter();
   const [contacts, setContacts] = useState([]);
   const [interactions, setInteractions] = useState([]);
   const [stats, setStats] = useState({ total: 0, hot: 0, warm: 0, cold: 0, followUpsDue: 0 });
   const [lastUpdated, setLastUpdated] = useState('');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/relationships');
+      const params = agentId ? `?agent_id=${agentId}` : '';
+      const res = await fetch(`/api/relationships${params}`);
       const data = await res.json();
       if (data.contacts) setContacts(data.contacts);
       if (data.interactions) setInteractions(data.interactions);
@@ -23,13 +26,13 @@ export default function RelationshipsDashboard() {
     } catch (error) {
       console.error('Failed to fetch relationships:', error);
     }
-  };
+  }, [agentId]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const getTempVariant = (temp) => {
     switch (temp) {

@@ -293,7 +293,10 @@ class OpenClawAgent {
    * @returns {Promise<{goal: Object}>}
    */
   async createGoal(goal) {
-    return this._request('/api/goals', 'POST', goal);
+    return this._request('/api/goals', 'POST', {
+      ...goal,
+      agent_id: this.agentId
+    });
   }
 
   /**
@@ -306,7 +309,10 @@ class OpenClawAgent {
    * @returns {Promise<{content: Object}>}
    */
   async recordContent(content) {
-    return this._request('/api/content', 'POST', content);
+    return this._request('/api/content', 'POST', {
+      ...content,
+      agent_id: this.agentId
+    });
   }
 
   /**
@@ -321,7 +327,10 @@ class OpenClawAgent {
    * @returns {Promise<{interaction: Object}>}
    */
   async recordInteraction(interaction) {
-    return this._request('/api/relationships', 'POST', interaction);
+    return this._request('/api/relationships', 'POST', {
+      ...interaction,
+      agent_id: this.agentId
+    });
   }
 
   /**

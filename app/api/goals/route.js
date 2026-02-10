@@ -11,11 +11,18 @@ export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const orgId = getOrgId(request);
-    // Get all goals
-    const goals = await sql`SELECT * FROM goals WHERE org_id = ${orgId} ORDER BY created_at DESC`;
+    const { searchParams } = new URL(request.url);
+    const agentId = searchParams.get('agent_id');
+
+    // Get all goals (optionally filtered by agent)
+    const goals = agentId
+      ? await sql`SELECT * FROM goals WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY created_at DESC`
+      : await sql`SELECT * FROM goals WHERE org_id = ${orgId} ORDER BY created_at DESC`;
 
     // Get milestones for each goal
-    const milestones = await sql`SELECT * FROM milestones WHERE org_id = ${orgId} ORDER BY created_at DESC`;
+    const milestones = agentId
+      ? await sql`SELECT * FROM milestones WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY created_at DESC`
+      : await sql`SELECT * FROM milestones WHERE org_id = ${orgId} ORDER BY created_at DESC`;
 
     // Attach milestones to goals
     const goalsWithMilestones = goals.map(g => ({
@@ -57,14 +64,14 @@ export async function POST(request) {
     const orgId = getOrgId(request);
     const body = await request.json();
 
-    const { title, category, description, target_date, progress, status } = body;
+    const { title, category, description, target_date, progress, status, agent_id } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO goals (org_id, title, category, description, target_date, progress, status, created_at)
+      INSERT INTO goals (org_id, title, category, description, target_date, progress, status, agent_id, created_at)
       VALUES (
         ${orgId},
         ${title},
@@ -73,6 +80,7 @@ export async function POST(request) {
         ${target_date || null},
         ${progress || 0},
         ${status || 'active'},
+        ${agent_id || null},
         ${new Date().toISOString()}
       )
       RETURNING *
