@@ -40,6 +40,7 @@ const PROTECTED_ROUTES = [
   '/api/digest',
   '/api/security',
   '/api/messages',
+  '/api/sync',
 ];
 
 // Routes that are always public (health checks, setup, auth)

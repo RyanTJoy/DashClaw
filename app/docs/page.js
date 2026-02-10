@@ -161,6 +161,8 @@ const navItems = [
   { href: '#getMessageThreads', label: 'getMessageThreads', indent: true },
   { href: '#resolveMessageThread', label: 'resolveMessageThread', indent: true },
   { href: '#saveSharedDoc', label: 'saveSharedDoc', indent: true },
+  { href: '#bulk-sync', label: 'Bulk Sync' },
+  { href: '#syncState', label: 'syncState', indent: true },
   { href: '#error-handling', label: 'Error Handling' },
 ];
 
@@ -207,7 +209,7 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK (formerly OpenClaw Agent SDK). 45 methods to instrument your AI agents with
+            Full reference for the DashClaw SDK (formerly OpenClaw Agent SDK). 55 methods to instrument your AI agents with
             action recording, context management, session handoffs, security scanning, and more.
           </p>
           <CopyDocsButton />
@@ -971,6 +973,33 @@ console.log(\`\${unread_count} unread messages\`);`} />
   name: 'runbook/auth-deploy',
   content: '# Auth Deploy Runbook\\n\\n1. Run migrations...',
 });`} />
+          </section>
+
+          {/* ── Bulk Sync ── */}
+          <section id="bulk-sync" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Bulk Sync</h2>
+            <p className="text-sm text-zinc-400 mb-8">
+              Push multiple data categories in a single request. Ideal for bootstrapping agent state or periodic state snapshots.
+              Every key is optional &mdash; only provided categories are processed. Each category is independent; partial failures
+              in one category don&apos;t block others.
+            </p>
+
+            <MethodEntry id="syncState" signature="syncState(state)" description="Sync multiple data categories in a single request. Accepts connections, memory, goals, learning, content, inspiration, context_points, context_threads, handoffs, preferences, and snippets." params={[{ name: 'state.connections', type: 'Object[]', required: false, desc: 'Service connections (max 50)' }, { name: 'state.memory', type: 'Object', required: false, desc: '{ health, entities[], topics[] }' }, { name: 'state.goals', type: 'Object[]', required: false, desc: 'Goals (max 100)' }, { name: 'state.learning', type: 'Object[]', required: false, desc: 'Decisions/lessons (max 100)' }, { name: 'state.context_points', type: 'Object[]', required: false, desc: 'Key points (max 200)' }, { name: 'state.context_threads', type: 'Object[]', required: false, desc: 'Threads (max 50, upserts by name)' }, { name: 'state.snippets', type: 'Object[]', required: false, desc: 'Code snippets (max 50, upserts by name)' }, { name: 'state.handoffs', type: 'Object[]', required: false, desc: 'Session handoffs (max 50)' }, { name: 'state.preferences', type: 'Object', required: false, desc: '{ observations[], preferences[], moods[], approaches[] }' }, { name: 'state.content', type: 'Object[]', required: false, desc: 'Content items (max 100)' }, { name: 'state.inspiration', type: 'Object[]', required: false, desc: 'Ideas (max 100)' }]} returns="Promise<{results: Object, total_synced: number, total_errors: number, duration_ms: number}>" example={`const result = await claw.syncState({
+  connections: [
+    { provider: 'github', auth_type: 'oauth', status: 'active' },
+    { provider: 'neon', auth_type: 'api_key', status: 'active' },
+  ],
+  goals: [
+    { title: 'Deploy v2', status: 'active' },
+  ],
+  learning: [
+    { decision: 'Used JWT for Edge compat', reasoning: 'NextAuth on Vercel Edge' },
+  ],
+  context_points: [
+    { content: 'Dark-only theme', category: 'insight', importance: 7 },
+  ],
+});
+console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`);`} />
           </section>
 
           {/* ── Error Handling ── */}
