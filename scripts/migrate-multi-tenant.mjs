@@ -69,6 +69,16 @@ const TENANT_TABLES = [
   'webhook_deliveries',
   'notification_preferences',
   'signal_snapshots',
+  'handoffs',
+  'context_points',
+  'context_threads',
+  'context_entries',
+  'snippets',
+  'user_observations',
+  'user_preferences',
+  'user_moods',
+  'user_approaches',
+  'security_findings',
 ];
 
 async function run() {
@@ -733,6 +743,240 @@ async function run() {
     log('✅', 'signal_snapshots table + unique index ready');
   } catch (err) {
     log('⚠️', `signal_snapshots migration: ${err.message}`);
+  }
+
+  // Step 24: Create handoffs table (session handoffs)
+  console.log('Step 24: Creating handoffs table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS handoffs (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT NOT NULL,
+        session_date TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        key_decisions TEXT,
+        open_tasks TEXT,
+        mood_notes TEXT,
+        next_priorities TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_handoffs_org_id ON handoffs(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_handoffs_agent_id ON handoffs(agent_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_handoffs_session_date ON handoffs(session_date)`;
+    log('✅', 'handoffs table + indexes ready');
+  } catch (err) {
+    log('⚠️', `handoffs migration: ${err.message}`);
+  }
+
+  // Step 25: Create context_points table
+  console.log('Step 25: Creating context_points table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS context_points (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        content TEXT NOT NULL,
+        category TEXT DEFAULT 'general',
+        importance INTEGER DEFAULT 5,
+        session_date TEXT NOT NULL,
+        compressed INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_points_org_id ON context_points(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_points_agent_id ON context_points(agent_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_points_session_date ON context_points(session_date)`;
+    log('✅', 'context_points table + indexes ready');
+  } catch (err) {
+    log('⚠️', `context_points migration: ${err.message}`);
+  }
+
+  // Step 26: Create context_threads + context_entries tables
+  console.log('Step 26: Creating context_threads + context_entries tables...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS context_threads (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        name TEXT NOT NULL,
+        summary TEXT,
+        status TEXT DEFAULT 'active',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS context_threads_org_agent_name_unique
+      ON context_threads (org_id, COALESCE(agent_id, ''), name)
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_threads_org_id ON context_threads(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_threads_agent_id ON context_threads(agent_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_threads_status ON context_threads(status)`;
+    log('✅', 'context_threads table + indexes ready');
+  } catch (err) {
+    log('⚠️', `context_threads migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS context_entries (
+        id TEXT PRIMARY KEY,
+        thread_id TEXT NOT NULL,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        content TEXT NOT NULL,
+        entry_type TEXT DEFAULT 'note',
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_entries_thread_id ON context_entries(thread_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_context_entries_org_id ON context_entries(org_id)`;
+    log('✅', 'context_entries table + indexes ready');
+  } catch (err) {
+    log('⚠️', `context_entries migration: ${err.message}`);
+  }
+
+  // Step 27: Create snippets table
+  console.log('Step 27: Creating snippets table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS snippets (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        code TEXT NOT NULL,
+        language TEXT,
+        tags TEXT,
+        use_count INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        last_used TEXT
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS snippets_org_name_unique
+      ON snippets (org_id, name)
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_snippets_org_id ON snippets(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_snippets_agent_id ON snippets(agent_id)`;
+    log('✅', 'snippets table + indexes ready');
+  } catch (err) {
+    log('⚠️', `snippets migration: ${err.message}`);
+  }
+
+  // Step 28: Create user preference tables (4 tables)
+  console.log('Step 28: Creating user preference tables...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_observations (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        user_id TEXT,
+        agent_id TEXT,
+        observation TEXT NOT NULL,
+        category TEXT,
+        importance INTEGER DEFAULT 5,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_observations_org_id ON user_observations(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_observations_agent_id ON user_observations(agent_id)`;
+    log('✅', 'user_observations table + indexes ready');
+  } catch (err) {
+    log('⚠️', `user_observations migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_preferences (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        user_id TEXT,
+        agent_id TEXT,
+        preference TEXT NOT NULL,
+        category TEXT,
+        confidence INTEGER DEFAULT 50,
+        last_validated TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_preferences_org_id ON user_preferences(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_preferences_agent_id ON user_preferences(agent_id)`;
+    log('✅', 'user_preferences table + indexes ready');
+  } catch (err) {
+    log('⚠️', `user_preferences migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_moods (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        user_id TEXT,
+        agent_id TEXT,
+        mood TEXT NOT NULL,
+        energy TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_moods_org_id ON user_moods(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_moods_agent_id ON user_moods(agent_id)`;
+    log('✅', 'user_moods table + indexes ready');
+  } catch (err) {
+    log('⚠️', `user_moods migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_approaches (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        user_id TEXT,
+        agent_id TEXT,
+        approach TEXT NOT NULL,
+        context TEXT,
+        success_count INTEGER DEFAULT 0,
+        fail_count INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS user_approaches_org_agent_approach_unique
+      ON user_approaches (org_id, COALESCE(agent_id, ''), approach)
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_approaches_org_id ON user_approaches(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_user_approaches_agent_id ON user_approaches(agent_id)`;
+    log('✅', 'user_approaches table + indexes ready');
+  } catch (err) {
+    log('⚠️', `user_approaches migration: ${err.message}`);
+  }
+
+  // Step 29: Create security_findings table
+  console.log('Step 29: Creating security_findings table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS security_findings (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        content_hash TEXT NOT NULL,
+        findings_count INTEGER DEFAULT 0,
+        critical_count INTEGER DEFAULT 0,
+        categories TEXT,
+        scanned_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_security_findings_org_id ON security_findings(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_security_findings_content_hash ON security_findings(content_hash)`;
+    log('✅', 'security_findings table + indexes ready');
+  } catch (err) {
+    log('⚠️', `security_findings migration: ${err.message}`);
   }
 
   // Verification

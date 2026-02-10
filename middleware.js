@@ -33,6 +33,12 @@ const PROTECTED_ROUTES = [
   '/api/activity',
   '/api/webhooks',
   '/api/notifications',
+  '/api/handoffs',
+  '/api/context',
+  '/api/snippets',
+  '/api/preferences',
+  '/api/digest',
+  '/api/security',
 ];
 
 // Routes that are always public (health checks, setup, auth)

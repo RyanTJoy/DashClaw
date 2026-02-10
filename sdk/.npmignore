@@ -1,0 +1,4 @@
+openclaw-agent.js
+*.test.*
+*.spec.*
+__tests__/

@@ -1,0 +1,40 @@
+{
+  "name": "dashclaw",
+  "version": "1.0.0",
+  "description": "Full-featured agent toolkit for the OpenClaw Pro platform. 45 methods for action recording, context management, session handoffs, security scanning, and more.",
+  "type": "module",
+  "main": "./index.cjs",
+  "module": "./dashclaw.js",
+  "exports": {
+    ".": {
+      "import": "./dashclaw.js",
+      "require": "./index.cjs"
+    }
+  },
+  "files": [
+    "dashclaw.js",
+    "index.cjs",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "ai-agent",
+    "observability",
+    "agent-toolkit",
+    "openclaw",
+    "dashclaw",
+    "action-recording",
+    "context-management",
+    "security-scanning"
+  ],
+  "author": "OpenClaw",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ucsandman/openclaw-pro.git",
+    "directory": "sdk"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

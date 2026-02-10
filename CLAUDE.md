@@ -84,14 +84,24 @@ app/
     ├── webhooks/              # Webhooks CRUD + test + deliveries
     ├── notifications/         # Notification preferences API
     ├── cron/signals/          # Vercel Cron: signal detection + alerting (every 10 min)
-    └── workflows/             # Workflow definitions
+    ├── workflows/             # Workflow definitions
+    ├── handoffs/              # Session handoffs API (GET/POST)
+    ├── context/               # Context manager: points, threads, entries
+    ├── snippets/              # Automation snippets CRUD + use counter
+    ├── preferences/           # User preferences (observations, prefs, moods, approaches)
+    ├── digest/                # Daily digest aggregation (GET only)
+    └── security/scan/         # Content security scanning (POST only)
 
 sdk/
-└── openclaw-agent.js          # Zero-dep ESM SDK for ActionRecord Control Plane
+├── dashclaw.js                # DashClaw SDK (45 methods, zero deps, ESM)
+├── index.cjs                  # CJS compatibility wrapper
+├── package.json               # npm package config (name: dashclaw)
+├── LICENSE                    # MIT
+└── .npmignore                 # Publish exclusions
 
 scripts/
 ├── security-scan.js           # Pre-deploy security audit
-├── test-actions.mjs           # ActionRecord test suite (~95 assertions)
+├── test-actions.mjs           # Integration test suite (~145 assertions, 17 phases)
 ├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
 ├── create-org.mjs             # CLI: create org + admin API key
 ├── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens (disabled)
@@ -244,6 +254,16 @@ function getSql() {
 - `GET /api/webhooks/[webhookId]/deliveries` — recent delivery history (last 20)
 - `GET/POST /api/notifications` — notification preferences per user (email channel, signal type filters)
 - `GET /api/cron/signals` — Vercel Cron handler: detect new signals, fire webhooks, send email alerts
+- `GET/POST /api/handoffs` — session handoffs (GET: `?agent_id`, `?date`, `?latest=true`; POST: required summary + agent_id)
+- `GET/POST /api/context/points` — key points (GET: `?agent_id`, `?category`, `?session_date`; POST: required content)
+- `GET/POST /api/context/threads` — threads (GET: `?agent_id`, `?status`; POST: required name, upserts on org+agent+name)
+- `GET/PATCH /api/context/threads/[threadId]` — thread detail + update (PATCH: summary, status)
+- `POST /api/context/threads/[threadId]/entries` — add entry to thread (validates thread exists + not closed)
+- `GET/POST/DELETE /api/snippets` — snippets CRUD (GET: `?search`, `?tag`, `?language`; POST: upserts on org+name)
+- `POST /api/snippets/[snippetId]/use` — increment snippet use_count
+- `GET/POST /api/preferences` — user preferences (GET: `?type=summary|observations|preferences|moods|approaches`; POST: body.type discriminator)
+- `GET /api/digest` — daily digest aggregation (GET: `?date`, `?agent_id`; aggregates from 7 tables, no storage)
+- `POST /api/security/scan` — content security scanning (18 regex patterns; returns findings + redacted text; optionally stores metadata)
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -473,6 +493,37 @@ No code changes needed. The API key determines which organization's data you're 
 DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 ```
 
+## DashClaw Tables (Migration Steps 24-29)
+
+### Handoffs Table (Step 24)
+- `handoffs` — session handoff documents for agent continuity
+- Columns: `id` (TEXT `ho_` prefix), `org_id`, `agent_id`, `session_date`, `summary`, `key_decisions` (JSON TEXT), `open_tasks` (JSON TEXT), `mood_notes`, `next_priorities` (JSON TEXT), `created_at`
+- Indexes: org_id, agent_id, session_date
+
+### Context Tables (Steps 25-26)
+- `context_points` — key points captured during sessions
+- Columns: `id` (`cp_`), `org_id`, `agent_id`, `content`, `category` (decision|task|insight|question|general), `importance` (1-10), `session_date`, `compressed`, `created_at`
+- `context_threads` — named threads for tracking topics across entries
+- Columns: `id` (`ct_`), `org_id`, `agent_id`, `name`, `summary`, `status` (active|closed), `created_at`, `updated_at`
+- Unique: `(org_id, COALESCE(agent_id, ''), name)`
+- `context_entries` — entries within threads
+- Columns: `id` (`ce_`), `thread_id` FK, `org_id`, `content`, `entry_type`, `created_at`
+
+### Snippets Table (Step 27)
+- `snippets` — reusable code snippets
+- Columns: `id` (`sn_`), `org_id`, `agent_id`, `name`, `description`, `code`, `language`, `tags` (JSON TEXT), `use_count`, `created_at`, `last_used`
+- Unique: `(org_id, name)` — POST upserts on conflict
+
+### User Preference Tables (Step 28)
+- `user_observations` (`uo_`) — agent observations about users (observation, category, importance)
+- `user_preferences` (`up_`) — learned user preferences (preference, category, confidence)
+- `user_moods` (`um_`) — mood/energy tracking (mood, energy, notes)
+- `user_approaches` (`ua_`) — tracked approaches with success/fail counts. Unique: `(org_id, COALESCE(agent_id, ''), approach)`
+
+### Security Findings Table (Step 29)
+- `security_findings` (`sf_`) — metadata from security scans (never stores actual content)
+- Columns: `id`, `org_id`, `agent_id`, `content_hash` (SHA-256), `findings_count`, `critical_count`, `categories` (JSON TEXT), `scanned_at`
+
 ## Deployment
 
 ### Vercel (Production)
@@ -514,17 +565,44 @@ const claw = new OpenClawAgent({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### SDK Methods (22 active)
-**ActionRecord Control Plane**: `createAction()`, `updateOutcome()`, `registerOpenLoop()`, `resolveOpenLoop()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getActions()`, `getAction()`, `getSignals()`, `getOpenLoops()`, `getDriftReport()`, `getActionTrace()`, `track()`
+### DashClaw SDK (npm package — 45 active methods)
 
-**Dashboard Data**: `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`, `createCalendarEvent()`, `recordIdea()`, `reportMemoryHealth()`
+The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
+
+```bash
+npm install dashclaw
+```
+
+```javascript
+import { DashClaw } from 'dashclaw';
+// or: import { OpenClawAgent } from 'dashclaw';  // backward compat
+
+const claw = new DashClaw({
+  baseUrl: 'https://openclaw-pro.vercel.app',
+  apiKey: process.env.OPENCLAW_API_KEY,
+  agentId: 'my-agent',
+  agentName: 'My Agent',
+});
+```
+
+**Action Recording (6)**: `createAction()`, `updateOutcome()`, `getActions()`, `getAction()`, `getActionTrace()`, `track()`
+
+**Loops & Assumptions (7)**: `registerOpenLoop()`, `resolveOpenLoop()`, `getOpenLoops()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getDriftReport()`
+
+**Signals (1)**: `getSignals()`
+
+**Dashboard Data (8)**: `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`, `createCalendarEvent()`, `recordIdea()`, `reportMemoryHealth()`
+
+**Session Handoffs (3)**: `createHandoff()`, `getHandoffs()`, `getLatestHandoff()`
+
+**Context Manager (7)**: `captureKeyPoint()`, `getKeyPoints()`, `createThread()`, `addThreadEntry()`, `closeThread()`, `getThreads()`, `getContextSummary()`
+
+**Automation Snippets (4)**: `saveSnippet()`, `getSnippets()`, `useSnippet()`, `deleteSnippet()`
+
+**User Preferences (6)**: `logObservation()`, `setPreference()`, `logMood()`, `trackApproach()`, `getPreferenceSummary()`, `getApproaches()`
+
+**Daily Digest (1)**: `getDailyDigest()`
+
+**Security Scanning (2)**: `scanContent()`, `reportSecurityFinding()`
 
 **Disabled**: `reportTokenUsage()` — exists in SDK but token tracking is disabled in the dashboard
-
-**Example: reportConnections()**
-```javascript
-await claw.reportConnections([
-  { provider: 'anthropic', authType: 'subscription', planName: 'Pro Max', status: 'active' },
-  { provider: 'github', authType: 'oauth', status: 'active' }
-]);
-```
