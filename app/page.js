@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
   Flame, Zap, ShieldAlert, CircleDot, Eye, Users, Code2,
-  ArrowRight, Github, ExternalLink,
+  ArrowRight, Github, ExternalLink, BookOpen,
 } from 'lucide-react';
 import WaitlistForm from './components/WaitlistForm';
 
@@ -62,6 +62,7 @@ export default function LandingPage() {
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#sdk" className="hover:text-white transition-colors">Integration</a>
             <a href="#signals" className="hover:text-white transition-colors">Signals</a>
+            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
@@ -135,6 +136,9 @@ export default function LandingPage() {
                 <span className="px-3 py-1 rounded-full bg-[#1a1a1a] border border-[rgba(255,255,255,0.06)] text-xs text-zinc-300">Zero Dependencies</span>
                 <span className="px-3 py-1 rounded-full bg-[#1a1a1a] border border-[rgba(255,255,255,0.06)] text-xs text-zinc-300">REST API</span>
               </div>
+              <Link href="/docs" className="mt-4 inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-hover transition-colors">
+                View full SDK docs <ArrowRight size={14} />
+              </Link>
             </div>
             <div className="rounded-xl bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-5 font-mono text-sm overflow-x-auto">
               <div className="text-zinc-500 mb-3">{'// instrument your agent'}</div>
@@ -247,6 +251,10 @@ export default function LandingPage() {
               <Github size={14} />
               GitHub
             </a>
+            <Link href="/docs" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <BookOpen size={14} />
+              Docs
+            </Link>
             <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />
               Dashboard

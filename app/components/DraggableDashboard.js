@@ -12,12 +12,18 @@ import IntegrationsCard from './IntegrationsCard';
 import MemoryHealthCard from './MemoryHealthCard';
 import InspirationCard from './InspirationCard';
 import ContextCard from './ContextCard';
+import OnboardingChecklist from './OnboardingChecklist';
 
 // Fixed, opinionated layout — no customize mode.
 // Ordered for operational storytelling: signals → activity → details → system.
 export default function DraggableDashboard() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Onboarding: full-width, self-hides when complete */}
+      <div className="lg:col-span-4 md:col-span-2">
+        <OnboardingChecklist />
+      </div>
+
       {/* Row 1: Status overview */}
       <div className="md:col-span-2">
         <RiskSignalsCard />

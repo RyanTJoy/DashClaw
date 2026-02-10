@@ -10,7 +10,7 @@ AI agent operations dashboard — a Next.js 14 app that gives AI agents (and the
 
 **New to this?** Check out our [Quick Start Guide](QUICK-START.md) - no coding required!
 
-**Already deployed?** Visit `/setup` for a guided walkthrough!
+**Already deployed?** Sign in and the onboarding checklist will guide you through workspace setup!
 
 ## Using this with Clawd/Clawdbot (recommended)
 
@@ -36,7 +36,7 @@ Installed into your Clawd workspace, you get:
 ### Operations & Monitoring
 
 - **ActionRecord Control Plane** — Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
-- **Risk Signals** — 6 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
+- **Risk Signals** — 7 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
 - **Open Loops** — Track unresolved items with priority and type classification
 
 ### Data & Insights
@@ -56,6 +56,9 @@ Installed into your Clawd workspace, you get:
 
 ### Platform & UX
 
+- **Guided Onboarding** — 4-step checklist (workspace, API key, SDK install, first action)
+- **API Key Management** — Generate, list, and revoke keys from `/api-keys`
+- **SDK Documentation** — Full public reference at `/docs` (22 methods, code examples)
 - **Integrations Settings** — Configure services from the UI
 - **Calendar Integration** — Upcoming events at a glance
 - **Real-time Updates** — Auto-refresh with configurable intervals
@@ -170,6 +173,8 @@ All endpoints return JSON and support CORS.
 | `/api/calendar` | Upcoming events |
 | `/api/bounties` | Bounty tracking |
 | `/api/workflows` | Workflow definitions |
+| `/api/keys` | API key management (list, generate, revoke) |
+| `/api/onboarding/*` | Onboarding status, workspace creation, API key gen |
 | `/api/orgs` | Organization management (admin) |
 | `/api/health` | Database connectivity check |
 
