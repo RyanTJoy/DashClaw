@@ -39,6 +39,7 @@ const PROTECTED_ROUTES = [
   '/api/preferences',
   '/api/digest',
   '/api/security',
+  '/api/messages',
 ];
 
 // Routes that are always public (health checks, setup, auth)
@@ -365,6 +366,8 @@ export const config = {
     '/webhooks/:path*',
     '/notifications',
     '/notifications/:path*',
+    '/messages',
+    '/messages/:path*',
     '/invite/:path*',
     '/login',
   ],

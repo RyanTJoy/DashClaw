@@ -79,6 +79,9 @@ const TENANT_TABLES = [
   'user_moods',
   'user_approaches',
   'security_findings',
+  'agent_messages',
+  'message_threads',
+  'shared_docs',
 ];
 
 async function run() {
@@ -977,6 +980,87 @@ async function run() {
     log('✅', 'security_findings table + indexes ready');
   } catch (err) {
     log('⚠️', `security_findings migration: ${err.message}`);
+  }
+
+  // Step 30: Create agent_messages table
+  console.log('Step 30: Creating agent_messages table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS agent_messages (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        thread_id TEXT,
+        from_agent_id TEXT NOT NULL,
+        to_agent_id TEXT,
+        message_type TEXT NOT NULL DEFAULT 'info',
+        subject TEXT,
+        body TEXT NOT NULL,
+        urgent BOOLEAN DEFAULT false,
+        status TEXT NOT NULL DEFAULT 'sent',
+        doc_ref TEXT,
+        read_by TEXT,
+        created_at TEXT NOT NULL,
+        read_at TEXT,
+        archived_at TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_agent_messages_org_id ON agent_messages(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_agent_messages_inbox ON agent_messages(org_id, to_agent_id, status)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_agent_messages_thread_id ON agent_messages(thread_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_agent_messages_from ON agent_messages(org_id, from_agent_id)`;
+    log('✅', 'agent_messages table + indexes ready');
+  } catch (err) {
+    log('⚠️', `agent_messages migration: ${err.message}`);
+  }
+
+  // Step 31: Create message_threads table
+  console.log('Step 31: Creating message_threads table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS message_threads (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        name TEXT NOT NULL,
+        participants TEXT,
+        status TEXT NOT NULL DEFAULT 'open',
+        summary TEXT,
+        created_by TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        resolved_at TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_message_threads_org_id ON message_threads(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_message_threads_org_status ON message_threads(org_id, status)`;
+    log('✅', 'message_threads table + indexes ready');
+  } catch (err) {
+    log('⚠️', `message_threads migration: ${err.message}`);
+  }
+
+  // Step 32: Create shared_docs table
+  console.log('Step 32: Creating shared_docs table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS shared_docs (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_by TEXT NOT NULL,
+        last_edited_by TEXT,
+        version INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_shared_docs_org_id ON shared_docs(org_id)`;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS shared_docs_org_name_unique
+      ON shared_docs (org_id, name)
+    `;
+    log('✅', 'shared_docs table + indexes ready');
+  } catch (err) {
+    log('⚠️', `shared_docs migration: ${err.message}`);
   }
 
   // Verification

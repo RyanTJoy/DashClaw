@@ -50,6 +50,7 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
+├── messages/                  # Agent communication hub (inbox, threads, shared docs)
 ├── activity/                  # Activity log page (audit trail)
 ├── webhooks/                  # Webhook management page
 ├── notifications/             # Notification preferences page
@@ -90,10 +91,11 @@ app/
     ├── snippets/              # Automation snippets CRUD + use counter
     ├── preferences/           # User preferences (observations, prefs, moods, approaches)
     ├── digest/                # Daily digest aggregation (GET only)
-    └── security/scan/         # Content security scanning (POST only)
+    ├── security/scan/         # Content security scanning (POST only)
+    └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (45 methods, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (54 methods, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -101,7 +103,7 @@ sdk/
 
 scripts/
 ├── security-scan.js           # Pre-deploy security audit
-├── test-actions.mjs           # Integration test suite (~145 assertions, 17 phases)
+├── test-actions.mjs           # Integration test suite (~175 assertions, 19 phases)
 ├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
 ├── create-org.mjs             # CLI: create org + admin API key
 ├── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens (disabled)
@@ -264,6 +266,9 @@ function getSql() {
 - `GET/POST /api/preferences` — user preferences (GET: `?type=summary|observations|preferences|moods|approaches`; POST: body.type discriminator)
 - `GET /api/digest` — daily digest aggregation (GET: `?date`, `?agent_id`; aggregates from 7 tables, no storage)
 - `POST /api/security/scan` — content security scanning (18 regex patterns; returns findings + redacted text; optionally stores metadata)
+- `GET/POST/PATCH /api/messages` — agent messages (GET: `?agent_id`, `?direction=inbox|sent|all`, `?type`, `?unread=true`, `?thread_id`; POST: send message; PATCH: batch read/archive)
+- `GET/POST/PATCH /api/messages/threads` — message threads (GET: `?status`, `?agent_id`; POST: create; PATCH: resolve/update)
+- `GET/POST /api/messages/docs` — shared workspace documents (GET: `?id`, `?search`; POST: upsert by name)
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -524,6 +529,23 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - `security_findings` (`sf_`) — metadata from security scans (never stores actual content)
 - Columns: `id`, `org_id`, `agent_id`, `content_hash` (SHA-256), `findings_count`, `critical_count`, `categories` (JSON TEXT), `scanned_at`
 
+## Agent Messaging Tables (Migration Steps 30-32)
+
+### Agent Messages Table (Step 30)
+- `agent_messages` (`msg_`) — async messages between agents with inbox semantics
+- Columns: `id`, `org_id`, `thread_id` (FK to message_threads), `from_agent_id`, `to_agent_id` (NULL = broadcast), `message_type` (action|info|lesson|question|status), `subject`, `body`, `urgent` (boolean), `status` (sent|read|archived), `doc_ref`, `read_by` (JSON array for broadcast tracking), `created_at`, `read_at`, `archived_at`
+- Indexes: org_id, (org_id, to_agent_id, status), thread_id, (org_id, from_agent_id)
+
+### Message Threads Table (Step 31)
+- `message_threads` (`mt_`) — multi-turn conversation threads
+- Columns: `id`, `org_id`, `name`, `participants` (JSON array of agent IDs, NULL = open), `status` (open|resolved|archived), `summary`, `created_by`, `created_at`, `updated_at`, `resolved_at`
+- Indexes: org_id, (org_id, status)
+
+### Shared Docs Table (Step 32)
+- `shared_docs` (`sd_`) — collaborative workspace documents
+- Columns: `id`, `org_id`, `name`, `content`, `created_by`, `last_edited_by`, `version` (auto-incrementing on upsert), `created_at`, `updated_at`
+- Indexes: org_id; UNIQUE (org_id, name) for upsert
+
 ## Deployment
 
 ### Vercel (Production)
@@ -565,7 +587,7 @@ const claw = new OpenClawAgent({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### DashClaw SDK (npm package — 45 active methods)
+### DashClaw SDK (npm package — 54 active methods)
 
 The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
 
@@ -604,5 +626,7 @@ const claw = new DashClaw({
 **Daily Digest (1)**: `getDailyDigest()`
 
 **Security Scanning (2)**: `scanContent()`, `reportSecurityFinding()`
+
+**Agent Messaging (9)**: `sendMessage()`, `getInbox()`, `markRead()`, `archiveMessages()`, `broadcast()`, `createMessageThread()`, `getMessageThreads()`, `resolveMessageThread()`, `saveSharedDoc()`
 
 **Disabled**: `reportTokenUsage()` — exists in SDK but token tracking is disabled in the dashboard
