@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
+import { checkQuotaFast, getOrgPlan } from '../../../lib/billing.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -76,6 +77,16 @@ export async function POST(request) {
 
     const sql = getSql();
     await ensureTable(sql);
+
+    // Quota check: members (fast meter path)
+    const plan = await getOrgPlan(orgId, sql);
+    const membersQuota = await checkQuotaFast(orgId, 'members', plan, sql);
+    if (!membersQuota.allowed) {
+      return NextResponse.json(
+        { error: 'Team member limit reached. Upgrade your plan.', code: 'QUOTA_EXCEEDED', usage: membersQuota.usage, limit: membersQuota.limit },
+        { status: 402 }
+      );
+    }
 
     const inviteId = `inv_${crypto.randomUUID()}`;
     const token = crypto.randomBytes(32).toString('hex'); // 64 hex chars

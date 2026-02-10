@@ -70,18 +70,22 @@ export const authOptions = {
         try {
           const sql = getSql();
           const rows = await sql`
-            SELECT id, org_id, role FROM users
-            WHERE provider = ${account.provider}
-              AND provider_account_id = ${account.providerAccountId}
+            SELECT u.id, u.org_id, u.role, COALESCE(o.plan, 'free') AS plan
+            FROM users u
+            LEFT JOIN organizations o ON o.id = u.org_id
+            WHERE u.provider = ${account.provider}
+              AND u.provider_account_id = ${account.providerAccountId}
             LIMIT 1
           `;
           if (rows.length > 0) {
             token.userId = rows[0].id;
             token.orgId = rows[0].org_id;
             token.role = rows[0].role;
+            token.plan = rows[0].plan;
           } else {
             token.orgId = 'org_default';
             token.role = 'member';
+            token.plan = 'free';
           }
         } catch (err) {
           console.error('[AUTH] jwt callback error:', err.message);
@@ -95,10 +99,16 @@ export const authOptions = {
         if (age > 5 * 60 * 1000) {
           try {
             const sql = getSql();
-            const rows = await sql`SELECT org_id, role FROM users WHERE id = ${token.userId} LIMIT 1`;
+            const rows = await sql`
+              SELECT u.org_id, u.role, COALESCE(o.plan, 'free') AS plan
+              FROM users u
+              LEFT JOIN organizations o ON o.id = u.org_id
+              WHERE u.id = ${token.userId} LIMIT 1
+            `;
             if (rows.length > 0) {
               token.orgId = rows[0].org_id;
               token.role = rows[0].role;
+              token.plan = rows[0].plan;
             }
           } catch (err) {
             console.error('[AUTH] jwt refresh error:', err.message);
@@ -113,6 +123,7 @@ export const authOptions = {
       session.user.id = token.userId || null;
       session.user.orgId = token.orgId || 'org_default';
       session.user.role = token.role || 'member';
+      session.user.plan = token.plan || 'free';
       return session;
     },
   },

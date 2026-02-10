@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateActionRecord } from '../../lib/validate.js';
 import { getOrgId } from '../../lib/org.js';
+import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/billing.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -109,6 +110,40 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 });
     }
 
+    // Quota check: actions per month (fast meter path)
+    const plan = await getOrgPlan(orgId, sql);
+    const actionsQuota = await checkQuotaFast(orgId, 'actions_per_month', plan, sql);
+    if (!actionsQuota.allowed) {
+      return NextResponse.json(
+        { error: 'Monthly action limit exceeded. Upgrade your plan.', code: 'QUOTA_EXCEEDED', usage: actionsQuota.usage, limit: actionsQuota.limit },
+        { status: 402 }
+      );
+    }
+
+    // Quota check: agents (only block new agent_ids)
+    let isNewAgent = false;
+    if (data.agent_id) {
+      const agentsQuota = await checkQuotaFast(orgId, 'agents', plan, sql);
+      if (!agentsQuota.allowed) {
+        // Check if this agent already exists (existing agents are allowed)
+        const existing = await sql`
+          SELECT 1 FROM action_records WHERE org_id = ${orgId} AND agent_id = ${data.agent_id} LIMIT 1
+        `;
+        if (existing.length === 0) {
+          return NextResponse.json(
+            { error: 'Agent limit reached. Upgrade your plan.', code: 'QUOTA_EXCEEDED', usage: agentsQuota.usage, limit: agentsQuota.limit },
+            { status: 402 }
+          );
+        }
+      } else {
+        // Check if this is a new agent for meter increment
+        const existing = await sql`
+          SELECT 1 FROM action_records WHERE org_id = ${orgId} AND agent_id = ${data.agent_id} LIMIT 1
+        `;
+        isNewAgent = existing.length === 0;
+      }
+    }
+
     // Generate action_id if not provided
     const action_id = data.action_id || `act_${crypto.randomUUID()}`;
     const timestamp_start = data.timestamp_start || new Date().toISOString();
@@ -151,7 +186,18 @@ export async function POST(request) {
       RETURNING *
     `;
 
-    return NextResponse.json({ action: result[0], action_id }, { status: 201 });
+    // Fire-and-forget meter increments (don't block response)
+    const meterUpdates = [incrementMeter(orgId, 'actions_per_month', sql)];
+    if (isNewAgent) {
+      meterUpdates.push(incrementMeter(orgId, 'agents', sql));
+    }
+    Promise.all(meterUpdates).catch(() => {});
+
+    const response = NextResponse.json({ action: result[0], action_id }, { status: 201 });
+    if (actionsQuota.warning) {
+      response.headers.set('x-quota-warning', `actions_per_month at ${actionsQuota.percent}%`);
+    }
+    return response;
   } catch (error) {
     console.error('Actions API POST error:', error);
     if (error.message?.includes('unique') || error.message?.includes('duplicate')) {

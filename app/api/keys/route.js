@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole } from '../../lib/org.js';
+import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/billing.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -72,6 +73,17 @@ export async function POST(request) {
     }
 
     const sql = getSql();
+
+    // Quota check: API keys (fast meter path)
+    const plan = await getOrgPlan(orgId, sql);
+    const keysQuota = await checkQuotaFast(orgId, 'api_keys', plan, sql);
+    if (!keysQuota.allowed) {
+      return NextResponse.json(
+        { error: 'API key limit reached. Upgrade your plan.', code: 'QUOTA_EXCEEDED', usage: keysQuota.usage, limit: keysQuota.limit },
+        { status: 402 }
+      );
+    }
+
     const rawKey = generateApiKey();
     const keyHash = hashKey(rawKey);
     const keyPrefix = rawKey.substring(0, 8);
@@ -81,6 +93,9 @@ export async function POST(request) {
       INSERT INTO api_keys (id, org_id, key_hash, key_prefix, label, role)
       VALUES (${keyId}, ${orgId}, ${keyHash}, ${keyPrefix}, ${label}, 'admin')
     `;
+
+    // Fire-and-forget meter increment
+    incrementMeter(orgId, 'api_keys', sql).catch(() => {});
 
     return NextResponse.json({
       key: {
@@ -134,6 +149,9 @@ export async function DELETE(request) {
     await sql`
       UPDATE api_keys SET revoked_at = CURRENT_TIMESTAMP WHERE id = ${keyId} AND org_id = ${orgId}
     `;
+
+    // Fire-and-forget meter decrement
+    incrementMeter(orgId, 'api_keys', sql, -1).catch(() => {});
 
     return NextResponse.json({ success: true, revoked: keyId });
   } catch (error) {

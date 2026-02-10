@@ -21,6 +21,7 @@ app/
 ├── lib/validate.js            # Input validation helpers
 ├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole, getUserId)
 ├── lib/auth.js                # NextAuth config (GitHub + Google, JWT, user upsert)
+├── lib/billing.js             # Plan limits, usage metering, quota checking
 ├── lib/colors.js              # Agent color hashing, action type icon map
 ├── components/
 │   ├── ui/                    # Shared primitives (Card, Badge, Stat, ProgressBar, EmptyState, Skeleton)
@@ -326,6 +327,18 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Columns: `id` (TEXT `inv_` prefix), `org_id`, `email` (nullable — NULL = open invite), `role` (admin/member), `token` (UNIQUE, 64 hex chars), `invited_by` (usr_ id), `status` (pending/accepted/revoked), `accepted_by` (usr_ id), `expires_at` (TEXT ISO), `created_at` (TEXT ISO)
 - Indexes: `idx_invites_token`, `idx_invites_org_id`, `idx_invites_status`
 - Migration Step 17 in `migrate-multi-tenant.mjs` + `ensureTable()` fallback in invite route
+
+### Usage Meters Table
+- `usage_meters` — atomic counters for billing quota enforcement (replaces live COUNTs)
+- Columns: `id` (SERIAL), `org_id`, `period` (TEXT: `'YYYY-MM'` for monthly or `'current'` for snapshots), `resource` (TEXT: `actions_per_month` | `agents` | `members` | `api_keys`), `count` (INTEGER), `last_reconciled_at` (TEXT), `updated_at` (TEXT)
+- Unique index: `usage_meters_org_period_resource_unique` on `(org_id, period, resource)` — enables atomic `INSERT ... ON CONFLICT DO UPDATE`
+- Monthly resources (`actions_per_month`, `agents`): period = `'2026-02'`; snapshot resources (`members`, `api_keys`): period = `'current'`
+- Cold start: first request seeds meters from live COUNTs; subsequent requests read 1 row
+- Increments are fire-and-forget (don't block API responses); `GREATEST(0, count + delta)` prevents negative counters
+- Functions in `app/lib/billing.js`: `getCurrentPeriod()`, `incrementMeter()`, `checkQuotaFast()`, `seedMeters()` (private)
+- `getUsage()` reads from meters (1 query for up to 4 rows); `checkQuota()` delegates to `checkQuotaFast()`
+- Meter increment points: `POST /api/actions` (+actions, +agents if new), `POST/DELETE /api/keys` (+/-api_keys), `POST /api/invite/[token]` accept (+members), `DELETE /api/team/[userId]` (-members)
+- Migration Step 19 in `migrate-multi-tenant.mjs`
 
 ## Onboarding Flow (Implemented)
 - 4-step guided checklist displayed on dashboard via `OnboardingChecklist.js` (full-width, self-hides when complete)
