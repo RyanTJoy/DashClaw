@@ -1,123 +1,163 @@
-# OpenClaw Agent SDK
+# DashClaw
 
-Zero-dependency SDK for recording agent actions to the OpenClaw OPS Suite. Requires Node 18+ (native fetch).
+Full-featured agent toolkit for the [OpenClaw Pro](https://openclaw-pro.vercel.app) platform. Zero dependencies, requires Node 18+ (native fetch).
 
-## Setup
+**45 methods** across 10 categories: action recording, context management, session handoffs, security scanning, user preferences, and more.
 
-```js
-import { OpenClawAgent } from './openclaw-agent.js';
+## Install
 
-const agent = new OpenClawAgent({
-  baseUrl: 'https://your-ops-suite.vercel.app',
-  apiKey: process.env.DASHBOARD_API_KEY,
-  agentId: 'clawd-main',
-  agentName: 'Clawd',
-  swarmId: 'openclaw-v1'      // optional
-});
+```bash
+npm install dashclaw
 ```
 
-## Usage
-
-### Record an action manually
+## Quick Start
 
 ```js
-// 1. Create the action
-const { action_id } = await agent.createAction({
+import { DashClaw } from 'dashclaw';
+
+const claw = new DashClaw({
+  baseUrl: 'https://your-app.vercel.app',
+  apiKey: process.env.OPENCLAW_API_KEY,
+  agentId: 'my-agent',
+  agentName: 'My Agent',
+});
+
+// Record an action
+const { action_id } = await claw.createAction({
   action_type: 'deploy',
-  declared_goal: 'Deploy dashboard v2.1 to production',
-  reasoning: 'User requested deployment after tests passed',
-  systems_touched: ['vercel', 'github'],
-  risk_score: 40,
-  confidence: 85,
-  reversible: true
+  declared_goal: 'Deploy auth service to production',
+  risk_score: 60,
 });
 
-// 2. Do the work...
-await deployToProduction();
+// ... do the work ...
 
-// 3. Update the outcome
-await agent.updateOutcome(action_id, {
+await claw.updateOutcome(action_id, {
   status: 'completed',
-  output_summary: 'Deployed successfully to vercel production',
-  duration_ms: 45000,
-  cost_estimate: 0.002
+  output_summary: 'Auth service deployed successfully',
 });
 ```
 
-### Track with auto-complete
+## Migration from OpenClawAgent
+
+The backward-compatible alias `OpenClawAgent` is preserved:
 
 ```js
-const result = await agent.track({
-  action_type: 'build',
-  declared_goal: 'Build token efficiency report',
-  risk_score: 10,
-  confidence: 90
-}, async ({ action_id }) => {
-  // Your logic here - outcome is auto-recorded
-  const report = await generateReport();
-  return report;
-});
+// Old:
+import { OpenClawAgent } from './openclaw-agent.js';
+// New (both work):
+import { DashClaw } from 'dashclaw';
+import { OpenClawAgent } from 'dashclaw';
 ```
 
-### Open loops
+## API Reference (45 methods)
 
-```js
-// Register a loop
-const { loop_id } = await agent.registerOpenLoop({
-  action_id: 'act_abc123',
-  loop_type: 'approval',
-  description: 'Needs human approval before sending email',
-  priority: 'high',
-  owner: 'wes'
-});
-
-// Resolve it later
-await agent.resolveOpenLoop(loop_id, 'resolved', 'Wes approved via dashboard');
-```
-
-### Assumptions
-
-```js
-await agent.registerAssumption({
-  action_id: 'act_abc123',
-  assumption: 'User email is verified and active',
-  basis: 'Email was used for login 2 hours ago'
-});
-```
-
-### Query data
-
-```js
-// Get actions with filters
-const { actions, stats } = await agent.getActions({
-  status: 'failed',
-  risk_min: 70,
-  limit: 10
-});
-
-// Get risk signals
-const { signals, counts } = await agent.getSignals();
-console.log(`${counts.red} red, ${counts.amber} amber signals`);
-
-// Get open loops
-const { loops } = await agent.getOpenLoops({ status: 'open', priority: 'critical' });
-```
-
-## API Reference
+### Action Recording (6)
 
 | Method | Description |
 |--------|-------------|
 | `createAction(action)` | Record a new action |
 | `updateOutcome(actionId, outcome)` | Update action result |
-| `registerOpenLoop(loop)` | Register an unresolved item |
-| `resolveOpenLoop(loopId, status, resolution)` | Close an open loop |
-| `registerAssumption(assumption)` | Record an assumption |
 | `getActions(filters?)` | List actions with filters |
 | `getAction(actionId)` | Get single action with loops + assumptions |
-| `getSignals()` | Get computed risk signals |
-| `getOpenLoops(filters?)` | List open loops |
+| `getActionTrace(actionId)` | Get root-cause trace |
 | `track(actionDef, fn)` | Auto-tracked action wrapper |
+
+### Loops & Assumptions (7)
+
+| Method | Description |
+|--------|-------------|
+| `registerOpenLoop(loop)` | Register an unresolved item |
+| `resolveOpenLoop(loopId, status, resolution)` | Close an open loop |
+| `getOpenLoops(filters?)` | List open loops |
+| `registerAssumption(assumption)` | Record an assumption |
+| `getAssumption(assumptionId)` | Get single assumption |
+| `validateAssumption(id, validated, reason?)` | Validate or invalidate |
+| `getDriftReport(filters?)` | Get assumption drift scores |
+
+### Signals (1)
+
+| Method | Description |
+|--------|-------------|
+| `getSignals()` | Get computed risk signals |
+
+### Dashboard Data (8)
+
+| Method | Description |
+|--------|-------------|
+| `recordDecision(entry)` | Record a decision |
+| `createGoal(goal)` | Create a goal |
+| `recordContent(content)` | Record content creation |
+| `recordInteraction(interaction)` | Record a relationship interaction |
+| `reportConnections(connections)` | Report agent integrations |
+| `createCalendarEvent(event)` | Create a calendar event |
+| `recordIdea(idea)` | Record an idea/inspiration |
+| `reportMemoryHealth(report)` | Report memory health snapshot |
+
+### Session Handoffs (3)
+
+| Method | Description |
+|--------|-------------|
+| `createHandoff(handoff)` | Create a session handoff document |
+| `getHandoffs(filters?)` | Get handoffs for this agent |
+| `getLatestHandoff()` | Get the most recent handoff |
+
+### Context Manager (7)
+
+| Method | Description |
+|--------|-------------|
+| `captureKeyPoint(point)` | Capture a key point |
+| `getKeyPoints(filters?)` | Get key points |
+| `createThread(thread)` | Create a context thread |
+| `addThreadEntry(threadId, content)` | Add entry to a thread |
+| `closeThread(threadId, summary?)` | Close a thread |
+| `getThreads(filters?)` | Get threads |
+| `getContextSummary()` | Today's points + active threads |
+
+### Automation Snippets (4)
+
+| Method | Description |
+|--------|-------------|
+| `saveSnippet(snippet)` | Save/update a code snippet |
+| `getSnippets(filters?)` | Search and list snippets |
+| `useSnippet(snippetId)` | Mark snippet as used |
+| `deleteSnippet(snippetId)` | Delete a snippet |
+
+### User Preferences (6)
+
+| Method | Description |
+|--------|-------------|
+| `logObservation(obs)` | Log a user observation |
+| `setPreference(pref)` | Set a learned preference |
+| `logMood(entry)` | Log user mood/energy |
+| `trackApproach(entry)` | Track approach success/failure |
+| `getPreferenceSummary()` | Get preference summary |
+| `getApproaches(filters?)` | Get tracked approaches |
+
+### Daily Digest (1)
+
+| Method | Description |
+|--------|-------------|
+| `getDailyDigest(date?)` | Aggregated daily summary |
+
+### Security Scanning (2)
+
+| Method | Description |
+|--------|-------------|
+| `scanContent(text, destination?)` | Scan text for sensitive data |
+| `reportSecurityFinding(text, dest?)` | Scan + store finding metadata |
 
 ## Authentication
 
-The SDK sends your API key via the `x-api-key` header. Set `DASHBOARD_API_KEY` in your environment.
+The SDK sends your API key via the `x-api-key` header. The key determines which organization's data you access.
+
+```js
+const claw = new DashClaw({
+  baseUrl: 'https://openclaw-pro.vercel.app',
+  apiKey: process.env.OPENCLAW_API_KEY,
+  agentId: 'my-agent',
+});
+```
+
+## License
+
+MIT

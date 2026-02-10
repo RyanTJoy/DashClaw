@@ -396,7 +396,7 @@ async function testSDK() {
   console.log('\n━━━ Phase 6: SDK ━━━');
 
   // Dynamic import of the SDK
-  const { OpenClawAgent } = await import('../sdk/openclaw-agent.js');
+  const { OpenClawAgent } = await import('../sdk/dashclaw.js');
 
   const agent = new OpenClawAgent({
     baseUrl: BASE_URL,
@@ -547,7 +547,7 @@ async function testRootCauseTrace(actionId) {
 async function testSDKExtended() {
   console.log('\n━━━ Phase 9: SDK Extended Methods ━━━');
 
-  const { OpenClawAgent } = await import('../sdk/openclaw-agent.js');
+  const { OpenClawAgent } = await import('../sdk/dashclaw.js');
 
   const agent = new OpenClawAgent({
     baseUrl: BASE_URL,
@@ -607,6 +607,291 @@ async function testDetailEndpoint(actionId) {
 }
 
 // ──────────────────────────────────────────────
+// Phase 12: Handoffs
+// ──────────────────────────────────────────────
+
+async function testHandoffs() {
+  console.log('\n━━━ Phase 12: Handoffs ━━━');
+
+  // POST handoff
+  const { status: s1, data: d1 } = await request('POST', '/api/handoffs', {
+    agent_id: 'test-agent',
+    summary: 'Completed feature implementation',
+    key_decisions: ['Used React over Vue', 'Chose PostgreSQL'],
+    open_tasks: ['Write tests', 'Update docs'],
+    mood_notes: 'User was focused and productive',
+    next_priorities: ['Deploy to staging', 'Run load tests'],
+  });
+  assert(s1 === 201, 'POST /api/handoffs returns 201');
+  assert(d1.handoff_id && d1.handoff_id.startsWith('ho_'), `handoff_id has ho_ prefix: ${d1.handoff_id}`);
+  assert(d1.handoff.summary === 'Completed feature implementation', 'Handoff summary matches');
+
+  // GET handoffs
+  const { status: s2, data: d2 } = await request('GET', '/api/handoffs?agent_id=test-agent');
+  assert(s2 === 200, 'GET /api/handoffs returns 200');
+  assert(Array.isArray(d2.handoffs), 'Response contains handoffs array');
+  assert(d2.handoffs.length >= 1, 'At least one handoff returned');
+
+  // GET latest
+  const { status: s3, data: d3 } = await request('GET', '/api/handoffs?agent_id=test-agent&latest=true');
+  assert(s3 === 200, 'GET /api/handoffs?latest=true returns 200');
+  assert(d3.handoff !== null, 'Latest handoff is not null');
+  assert(d3.handoff.agent_id === 'test-agent', 'Latest handoff has correct agent_id');
+}
+
+// ──────────────────────────────────────────────
+// Phase 13: Context Points
+// ──────────────────────────────────────────────
+
+async function testContextPoints() {
+  console.log('\n━━━ Phase 13: Context Points ━━━');
+
+  // POST key point
+  const { status: s1, data: d1 } = await request('POST', '/api/context/points', {
+    agent_id: 'test-agent',
+    content: 'User prefers dark mode for all interfaces',
+    category: 'insight',
+    importance: 8,
+  });
+  assert(s1 === 201, 'POST /api/context/points returns 201');
+  assert(d1.point_id && d1.point_id.startsWith('cp_'), `point_id has cp_ prefix: ${d1.point_id}`);
+
+  // POST another with different category
+  await request('POST', '/api/context/points', {
+    agent_id: 'test-agent',
+    content: 'Migrate database by end of sprint',
+    category: 'task',
+    importance: 9,
+  });
+
+  // GET all points
+  const { status: s2, data: d2 } = await request('GET', '/api/context/points?agent_id=test-agent');
+  assert(s2 === 200, 'GET /api/context/points returns 200');
+  assert(Array.isArray(d2.points), 'Response contains points array');
+  assert(d2.points.length >= 2, 'At least two points returned');
+
+  // GET filtered by category
+  const { status: s3, data: d3 } = await request('GET', '/api/context/points?agent_id=test-agent&category=insight');
+  assert(s3 === 200, 'GET context points filtered by category returns 200');
+  assert(d3.points.every(p => p.category === 'insight'), 'All returned points have correct category');
+}
+
+// ──────────────────────────────────────────────
+// Phase 14: Context Threads
+// ──────────────────────────────────────────────
+
+async function testContextThreads() {
+  console.log('\n━━━ Phase 14: Context Threads ━━━');
+
+  // POST thread
+  const { status: s1, data: d1 } = await request('POST', '/api/context/threads', {
+    agent_id: 'test-agent',
+    name: 'Auth Implementation',
+    summary: 'Tracking auth system decisions',
+  });
+  assert(s1 === 201, 'POST /api/context/threads returns 201');
+  assert(d1.thread_id && d1.thread_id.startsWith('ct_'), `thread_id has ct_ prefix: ${d1.thread_id}`);
+  const threadId = d1.thread_id;
+
+  // POST entry to thread
+  const { status: s2, data: d2 } = await request('POST', `/api/context/threads/${threadId}/entries`, {
+    content: 'Decided to use JWT strategy over sessions',
+    entry_type: 'decision',
+  });
+  assert(s2 === 201, 'POST thread entry returns 201');
+  assert(d2.entry_id && d2.entry_id.startsWith('ce_'), `entry_id has ce_ prefix: ${d2.entry_id}`);
+
+  // POST another entry
+  await request('POST', `/api/context/threads/${threadId}/entries`, {
+    content: 'Added refresh token rotation',
+  });
+
+  // GET thread with entries
+  const { status: s3, data: d3 } = await request('GET', `/api/context/threads/${threadId}`);
+  assert(s3 === 200, 'GET thread by ID returns 200');
+  assert(d3.thread.id === threadId, 'Thread ID matches');
+  assert(Array.isArray(d3.entries), 'Response includes entries array');
+  assert(d3.entries.length >= 2, `Thread has ${d3.entries.length} entries`);
+
+  // PATCH close thread
+  const { status: s4, data: d4 } = await request('PATCH', `/api/context/threads/${threadId}`, {
+    status: 'closed',
+    summary: 'Auth system complete — JWT + refresh tokens',
+  });
+  assert(s4 === 200, 'PATCH thread returns 200');
+  assert(d4.thread.status === 'closed', 'Thread status is closed');
+
+  // Verify closed thread rejects entries
+  const { status: s5 } = await request('POST', `/api/context/threads/${threadId}/entries`, {
+    content: 'This should fail',
+  });
+  assert(s5 === 400, 'POST entry to closed thread returns 400');
+
+  // GET threads list
+  const { status: s6, data: d6 } = await request('GET', '/api/context/threads?agent_id=test-agent');
+  assert(s6 === 200, 'GET /api/context/threads returns 200');
+  assert(Array.isArray(d6.threads), 'Response contains threads array');
+}
+
+// ──────────────────────────────────────────────
+// Phase 15: Snippets
+// ──────────────────────────────────────────────
+
+async function testSnippets() {
+  console.log('\n━━━ Phase 15: Snippets ━━━');
+
+  // POST snippet
+  const { status: s1, data: d1 } = await request('POST', '/api/snippets', {
+    name: 'fetch-with-retry',
+    code: 'async function fetchWithRetry(url, retries = 3) { /* ... */ }',
+    description: 'Fetch wrapper with exponential backoff',
+    language: 'javascript',
+    tags: ['fetch', 'retry', 'network'],
+  });
+  assert(s1 === 201, 'POST /api/snippets returns 201');
+  assert(d1.snippet_id && d1.snippet_id.startsWith('sn_'), `snippet_id has sn_ prefix: ${d1.snippet_id}`);
+  const snippetId = d1.snippet_id;
+
+  // GET snippets
+  const { status: s2, data: d2 } = await request('GET', '/api/snippets');
+  assert(s2 === 200, 'GET /api/snippets returns 200');
+  assert(Array.isArray(d2.snippets), 'Response contains snippets array');
+  assert(d2.snippets.length >= 1, 'At least one snippet returned');
+
+  // GET with search
+  const { status: s3, data: d3 } = await request('GET', '/api/snippets?search=retry');
+  assert(s3 === 200, 'GET snippets with search returns 200');
+  assert(d3.snippets.some(s => s.name === 'fetch-with-retry'), 'Search found the snippet');
+
+  // POST use
+  const { status: s4, data: d4 } = await request('POST', `/api/snippets/${snippetId}/use`);
+  assert(s4 === 200, 'POST snippet use returns 200');
+  assert(d4.snippet.use_count >= 1, `use_count incremented: ${d4.snippet.use_count}`);
+
+  // DELETE snippet
+  const { status: s5, data: d5 } = await request('DELETE', `/api/snippets?id=${snippetId}`);
+  assert(s5 === 200, 'DELETE snippet returns 200');
+  assert(d5.deleted === true, 'Snippet marked as deleted');
+}
+
+// ──────────────────────────────────────────────
+// Phase 16: User Preferences
+// ──────────────────────────────────────────────
+
+async function testPreferences() {
+  console.log('\n━━━ Phase 16: User Preferences ━━━');
+
+  // POST observation
+  const { status: s1, data: d1 } = await request('POST', '/api/preferences', {
+    type: 'observation',
+    agent_id: 'test-agent',
+    observation: 'User tends to work in focused 2-hour blocks',
+    category: 'workflow',
+    importance: 7,
+  });
+  assert(s1 === 201, 'POST observation returns 201');
+  assert(d1.observation_id && d1.observation_id.startsWith('uo_'), `observation_id prefix: ${d1.observation_id}`);
+
+  // POST preference
+  const { status: s2, data: d2 } = await request('POST', '/api/preferences', {
+    type: 'preference',
+    agent_id: 'test-agent',
+    preference: 'Prefers concise responses over verbose explanations',
+    category: 'communication',
+    confidence: 85,
+  });
+  assert(s2 === 201, 'POST preference returns 201');
+  assert(d2.preference_id && d2.preference_id.startsWith('up_'), `preference_id prefix: ${d2.preference_id}`);
+
+  // POST mood
+  const { status: s3, data: d3 } = await request('POST', '/api/preferences', {
+    type: 'mood',
+    agent_id: 'test-agent',
+    mood: 'focused',
+    energy: 'high',
+    notes: 'Deep in implementation mode',
+  });
+  assert(s3 === 201, 'POST mood returns 201');
+  assert(d3.mood_id && d3.mood_id.startsWith('um_'), `mood_id prefix: ${d3.mood_id}`);
+
+  // POST approach (success)
+  const { status: s4, data: d4 } = await request('POST', '/api/preferences', {
+    type: 'approach',
+    agent_id: 'test-agent',
+    approach: 'Show code examples before explaining concepts',
+    context: 'When teaching new APIs',
+    success: true,
+  });
+  assert(s4 === 201, 'POST approach returns 201');
+  assert(d4.approach_id, 'approach_id returned');
+  assert(d4.approach.success_count >= 1, `success_count: ${d4.approach.success_count}`);
+
+  // POST approach (fail — upserts same approach)
+  await request('POST', '/api/preferences', {
+    type: 'approach',
+    agent_id: 'test-agent',
+    approach: 'Show code examples before explaining concepts',
+    success: false,
+  });
+
+  // GET summary
+  const { status: s5, data: d5 } = await request('GET', '/api/preferences?type=summary&agent_id=test-agent');
+  assert(s5 === 200, 'GET preference summary returns 200');
+  assert(d5.summary, 'Response has summary object');
+  assert(typeof d5.summary.observations_count === 'number', 'Summary has observations_count');
+  assert(Array.isArray(d5.summary.preferences), 'Summary has preferences array');
+  assert(Array.isArray(d5.summary.recent_moods), 'Summary has recent_moods array');
+  assert(Array.isArray(d5.summary.top_approaches), 'Summary has top_approaches array');
+
+  // GET approaches
+  const { status: s6, data: d6 } = await request('GET', '/api/preferences?type=approaches&agent_id=test-agent');
+  assert(s6 === 200, 'GET approaches returns 200');
+  assert(Array.isArray(d6.approaches), 'Response has approaches array');
+  const approach = d6.approaches.find(a => a.approach === 'Show code examples before explaining concepts');
+  assert(approach, 'Found our tracked approach');
+  assert(approach.success_count >= 1, 'approach has success_count >= 1');
+  assert(approach.fail_count >= 1, 'approach has fail_count >= 1');
+}
+
+// ──────────────────────────────────────────────
+// Phase 17: Digest + Security Scan
+// ──────────────────────────────────────────────
+
+async function testDigestAndSecurity() {
+  console.log('\n━━━ Phase 17: Digest + Security Scan ━━━');
+
+  // GET digest
+  const { status: s1, data: d1 } = await request('GET', '/api/digest');
+  assert(s1 === 200, 'GET /api/digest returns 200');
+  assert(d1.date, 'Digest has date');
+  assert(d1.digest, 'Digest has digest object');
+  assert(d1.summary, 'Digest has summary object');
+  assert(typeof d1.summary.total_activities === 'number', 'Summary has total_activities');
+
+  // POST security scan (clean content)
+  const { status: s2, data: d2 } = await request('POST', '/api/security/scan', {
+    text: 'Hello world, this is a normal message with no secrets.',
+    store: false,
+  });
+  assert(s2 === 200, 'POST /api/security/scan returns 200');
+  assert(d2.clean === true, 'Clean content reports clean=true');
+  assert(d2.findings_count === 0, 'Clean content has 0 findings');
+
+  // POST security scan (dirty content)
+  const { status: s3, data: d3 } = await request('POST', '/api/security/scan', {
+    text: 'My API key is sk-1234567890abcdef1234567890abcdef and my password="hunter2secret"',
+    agent_id: 'test-agent',
+    store: true,
+  });
+  assert(s3 === 200, 'POST security scan with secrets returns 200');
+  assert(d3.clean === false, 'Dirty content reports clean=false');
+  assert(d3.findings_count >= 2, `Found ${d3.findings_count} issues in dirty content`);
+  assert(d3.critical_count >= 1, `Critical findings: ${d3.critical_count}`);
+  assert(d3.redacted_text.includes('[REDACTED:'), 'Redacted text contains REDACTED markers');
+  assert(!d3.redacted_text.includes('sk-1234567890'), 'Redacted text does not contain the API key');
+}
+
+// ──────────────────────────────────────────────
 // Run all tests
 // ──────────────────────────────────────────────
 
@@ -638,6 +923,12 @@ async function main() {
     await testSDKExtended();
     await testRootCauseTrace(actionId);
     await testDetailEndpoint(actionId);
+    await testHandoffs();
+    await testContextPoints();
+    await testContextThreads();
+    await testSnippets();
+    await testPreferences();
+    await testDigestAndSecurity();
   } catch (error) {
     console.error('\n💥 Test suite crashed:', error.message);
     console.error(error.stack);

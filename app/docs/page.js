@@ -7,8 +7,8 @@ import {
 import CopyDocsButton from '../components/CopyDocsButton';
 
 export const metadata = {
-  title: 'SDK Documentation — OpenClaw',
-  description: 'Full reference for the OpenClaw Agent SDK. Install, configure, and instrument your AI agents with 22 methods across action recording, loops, assumptions, signals, and dashboard data.',
+  title: 'DashClaw SDK Documentation — OpenClaw',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 45 methods across action recording, context management, session handoffs, security scanning, and more.',
 };
 
 /* ─── helpers ─── */
@@ -122,6 +122,35 @@ const navItems = [
   { href: '#createCalendarEvent', label: 'createCalendarEvent', indent: true },
   { href: '#recordIdea', label: 'recordIdea', indent: true },
   { href: '#reportMemoryHealth', label: 'reportMemoryHealth', indent: true },
+  { href: '#session-handoffs', label: 'Session Handoffs' },
+  { href: '#createHandoff', label: 'createHandoff', indent: true },
+  { href: '#getHandoffs', label: 'getHandoffs', indent: true },
+  { href: '#getLatestHandoff', label: 'getLatestHandoff', indent: true },
+  { href: '#context-manager', label: 'Context Manager' },
+  { href: '#captureKeyPoint', label: 'captureKeyPoint', indent: true },
+  { href: '#getKeyPoints', label: 'getKeyPoints', indent: true },
+  { href: '#createThread', label: 'createThread', indent: true },
+  { href: '#addThreadEntry', label: 'addThreadEntry', indent: true },
+  { href: '#closeThread', label: 'closeThread', indent: true },
+  { href: '#getThreads', label: 'getThreads', indent: true },
+  { href: '#getContextSummary', label: 'getContextSummary', indent: true },
+  { href: '#automation-snippets', label: 'Automation Snippets' },
+  { href: '#saveSnippet', label: 'saveSnippet', indent: true },
+  { href: '#getSnippets', label: 'getSnippets', indent: true },
+  { href: '#useSnippet', label: 'useSnippet', indent: true },
+  { href: '#deleteSnippet', label: 'deleteSnippet', indent: true },
+  { href: '#user-preferences', label: 'User Preferences' },
+  { href: '#logObservation', label: 'logObservation', indent: true },
+  { href: '#setPreference', label: 'setPreference', indent: true },
+  { href: '#logMood', label: 'logMood', indent: true },
+  { href: '#trackApproach', label: 'trackApproach', indent: true },
+  { href: '#getPreferenceSummary', label: 'getPreferenceSummary', indent: true },
+  { href: '#getApproaches', label: 'getApproaches', indent: true },
+  { href: '#daily-digest', label: 'Daily Digest' },
+  { href: '#getDailyDigest', label: 'getDailyDigest', indent: true },
+  { href: '#security-scanning', label: 'Security Scanning' },
+  { href: '#scanContent', label: 'scanContent', indent: true },
+  { href: '#reportSecurityFinding', label: 'reportSecurityFinding', indent: true },
   { href: '#error-handling', label: 'Error Handling' },
 ];
 
@@ -168,8 +197,8 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the OpenClaw Agent SDK. 22 methods to instrument your AI agents with
-            action recording, risk signals, open loop tracking, and dashboard data reporting.
+            Full reference for the DashClaw SDK (formerly OpenClaw Agent SDK). 45 methods to instrument your AI agents with
+            action recording, context management, session handoffs, security scanning, and more.
           </p>
           <CopyDocsButton />
         </div>
@@ -193,10 +222,10 @@ export default function DocsPage() {
                   <h3 className="text-base font-semibold">Copy the SDK</h3>
                 </div>
                 <p className="text-sm text-zinc-400 mb-3 pl-10">
-                  The SDK is a single file with zero dependencies. Copy <code className="font-mono text-zinc-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded text-xs">sdk/openclaw-agent.js</code> into your project, or fetch it from the repo.
+                  Install from npm, or copy the single-file SDK directly.
                 </p>
                 <div className="pl-10">
-                  <CodeBlock title="terminal">{`cp sdk/openclaw-agent.js ./your-agent/lib/openclaw-agent.js`}</CodeBlock>
+                  <CodeBlock title="terminal">{`npm install dashclaw`}</CodeBlock>
                 </div>
               </div>
 
@@ -207,9 +236,9 @@ export default function DocsPage() {
                   <h3 className="text-base font-semibold">Initialize the client</h3>
                 </div>
                 <div className="pl-10">
-                  <CodeBlock title="agent.js">{`import { OpenClawAgent } from './lib/openclaw-agent.js';
+                  <CodeBlock title="agent.js">{`import { DashClaw } from 'dashclaw';
 
-const claw = new OpenClawAgent({
+const claw = new DashClaw({
   baseUrl: 'https://your-dashboard.vercel.app',
   apiKey: process.env.OPENCLAW_API_KEY,
   agentId: 'my-agent',
@@ -744,6 +773,153 @@ for (const signal of signals) {
   ],
 });`}
             />
+          </section>
+
+          {/* ── Session Handoffs ── */}
+          <section id="session-handoffs" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Session Handoffs</h2>
+            <p className="text-sm text-zinc-400 mb-6">Create structured session handoff documents for continuity between agent sessions.</p>
+
+            <MethodEntry
+              id="createHandoff"
+              signature="createHandoff(handoff)"
+              description="Create a session handoff document summarizing work done, decisions made, and next priorities."
+              params={[
+                { name: 'summary', type: 'string', required: true, desc: 'Session summary' },
+                { name: 'session_date', type: 'string', required: false, desc: 'Date string (defaults to today)' },
+                { name: 'key_decisions', type: 'string[]', required: false, desc: 'Key decisions made this session' },
+                { name: 'open_tasks', type: 'string[]', required: false, desc: 'Tasks still open' },
+                { name: 'mood_notes', type: 'string', required: false, desc: 'User mood/energy observations' },
+                { name: 'next_priorities', type: 'string[]', required: false, desc: 'What to focus on next' },
+              ]}
+              returns="Promise<{handoff: Object, handoff_id: string}>"
+              example={`await claw.createHandoff({
+  summary: 'Completed auth system overhaul',
+  key_decisions: ['JWT over sessions', 'Added refresh tokens'],
+  open_tasks: ['Write migration guide', 'Load test'],
+  next_priorities: ['Deploy to staging'],
+});`}
+            />
+
+            <MethodEntry
+              id="getHandoffs"
+              signature="getHandoffs(filters?)"
+              description="Get handoffs for this agent with optional date and limit filters."
+              params={[
+                { name: 'date', type: 'string', required: false, desc: 'Filter by session_date' },
+                { name: 'limit', type: 'number', required: false, desc: 'Max results' },
+              ]}
+              returns="Promise<{handoffs: Object[], total: number}>"
+              example={`const { handoffs } = await claw.getHandoffs({ limit: 5 });`}
+            />
+
+            <MethodEntry
+              id="getLatestHandoff"
+              signature="getLatestHandoff()"
+              description="Get the most recent handoff for this agent. Useful at session start to restore context."
+              returns="Promise<{handoff: Object|null}>"
+              example={`const { handoff } = await claw.getLatestHandoff();
+if (handoff) {
+  console.log('Last session:', handoff.summary);
+  console.log('Open tasks:', JSON.parse(handoff.open_tasks));
+}`}
+            />
+          </section>
+
+          {/* ── Context Manager ── */}
+          <section id="context-manager" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Context Manager</h2>
+            <p className="text-sm text-zinc-400 mb-6">Capture key points and organize context into threads for long-running topics.</p>
+
+            <MethodEntry
+              id="captureKeyPoint"
+              signature="captureKeyPoint(point)"
+              description="Capture a key point from the current session for later recall."
+              params={[
+                { name: 'content', type: 'string', required: true, desc: 'The key point content' },
+                { name: 'category', type: 'string', required: false, desc: 'One of: decision, task, insight, question, general' },
+                { name: 'importance', type: 'number', required: false, desc: 'Importance 1-10 (default 5)' },
+                { name: 'session_date', type: 'string', required: false, desc: 'Date string (defaults to today)' },
+              ]}
+              returns="Promise<{point: Object, point_id: string}>"
+              example={`await claw.captureKeyPoint({
+  content: 'User wants dark mode as the default theme',
+  category: 'decision',
+  importance: 8,
+});`}
+            />
+
+            <MethodEntry id="getKeyPoints" signature="getKeyPoints(filters?)" description="Get key points with optional category and date filters." params={[{ name: 'category', type: 'string', required: false, desc: 'Filter by category' }, { name: 'session_date', type: 'string', required: false, desc: 'Filter by date' }, { name: 'limit', type: 'number', required: false, desc: 'Max results' }]} returns="Promise<{points: Object[], total: number}>" example={`const { points } = await claw.getKeyPoints({ category: 'decision' });`} />
+
+            <MethodEntry id="createThread" signature="createThread(thread)" description="Create a context thread for tracking a topic across multiple entries." params={[{ name: 'name', type: 'string', required: true, desc: 'Thread name (unique per agent per org)' }, { name: 'summary', type: 'string', required: false, desc: 'Initial summary' }]} returns="Promise<{thread: Object, thread_id: string}>" example={`const { thread_id } = await claw.createThread({ name: 'Auth System', summary: 'Tracking auth decisions' });`} />
+
+            <MethodEntry id="addThreadEntry" signature="addThreadEntry(threadId, content, entryType?)" description="Add an entry to an existing thread." params={[{ name: 'threadId', type: 'string', required: true, desc: 'Thread ID' }, { name: 'content', type: 'string', required: true, desc: 'Entry content' }, { name: 'entryType', type: 'string', required: false, desc: 'Entry type (default: note)' }]} returns="Promise<{entry: Object, entry_id: string}>" example={`await claw.addThreadEntry(threadId, 'Decided on JWT strategy');`} />
+
+            <MethodEntry id="closeThread" signature="closeThread(threadId, summary?)" description="Close a thread with an optional final summary." params={[{ name: 'threadId', type: 'string', required: true, desc: 'Thread ID' }, { name: 'summary', type: 'string', required: false, desc: 'Final summary' }]} returns="Promise<{thread: Object}>" example={`await claw.closeThread(threadId, 'Auth complete: JWT + refresh tokens');`} />
+
+            <MethodEntry id="getThreads" signature="getThreads(filters?)" description="Get threads with optional status filter." params={[{ name: 'status', type: 'string', required: false, desc: 'Filter: active or closed' }, { name: 'limit', type: 'number', required: false, desc: 'Max results' }]} returns="Promise<{threads: Object[], total: number}>" example={`const { threads } = await claw.getThreads({ status: 'active' });`} />
+
+            <MethodEntry id="getContextSummary" signature="getContextSummary()" description="Get a combined view of today's key points and active threads." returns="Promise<{points: Object[], threads: Object[]}>" example={`const { points, threads } = await claw.getContextSummary();`} />
+          </section>
+
+          {/* ── Automation Snippets ── */}
+          <section id="automation-snippets" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Automation Snippets</h2>
+            <p className="text-sm text-zinc-400 mb-6">Save, search, and reuse code snippets across agent sessions.</p>
+
+            <MethodEntry id="saveSnippet" signature="saveSnippet(snippet)" description="Save or update a reusable code snippet. Upserts on name." params={[{ name: 'name', type: 'string', required: true, desc: 'Snippet name (unique per org)' }, { name: 'code', type: 'string', required: true, desc: 'The snippet code' }, { name: 'description', type: 'string', required: false, desc: 'What this snippet does' }, { name: 'language', type: 'string', required: false, desc: 'Programming language' }, { name: 'tags', type: 'string[]', required: false, desc: 'Tags for categorization' }]} returns="Promise<{snippet: Object, snippet_id: string}>" example={`await claw.saveSnippet({
+  name: 'fetch-with-retry',
+  code: 'async function fetchRetry(url, n = 3) { ... }',
+  language: 'javascript',
+  tags: ['fetch', 'retry'],
+});`} />
+
+            <MethodEntry id="getSnippets" signature="getSnippets(filters?)" description="Search and list snippets." params={[{ name: 'search', type: 'string', required: false, desc: 'Search name/description' }, { name: 'tag', type: 'string', required: false, desc: 'Filter by tag' }, { name: 'language', type: 'string', required: false, desc: 'Filter by language' }, { name: 'limit', type: 'number', required: false, desc: 'Max results' }]} returns="Promise<{snippets: Object[], total: number}>" example={`const { snippets } = await claw.getSnippets({ language: 'javascript' });`} />
+
+            <MethodEntry id="useSnippet" signature="useSnippet(snippetId)" description="Mark a snippet as used (increments use_count)." params={[{ name: 'snippetId', type: 'string', required: true, desc: 'Snippet ID' }]} returns="Promise<{snippet: Object}>" example={`await claw.useSnippet('sn_abc123');`} />
+
+            <MethodEntry id="deleteSnippet" signature="deleteSnippet(snippetId)" description="Delete a snippet." params={[{ name: 'snippetId', type: 'string', required: true, desc: 'Snippet ID' }]} returns="Promise<{deleted: boolean, id: string}>" example={`await claw.deleteSnippet('sn_abc123');`} />
+          </section>
+
+          {/* ── User Preferences ── */}
+          <section id="user-preferences" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">User Preferences</h2>
+            <p className="text-sm text-zinc-400 mb-6">Track user observations, learned preferences, mood, and successful approaches.</p>
+
+            <MethodEntry id="logObservation" signature="logObservation(obs)" description="Log something you noticed about the user." params={[{ name: 'observation', type: 'string', required: true, desc: 'The observation text' }, { name: 'category', type: 'string', required: false, desc: 'Category tag' }, { name: 'importance', type: 'number', required: false, desc: 'Importance 1-10' }]} returns="Promise<{observation: Object}>" example={`await claw.logObservation({ observation: 'Prefers tabs over spaces', category: 'coding', importance: 6 });`} />
+
+            <MethodEntry id="setPreference" signature="setPreference(pref)" description="Record a learned user preference." params={[{ name: 'preference', type: 'string', required: true, desc: 'Preference description' }, { name: 'category', type: 'string', required: false, desc: 'Category tag' }, { name: 'confidence', type: 'number', required: false, desc: 'Confidence 0-100' }]} returns="Promise<{preference: Object}>" example={`await claw.setPreference({ preference: 'Prefers concise responses', confidence: 90 });`} />
+
+            <MethodEntry id="logMood" signature="logMood(entry)" description="Log user mood and energy level." params={[{ name: 'mood', type: 'string', required: true, desc: 'Mood (e.g., focused, frustrated)' }, { name: 'energy', type: 'string', required: false, desc: 'Energy level (high, low)' }, { name: 'notes', type: 'string', required: false, desc: 'Additional notes' }]} returns="Promise<{mood: Object}>" example={`await claw.logMood({ mood: 'focused', energy: 'high' });`} />
+
+            <MethodEntry id="trackApproach" signature="trackApproach(entry)" description="Track an approach and whether it worked. Upserts — repeated calls update success/fail counts." params={[{ name: 'approach', type: 'string', required: true, desc: 'Approach description' }, { name: 'context', type: 'string', required: false, desc: 'When to use this' }, { name: 'success', type: 'boolean', required: false, desc: 'true = worked, false = failed' }]} returns="Promise<{approach: Object}>" example={`await claw.trackApproach({ approach: 'Show code before explanation', success: true });`} />
+
+            <MethodEntry id="getPreferenceSummary" signature="getPreferenceSummary()" description="Get a summary of all user preference data for this agent." returns="Promise<{summary: Object}>" example={`const { summary } = await claw.getPreferenceSummary();`} />
+
+            <MethodEntry id="getApproaches" signature="getApproaches(filters?)" description="Get tracked approaches ranked by success count." params={[{ name: 'limit', type: 'number', required: false, desc: 'Max results' }]} returns="Promise<{approaches: Object[], total: number}>" example={`const { approaches } = await claw.getApproaches({ limit: 10 });`} />
+          </section>
+
+          {/* ── Daily Digest ── */}
+          <section id="daily-digest" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Daily Digest</h2>
+            <p className="text-sm text-zinc-400 mb-6">Aggregated daily summary from all data sources — no new storage needed.</p>
+
+            <MethodEntry id="getDailyDigest" signature="getDailyDigest(date?)" description="Get a daily activity digest aggregated from actions, decisions, lessons, content, ideas, interactions, and goals." params={[{ name: 'date', type: 'string', required: false, desc: 'YYYY-MM-DD (defaults to today)' }]} returns="Promise<{date: string, digest: Object, summary: Object}>" example={`const { digest, summary } = await claw.getDailyDigest();
+console.log(\`Today: \${summary.action_count} actions, \${summary.decision_count} decisions\`);`} />
+          </section>
+
+          {/* ── Security Scanning ── */}
+          <section id="security-scanning" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Security Scanning</h2>
+            <p className="text-sm text-zinc-400 mb-6">Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored — only metadata.</p>
+
+            <MethodEntry id="scanContent" signature="scanContent(text, destination?)" description="Scan text for sensitive data. Returns findings and redacted text. Does not store anything." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan' }, { name: 'destination', type: 'string', required: false, desc: 'Where text is headed (context)' }]} returns="Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>" example={`const result = await claw.scanContent(messageText, 'slack');
+if (!result.clean) {
+  console.warn(\`Found \${result.findings_count} issues\`);
+  messageText = result.redacted_text; // Use redacted version
+}`} />
+
+            <MethodEntry id="reportSecurityFinding" signature="reportSecurityFinding(text, destination?)" description="Same as scanContent but stores finding metadata (never the content) for audit trails." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan' }, { name: 'destination', type: 'string', required: false, desc: 'Where text is headed' }]} returns="Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>" example={`await claw.reportSecurityFinding(outboundMessage, 'email');`} />
           </section>
 
           {/* ── Error Handling ── */}
