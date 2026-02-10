@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
-import { getOrgId, getOrgRole } from '../../lib/org.js';
+import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
+import { logActivity } from '../../lib/audit.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -186,6 +187,12 @@ export async function POST(request) {
         updated_at = NOW()
     `;
 
+    logActivity({
+      orgId, actorId: getUserId(request) || 'unknown', action: 'setting.updated',
+      resourceType: 'setting', resourceId: key,
+      details: { category, agent_id: agent_id || null }, request,
+    }, sql);
+
     return NextResponse.json({ success: true, key, agent_id });
   } catch (error) {
     console.error('Settings POST error:', error);
@@ -219,6 +226,12 @@ export async function DELETE(request) {
     } else {
       await sql`DELETE FROM settings WHERE key = ${key} AND org_id = ${orgId} AND agent_id IS NULL`;
     }
+
+    logActivity({
+      orgId, actorId: getUserId(request) || 'unknown', action: 'setting.deleted',
+      resourceType: 'setting', resourceId: key,
+      details: { agent_id: agentId || null }, request,
+    }, sql);
 
     return NextResponse.json({ success: true, deleted: key, agent_id: agentId || null });
   } catch (error) {

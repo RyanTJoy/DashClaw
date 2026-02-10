@@ -2,7 +2,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { getOrgId, getOrgRole } from '../../../lib/org.js';
+import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
+import { logActivity } from '../../../lib/audit.js';
 
 let _sql;
 function getSql() {
@@ -88,6 +89,12 @@ export async function POST(request) {
       cancel_url: `${origin}/billing?canceled=true`,
       metadata: { org_id: orgId },
     });
+
+    logActivity({
+      orgId, actorId: getUserId(request) || 'unknown', action: 'billing.checkout_started',
+      resourceType: 'billing',
+      details: { plan }, request,
+    }, sql);
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

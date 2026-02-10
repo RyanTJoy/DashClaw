@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
 import { checkQuotaFast, getOrgPlan } from '../../../lib/billing.js';
+import { logActivity } from '../../../lib/audit.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -104,6 +105,12 @@ export async function POST(request) {
       : new URL(request.url).origin;
     const inviteUrl = `${origin}/invite/${token}`;
 
+    logActivity({
+      orgId, actorId: userId, action: 'invite.created',
+      resourceType: 'invite', resourceId: inviteId,
+      details: { email, role }, request,
+    }, sql);
+
     return NextResponse.json({
       invite: {
         id: inviteId,
@@ -176,6 +183,11 @@ export async function DELETE(request) {
     await sql`
       UPDATE invites SET status = 'revoked' WHERE id = ${inviteId} AND org_id = ${orgId}
     `;
+
+    logActivity({
+      orgId, actorId: auth.userId, action: 'invite.revoked',
+      resourceType: 'invite', resourceId: inviteId, request,
+    }, sql);
 
     return NextResponse.json({ success: true, revoked: inviteId });
   } catch (error) {

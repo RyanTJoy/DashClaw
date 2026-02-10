@@ -64,6 +64,11 @@ const TENANT_TABLES = [
   'calendar_events',
   'agent_connections',
   'usage_meters',
+  'activity_logs',
+  'webhooks',
+  'webhook_deliveries',
+  'notification_preferences',
+  'signal_snapshots',
 ];
 
 async function run() {
@@ -607,6 +612,127 @@ async function run() {
     log('✅', 'usage_meters table + indexes ready');
   } catch (err) {
     log('⚠️', `usage_meters migration: ${err.message}`);
+  }
+
+  // Step 20: Create activity_logs table
+  console.log('Step 20: Creating activity_logs table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS activity_logs (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        actor_id TEXT NOT NULL,
+        actor_type TEXT NOT NULL DEFAULT 'user',
+        action TEXT NOT NULL,
+        resource_type TEXT,
+        resource_id TEXT,
+        details TEXT,
+        ip_address TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_activity_logs_org_id ON activity_logs(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_activity_logs_actor_id ON activity_logs(actor_id)`;
+    log('✅', 'activity_logs table + indexes ready');
+  } catch (err) {
+    log('⚠️', `activity_logs migration: ${err.message}`);
+  }
+
+  // Step 21: Create webhooks table
+  console.log('Step 21: Creating webhooks table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS webhooks (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        url TEXT NOT NULL,
+        secret TEXT NOT NULL,
+        events TEXT NOT NULL DEFAULT '["all"]',
+        active INTEGER NOT NULL DEFAULT 1,
+        created_by TEXT,
+        failure_count INTEGER NOT NULL DEFAULT 0,
+        last_triggered_at TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_webhooks_org_id ON webhooks(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_webhooks_active ON webhooks(active)`;
+    log('✅', 'webhooks table + indexes ready');
+  } catch (err) {
+    log('⚠️', `webhooks migration: ${err.message}`);
+  }
+
+  // Step 22: Create webhook_deliveries table
+  console.log('Step 22: Creating webhook_deliveries table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS webhook_deliveries (
+        id TEXT PRIMARY KEY,
+        webhook_id TEXT NOT NULL,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        event_type TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        response_status INTEGER,
+        response_body TEXT,
+        attempted_at TEXT NOT NULL,
+        duration_ms INTEGER
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_webhook_id ON webhook_deliveries(webhook_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_org_id ON webhook_deliveries(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_webhook_deliveries_attempted_at ON webhook_deliveries(attempted_at)`;
+    log('✅', 'webhook_deliveries table + indexes ready');
+  } catch (err) {
+    log('⚠️', `webhook_deliveries migration: ${err.message}`);
+  }
+
+  // Step 23: Create notification_preferences + signal_snapshots tables
+  console.log('Step 23: Creating notification_preferences + signal_snapshots tables...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS notification_preferences (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        user_id TEXT NOT NULL,
+        channel TEXT NOT NULL DEFAULT 'email',
+        enabled INTEGER NOT NULL DEFAULT 1,
+        signal_types TEXT NOT NULL DEFAULT '["all"]',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS notification_preferences_org_user_channel_unique
+      ON notification_preferences (org_id, user_id, channel)
+    `;
+    log('✅', 'notification_preferences table + unique index ready');
+  } catch (err) {
+    log('⚠️', `notification_preferences migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS signal_snapshots (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        signal_hash TEXT NOT NULL,
+        signal_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        agent_id TEXT,
+        first_seen_at TEXT NOT NULL,
+        last_seen_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS signal_snapshots_org_hash_unique
+      ON signal_snapshots (org_id, signal_hash)
+    `;
+    log('✅', 'signal_snapshots table + unique index ready');
+  } catch (err) {
+    log('⚠️', `signal_snapshots migration: ${err.message}`);
   }
 
   // Verification

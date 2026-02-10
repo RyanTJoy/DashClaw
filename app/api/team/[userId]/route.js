@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
 import { incrementMeter } from '../../../lib/billing.js';
+import { logActivity } from '../../../lib/audit.js';
 
 let _sql;
 function getSql() {
@@ -68,6 +69,12 @@ export async function PATCH(request, { params }) {
     await sql`
       UPDATE users SET role = ${newRole} WHERE id = ${userId} AND org_id = ${orgId}
     `;
+
+    logActivity({
+      orgId, actorId: callerId, action: 'role.changed',
+      resourceType: 'member', resourceId: userId,
+      details: { old_role: targetUser[0].role, new_role: newRole }, request,
+    }, sql);
 
     return NextResponse.json({ success: true, userId, role: newRole });
   } catch (error) {
@@ -141,6 +148,11 @@ export async function DELETE(request, { params }) {
 
     // Fire-and-forget meter decrement
     incrementMeter(orgId, 'members', sql, -1).catch(() => {});
+
+    logActivity({
+      orgId, actorId: callerId, action: isSelfLeave ? 'member.left' : 'member.removed',
+      resourceType: 'member', resourceId: userId, request,
+    }, sql);
 
     return NextResponse.json({ success: true, removed: userId });
   } catch (error) {

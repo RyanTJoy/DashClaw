@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getUserId } from '../../../lib/org.js';
 import { incrementMeter } from '../../../lib/billing.js';
+import { logActivity } from '../../../lib/audit.js';
 
 let _sql;
 function getSql() {
@@ -153,6 +154,12 @@ export async function POST(request, { params }) {
 
     // Fire-and-forget meter increment
     incrementMeter(invite.org_id, 'members', sql).catch(() => {});
+
+    logActivity({
+      orgId: invite.org_id, actorId: userId, action: 'invite.accepted',
+      resourceType: 'invite', resourceId: invite.id,
+      details: { role: invite.role }, request,
+    }, sql);
 
     return NextResponse.json({
       success: true,

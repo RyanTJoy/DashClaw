@@ -7,6 +7,7 @@ import {
   Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
   GitBranch, Settings, Crosshair, Calendar, CreditCard,
+  Clock, Webhook, Bell,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react';
 
@@ -40,6 +41,9 @@ const navGroups = [
       { href: '/api-keys', icon: KeyRound, label: 'API Keys' },
       { href: '/team', icon: UsersRound, label: 'Team' },
       { href: '/billing', icon: CreditCard, label: 'Billing' },
+      { href: '/activity', icon: Clock, label: 'Activity' },
+      { href: '/webhooks', icon: Webhook, label: 'Webhooks' },
+      { href: '/notifications', icon: Bell, label: 'Notifications' },
       { href: '/workflows', icon: GitBranch, label: 'Workflows' },
     ],
   },
