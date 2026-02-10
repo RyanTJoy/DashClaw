@@ -11,11 +11,18 @@ export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const orgId = getOrgId(request);
-    // Get all workflows
-    const workflows = await sql`SELECT * FROM workflows WHERE org_id = ${orgId} ORDER BY last_run DESC NULLS LAST`;
+    const { searchParams } = new URL(request.url);
+    const agentId = searchParams.get('agent_id');
 
-    // Get recent executions
-    const executions = await sql`SELECT * FROM executions WHERE org_id = ${orgId} ORDER BY started_at DESC LIMIT 20`;
+    // Get all workflows (optionally filtered by agent)
+    const workflows = agentId
+      ? await sql`SELECT * FROM workflows WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY last_run DESC NULLS LAST`
+      : await sql`SELECT * FROM workflows WHERE org_id = ${orgId} ORDER BY last_run DESC NULLS LAST`;
+
+    // Get recent executions (optionally filtered by agent)
+    const executions = agentId
+      ? await sql`SELECT * FROM executions WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY started_at DESC LIMIT 20`
+      : await sql`SELECT * FROM executions WHERE org_id = ${orgId} ORDER BY started_at DESC LIMIT 20`;
 
     // Get scheduled jobs
     const scheduledJobs = await sql`SELECT * FROM scheduled_jobs WHERE org_id = ${orgId} ORDER BY next_run ASC NULLS LAST`;

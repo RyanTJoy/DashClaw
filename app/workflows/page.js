@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { GitBranch, ClipboardList, ScrollText, Clock, CheckCircle2, XCircle, Loader2, HelpCircle, Play, Inbox, RotateCw } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -8,8 +8,10 @@ import { Badge } from '../components/ui/Badge';
 import { Stat } from '../components/ui/Stat';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function WorkflowsDashboard() {
+  const { agentId } = useAgentFilter();
   const [workflows, setWorkflows] = useState([]);
   const [executions, setExecutions] = useState([]);
   const [schedules, setSchedules] = useState([]);
@@ -17,10 +19,11 @@ export default function WorkflowsDashboard() {
   const [lastUpdated, setLastUpdated] = useState('');
   const [runningWorkflow, setRunningWorkflow] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
+      const params = agentId ? `?agent_id=${agentId}` : '';
       const [workflowsRes, schedulesRes] = await Promise.all([
-        fetch('/api/workflows'),
+        fetch(`/api/workflows${params}`),
         fetch('/api/schedules')
       ]);
 
@@ -49,13 +52,13 @@ export default function WorkflowsDashboard() {
     } catch (error) {
       console.error('Failed to fetch workflows:', error);
     }
-  };
+  }, [agentId]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const runWorkflow = async (name) => {
     setRunningWorkflow(name);

@@ -330,6 +330,8 @@ export const config = {
     '/bounty-hunter/:path*',
     '/calendar',
     '/calendar/:path*',
+    '/security',
+    '/security/:path*',
     '/tokens',
     '/tokens/:path*',
     '/setup',

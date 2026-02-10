@@ -21,7 +21,7 @@ const navGroups = [
     label: 'Operations',
     items: [
       { href: '/actions', icon: Zap, label: 'Actions' },
-      // Open Loops and Risk Signals are dashboard widgets, no dedicated page yet
+      { href: '/security', icon: ShieldAlert, label: 'Security' },
     ],
   },
   {

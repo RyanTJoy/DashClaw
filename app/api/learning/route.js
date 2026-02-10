@@ -11,16 +11,29 @@ export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const orgId = getOrgId(request);
-    // Get all decisions with their outcomes joined
-    const decisions = await sql`
-      SELECT d.*,
-             COALESCE(o.result, 'pending') as outcome,
-             o.id as outcome_id
-      FROM decisions d
-      LEFT JOIN outcomes o ON o.decision_id = d.id
-      WHERE d.org_id = ${orgId}
-      ORDER BY d.timestamp DESC LIMIT 20
-    `;
+    const { searchParams } = new URL(request.url);
+    const agentId = searchParams.get('agent_id');
+
+    // Get all decisions with their outcomes joined (optionally filtered by agent)
+    const decisions = agentId
+      ? await sql`
+          SELECT d.*,
+                 COALESCE(o.result, 'pending') as outcome,
+                 o.id as outcome_id
+          FROM decisions d
+          LEFT JOIN outcomes o ON o.decision_id = d.id
+          WHERE d.org_id = ${orgId} AND d.agent_id = ${agentId}
+          ORDER BY d.timestamp DESC LIMIT 20
+        `
+      : await sql`
+          SELECT d.*,
+                 COALESCE(o.result, 'pending') as outcome,
+                 o.id as outcome_id
+          FROM decisions d
+          LEFT JOIN outcomes o ON o.decision_id = d.id
+          WHERE d.org_id = ${orgId}
+          ORDER BY d.timestamp DESC LIMIT 20
+        `;
 
     // Get all lessons
     const lessons = await sql`SELECT * FROM lessons WHERE org_id = ${orgId} ORDER BY confidence DESC`;

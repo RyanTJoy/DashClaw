@@ -7,8 +7,10 @@ import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function ContentDashboard() {
+  const { agentId } = useAgentFilter();
   const [content, setContent] = useState([]);
   const [stats, setStats] = useState({ totalContent: 0, published: 0, draft: 0, byPlatform: {} });
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,8 @@ export default function ContentDashboard() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/content');
+      const params = agentId ? `?agent_id=${agentId}` : '';
+      const res = await fetch(`/api/content${params}`);
       const data = await res.json();
       if (data.content) setContent(data.content);
       if (data.stats) setStats(data.stats);
@@ -27,7 +30,7 @@ export default function ContentDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [agentId]);
 
   useEffect(() => {
     fetchData();

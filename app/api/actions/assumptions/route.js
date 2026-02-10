@@ -26,6 +26,7 @@ export async function GET(request) {
     const stale = searchParams.get('stale');
     const drift = searchParams.get('drift');
     const action_id = searchParams.get('action_id');
+    const agent_id = searchParams.get('agent_id');
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
@@ -45,6 +46,10 @@ export async function GET(request) {
     if (action_id) {
       conditions.push(`a.action_id = $${paramIdx++}`);
       params.push(action_id);
+    }
+    if (agent_id) {
+      conditions.push(`ar.agent_id = $${paramIdx++}`);
+      params.push(agent_id);
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';

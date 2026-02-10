@@ -11,8 +11,13 @@ export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const orgId = getOrgId(request);
-    // Get all content
-    const content = await sql`SELECT * FROM content WHERE org_id = ${orgId} ORDER BY created_at DESC`;
+    const { searchParams } = new URL(request.url);
+    const agentId = searchParams.get('agent_id');
+
+    // Get all content (optionally filtered by agent)
+    const content = agentId
+      ? await sql`SELECT * FROM content WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY created_at DESC`
+      : await sql`SELECT * FROM content WHERE org_id = ${orgId} ORDER BY created_at DESC`;
 
     // Calculate stats by platform
     const byPlatform = {};
@@ -49,14 +54,14 @@ export async function POST(request) {
     const orgId = getOrgId(request);
     const body = await request.json();
 
-    const { title, platform, status, url, body: contentBody } = body;
+    const { title, platform, status, url, body: contentBody, agent_id } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO content (org_id, title, platform, status, url, body, created_at)
+      INSERT INTO content (org_id, title, platform, status, url, body, agent_id, created_at)
       VALUES (
         ${orgId},
         ${title},
@@ -64,6 +69,7 @@ export async function POST(request) {
         ${status || 'draft'},
         ${url || null},
         ${contentBody || null},
+        ${agent_id || null},
         ${new Date().toISOString()}
       )
       RETURNING *

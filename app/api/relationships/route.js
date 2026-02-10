@@ -11,17 +11,30 @@ export async function GET(request) {
   try {
     const sql = neon(process.env.DATABASE_URL);
     const orgId = getOrgId(request);
-    // Get all contacts
-    const rawContacts = await sql`SELECT * FROM contacts WHERE org_id = ${orgId} ORDER BY last_contact DESC NULLS LAST`;
+    const { searchParams } = new URL(request.url);
+    const agentId = searchParams.get('agent_id');
 
-    // Get recent interactions with contact names
-    const rawInteractions = await sql`
-      SELECT i.*, c.name as contact_name
-      FROM interactions i
-      LEFT JOIN contacts c ON i.contact_id = c.id
-      WHERE i.org_id = ${orgId}
-      ORDER BY i.date DESC LIMIT 50
-    `;
+    // Get all contacts (optionally filtered by agent)
+    const rawContacts = agentId
+      ? await sql`SELECT * FROM contacts WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY last_contact DESC NULLS LAST`
+      : await sql`SELECT * FROM contacts WHERE org_id = ${orgId} ORDER BY last_contact DESC NULLS LAST`;
+
+    // Get recent interactions with contact names (optionally filtered by agent)
+    const rawInteractions = agentId
+      ? await sql`
+          SELECT i.*, c.name as contact_name
+          FROM interactions i
+          LEFT JOIN contacts c ON i.contact_id = c.id
+          WHERE i.org_id = ${orgId} AND i.agent_id = ${agentId}
+          ORDER BY i.date DESC LIMIT 50
+        `
+      : await sql`
+          SELECT i.*, c.name as contact_name
+          FROM interactions i
+          LEFT JOIN contacts c ON i.contact_id = c.id
+          WHERE i.org_id = ${orgId}
+          ORDER BY i.date DESC LIMIT 50
+        `;
 
     // Transform contacts to expected format (snake_case -> camelCase)
     const contacts = rawContacts.map(c => ({
@@ -82,7 +95,7 @@ export async function POST(request) {
     const orgId = getOrgId(request);
     const body = await request.json();
 
-    const { contact_name, contact_id, direction, summary, type, platform } = body;
+    const { contact_name, contact_id, direction, summary, type, platform, agent_id } = body;
 
     if (!summary) {
       return NextResponse.json({ error: 'summary is required' }, { status: 400 });
@@ -100,7 +113,7 @@ export async function POST(request) {
     }
 
     const result = await sql`
-      INSERT INTO interactions (org_id, contact_id, direction, summary, type, platform, date)
+      INSERT INTO interactions (org_id, contact_id, direction, summary, type, platform, agent_id, date)
       VALUES (
         ${orgId},
         ${resolvedContactId},
@@ -108,6 +121,7 @@ export async function POST(request) {
         ${summary},
         ${type || 'message'},
         ${platform || null},
+        ${agent_id || null},
         ${new Date().toISOString()}
       )
       RETURNING *

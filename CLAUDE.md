@@ -28,7 +28,8 @@ app/
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
 │   ├── DraggableDashboard.js  # Fixed 4-column widget grid (no drag mode)
 │   ├── WaitlistForm.js        # Email capture form (client component)
-│   ├── SessionWrapper.js      # NextAuth SessionProvider wrapper (client component)
+│   ├── SecurityDetailPanel.js  # Slide-out detail drawer (signal + action detail)
+│   ├── SessionWrapper.js      # NextAuth SessionProvider + AgentFilterProvider wrapper
 │   ├── UserMenu.js            # User avatar + sign-out dropdown (client component)
 │   └── *.js                   # 12 dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
@@ -39,6 +40,7 @@ app/
 ├── integrations/              # Integration settings page
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
+├── security/                  # Security monitoring page (signals, high-risk actions)
 ├── setup/                     # Guided setup wizard
 ├── tokens/                    # Token usage page (disabled — not linked from UI)
 ├── workflows/                 # Workflows/SOPs page
@@ -180,7 +182,7 @@ function getSql() {
 - **Icons**: All via `lucide-react` — no emoji anywhere in rendered UI
 - **Navigation**: Persistent `Sidebar.js` (w-56 desktop, collapsible to w-14, hamburger on mobile)
 - **Page structure**: `PageLayout.js` wraps every page (breadcrumbs, sticky header, title/subtitle, action buttons, NotificationCenter, AgentFilterDropdown)
-- **Agent filter**: `AgentFilterContext.js` provides global agent filter; `AgentFilterDropdown.js` renders in PageLayout header (only on dashboard via `AgentFilterProvider` in `page.js`)
+- **Agent filter**: `AgentFilterContext.js` provides global agent filter; `AgentFilterDropdown.js` renders in PageLayout header. `AgentFilterProvider` is in `SessionWrapper.js` (global — persists across all pages). All data pages (Content, Goals, Learning, Relationships, Workflows, Security) pass `?agent_id=X` when filter is active.
 - **Agent colors**: `app/lib/colors.js` — `getAgentColor(agentId)` returns consistent hash-based color from 8-color palette
 - **Typography**: Inter font, `text-sm text-zinc-300` body, `text-xs text-zinc-500` labels, `font-mono text-xs` for timestamps/IDs, stat numbers max `text-2xl tabular-nums`
 - **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` — no drag/customize mode
@@ -263,6 +265,25 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Unique index: `users_provider_account_unique` on `(provider, provider_account_id)`
 - Upserted on every login via `signIn` callback in `app/lib/auth.js`
 - Migration Step 15 in `migrate-multi-tenant.mjs`
+
+### Agent ID on Data Tables
+- Step 16: `agent_id TEXT` added to `content`, `contacts`, `interactions`, `goals`, `milestones`, `workflows`, `executions`
+- Nullable (legacy records get NULL), indexed per table
+- API routes for all 7 tables support `?agent_id=X` GET filter
+- POST endpoints for content, goals, relationships accept `agent_id` in body
+- SDK methods `createGoal()`, `recordContent()`, `recordInteraction()` auto-send `agent_id`
+- Signals API: post-filters assembled signals by `agent_id`
+- Assumptions API: adds `ar.agent_id` to dynamic WHERE clause
+
+### Security Page
+- Route: `/security` (client component, behind auth middleware)
+- Fetches 3 endpoints: `/api/actions/signals`, `/api/actions?limit=100`, `/api/actions/assumptions?drift=true`
+- Stats bar: Active Signals, High-Risk (24h), Unscoped Actions, Invalidated Assumptions (7d)
+- Signal feed (left): clickable rows sorted by severity, opens SecurityDetailPanel
+- High-risk actions (right): actions with risk_score>=70 OR (unscoped AND irreversible)
+- SecurityDetailPanel: slide-out drawer from right, closes on Escape/backdrop click
+- Auto-refresh every 30 seconds; respects global agent filter
+- Sidebar: "Security" link with ShieldAlert icon in Operations group
 
 ## Multi-Tenancy
 

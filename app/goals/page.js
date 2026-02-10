@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Target, Briefcase, DollarSign, Building, BookOpen, Pin, RotateCw, CheckCircle2, Circle, Search, Plus, BarChart3 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function GoalsDashboard() {
+  const { agentId } = useAgentFilter();
   const [goals, setGoals] = useState([]);
   const [stats, setStats] = useState({ totalGoals: 0, active: 0, completed: 0, avgProgress: 0 });
   const [lastUpdated, setLastUpdated] = useState('');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/goals');
+      const params = agentId ? `?agent_id=${agentId}` : '';
+      const res = await fetch(`/api/goals${params}`);
       const data = await res.json();
       if (data.goals && Array.isArray(data.goals)) {
         setGoals(data.goals);
@@ -32,13 +35,13 @@ export default function GoalsDashboard() {
     } catch (error) {
       console.error('Failed to fetch goals:', error);
     }
-  };
+  }, [agentId]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const getStatusVariant = (status) => {
     switch (status) {

@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Zap, Lightbulb, Sparkles, FileText, RotateCw, CheckCircle2, XCircle, AlertTriangle, Clock } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function LearningDashboard() {
+  const { agentId } = useAgentFilter();
   const [decisions, setDecisions] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [stats, setStats] = useState({ totalDecisions: 0, totalLessons: 0, successRate: 0, patterns: 0 });
   const [lastUpdated, setLastUpdated] = useState('');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/learning');
+      const params = agentId ? `?agent_id=${agentId}` : '';
+      const res = await fetch(`/api/learning${params}`);
       const data = await res.json();
       if (data.decisions && Array.isArray(data.decisions)) setDecisions(data.decisions);
       if (data.lessons && Array.isArray(data.lessons)) setLessons(data.lessons);
@@ -29,13 +32,13 @@ export default function LearningDashboard() {
     } catch (error) {
       console.error('Failed to fetch learning data:', error);
     }
-  };
+  }, [agentId]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchData]);
 
   const getOutcomeVariant = (outcome) => {
     switch (outcome) {

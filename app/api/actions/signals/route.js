@@ -18,6 +18,8 @@ export async function GET(request) {
   try {
     const sql = getSql();
     const orgId = getOrgId(request);
+    const { searchParams } = new URL(request.url);
+    const filterAgentId = searchParams.get('agent_id');
 
     // Run all signal queries in parallel
     const [autonomySpikes, highImpact, repeatedFailures, staleLoops, assumptionDrift, staleAssumptions, staleRunning] = await Promise.all([
@@ -197,19 +199,24 @@ export async function GET(request) {
       });
     }
 
+    // Post-filter by agent_id if requested
+    const filteredSignals = filterAgentId
+      ? signals.filter(s => s.agent_id === filterAgentId)
+      : signals;
+
     // Sort: red first, then amber
-    signals.sort((a, b) => {
+    filteredSignals.sort((a, b) => {
       if (a.severity === 'red' && b.severity !== 'red') return -1;
       if (a.severity !== 'red' && b.severity === 'red') return 1;
       return 0;
     });
 
     return NextResponse.json({
-      signals,
+      signals: filteredSignals,
       counts: {
-        red: signals.filter(s => s.severity === 'red').length,
-        amber: signals.filter(s => s.severity === 'amber').length,
-        total: signals.length
+        red: filteredSignals.filter(s => s.severity === 'red').length,
+        amber: filteredSignals.filter(s => s.severity === 'amber').length,
+        total: filteredSignals.length
       },
       lastUpdated: new Date().toISOString()
     });

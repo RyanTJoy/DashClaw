@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import PageLayout from '../components/PageLayout';
-import { AgentFilterProvider } from '../lib/AgentFilterContext';
 
 const DraggableDashboard = dynamic(() => import('../components/DraggableDashboard'), {
   ssr: false,
@@ -17,14 +16,12 @@ const DraggableDashboard = dynamic(() => import('../components/DraggableDashboar
 
 export default function Dashboard() {
   return (
-    <AgentFilterProvider>
-      <PageLayout
-        title="Dashboard"
-        subtitle="AI Agent Operations Overview"
-        breadcrumbs={['Dashboard']}
-      >
-        <DraggableDashboard />
-      </PageLayout>
-    </AgentFilterProvider>
+    <PageLayout
+      title="Dashboard"
+      subtitle="AI Agent Operations Overview"
+      breadcrumbs={['Dashboard']}
+    >
+      <DraggableDashboard />
+    </PageLayout>
   );
 }

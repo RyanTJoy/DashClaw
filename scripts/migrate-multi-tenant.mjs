@@ -531,6 +531,19 @@ async function run() {
     log('⚠️', `users migration: ${err.message}`);
   }
 
+  // Step 16: Add agent_id to content, contacts, interactions, goals, milestones, workflows, executions
+  console.log('Step 16: Adding agent_id to data tables...');
+  const agentIdTables = ['content', 'contacts', 'interactions', 'goals', 'milestones', 'workflows', 'executions'];
+  for (const table of agentIdTables) {
+    try {
+      await sql.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS agent_id TEXT`);
+      await sql.query(`CREATE INDEX IF NOT EXISTS idx_${table}_agent_id ON ${table}(agent_id)`);
+      log('✅', `${table}: agent_id column + index ready`);
+    } catch (err) {
+      log('⚠️', `${table} agent_id migration: ${err.message}`);
+    }
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 
