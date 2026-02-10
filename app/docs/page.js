@@ -4,6 +4,7 @@ import {
   Terminal, Zap, CircleDot, Eye, ShieldAlert, BarChart3,
   ChevronRight,
 } from 'lucide-react';
+import CopyDocsButton from '../components/CopyDocsButton';
 
 export const metadata = {
   title: 'SDK Documentation — OpenClaw',
@@ -170,6 +171,7 @@ export default function DocsPage() {
             Full reference for the OpenClaw Agent SDK. 22 methods to instrument your AI agents with
             action recording, risk signals, open loop tracking, and dashboard data reporting.
           </p>
+          <CopyDocsButton />
         </div>
       </section>
 
