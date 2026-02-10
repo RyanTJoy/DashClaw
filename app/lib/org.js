@@ -10,3 +10,7 @@ export function getOrgId(request) {
 export function getOrgRole(request) {
   return request.headers.get('x-org-role') || 'member';
 }
+
+export function getUserId(request) {
+  return request.headers.get('x-user-id') || '';
+}

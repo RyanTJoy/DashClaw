@@ -27,6 +27,8 @@ const PROTECTED_ROUTES = [
   '/api/agents',
   '/api/onboarding',
   '/api/keys',
+  '/api/team',
+  '/api/invite',
 ];
 
 // Routes that are always public (health checks, setup, auth)
@@ -341,6 +343,9 @@ export const config = {
     '/setup/:path*',
     '/api-keys',
     '/api-keys/:path*',
+    '/team',
+    '/team/:path*',
+    '/invite/:path*',
     '/login',
   ],
 };

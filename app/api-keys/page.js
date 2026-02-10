@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { KeyRound, Plus, Copy, Check, Ban, AlertTriangle, ArrowRight } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent } from '../components/ui/Card';
@@ -9,6 +10,9 @@ import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 
 export default function ApiKeysPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+
   const [keys, setKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -174,13 +178,15 @@ export default function ApiKeysPage() {
       subtitle="Manage your workspace API keys"
       breadcrumbs={['Dashboard', 'API Keys']}
       actions={
-        <button
-          onClick={() => { setShowCreateForm(true); setNewKey(null); }}
-          className="flex items-center gap-1.5 px-3 py-2 bg-brand hover:bg-brand/90 text-white text-sm font-medium rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          Generate New Key
-        </button>
+        isAdmin ? (
+          <button
+            onClick={() => { setShowCreateForm(true); setNewKey(null); }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-brand hover:bg-brand/90 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            Generate New Key
+          </button>
+        ) : null
       }
     >
       {/* Error banner */}
@@ -245,8 +251,8 @@ export default function ApiKeysPage() {
         </Card>
       </div>
 
-      {/* Create form (inline) */}
-      {showCreateForm && (
+      {/* Create form (inline, admin only) */}
+      {showCreateForm && isAdmin && (
         <Card hover={false} className="mb-6">
           <CardContent className="pt-5">
             <div className="text-sm font-medium text-zinc-200 mb-3">Generate New API Key</div>
@@ -286,15 +292,17 @@ export default function ApiKeysPage() {
             <EmptyState
               icon={KeyRound}
               title="No API keys yet"
-              description="Generate an API key to connect your agents to this workspace."
+              description={isAdmin ? 'Generate an API key to connect your agents to this workspace.' : 'No API keys have been created yet. Ask a workspace admin to generate one.'}
               action={
-                <button
-                  onClick={() => setShowCreateForm(true)}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-brand hover:bg-brand/90 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  <Plus size={14} />
-                  Generate Key
-                </button>
+                isAdmin ? (
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-brand hover:bg-brand/90 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    <Plus size={14} />
+                    Generate Key
+                  </button>
+                ) : null
               }
             />
           </CardContent>
@@ -336,8 +344,8 @@ export default function ApiKeysPage() {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  {!isRevoked && (
+                  {/* Actions (admin only) */}
+                  {!isRevoked && isAdmin && (
                     <div className="flex-shrink-0">
                       {isConfirmingRevoke ? (
                         <div className="flex items-center gap-2">
