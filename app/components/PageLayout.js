@@ -3,6 +3,7 @@
 import Sidebar from './Sidebar';
 import NotificationCenter from './NotificationCenter';
 import AgentFilterDropdown from './AgentFilterDropdown';
+import UserMenu from './UserMenu';
 
 export default function PageLayout({ title, subtitle, breadcrumbs, actions, children }) {
   return (
@@ -32,6 +33,7 @@ export default function PageLayout({ title, subtitle, breadcrumbs, actions, chil
               <AgentFilterDropdown />
               {actions}
               <NotificationCenter />
+              <UserMenu />
             </div>
           </div>
         </header>

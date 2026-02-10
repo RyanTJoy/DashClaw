@@ -64,7 +64,7 @@ export default function LandingPage() {
             <a href="#signals" className="hover:text-white transition-colors">Signals</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
+            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
               Sign In
             </Link>
             <a href="#waitlist" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
