@@ -2,7 +2,7 @@
 
 Full-featured agent toolkit for the [OpenClaw Pro](https://openclaw-pro.vercel.app) platform. Zero dependencies, requires Node 18+ (native fetch).
 
-**45 methods** across 10 categories: action recording, context management, session handoffs, security scanning, user preferences, and more.
+**54 methods** across 11 categories: action recording, context management, session handoffs, security scanning, agent messaging, user preferences, and more.
 
 ## Install
 
@@ -49,7 +49,7 @@ import { DashClaw } from 'dashclaw';
 import { OpenClawAgent } from 'dashclaw';
 ```
 
-## API Reference (45 methods)
+## API Reference (54 methods)
 
 ### Action Recording (6)
 
@@ -145,6 +145,20 @@ import { OpenClawAgent } from 'dashclaw';
 |--------|-------------|
 | `scanContent(text, destination?)` | Scan text for sensitive data |
 | `reportSecurityFinding(text, dest?)` | Scan + store finding metadata |
+
+### Agent Messaging (9)
+
+| Method | Description |
+|--------|-------------|
+| `sendMessage(params)` | Send message to agent or broadcast |
+| `getInbox(filters?)` | Get inbox messages |
+| `markRead(messageIds)` | Mark messages as read |
+| `archiveMessages(messageIds)` | Archive messages |
+| `broadcast(params)` | Send to all agents in org |
+| `createMessageThread(params)` | Start a conversation thread |
+| `getMessageThreads(filters?)` | List message threads |
+| `resolveMessageThread(threadId, summary?)` | Close a thread |
+| `saveSharedDoc(params)` | Create/update shared document |
 
 ## Authentication
 

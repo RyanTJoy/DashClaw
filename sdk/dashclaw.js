@@ -3,7 +3,7 @@
  * Full-featured agent toolkit for the OpenClaw Pro platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 45 methods across 10 categories:
+ * 54 methods across 11 categories:
  * - Action Recording (6)
  * - Loops & Assumptions (7)
  * - Signals (1)
@@ -13,6 +13,8 @@
  * - Automation Snippets (4)
  * - User Preferences (6)
  * - Daily Digest (1)
+ * - Security Scanning (2)
+ * - Agent Messaging (9)
  * - Security Scanning (2)
  */
 
@@ -797,6 +799,154 @@ class DashClaw {
       destination,
       agent_id: this.agentId,
       store: true,
+    });
+  }
+
+  // ══════════════════════════════════════════════
+  // Category 11: Agent Messaging (9 methods)
+  // ══════════════════════════════════════════════
+
+  /**
+   * Send a message to another agent or broadcast to all.
+   * @param {Object} params
+   * @param {string} [params.to] - Target agent ID (omit for broadcast)
+   * @param {string} [params.type='info'] - Message type: action|info|lesson|question|status
+   * @param {string} [params.subject] - Subject line (max 200 chars)
+   * @param {string} params.body - Message body (max 2000 chars)
+   * @param {string} [params.threadId] - Thread ID to attach message to
+   * @param {boolean} [params.urgent=false] - Mark as urgent
+   * @param {string} [params.docRef] - Reference to a shared doc ID
+   * @returns {Promise<{message: Object, message_id: string}>}
+   */
+  async sendMessage({ to, type, subject, body, threadId, urgent, docRef }) {
+    return this._request('/api/messages', 'POST', {
+      from_agent_id: this.agentId,
+      to_agent_id: to || null,
+      message_type: type || 'info',
+      subject,
+      body,
+      thread_id: threadId,
+      urgent,
+      doc_ref: docRef,
+    });
+  }
+
+  /**
+   * Get inbox messages for this agent.
+   * @param {Object} [params]
+   * @param {string} [params.type] - Filter by message type
+   * @param {boolean} [params.unread] - Only unread messages
+   * @param {string} [params.threadId] - Filter by thread
+   * @param {number} [params.limit=50] - Max messages to return
+   * @returns {Promise<{messages: Object[], total: number, unread_count: number}>}
+   */
+  async getInbox({ type, unread, threadId, limit } = {}) {
+    const params = new URLSearchParams({
+      agent_id: this.agentId,
+      direction: 'inbox',
+    });
+    if (type) params.set('type', type);
+    if (unread) params.set('unread', 'true');
+    if (threadId) params.set('thread_id', threadId);
+    if (limit) params.set('limit', String(limit));
+    return this._request(`/api/messages?${params}`, 'GET');
+  }
+
+  /**
+   * Mark messages as read.
+   * @param {string[]} messageIds - Array of message IDs to mark read
+   * @returns {Promise<{updated: number}>}
+   */
+  async markRead(messageIds) {
+    return this._request('/api/messages', 'PATCH', {
+      message_ids: messageIds,
+      action: 'read',
+      agent_id: this.agentId,
+    });
+  }
+
+  /**
+   * Archive messages.
+   * @param {string[]} messageIds - Array of message IDs to archive
+   * @returns {Promise<{updated: number}>}
+   */
+  async archiveMessages(messageIds) {
+    return this._request('/api/messages', 'PATCH', {
+      message_ids: messageIds,
+      action: 'archive',
+      agent_id: this.agentId,
+    });
+  }
+
+  /**
+   * Broadcast a message to all agents in the organization.
+   * @param {Object} params
+   * @param {string} [params.type='info'] - Message type
+   * @param {string} [params.subject] - Subject line
+   * @param {string} params.body - Message body
+   * @param {string} [params.threadId] - Thread ID
+   * @returns {Promise<{message: Object, message_id: string}>}
+   */
+  async broadcast({ type, subject, body, threadId }) {
+    return this.sendMessage({ to: null, type, subject, body, threadId });
+  }
+
+  /**
+   * Create a new message thread for multi-turn conversations.
+   * @param {Object} params
+   * @param {string} params.name - Thread name
+   * @param {string[]} [params.participants] - Agent IDs (null = open to all)
+   * @returns {Promise<{thread: Object, thread_id: string}>}
+   */
+  async createMessageThread({ name, participants }) {
+    return this._request('/api/messages/threads', 'POST', {
+      name,
+      participants,
+      created_by: this.agentId,
+    });
+  }
+
+  /**
+   * List message threads.
+   * @param {Object} [params]
+   * @param {string} [params.status] - Filter by status: open|resolved|archived
+   * @param {number} [params.limit=20] - Max threads to return
+   * @returns {Promise<{threads: Object[], total: number}>}
+   */
+  async getMessageThreads({ status, limit } = {}) {
+    const params = new URLSearchParams({ agent_id: this.agentId });
+    if (status) params.set('status', status);
+    if (limit) params.set('limit', String(limit));
+    return this._request(`/api/messages/threads?${params}`, 'GET');
+  }
+
+  /**
+   * Resolve (close) a message thread.
+   * @param {string} threadId - Thread ID to resolve
+   * @param {string} [summary] - Resolution summary
+   * @returns {Promise<{thread: Object}>}
+   */
+  async resolveMessageThread(threadId, summary) {
+    return this._request('/api/messages/threads', 'PATCH', {
+      thread_id: threadId,
+      status: 'resolved',
+      summary,
+    });
+  }
+
+  /**
+   * Create or update a shared workspace document.
+   * Upserts by (org_id, name) — updates increment the version.
+   * @param {Object} params
+   * @param {string} params.name - Document name (unique per org)
+   * @param {string} params.content - Document content
+   * @returns {Promise<{doc: Object, doc_id: string}>}
+   */
+  async saveSharedDoc({ name, content }) {
+    return this._request('/api/messages/docs', 'POST', {
+      name,
+      content,
+      agent_id: this.agentId,
     });
   }
 }

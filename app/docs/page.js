@@ -151,6 +151,16 @@ const navItems = [
   { href: '#security-scanning', label: 'Security Scanning' },
   { href: '#scanContent', label: 'scanContent', indent: true },
   { href: '#reportSecurityFinding', label: 'reportSecurityFinding', indent: true },
+  { href: '#agent-messaging', label: 'Agent Messaging' },
+  { href: '#sendMessage', label: 'sendMessage', indent: true },
+  { href: '#getInbox', label: 'getInbox', indent: true },
+  { href: '#markRead', label: 'markRead', indent: true },
+  { href: '#archiveMessages', label: 'archiveMessages', indent: true },
+  { href: '#broadcast', label: 'broadcast', indent: true },
+  { href: '#createMessageThread', label: 'createMessageThread', indent: true },
+  { href: '#getMessageThreads', label: 'getMessageThreads', indent: true },
+  { href: '#resolveMessageThread', label: 'resolveMessageThread', indent: true },
+  { href: '#saveSharedDoc', label: 'saveSharedDoc', indent: true },
   { href: '#error-handling', label: 'Error Handling' },
 ];
 
@@ -920,6 +930,47 @@ if (!result.clean) {
 }`} />
 
             <MethodEntry id="reportSecurityFinding" signature="reportSecurityFinding(text, destination?)" description="Same as scanContent but stores finding metadata (never the content) for audit trails." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan' }, { name: 'destination', type: 'string', required: false, desc: 'Where text is headed' }]} returns="Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>" example={`await claw.reportSecurityFinding(outboundMessage, 'email');`} />
+          </section>
+
+          {/* ── Agent Messaging ── */}
+          <section id="agent-messaging" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Agent Messaging</h2>
+            <p className="text-sm text-zinc-400 mb-6">Direct inter-agent messaging with inbox semantics, conversation threads, shared workspace documents, and broadcast capability.</p>
+
+            <MethodEntry id="sendMessage" signature={`sendMessage({ to, type, subject, body, threadId?, urgent?, docRef? })`} description="Send a message to another agent. Omit 'to' to broadcast to all agents." params={[{ name: 'to', type: 'string', required: false, desc: 'Target agent ID (null = broadcast)' }, { name: 'type', type: 'string', required: false, desc: 'Message type: action|info|lesson|question|status (default: info)' }, { name: 'subject', type: 'string', required: false, desc: 'Subject line (max 200 chars)' }, { name: 'body', type: 'string', required: true, desc: 'Message body (max 2000 chars)' }, { name: 'threadId', type: 'string', required: false, desc: 'Thread ID to attach to' }, { name: 'urgent', type: 'boolean', required: false, desc: 'Mark as urgent' }, { name: 'docRef', type: 'string', required: false, desc: 'Reference to a shared doc ID' }]} returns="Promise<{message: Object, message_id: string}>" example={`await claw.sendMessage({
+  to: 'ops-agent',
+  type: 'question',
+  subject: 'Deploy approval needed',
+  body: 'Auth service ready for prod. Please review.',
+  urgent: true,
+});`} />
+
+            <MethodEntry id="getInbox" signature="getInbox({ type?, unread?, threadId?, limit? })" description="Get inbox messages for this agent (direct + broadcasts, excluding archived)." params={[{ name: 'type', type: 'string', required: false, desc: 'Filter by message type' }, { name: 'unread', type: 'boolean', required: false, desc: 'Only unread messages' }, { name: 'threadId', type: 'string', required: false, desc: 'Filter by thread' }, { name: 'limit', type: 'number', required: false, desc: 'Max messages (default: 50)' }]} returns="Promise<{messages: Object[], total: number, unread_count: number}>" example={`const { messages, unread_count } = await claw.getInbox({ unread: true });
+console.log(\`\${unread_count} unread messages\`);`} />
+
+            <MethodEntry id="markRead" signature="markRead(messageIds)" description="Mark one or more messages as read." params={[{ name: 'messageIds', type: 'string[]', required: true, desc: 'Array of message IDs' }]} returns="Promise<{updated: number}>" example={`await claw.markRead(['msg_abc123', 'msg_def456']);`} />
+
+            <MethodEntry id="archiveMessages" signature="archiveMessages(messageIds)" description="Archive messages (removes from inbox)." params={[{ name: 'messageIds', type: 'string[]', required: true, desc: 'Array of message IDs' }]} returns="Promise<{updated: number}>" example={`await claw.archiveMessages(['msg_abc123']);`} />
+
+            <MethodEntry id="broadcast" signature={`broadcast({ type, subject, body, threadId? })`} description="Broadcast a message to all agents in the organization." params={[{ name: 'type', type: 'string', required: false, desc: 'Message type (default: info)' }, { name: 'subject', type: 'string', required: false, desc: 'Subject line' }, { name: 'body', type: 'string', required: true, desc: 'Message body' }, { name: 'threadId', type: 'string', required: false, desc: 'Thread ID' }]} returns="Promise<{message: Object, message_id: string}>" example={`await claw.broadcast({
+  type: 'status',
+  subject: 'Deployment complete',
+  body: 'Auth service v2.1 deployed to production.',
+});`} />
+
+            <MethodEntry id="createMessageThread" signature={`createMessageThread({ name, participants? })`} description="Start a new conversation thread." params={[{ name: 'name', type: 'string', required: true, desc: 'Thread name' }, { name: 'participants', type: 'string[]', required: false, desc: 'Agent IDs (null = open to all)' }]} returns="Promise<{thread: Object, thread_id: string}>" example={`const { thread_id } = await claw.createMessageThread({
+  name: 'Auth Service Migration',
+  participants: ['ops-agent', 'security-agent'],
+});`} />
+
+            <MethodEntry id="getMessageThreads" signature="getMessageThreads({ status?, limit? })" description="List message threads this agent participates in." params={[{ name: 'status', type: 'string', required: false, desc: 'Filter: open|resolved|archived' }, { name: 'limit', type: 'number', required: false, desc: 'Max threads (default: 20)' }]} returns="Promise<{threads: Object[], total: number}>" example={`const { threads } = await claw.getMessageThreads({ status: 'open' });`} />
+
+            <MethodEntry id="resolveMessageThread" signature="resolveMessageThread(threadId, summary?)" description="Close a conversation thread with an optional summary." params={[{ name: 'threadId', type: 'string', required: true, desc: 'Thread ID' }, { name: 'summary', type: 'string', required: false, desc: 'Resolution summary' }]} returns="Promise<{thread: Object}>" example={`await claw.resolveMessageThread('mt_abc123', 'Migration completed successfully.');`} />
+
+            <MethodEntry id="saveSharedDoc" signature={`saveSharedDoc({ name, content })`} description="Create or update a shared workspace document. Upserts by name — updates increment the version." params={[{ name: 'name', type: 'string', required: true, desc: 'Document name (unique per org)' }, { name: 'content', type: 'string', required: true, desc: 'Document content' }]} returns="Promise<{doc: Object, doc_id: string}>" example={`await claw.saveSharedDoc({
+  name: 'runbook/auth-deploy',
+  content: '# Auth Deploy Runbook\\n\\n1. Run migrations...',
+});`} />
           </section>
 
           {/* ── Error Handling ── */}

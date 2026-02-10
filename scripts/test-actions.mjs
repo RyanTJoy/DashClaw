@@ -892,6 +892,180 @@ async function testDigestAndSecurity() {
 }
 
 // ──────────────────────────────────────────────
+// Phase 18: Agent Messaging
+// ──────────────────────────────────────────────
+
+async function testAgentMessaging() {
+  console.log('\n━━━ Phase 18: Agent Messaging ━━━');
+
+  // POST direct message
+  const { status: s1, data: d1 } = await request('POST', '/api/messages', {
+    from_agent_id: 'agent-alpha',
+    to_agent_id: 'agent-beta',
+    message_type: 'info',
+    subject: 'Test message',
+    body: 'Hello from agent-alpha to agent-beta',
+  });
+  assert(s1 === 201, 'POST direct message returns 201');
+  assert(d1.message_id && d1.message_id.startsWith('msg_'), `message_id prefix: ${d1.message_id}`);
+  assert(d1.message.status === 'sent', 'Message status is sent');
+  assert(d1.message.from_agent_id === 'agent-alpha', 'from_agent_id matches');
+
+  // POST broadcast message (to_agent_id = null)
+  const { status: s2, data: d2 } = await request('POST', '/api/messages', {
+    from_agent_id: 'agent-alpha',
+    message_type: 'status',
+    subject: 'Broadcast update',
+    body: 'Status update for everyone',
+  });
+  assert(s2 === 201, 'POST broadcast message returns 201');
+  assert(d2.message.to_agent_id === null, 'Broadcast has null to_agent_id');
+
+  // GET inbox for agent-beta (should see direct + broadcast)
+  const { status: s3, data: d3 } = await request('GET', '/api/messages?agent_id=agent-beta&direction=inbox');
+  assert(s3 === 200, 'GET inbox returns 200');
+  assert(d3.messages.length >= 2, `Inbox has ${d3.messages.length} messages (expected >= 2)`);
+  assert(typeof d3.unread_count === 'number', 'Response includes unread_count');
+
+  // GET inbox with unread filter
+  const { status: s4, data: d4 } = await request('GET', '/api/messages?agent_id=agent-beta&direction=inbox&unread=true');
+  assert(s4 === 200, 'GET unread inbox returns 200');
+  assert(d4.messages.every(m => m.status === 'sent'), 'All unread messages have status=sent');
+
+  // PATCH mark read
+  const msgToRead = d3.messages.find(m => m.to_agent_id === 'agent-beta');
+  const { status: s5, data: d5 } = await request('PATCH', '/api/messages', {
+    message_ids: [msgToRead.id],
+    action: 'read',
+    agent_id: 'agent-beta',
+  });
+  assert(s5 === 200, 'PATCH mark read returns 200');
+  assert(d5.updated >= 1, `Marked ${d5.updated} message(s) as read`);
+
+  // Verify read_at is set
+  const { data: d5b } = await request('GET', `/api/messages?agent_id=agent-beta&direction=inbox`);
+  const readMsg = d5b.messages.find(m => m.id === msgToRead.id);
+  assert(readMsg && readMsg.read_at !== null, 'read_at is set after mark read');
+
+  // PATCH archive
+  const { status: s6, data: d6 } = await request('PATCH', '/api/messages', {
+    message_ids: [msgToRead.id],
+    action: 'archive',
+    agent_id: 'agent-beta',
+  });
+  assert(s6 === 200, 'PATCH archive returns 200');
+  assert(d6.updated >= 1, `Archived ${d6.updated} message(s)`);
+
+  // Validation: missing body
+  const { status: s7 } = await request('POST', '/api/messages', {
+    from_agent_id: 'agent-alpha',
+    to_agent_id: 'agent-beta',
+  });
+  assert(s7 === 400, 'Missing body returns 400');
+
+  // Validation: invalid message_type
+  const { status: s8 } = await request('POST', '/api/messages', {
+    from_agent_id: 'agent-alpha',
+    body: 'test',
+    message_type: 'invalid_type',
+  });
+  assert(s8 === 400, 'Invalid message_type returns 400');
+}
+
+// ──────────────────────────────────────────────
+// Phase 19: Message Threads + Shared Docs
+// ──────────────────────────────────────────────
+
+async function testMessageThreadsAndDocs() {
+  console.log('\n━━━ Phase 19: Message Threads + Shared Docs ━━━');
+
+  // POST create thread
+  const { status: s1, data: d1 } = await request('POST', '/api/messages/threads', {
+    name: 'Test Thread Alpha-Beta',
+    participants: ['agent-alpha', 'agent-beta'],
+    created_by: 'agent-alpha',
+  });
+  assert(s1 === 201, 'POST thread returns 201');
+  assert(d1.thread_id && d1.thread_id.startsWith('mt_'), `thread_id prefix: ${d1.thread_id}`);
+  assert(d1.thread.status === 'open', 'Thread status is open');
+
+  const threadId = d1.thread_id;
+
+  // POST message to thread
+  const { status: s2, data: d2 } = await request('POST', '/api/messages', {
+    from_agent_id: 'agent-alpha',
+    to_agent_id: 'agent-beta',
+    body: 'First message in thread',
+    thread_id: threadId,
+  });
+  assert(s2 === 201, 'POST message to thread returns 201');
+  assert(d2.message.thread_id === threadId, 'Message thread_id matches');
+
+  // POST reply in thread
+  const { status: s3 } = await request('POST', '/api/messages', {
+    from_agent_id: 'agent-beta',
+    to_agent_id: 'agent-alpha',
+    body: 'Reply from beta',
+    thread_id: threadId,
+  });
+  assert(s3 === 201, 'POST reply in thread returns 201');
+
+  // GET threads (should have message_count)
+  const { status: s4, data: d4 } = await request('GET', '/api/messages/threads');
+  assert(s4 === 200, 'GET threads returns 200');
+  const ourThread = d4.threads.find(t => t.id === threadId);
+  assert(ourThread && ourThread.message_count >= 2, `Thread has ${ourThread?.message_count} messages (expected >= 2)`);
+
+  // PATCH resolve thread
+  const { status: s5, data: d5 } = await request('PATCH', '/api/messages/threads', {
+    thread_id: threadId,
+    status: 'resolved',
+    summary: 'Resolved by test',
+  });
+  assert(s5 === 200, 'PATCH resolve thread returns 200');
+  assert(d5.thread.status === 'resolved', 'Thread status is resolved');
+  assert(d5.thread.resolved_at !== null, 'resolved_at is set');
+
+  // POST shared doc (create)
+  const { status: s6, data: d6 } = await request('POST', '/api/messages/docs', {
+    name: 'Test Shared Doc',
+    content: 'Initial content from alpha',
+    agent_id: 'agent-alpha',
+  });
+  assert(s6 === 201, 'POST shared doc returns 201');
+  assert(d6.doc_id && d6.doc_id.startsWith('sd_'), `doc_id prefix: ${d6.doc_id}`);
+  assert(d6.doc.version === 1, 'Initial version is 1');
+
+  // POST upsert same doc (update)
+  const { status: s7, data: d7 } = await request('POST', '/api/messages/docs', {
+    name: 'Test Shared Doc',
+    content: 'Updated content from beta',
+    agent_id: 'agent-beta',
+  });
+  assert(s7 === 201, 'POST upsert doc returns 201');
+  assert(d7.doc.version === 2, 'Version incremented to 2');
+  assert(d7.doc.last_edited_by === 'agent-beta', 'last_edited_by updated');
+
+  // GET shared docs
+  const { status: s8, data: d8 } = await request('GET', '/api/messages/docs');
+  assert(s8 === 200, 'GET shared docs returns 200');
+  assert(d8.docs.length >= 1, `Found ${d8.docs.length} shared doc(s)`);
+
+  // Validation: missing name for thread
+  const { status: s9 } = await request('POST', '/api/messages/threads', {
+    created_by: 'agent-alpha',
+  });
+  assert(s9 === 400, 'Thread missing name returns 400');
+
+  // Validation: missing content for doc
+  const { status: s10 } = await request('POST', '/api/messages/docs', {
+    name: 'Bad Doc',
+    agent_id: 'agent-alpha',
+  });
+  assert(s10 === 400, 'Doc missing content returns 400');
+}
+
+// ──────────────────────────────────────────────
 // Run all tests
 // ──────────────────────────────────────────────
 
@@ -929,6 +1103,8 @@ async function main() {
     await testSnippets();
     await testPreferences();
     await testDigestAndSecurity();
+    await testAgentMessaging();
+    await testMessageThreadsAndDocs();
   } catch (error) {
     console.error('\n💥 Test suite crashed:', error.message);
     console.error(error.stack);
