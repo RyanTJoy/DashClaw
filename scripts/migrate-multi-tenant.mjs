@@ -544,6 +544,31 @@ async function run() {
     }
   }
 
+  // Step 17: Create invites table (team invitations)
+  console.log('Step 17: Creating invites table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS invites (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL,
+        email TEXT,
+        role TEXT DEFAULT 'member',
+        token TEXT UNIQUE NOT NULL,
+        invited_by TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        accepted_by TEXT,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invites_token ON invites(token)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invites_org_id ON invites(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invites_status ON invites(status)`;
+    log('✅', 'invites table + indexes ready');
+  } catch (err) {
+    log('⚠️', `invites migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 

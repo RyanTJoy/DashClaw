@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { getOrgId } from '../../lib/org.js';
+import { getOrgId, getOrgRole } from '../../lib/org.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -50,7 +50,7 @@ export async function GET(request) {
   }
 }
 
-// POST /api/keys - Generate a new API key
+// POST /api/keys - Generate a new API key (admin only)
 export async function POST(request) {
   try {
     const orgId = getOrgId(request);
@@ -59,6 +59,9 @@ export async function POST(request) {
         { error: 'Complete onboarding to manage API keys', needsOnboarding: true },
         { status: 403 }
       );
+    }
+    if (getOrgRole(request) !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required to generate API keys' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -95,7 +98,7 @@ export async function POST(request) {
   }
 }
 
-// DELETE /api/keys?id=key_xxx - Revoke an API key
+// DELETE /api/keys?id=key_xxx - Revoke an API key (admin only)
 export async function DELETE(request) {
   try {
     const orgId = getOrgId(request);
@@ -104,6 +107,9 @@ export async function DELETE(request) {
         { error: 'Complete onboarding to manage API keys', needsOnboarding: true },
         { status: 403 }
       );
+    }
+    if (getOrgRole(request) !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required to revoke API keys' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

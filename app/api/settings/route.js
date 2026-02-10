@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
-import { getOrgId } from '../../lib/org.js';
+import { getOrgId, getOrgRole } from '../../lib/org.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,13 +136,17 @@ const VALID_SETTING_KEYS = [
 
 const VALID_CATEGORIES = ['integration', 'general', 'system'];
 
-// POST - Create or update setting
+// POST - Create or update setting (admin only)
 // Accepts optional agent_id in body for per-agent settings
 export async function POST(request) {
   try {
     const sql = getSql();
     await ensureSettingsTable(sql);
     const orgId = getOrgId(request);
+
+    if (getOrgRole(request) !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required to modify settings' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { key, value, category = 'general', encrypted = false, agent_id = null } = body;
@@ -189,7 +193,7 @@ export async function POST(request) {
   }
 }
 
-// DELETE - Remove a setting
+// DELETE - Remove a setting (admin only)
 // When ?agent_id=X is provided, deletes agent-specific row only
 // When no agent_id, deletes org-level row (agent_id IS NULL) only
 export async function DELETE(request) {
@@ -197,6 +201,10 @@ export async function DELETE(request) {
     const sql = getSql();
     await ensureSettingsTable(sql);
     const orgId = getOrgId(request);
+
+    if (getOrgRole(request) !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required to delete settings' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const key = searchParams.get('key');

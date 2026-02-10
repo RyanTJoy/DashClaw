@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import {
   Plug, Bot, Database, MessageSquare, FileText, Wrench, Globe, CreditCard,
   Search, X, Eye, EyeOff, Info, Shield, Cloud, Settings, Users, ChevronDown
@@ -355,6 +356,9 @@ const CATEGORIES = [
 ];
 
 export default function IntegrationsPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+
   const [settings, setSettings] = useState({});
   const [agentConnections, setAgentConnections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -718,10 +722,10 @@ export default function IntegrationsPage() {
           return (
             <Card
               key={key}
-              className="cursor-pointer group"
-              hover={true}
+              className={isAdmin ? 'cursor-pointer group' : 'group'}
+              hover={isAdmin}
             >
-              <div className="p-5" onClick={() => openEditor(key)}>
+              <div className="p-5" onClick={() => isAdmin ? openEditor(key) : null}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-surface-tertiary rounded-lg flex items-center justify-center">
@@ -741,9 +745,11 @@ export default function IntegrationsPage() {
                       <span className="text-[10px] text-zinc-500 border border-zinc-700 rounded px-1 py-0.5">inherited</span>
                     )}
                   </div>
-                  <span className="text-xs text-zinc-500 group-hover:text-brand transition-colors">
-                    Configure
-                  </span>
+                  {isAdmin && (
+                    <span className="text-xs text-zinc-500 group-hover:text-brand transition-colors">
+                      Configure
+                    </span>
+                  )}
                 </div>
                 {/* Agent connection details */}
                 {connectionsByProvider[key]?.length > 0 && (
@@ -769,8 +775,8 @@ export default function IntegrationsPage() {
         })}
       </div>
 
-      {/* Edit Modal */}
-      {editingIntegration && (
+      {/* Edit Modal (admin only) */}
+      {editingIntegration && isAdmin && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">

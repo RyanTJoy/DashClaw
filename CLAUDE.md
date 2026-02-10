@@ -19,7 +19,7 @@ app/
 ├── globals.css                # Design tokens (CSS custom properties) + Tailwind
 ├── dashboard/page.js          # Authenticated dashboard (fixed widget grid)
 ├── lib/validate.js            # Input validation helpers
-├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole)
+├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole, getUserId)
 ├── lib/auth.js                # NextAuth config (GitHub + Google, JWT, user upsert)
 ├── lib/colors.js              # Agent color hashing, action type icon map
 ├── components/
@@ -45,6 +45,8 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
+├── team/                      # Team management page (members, invites, roles)
+├── invite/[token]/            # Invite accept page (standalone layout)
 ├── setup/                     # Redirects to /dashboard (legacy)
 ├── tokens/                    # Token usage page (disabled — not linked from UI)
 ├── workflows/                 # Workflows/SOPs page
@@ -64,7 +66,9 @@ app/
     ├── schedules/             # Schedule management
     ├── settings/              # Integration credentials (encrypted)
     ├── setup/                 # Setup status (public)
-    ├── keys/                  # API key management (list, generate, revoke)
+    ├── keys/                  # API key management (list, generate, revoke — admin only for POST/DELETE)
+    ├── team/                  # Team management (members list, invite CRUD, role change, remove)
+    ├── invite/[token]/        # Invite accept (public GET for details, POST to accept)
     ├── onboarding/            # Onboarding endpoints (status, workspace, api-key)
     ├── tokens/                # Token usage snapshots (disabled — API exists but not used by UI)
     ├── waitlist/              # Waitlist signups (public — no auth required)
@@ -165,8 +169,12 @@ function getSql() {
 - `middleware.js` gates all `/api/*` routes AND all dashboard page routes
 - Middleware matcher includes both API routes and all authenticated page routes (`/dashboard`, `/actions`, `/goals`, etc.)
 - Page routes use `getToken()` from `next-auth/jwt` (Edge-compatible) for session checks
-- `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`)
+- `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`, `/api/team`, `/api/invite`)
 - `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`, `/api/waitlist`, `/api/auth`
+- **Role-based access**: Two roles (`admin`, `member`). `session.user.role` available client-side via `useSession()`
+- **Admin-only API routes** (return 403 for members): POST/DELETE `/api/keys`, POST/DELETE `/api/settings`, all `/api/team/invite`, PATCH/DELETE `/api/team/[userId]`, all `/api/orgs`
+- **Admin-only UI**: Generate/revoke API keys hidden for members; Integrations configure modal disabled; Team invite/role/remove sections hidden
+- **Member-accessible**: All GET endpoints, all data APIs (actions, goals, learning, etc.)
 - Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
 - Production without key returns 503 (if `DASHBOARD_API_KEY` not configured)
 - Same-origin dashboard requests resolve org from NextAuth JWT token (falls back to `org_default`)
@@ -196,7 +204,7 @@ function getSql() {
 ## Additional API Routes (POST-enabled)
 - `GET /api/agents` — list agents (from action_records, grouped by agent_id; supports `?include_connections=true`)
 - `GET/POST /api/agents/connections` — agent self-reported connections (GET: `?agent_id=X`, `?provider=Y`; POST: upsert connections array)
-- `GET/POST/DELETE /api/settings` — integration credentials (supports `?agent_id=X` for per-agent overrides)
+- `GET/POST/DELETE /api/settings` — integration credentials (supports `?agent_id=X` for per-agent overrides; POST/DELETE admin only)
 - `GET/POST /api/tokens` — token snapshots + daily totals (disabled — API exists but not used by dashboard)
 - `GET/POST /api/learning` — decisions + lessons
 - `GET/POST /api/goals` — goals + milestones
@@ -206,7 +214,11 @@ function getSql() {
 - `GET/POST /api/inspiration` — ideas/inspiration
 - `GET/POST /api/memory` — memory health snapshots, entities, topics
 - `GET/POST /api/waitlist` — waitlist signups (public, no auth required; POST upserts by email, GET lists signups)
-- `GET/POST/DELETE /api/keys` — API key management (list, generate, revoke for current org)
+- `GET/POST/DELETE /api/keys` — API key management (list, generate, revoke for current org; POST/DELETE admin only)
+- `GET /api/team` — list workspace members + org info (rejects `org_default`)
+- `GET/POST/DELETE /api/team/invite` — invite management (admin only: create, list pending, revoke)
+- `PATCH/DELETE /api/team/[userId]` — role change + remove member (admin only; DELETE `?action=leave` for self-leave)
+- `GET/POST /api/invite/[token]` — invite details (public GET) + accept invite (POST, requires auth)
 - `GET /api/onboarding/status` — onboarding progress (workspace_created, api_key_exists, first_action_sent)
 - `POST /api/onboarding/workspace` — create workspace (org) during onboarding
 - `POST /api/onboarding/api-key` — generate first API key during onboarding
@@ -295,6 +307,26 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Auto-refresh every 30 seconds; respects global agent filter
 - Sidebar: "Security" link with ShieldAlert icon in Operations group
 
+## Team & Invites (Implemented)
+- Route: `/team` — manage workspace members, invite links, role changes
+- Table: `invites` (id `inv_` prefix, org_id, email, role, token, invited_by, status, accepted_by, expires_at, created_at)
+- Invite tokens: 64 hex chars, 7-day expiry, link-based (no email service needed)
+- API: `GET /api/team` — list members + org info (rejects `org_default`)
+- API: `GET/POST/DELETE /api/team/invite` — invite CRUD (admin only)
+- API: `PATCH/DELETE /api/team/[userId]` — role change + remove member (admin only; DELETE `?action=leave` for self-leave)
+- API: `GET/POST /api/invite/[token]` — public GET for invite details, POST to accept (requires auth)
+- Single org per user: users on `org_default` can accept; users on another org must leave first
+- Invite accept is race-safe (`WHERE status='pending'` in UPDATE)
+- Leave workspace: moves user back to `org_default`, hidden for last admin
+- Sidebar: "Team" link with UsersRound icon in System group
+- Migration Step 17 in `migrate-multi-tenant.mjs`
+
+### Invites Table
+- `invites` — team invitation links
+- Columns: `id` (TEXT `inv_` prefix), `org_id`, `email` (nullable — NULL = open invite), `role` (admin/member), `token` (UNIQUE, 64 hex chars), `invited_by` (usr_ id), `status` (pending/accepted/revoked), `accepted_by` (usr_ id), `expires_at` (TEXT ISO), `created_at` (TEXT ISO)
+- Indexes: `idx_invites_token`, `idx_invites_org_id`, `idx_invites_status`
+- Migration Step 17 in `migrate-multi-tenant.mjs` + `ensureTable()` fallback in invite route
+
 ## Onboarding Flow (Implemented)
 - 4-step guided checklist displayed on dashboard via `OnboardingChecklist.js` (full-width, self-hides when complete)
 - **Step 1**: Create Workspace — text input, calls `POST /api/onboarding/workspace` (creates org, updates user)
@@ -312,8 +344,9 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Revoke keys with confirmation
 - Guards: shows alert if user still on `org_default` (no workspace yet)
 - Stats bar: Total, Active, Revoked counts
-- Backend: `GET/POST/DELETE /api/keys` (rejects `org_default` users)
+- Backend: `GET/POST/DELETE /api/keys` (rejects `org_default` users; POST/DELETE admin only)
 - Sidebar: "API Keys" link with KeyRound icon in System group
+- **Role enforcement**: Generate/revoke buttons hidden for members; empty state shows "ask admin" message
 
 ## SDK Documentation Page (Implemented)
 - Route: `/docs` — public server component (no auth required, not in middleware matcher)
