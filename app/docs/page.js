@@ -180,6 +180,7 @@ export default function DocsPage() {
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
             <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
+            <Link href="/#pricing" className="hover:text-white transition-colors">Pricing</Link>
             <Link href="/docs" className="text-white">Docs</Link>
             <Link href="/#signals" className="hover:text-white transition-colors">Signals</Link>
           </div>
@@ -187,7 +188,7 @@ export default function DocsPage() {
             <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
               Sign In
             </Link>
-            <Link href="/#waitlist" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
+            <Link href="/login" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
               Get Started
             </Link>
           </div>
@@ -291,9 +292,9 @@ await claw.updateOutcome(action_id, {
           {/* ── Constructor ── */}
           <section id="constructor" className="scroll-mt-20 py-12 border-b border-[rgba(255,255,255,0.06)]">
             <h2 className="text-2xl font-bold tracking-tight mb-2">Constructor</h2>
-            <p className="text-sm text-zinc-400 mb-6">Create an OpenClawAgent instance. Requires Node 18+ (native fetch).</p>
+            <p className="text-sm text-zinc-400 mb-6">Create a DashClaw instance. Requires Node 18+ (native fetch).</p>
 
-            <CodeBlock>{`const claw = new OpenClawAgent({ baseUrl, apiKey, agentId, agentName, swarmId });`}</CodeBlock>
+            <CodeBlock>{`const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId });`}</CodeBlock>
 
             <div className="mt-6">
               <ParamTable params={[
@@ -1050,6 +1051,10 @@ console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`
             <Link href="/docs" className="flex items-center gap-1.5 text-zinc-300">
               <BookOpen size={14} />
               Docs
+            </Link>
+            <Link href="/#pricing" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <BarChart3 size={14} />
+              Pricing
             </Link>
             <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />

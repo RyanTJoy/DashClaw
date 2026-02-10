@@ -163,10 +163,10 @@ export default function OnboardingChecklist() {
 
   // SDK snippets with key pre-filled
   const apiKeyDisplay = generatedKey || 'oc_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-  const installSnippet = 'npm install openclaw-agent';
-  const initSnippet = `import { OpenClawAgent } from 'openclaw-agent';
+  const installSnippet = 'npm install dashclaw';
+  const initSnippet = `import { DashClaw } from 'dashclaw';
 
-const claw = new OpenClawAgent({
+const claw = new DashClaw({
   baseUrl: '${typeof window !== 'undefined' ? window.location.origin : 'https://your-app.vercel.app'}',
   apiKey: '${apiKeyDisplay}',
   agentId: 'my-agent',
