@@ -1,0 +1,805 @@
+import Link from 'next/link';
+import {
+  Flame, ArrowRight, Github, ExternalLink, BookOpen,
+  Terminal, Zap, CircleDot, Eye, ShieldAlert, BarChart3,
+  ChevronRight,
+} from 'lucide-react';
+
+export const metadata = {
+  title: 'SDK Documentation — OpenClaw',
+  description: 'Full reference for the OpenClaw Agent SDK. Install, configure, and instrument your AI agents with 22 methods across action recording, loops, assumptions, signals, and dashboard data.',
+};
+
+/* ─── helpers ─── */
+
+function CodeBlock({ children, title }) {
+  return (
+    <div className="rounded-xl bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] overflow-x-auto">
+      {title && (
+        <div className="px-5 py-2.5 border-b border-[rgba(255,255,255,0.06)] text-xs text-zinc-500 font-mono">{title}</div>
+      )}
+      <pre className="p-5 font-mono text-sm leading-relaxed text-zinc-300">{children}</pre>
+    </div>
+  );
+}
+
+function ParamTable({ params }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-[rgba(255,255,255,0.06)]">
+            <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Parameter</th>
+            <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Type</th>
+            <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Required</th>
+            <th className="text-left py-2 text-zinc-400 font-medium">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          {params.map((p) => (
+            <tr key={p.name} className="border-b border-[rgba(255,255,255,0.03)]">
+              <td className="py-2 pr-4 font-mono text-xs text-brand">{p.name}</td>
+              <td className="py-2 pr-4 font-mono text-xs text-zinc-500">{p.type}</td>
+              <td className="py-2 pr-4 text-xs">{p.required ? <span className="text-red-400">Yes</span> : <span className="text-zinc-600">No</span>}</td>
+              <td className="py-2 text-zinc-400 text-xs">{p.desc}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function MethodEntry({ id, signature, description, params, returns, example, children }) {
+  return (
+    <div id={id} className="scroll-mt-20 py-8 border-b border-[rgba(255,255,255,0.04)] last:border-b-0">
+      <h3 className="text-lg font-semibold text-white font-mono">{signature}</h3>
+      <p className="mt-2 text-sm text-zinc-400 leading-relaxed">{description}</p>
+      {params && params.length > 0 && (
+        <div className="mt-4">
+          <ParamTable params={params} />
+        </div>
+      )}
+      {returns && (
+        <p className="mt-3 text-xs text-zinc-500"><span className="text-zinc-400 font-medium">Returns:</span> <code className="font-mono text-zinc-400">{returns}</code></p>
+      )}
+      {example && (
+        <div className="mt-4">
+          <CodeBlock>{example}</CodeBlock>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function SectionNav({ items }) {
+  return (
+    <nav className="hidden lg:block sticky top-20 w-52 shrink-0 self-start">
+      <div className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-3">On this page</div>
+      <ul className="space-y-1.5 text-sm">
+        {items.map((item) => (
+          <li key={item.href}>
+            <a href={item.href} className={`block text-zinc-400 hover:text-white transition-colors ${item.indent ? 'pl-3 text-xs' : ''}`}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+/* ─── nav items for sidebar ─── */
+
+const navItems = [
+  { href: '#quick-start', label: 'Quick Start' },
+  { href: '#constructor', label: 'Constructor' },
+  { href: '#action-recording', label: 'Action Recording' },
+  { href: '#createAction', label: 'createAction', indent: true },
+  { href: '#updateOutcome', label: 'updateOutcome', indent: true },
+  { href: '#track', label: 'track', indent: true },
+  { href: '#getActions', label: 'getActions', indent: true },
+  { href: '#getAction', label: 'getAction', indent: true },
+  { href: '#getActionTrace', label: 'getActionTrace', indent: true },
+  { href: '#loops-assumptions', label: 'Loops & Assumptions' },
+  { href: '#registerOpenLoop', label: 'registerOpenLoop', indent: true },
+  { href: '#resolveOpenLoop', label: 'resolveOpenLoop', indent: true },
+  { href: '#registerAssumption', label: 'registerAssumption', indent: true },
+  { href: '#getAssumption', label: 'getAssumption', indent: true },
+  { href: '#validateAssumption', label: 'validateAssumption', indent: true },
+  { href: '#getOpenLoops', label: 'getOpenLoops', indent: true },
+  { href: '#getDriftReport', label: 'getDriftReport', indent: true },
+  { href: '#signals', label: 'Signals' },
+  { href: '#getSignals', label: 'getSignals', indent: true },
+  { href: '#dashboard-data', label: 'Dashboard Data' },
+  { href: '#recordDecision', label: 'recordDecision', indent: true },
+  { href: '#createGoal', label: 'createGoal', indent: true },
+  { href: '#recordContent', label: 'recordContent', indent: true },
+  { href: '#recordInteraction', label: 'recordInteraction', indent: true },
+  { href: '#reportConnections', label: 'reportConnections', indent: true },
+  { href: '#createCalendarEvent', label: 'createCalendarEvent', indent: true },
+  { href: '#recordIdea', label: 'recordIdea', indent: true },
+  { href: '#reportMemoryHealth', label: 'reportMemoryHealth', indent: true },
+  { href: '#error-handling', label: 'Error Handling' },
+];
+
+/* ─── page ─── */
+
+export default function DocsPage() {
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
+      {/* Navbar */}
+      <nav className="fixed top-0 w-full z-50 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]/80 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Flame size={20} className="text-brand" />
+            <span className="text-lg font-semibold">OpenClaw</span>
+          </Link>
+          <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
+            <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
+            <Link href="/docs" className="text-white">Docs</Link>
+            <Link href="/#signals" className="hover:text-white transition-colors">Signals</Link>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
+              Sign In
+            </Link>
+            <Link href="/#waitlist" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
+              Get Started
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="pt-28 pb-12 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center gap-2 text-sm text-zinc-500 mb-4">
+            <Link href="/" className="hover:text-zinc-300 transition-colors">Home</Link>
+            <ChevronRight size={14} />
+            <span className="text-zinc-300">SDK Documentation</span>
+          </div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+              <BookOpen size={20} className="text-brand" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
+          </div>
+          <p className="text-zinc-400 max-w-2xl leading-relaxed">
+            Full reference for the OpenClaw Agent SDK. 22 methods to instrument your AI agents with
+            action recording, risk signals, open loop tracking, and dashboard data reporting.
+          </p>
+        </div>
+      </section>
+
+      {/* Main content with side nav */}
+      <div className="max-w-6xl mx-auto px-6 pb-20 flex gap-12">
+        <SectionNav items={navItems} />
+
+        <div className="min-w-0 flex-1">
+
+          {/* ── Quick Start ── */}
+          <section id="quick-start" className="scroll-mt-20 pb-12 border-b border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-6">Quick Start</h2>
+
+            <div className="space-y-8">
+              {/* Step 1 */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center">1</span>
+                  <h3 className="text-base font-semibold">Copy the SDK</h3>
+                </div>
+                <p className="text-sm text-zinc-400 mb-3 pl-10">
+                  The SDK is a single file with zero dependencies. Copy <code className="font-mono text-zinc-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded text-xs">sdk/openclaw-agent.js</code> into your project, or fetch it from the repo.
+                </p>
+                <div className="pl-10">
+                  <CodeBlock title="terminal">{`cp sdk/openclaw-agent.js ./your-agent/lib/openclaw-agent.js`}</CodeBlock>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center">2</span>
+                  <h3 className="text-base font-semibold">Initialize the client</h3>
+                </div>
+                <div className="pl-10">
+                  <CodeBlock title="agent.js">{`import { OpenClawAgent } from './lib/openclaw-agent.js';
+
+const claw = new OpenClawAgent({
+  baseUrl: 'https://your-dashboard.vercel.app',
+  apiKey: process.env.OPENCLAW_API_KEY,
+  agentId: 'my-agent',
+  agentName: 'My Agent',
+});`}</CodeBlock>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center">3</span>
+                  <h3 className="text-base font-semibold">Record your first action</h3>
+                </div>
+                <div className="pl-10">
+                  <CodeBlock title="agent.js">{`// Create an action before doing work
+const { action_id } = await claw.createAction({
+  action_type: 'deploy',
+  declared_goal: 'Deploy authentication service',
+  risk_score: 60,
+});
+
+// ... do the work ...
+
+// Update when done
+await claw.updateOutcome(action_id, {
+  status: 'completed',
+  output_summary: 'Auth service deployed to prod',
+});`}</CodeBlock>
+                </div>
+                <p className="text-sm text-zinc-400 mt-3 pl-10">
+                  Or use <a href="#track" className="text-brand hover:underline">track()</a> to wrap it in a single call that auto-records success/failure.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Constructor ── */}
+          <section id="constructor" className="scroll-mt-20 py-12 border-b border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Constructor</h2>
+            <p className="text-sm text-zinc-400 mb-6">Create an OpenClawAgent instance. Requires Node 18+ (native fetch).</p>
+
+            <CodeBlock>{`const claw = new OpenClawAgent({ baseUrl, apiKey, agentId, agentName, swarmId });`}</CodeBlock>
+
+            <div className="mt-6">
+              <ParamTable params={[
+                { name: 'baseUrl', type: 'string', required: true, desc: 'OpenClaw dashboard URL (e.g. "https://your-app.vercel.app")' },
+                { name: 'apiKey', type: 'string', required: true, desc: 'API key for authentication (determines which org\'s data you access)' },
+                { name: 'agentId', type: 'string', required: true, desc: 'Unique identifier for this agent' },
+                { name: 'agentName', type: 'string', required: false, desc: 'Human-readable agent name' },
+                { name: 'swarmId', type: 'string', required: false, desc: 'Swarm/group identifier if part of a multi-agent system' },
+              ]} />
+            </div>
+          </section>
+
+          {/* ── Action Recording ── */}
+          <section id="action-recording" className="scroll-mt-20 pt-12">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <Zap size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Action Recording</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Create, update, and query action records. Every agent action gets a full audit trail.</p>
+
+            <MethodEntry
+              id="createAction"
+              signature="claw.createAction(action)"
+              description="Create a new action record. The agent's agentId, agentName, and swarmId are automatically attached."
+              params={[
+                { name: 'action_type', type: 'string', required: true, desc: 'One of: build, deploy, post, apply, security, message, api, calendar, research, review, fix, refactor, test, config, monitor, alert, cleanup, sync, migrate, other' },
+                { name: 'declared_goal', type: 'string', required: true, desc: 'What this action aims to accomplish' },
+                { name: 'action_id', type: 'string', required: false, desc: 'Custom action ID (auto-generated act_ UUID if omitted)' },
+                { name: 'reasoning', type: 'string', required: false, desc: 'Why the agent decided to take this action' },
+                { name: 'authorization_scope', type: 'string', required: false, desc: 'What permissions were granted' },
+                { name: 'trigger', type: 'string', required: false, desc: 'What triggered this action' },
+                { name: 'systems_touched', type: 'string[]', required: false, desc: 'Systems this action interacts with' },
+                { name: 'input_summary', type: 'string', required: false, desc: 'Summary of input data' },
+                { name: 'parent_action_id', type: 'string', required: false, desc: 'Parent action if this is a sub-action' },
+                { name: 'reversible', type: 'boolean', required: false, desc: 'Whether this action can be undone (default: true)' },
+                { name: 'risk_score', type: 'number', required: false, desc: 'Risk score 0-100 (default: 0)' },
+                { name: 'confidence', type: 'number', required: false, desc: 'Confidence level 0-100 (default: 50)' },
+              ]}
+              returns="Promise<{ action: Object, action_id: string }>"
+              example={`const { action_id } = await claw.createAction({
+  action_type: 'deploy',
+  declared_goal: 'Deploy auth service to production',
+  risk_score: 70,
+  systems_touched: ['kubernetes', 'auth-service'],
+  reasoning: 'Scheduled release after QA approval',
+});`}
+            />
+
+            <MethodEntry
+              id="updateOutcome"
+              signature="claw.updateOutcome(actionId, outcome)"
+              description="Update the outcome of an existing action. Automatically sets timestamp_end if not provided."
+              params={[
+                { name: 'actionId', type: 'string', required: true, desc: 'The action_id to update' },
+                { name: 'status', type: 'string', required: false, desc: 'New status: completed, failed, cancelled' },
+                { name: 'output_summary', type: 'string', required: false, desc: 'What happened' },
+                { name: 'side_effects', type: 'string[]', required: false, desc: 'Unintended consequences' },
+                { name: 'artifacts_created', type: 'string[]', required: false, desc: 'Files, records, etc. created' },
+                { name: 'error_message', type: 'string', required: false, desc: 'Error details if failed' },
+                { name: 'duration_ms', type: 'number', required: false, desc: 'How long it took in milliseconds' },
+                { name: 'cost_estimate', type: 'number', required: false, desc: 'Estimated cost in USD' },
+              ]}
+              returns="Promise<{ action: Object }>"
+              example={`await claw.updateOutcome(action_id, {
+  status: 'completed',
+  output_summary: 'Auth service deployed successfully',
+  artifacts_created: ['deploy-log-2024-01.txt'],
+  duration_ms: 45000,
+});`}
+            />
+
+            <MethodEntry
+              id="track"
+              signature="claw.track(actionDef, fn)"
+              description="Helper that creates an action, runs your async function, and auto-updates the outcome. If fn throws, the action is marked as failed with the error message."
+              params={[
+                { name: 'actionDef', type: 'Object', required: true, desc: 'Action definition (same params as createAction)' },
+                { name: 'fn', type: 'Function', required: true, desc: 'Async function to execute. Receives { action_id } as argument.' },
+              ]}
+              returns="Promise<*> (the return value of fn)"
+              example={`const result = await claw.track(
+  { action_type: 'build', declared_goal: 'Compile project' },
+  async ({ action_id }) => {
+    // Your logic here. If this throws, the action is marked failed.
+    await runBuild();
+    return 'Build succeeded';
+  }
+);`}
+            />
+
+            <MethodEntry
+              id="getActions"
+              signature="claw.getActions(filters?)"
+              description="Get a list of actions with optional filters. Returns paginated results with stats."
+              params={[
+                { name: 'agent_id', type: 'string', required: false, desc: 'Filter by agent' },
+                { name: 'swarm_id', type: 'string', required: false, desc: 'Filter by swarm' },
+                { name: 'status', type: 'string', required: false, desc: 'Filter by status (running, completed, failed, cancelled)' },
+                { name: 'action_type', type: 'string', required: false, desc: 'Filter by type' },
+                { name: 'risk_min', type: 'number', required: false, desc: 'Minimum risk score' },
+                { name: 'limit', type: 'number', required: false, desc: 'Max results (default: 50)' },
+                { name: 'offset', type: 'number', required: false, desc: 'Pagination offset (default: 0)' },
+              ]}
+              returns="Promise<{ actions: Object[], total: number, stats: Object }>"
+              example={`const { actions, total } = await claw.getActions({
+  status: 'failed',
+  risk_min: 50,
+  limit: 20,
+});`}
+            />
+
+            <MethodEntry
+              id="getAction"
+              signature="claw.getAction(actionId)"
+              description="Get a single action with its associated open loops and assumptions."
+              params={[
+                { name: 'actionId', type: 'string', required: true, desc: 'The action_id to retrieve' },
+              ]}
+              returns="Promise<{ action: Object, open_loops: Object[], assumptions: Object[] }>"
+              example={`const { action, open_loops, assumptions } = await claw.getAction('act_abc123');`}
+            />
+
+            <MethodEntry
+              id="getActionTrace"
+              signature="claw.getActionTrace(actionId)"
+              description="Get root-cause trace for an action, including its assumptions, open loops, parent chain, and related actions."
+              params={[
+                { name: 'actionId', type: 'string', required: true, desc: 'The action_id to trace' },
+              ]}
+              returns="Promise<{ action: Object, trace: Object }>"
+              example={`const { trace } = await claw.getActionTrace('act_abc123');
+// trace includes: assumptions, open_loops, parent_chain, related_actions`}
+            />
+          </section>
+
+          {/* ── Loops & Assumptions ── */}
+          <section id="loops-assumptions" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <CircleDot size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Loops & Assumptions</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Track unresolved dependencies and log what your agents assume. Catch drift before it causes failures.</p>
+
+            <MethodEntry
+              id="registerOpenLoop"
+              signature="claw.registerOpenLoop(loop)"
+              description="Register an open loop (unresolved dependency, pending approval, etc.) for an action."
+              params={[
+                { name: 'action_id', type: 'string', required: true, desc: 'Parent action ID' },
+                { name: 'loop_type', type: 'string', required: true, desc: 'One of: followup, question, dependency, approval, review, handoff, other' },
+                { name: 'description', type: 'string', required: true, desc: 'What needs to be resolved' },
+                { name: 'priority', type: 'string', required: false, desc: 'One of: low, medium, high, critical (default: medium)' },
+                { name: 'owner', type: 'string', required: false, desc: 'Who is responsible for resolving this' },
+              ]}
+              returns="Promise<{ loop: Object, loop_id: string }>"
+              example={`const { loop_id } = await claw.registerOpenLoop({
+  action_id: 'act_abc123',
+  loop_type: 'approval',
+  description: 'Needs manager approval for prod deploy',
+  priority: 'high',
+  owner: 'ops-team',
+});`}
+            />
+
+            <MethodEntry
+              id="resolveOpenLoop"
+              signature="claw.resolveOpenLoop(loopId, status, resolution?)"
+              description="Resolve or cancel an open loop."
+              params={[
+                { name: 'loopId', type: 'string', required: true, desc: 'The loop_id to resolve' },
+                { name: 'status', type: 'string', required: true, desc: '"resolved" or "cancelled"' },
+                { name: 'resolution', type: 'string', required: false, desc: 'Resolution description (required when resolving)' },
+              ]}
+              returns="Promise<{ loop: Object }>"
+              example={`await claw.resolveOpenLoop('loop_xyz789', 'resolved', 'Manager approved via Slack');`}
+            />
+
+            <MethodEntry
+              id="registerAssumption"
+              signature="claw.registerAssumption(assumption)"
+              description="Register an assumption made during an action. Track what your agent assumes so you can validate or invalidate later."
+              params={[
+                { name: 'action_id', type: 'string', required: true, desc: 'Parent action ID' },
+                { name: 'assumption', type: 'string', required: true, desc: 'The assumption being made' },
+                { name: 'basis', type: 'string', required: false, desc: 'Evidence or reasoning for the assumption' },
+                { name: 'validated', type: 'boolean', required: false, desc: 'Whether this has been validated (default: false)' },
+              ]}
+              returns="Promise<{ assumption: Object, assumption_id: string }>"
+              example={`const { assumption_id } = await claw.registerAssumption({
+  action_id: 'act_abc123',
+  assumption: 'Database schema is unchanged since last deploy',
+  basis: 'No migration files found in latest commits',
+});`}
+            />
+
+            <MethodEntry
+              id="getAssumption"
+              signature="claw.getAssumption(assumptionId)"
+              description="Get a single assumption by ID."
+              params={[
+                { name: 'assumptionId', type: 'string', required: true, desc: 'The assumption_id to retrieve' },
+              ]}
+              returns="Promise<{ assumption: Object }>"
+              example={`const { assumption } = await claw.getAssumption('asm_abc123');`}
+            />
+
+            <MethodEntry
+              id="validateAssumption"
+              signature="claw.validateAssumption(assumptionId, validated, invalidated_reason?)"
+              description="Validate or invalidate an assumption. When invalidating, a reason is required."
+              params={[
+                { name: 'assumptionId', type: 'string', required: true, desc: 'The assumption_id to update' },
+                { name: 'validated', type: 'boolean', required: true, desc: 'true to validate, false to invalidate' },
+                { name: 'invalidated_reason', type: 'string', required: false, desc: 'Required when invalidating (validated = false)' },
+              ]}
+              returns="Promise<{ assumption: Object }>"
+              example={`// Validate
+await claw.validateAssumption('asm_abc123', true);
+
+// Invalidate
+await claw.validateAssumption('asm_abc123', false, 'Schema was altered by migration #47');`}
+            />
+
+            <MethodEntry
+              id="getOpenLoops"
+              signature="claw.getOpenLoops(filters?)"
+              description="Get open loops with optional filters. Returns paginated results with stats."
+              params={[
+                { name: 'status', type: 'string', required: false, desc: 'Filter by status: open, resolved, cancelled' },
+                { name: 'loop_type', type: 'string', required: false, desc: 'Filter by loop type' },
+                { name: 'priority', type: 'string', required: false, desc: 'Filter by priority' },
+                { name: 'limit', type: 'number', required: false, desc: 'Max results (default: 50)' },
+              ]}
+              returns="Promise<{ loops: Object[], total: number, stats: Object }>"
+              example={`const { loops } = await claw.getOpenLoops({
+  status: 'open',
+  priority: 'critical',
+});`}
+            />
+
+            <MethodEntry
+              id="getDriftReport"
+              signature="claw.getDriftReport(filters?)"
+              description="Get drift report for assumptions with risk scoring. Shows which assumptions are stale, unvalidated, or contradicted by outcomes."
+              params={[
+                { name: 'action_id', type: 'string', required: false, desc: 'Filter by action' },
+                { name: 'limit', type: 'number', required: false, desc: 'Max results (default: 50)' },
+              ]}
+              returns="Promise<{ assumptions: Object[], drift_summary: Object }>"
+              example={`const { assumptions, drift_summary } = await claw.getDriftReport();
+console.log(drift_summary);
+// { total, validated, invalidated, unvalidated, drift_score }`}
+            />
+          </section>
+
+          {/* ── Signals ── */}
+          <section id="signals" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(239,68,68,0.1)] flex items-center justify-center">
+                <ShieldAlert size={16} className="text-red-400" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Signals</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">
+              Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns — no configuration required.
+            </p>
+
+            <MethodEntry
+              id="getSignals"
+              signature="claw.getSignals()"
+              description="Get current risk signals across all agents. Returns 7 signal types: autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, and stale_running_action."
+              params={[]}
+              returns="Promise<{ signals: Object[], counts: { red: number, amber: number, total: number } }>"
+              example={`const { signals, counts } = await claw.getSignals();
+console.log(\`\${counts.red} red, \${counts.amber} amber signals\`);
+
+for (const signal of signals) {
+  console.log(\`[\${signal.severity}] \${signal.signal_type}: \${signal.help}\`);
+}`}
+            />
+
+            <div className="mt-6 p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+              <h4 className="text-sm font-semibold text-white mb-3">Signal Types</h4>
+              <div className="space-y-2">
+                {[
+                  { name: 'autonomy_spike', desc: 'Agent taking too many actions without human checkpoints' },
+                  { name: 'high_impact_low_oversight', desc: 'Critical actions without sufficient review' },
+                  { name: 'repeated_failures', desc: 'Same action type failing multiple times' },
+                  { name: 'stale_loop', desc: 'Open loops unresolved past their expected timeline' },
+                  { name: 'assumption_drift', desc: 'Assumptions becoming stale or contradicted by outcomes' },
+                  { name: 'stale_assumption', desc: 'Assumptions not validated within expected timeframe' },
+                  { name: 'stale_running_action', desc: 'Actions stuck in running state for over 4 hours' },
+                ].map((s) => (
+                  <div key={s.name} className="flex items-start gap-3">
+                    <code className="font-mono text-xs text-brand shrink-0 pt-0.5">{s.name}</code>
+                    <span className="text-xs text-zinc-400">{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ── Dashboard Data ── */}
+          <section id="dashboard-data" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <BarChart3 size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Dashboard Data</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Push data from your agent directly to the OpenClaw dashboard. All methods auto-attach the agent&apos;s agentId.</p>
+
+            <MethodEntry
+              id="recordDecision"
+              signature="claw.recordDecision(entry)"
+              description="Record a decision for the learning database. Track what your agent decides and why."
+              params={[
+                { name: 'decision', type: 'string', required: true, desc: 'What was decided' },
+                { name: 'context', type: 'string', required: false, desc: 'Context around the decision' },
+                { name: 'reasoning', type: 'string', required: false, desc: 'Why this decision was made' },
+                { name: 'outcome', type: 'string', required: false, desc: '"success", "failure", or "pending"' },
+                { name: 'confidence', type: 'number', required: false, desc: 'Confidence level 0-100' },
+              ]}
+              returns="Promise<{ decision: Object }>"
+              example={`await claw.recordDecision({
+  decision: 'Use Redis for session caching',
+  reasoning: 'Lower latency than Postgres for read-heavy access pattern',
+  confidence: 85,
+});`}
+            />
+
+            <MethodEntry
+              id="createGoal"
+              signature="claw.createGoal(goal)"
+              description="Create a goal in the goals tracker."
+              params={[
+                { name: 'title', type: 'string', required: true, desc: 'Goal title' },
+                { name: 'category', type: 'string', required: false, desc: 'Goal category' },
+                { name: 'description', type: 'string', required: false, desc: 'Detailed description' },
+                { name: 'target_date', type: 'string', required: false, desc: 'Target completion date (ISO string)' },
+                { name: 'progress', type: 'number', required: false, desc: 'Progress 0-100' },
+                { name: 'status', type: 'string', required: false, desc: '"active", "completed", or "paused"' },
+              ]}
+              returns="Promise<{ goal: Object }>"
+              example={`await claw.createGoal({
+  title: 'Complete API migration',
+  category: 'engineering',
+  target_date: '2025-03-01T00:00:00.000Z',
+  progress: 30,
+});`}
+            />
+
+            <MethodEntry
+              id="recordContent"
+              signature="claw.recordContent(content)"
+              description="Record content creation (articles, posts, documents)."
+              params={[
+                { name: 'title', type: 'string', required: true, desc: 'Content title' },
+                { name: 'platform', type: 'string', required: false, desc: 'Platform (e.g., "linkedin", "twitter")' },
+                { name: 'status', type: 'string', required: false, desc: '"draft" or "published"' },
+                { name: 'url', type: 'string', required: false, desc: 'Published URL' },
+              ]}
+              returns="Promise<{ content: Object }>"
+              example={`await claw.recordContent({
+  title: 'How We Migrated to Edge Functions',
+  platform: 'linkedin',
+  status: 'published',
+  url: 'https://linkedin.com/posts/...',
+});`}
+            />
+
+            <MethodEntry
+              id="recordInteraction"
+              signature="claw.recordInteraction(interaction)"
+              description="Record a relationship interaction (message, meeting, email)."
+              params={[
+                { name: 'summary', type: 'string', required: true, desc: 'What happened' },
+                { name: 'contact_name', type: 'string', required: false, desc: 'Contact name (auto-resolves to contact_id)' },
+                { name: 'contact_id', type: 'string', required: false, desc: 'Direct contact ID' },
+                { name: 'direction', type: 'string', required: false, desc: '"inbound" or "outbound"' },
+                { name: 'type', type: 'string', required: false, desc: 'Interaction type (e.g., "message", "meeting", "email")' },
+                { name: 'platform', type: 'string', required: false, desc: 'Platform used' },
+              ]}
+              returns="Promise<{ interaction: Object }>"
+              example={`await claw.recordInteraction({
+  contact_name: 'Jane Smith',
+  summary: 'Discussed Q1 roadmap and timeline',
+  type: 'meeting',
+  direction: 'outbound',
+});`}
+            />
+
+            <MethodEntry
+              id="reportConnections"
+              signature="claw.reportConnections(connections)"
+              description="Report active connections/integrations for this agent. Call at agent startup to register what services the agent is connected to."
+              params={[
+                { name: 'connections', type: 'Object[]', required: true, desc: 'Array of connection objects' },
+                { name: 'connections[].provider', type: 'string', required: true, desc: 'Service name (e.g., "anthropic", "github")' },
+                { name: 'connections[].authType', type: 'string', required: false, desc: 'Auth method: api_key, subscription, oauth, pre_configured, environment' },
+                { name: 'connections[].planName', type: 'string', required: false, desc: 'Plan name (e.g., "Pro Max")' },
+                { name: 'connections[].status', type: 'string', required: false, desc: 'Connection status: active, inactive, error' },
+                { name: 'connections[].metadata', type: 'Object|string', required: false, desc: 'Optional metadata (e.g., { cost: "$100/mo" })' },
+              ]}
+              returns='Promise<{ connections: Object[], created: number }>'
+              example={`await claw.reportConnections([
+  { provider: 'anthropic', authType: 'subscription', planName: 'Pro Max', status: 'active' },
+  { provider: 'github', authType: 'oauth', status: 'active' },
+  { provider: 'slack', authType: 'api_key', status: 'active', metadata: { workspace: 'eng-team' } },
+]);`}
+            />
+
+            <MethodEntry
+              id="createCalendarEvent"
+              signature="claw.createCalendarEvent(event)"
+              description="Create a calendar event."
+              params={[
+                { name: 'summary', type: 'string', required: true, desc: 'Event title/summary' },
+                { name: 'start_time', type: 'string', required: true, desc: 'Start time (ISO string)' },
+                { name: 'end_time', type: 'string', required: false, desc: 'End time (ISO string)' },
+                { name: 'location', type: 'string', required: false, desc: 'Event location' },
+                { name: 'description', type: 'string', required: false, desc: 'Event description' },
+              ]}
+              returns="Promise<{ event: Object }>"
+              example={`await claw.createCalendarEvent({
+  summary: 'Deploy review',
+  start_time: '2025-02-10T14:00:00.000Z',
+  end_time: '2025-02-10T14:30:00.000Z',
+  description: 'Review prod deploy results',
+});`}
+            />
+
+            <MethodEntry
+              id="recordIdea"
+              signature="claw.recordIdea(idea)"
+              description="Record an idea or inspiration for later review."
+              params={[
+                { name: 'title', type: 'string', required: true, desc: 'Idea title' },
+                { name: 'description', type: 'string', required: false, desc: 'Detailed description' },
+                { name: 'category', type: 'string', required: false, desc: 'Category (e.g., "feature", "optimization", "content")' },
+                { name: 'score', type: 'number', required: false, desc: 'Priority/quality score 0-100 (default: 50)' },
+                { name: 'status', type: 'string', required: false, desc: '"pending", "in_progress", "shipped", "rejected"' },
+                { name: 'source', type: 'string', required: false, desc: 'Where this idea came from' },
+              ]}
+              returns="Promise<{ idea: Object }>"
+              example={`await claw.recordIdea({
+  title: 'Auto-summarize daily agent activity',
+  category: 'feature',
+  score: 75,
+  source: 'User feedback in Slack #agents',
+});`}
+            />
+
+            <MethodEntry
+              id="reportMemoryHealth"
+              signature="claw.reportMemoryHealth(report)"
+              description="Report memory health snapshot with entities and topics. Call periodically (e.g., daily) to track memory system health over time."
+              params={[
+                { name: 'health', type: 'Object', required: true, desc: 'Health metrics object' },
+                { name: 'health.score', type: 'number', required: true, desc: 'Health score 0-100' },
+                { name: 'health.total_files', type: 'number', required: false, desc: 'Number of memory files' },
+                { name: 'health.total_lines', type: 'number', required: false, desc: 'Total lines across all files' },
+                { name: 'health.total_size_kb', type: 'number', required: false, desc: 'Total size in KB' },
+                { name: 'health.duplicates', type: 'number', required: false, desc: 'Potential duplicate facts' },
+                { name: 'health.stale_count', type: 'number', required: false, desc: 'Stale facts count' },
+                { name: 'entities', type: 'Object[]', required: false, desc: 'Key entities found in memory' },
+                { name: 'topics', type: 'Object[]', required: false, desc: 'Topics/themes found in memory' },
+              ]}
+              returns="Promise<{ snapshot: Object, entities_count: number, topics_count: number }>"
+              example={`await claw.reportMemoryHealth({
+  health: {
+    score: 82,
+    total_files: 15,
+    total_lines: 340,
+    duplicates: 3,
+    stale_count: 7,
+  },
+  entities: [
+    { name: 'PostgreSQL', type: 'service', mentions: 12 },
+    { name: 'auth-service', type: 'service', mentions: 8 },
+  ],
+  topics: [
+    { name: 'deployment', mentions: 15 },
+    { name: 'authentication', mentions: 9 },
+  ],
+});`}
+            />
+          </section>
+
+          {/* ── Error Handling ── */}
+          <section id="error-handling" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Error Handling</h2>
+            <p className="text-sm text-zinc-400 mb-6">
+              All SDK methods throw on non-2xx responses. Errors include <code className="font-mono text-xs text-zinc-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">status</code> (HTTP code) and <code className="font-mono text-xs text-zinc-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">details</code> (when available).
+            </p>
+
+            <CodeBlock title="Error shape">{`{
+  message: "Validation failed",  // error.message
+  status: 400,                    // error.status (HTTP status code)
+  details: { ... }                // error.details (optional)
+}`}</CodeBlock>
+
+            <div className="mt-6">
+              <CodeBlock title="Recommended pattern">{`try {
+  const { action_id } = await claw.createAction({
+    action_type: 'deploy',
+    declared_goal: 'Deploy to production',
+  });
+} catch (err) {
+  if (err.status === 401) {
+    console.error('Invalid API key');
+  } else if (err.status === 429) {
+    console.error('Rate limited — slow down');
+  } else {
+    console.error(\`Action failed: \${err.message}\`);
+  }
+}`}</CodeBlock>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t border-[rgba(255,255,255,0.06)] py-8 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Flame size={16} className="text-brand" />
+            <span className="text-sm text-zinc-400">OpenClaw Pro</span>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-zinc-500">
+            <a href="https://github.com/ucsandman/OpenClaw-Pro" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <Github size={14} />
+              GitHub
+            </a>
+            <Link href="/docs" className="flex items-center gap-1.5 text-zinc-300">
+              <BookOpen size={14} />
+              Docs
+            </Link>
+            <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <ExternalLink size={14} />
+              Dashboard
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

@@ -88,6 +88,23 @@ export const authOptions = {
           token.orgId = 'org_default';
           token.role = 'member';
         }
+        token.orgRefreshedAt = Date.now();
+      } else if (token.userId) {
+        // Periodically re-query user's org so session picks up changes (e.g. after workspace creation)
+        const age = Date.now() - (token.orgRefreshedAt || 0);
+        if (age > 5 * 60 * 1000) {
+          try {
+            const sql = getSql();
+            const rows = await sql`SELECT org_id, role FROM users WHERE id = ${token.userId} LIMIT 1`;
+            if (rows.length > 0) {
+              token.orgId = rows[0].org_id;
+              token.role = rows[0].role;
+            }
+          } catch (err) {
+            console.error('[AUTH] jwt refresh error:', err.message);
+          }
+          token.orgRefreshedAt = Date.now();
+        }
       }
       return token;
     },

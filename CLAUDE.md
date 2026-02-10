@@ -5,6 +5,7 @@
 AI agent observability platform — a Next.js 14 app (JavaScript, not TypeScript) that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
 
 - **`/`** — Public landing page with waitlist signup (server component, no auth)
+- **`/docs`** — Public SDK documentation (server component, no auth)
 - **`/dashboard`** — Authenticated operations dashboard (client component, behind sidebar)
 
 Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included.
@@ -26,13 +27,16 @@ app/
 │   ├── Sidebar.js             # Persistent sidebar navigation (links to /dashboard)
 │   ├── PageLayout.js          # Shared page layout (breadcrumbs, title, actions)
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
-│   ├── DraggableDashboard.js  # Fixed 4-column widget grid (no drag mode)
+│   ├── DraggableDashboard.js  # Fixed 4-column widget grid (+ onboarding checklist)
+│   ├── OnboardingChecklist.js # 4-step guided onboarding (workspace, key, SDK, first action)
 │   ├── WaitlistForm.js        # Email capture form (client component)
 │   ├── SecurityDetailPanel.js  # Slide-out detail drawer (signal + action detail)
 │   ├── SessionWrapper.js      # NextAuth SessionProvider + AgentFilterProvider wrapper
 │   ├── UserMenu.js            # User avatar + sign-out dropdown (client component)
 │   └── *.js                   # 12 dashboard widget cards
 ├── actions/                   # ActionRecord UI pages
+├── api-keys/                  # API key management page
+├── docs/page.js               # Public SDK documentation (server component)
 ├── login/page.js              # Custom login page (GitHub + Google OAuth)
 ├── bounty-hunter/             # Bounty hunter page
 ├── content/                   # Content tracker page
@@ -41,7 +45,7 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
-├── setup/                     # Guided setup wizard
+├── setup/                     # Redirects to /dashboard (legacy)
 ├── tokens/                    # Token usage page (disabled — not linked from UI)
 ├── workflows/                 # Workflows/SOPs page
 └── api/
@@ -60,6 +64,8 @@ app/
     ├── schedules/             # Schedule management
     ├── settings/              # Integration credentials (encrypted)
     ├── setup/                 # Setup status (public)
+    ├── keys/                  # API key management (list, generate, revoke)
+    ├── onboarding/            # Onboarding endpoints (status, workspace, api-key)
     ├── tokens/                # Token usage snapshots (disabled — API exists but not used by UI)
     ├── waitlist/              # Waitlist signups (public — no auth required)
     └── workflows/             # Workflow definitions
@@ -200,6 +206,10 @@ function getSql() {
 - `GET/POST /api/inspiration` — ideas/inspiration
 - `GET/POST /api/memory` — memory health snapshots, entities, topics
 - `GET/POST /api/waitlist` — waitlist signups (public, no auth required; POST upserts by email, GET lists signups)
+- `GET/POST/DELETE /api/keys` — API key management (list, generate, revoke for current org)
+- `GET /api/onboarding/status` — onboarding progress (workspace_created, api_key_exists, first_action_sent)
+- `POST /api/onboarding/workspace` — create workspace (org) during onboarding
+- `POST /api/onboarding/api-key` — generate first API key during onboarding
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -284,6 +294,42 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - SecurityDetailPanel: slide-out drawer from right, closes on Escape/backdrop click
 - Auto-refresh every 30 seconds; respects global agent filter
 - Sidebar: "Security" link with ShieldAlert icon in Operations group
+
+## Onboarding Flow (Implemented)
+- 4-step guided checklist displayed on dashboard via `OnboardingChecklist.js` (full-width, self-hides when complete)
+- **Step 1**: Create Workspace — text input, calls `POST /api/onboarding/workspace` (creates org, updates user)
+- **Step 2**: Generate API Key — button-triggered, calls `POST /api/onboarding/api-key`, shows raw key with copy button
+- **Step 3**: Install SDK — static code blocks with key pre-filled
+- **Step 4**: Send First Action — code snippet, polls `GET /api/onboarding/status` every 5s to detect first action
+- Status endpoint derives 3 booleans: `workspace_created` (org != org_default), `api_key_exists`, `first_action_sent`
+- Only users on `org_default` see workspace creation; auto-hides + reloads when all steps done
+- Workspace creation auto-generates slug from name, sets plan to `free`, promotes user to `admin`
+
+## API Keys Page (Implemented)
+- Route: `/api-keys` — manage workspace API keys
+- Lists active and revoked keys with creation/last-used dates
+- Generate new keys with labels (format: `oc_live_{32_hex}`, raw shown once)
+- Revoke keys with confirmation
+- Guards: shows alert if user still on `org_default` (no workspace yet)
+- Stats bar: Total, Active, Revoked counts
+- Backend: `GET/POST/DELETE /api/keys` (rejects `org_default` users)
+- Sidebar: "API Keys" link with KeyRound icon in System group
+
+## SDK Documentation Page (Implemented)
+- Route: `/docs` — public server component (no auth required, not in middleware matcher)
+- Full reference for all 22 active SDK methods organized into 4 categories
+- Categories: Action Recording (6), Loops & Assumptions (7), Signals (1), Dashboard Data (8)
+- Each method: signature, description, parameter table, return type, code example
+- Sticky side navigation with anchor links to all sections
+- Quick Start section (3 steps: copy SDK, init client, record first action)
+- Constructor reference (5 params), Error Handling section
+- Same visual shell as landing page (navbar, footer, dark background)
+- Landing page links: navbar "Docs", SDK section "View full SDK docs", footer "Docs"
+
+## JWT Org Refresh
+- `app/lib/auth.js` JWT callback periodically re-queries user's org_id/role (5-min TTL)
+- Ensures session picks up org changes (e.g., after workspace creation during onboarding)
+- Tracks `orgRefreshedAt` timestamp in token to avoid re-querying on every request
 
 ## Multi-Tenancy
 

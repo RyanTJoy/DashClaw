@@ -25,6 +25,8 @@ const PROTECTED_ROUTES = [
   '/api/actions',
   '/api/orgs',
   '/api/agents',
+  '/api/onboarding',
+  '/api/keys',
 ];
 
 // Routes that are always public (health checks, setup, auth)
@@ -248,6 +250,7 @@ export async function middleware(request) {
         const role = sessionToken?.role || 'admin';
         requestHeaders.set('x-org-id', orgId);
         requestHeaders.set('x-org-role', role);
+        requestHeaders.set('x-user-id', sessionToken?.userId || '');
         const response = NextResponse.next({ request: { headers: requestHeaders } });
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('X-Frame-Options', 'DENY');
@@ -336,6 +339,8 @@ export const config = {
     '/tokens/:path*',
     '/setup',
     '/setup/:path*',
+    '/api-keys',
+    '/api-keys/:path*',
     '/login',
   ],
 };
