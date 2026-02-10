@@ -1,0 +1,168 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+import { NextResponse } from 'next/server';
+import { computeSignals } from '../../../lib/signals.js';
+import { fireWebhooksForOrg } from '../../../lib/webhooks.js';
+import { sendSignalAlertEmail } from '../../../lib/notifications.js';
+import { logActivity } from '../../../lib/audit.js';
+import crypto from 'crypto';
+
+let _sql;
+function getSql() {
+  if (_sql) return _sql;
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  const { neon } = require('@neondatabase/serverless');
+  _sql = neon(url);
+  return _sql;
+}
+
+/**
+ * Hash a signal into a stable identifier for deduplication.
+ * Uses type + relevant IDs to create a unique fingerprint.
+ */
+function hashSignal(signal) {
+  const parts = [
+    signal.type,
+    signal.agent_id || '',
+    signal.action_id || '',
+    signal.loop_id || '',
+    signal.assumption_id || '',
+  ].join(':');
+  return crypto.createHash('md5').update(parts).digest('hex');
+}
+
+// GET /api/cron/signals - Vercel Cron handler
+export async function GET(request) {
+  try {
+    // Auth: verify CRON_SECRET (skip in dev)
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
+    }
+
+    const sql = getSql();
+    const summary = { orgs_processed: 0, new_signals: 0, emails_sent: 0, webhooks_fired: 0 };
+
+    // Load active orgs
+    const orgs = await sql`
+      SELECT id, name FROM organizations WHERE id != 'org_default'
+    `;
+
+    for (const org of orgs) {
+      try {
+        const signals = await computeSignals(org.id, null, sql);
+        if (signals.length === 0) {
+          summary.orgs_processed++;
+          continue;
+        }
+
+        // Hash each signal
+        const currentHashes = signals.map(s => ({ ...s, _hash: hashSignal(s) }));
+
+        // Load existing snapshots for this org
+        const existingSnapshots = await sql`
+          SELECT signal_hash FROM signal_snapshots WHERE org_id = ${org.id}
+        `;
+        const existingSet = new Set(existingSnapshots.map(s => s.signal_hash));
+
+        // Find NEW signals (hash not in snapshot)
+        const newSignals = currentHashes.filter(s => !existingSet.has(s._hash));
+
+        // Upsert all current signals into snapshots
+        const now = new Date().toISOString();
+        for (const s of currentHashes) {
+          await sql`
+            INSERT INTO signal_snapshots (org_id, signal_hash, signal_type, severity, agent_id, first_seen_at, last_seen_at)
+            VALUES (${org.id}, ${s._hash}, ${s.type}, ${s.severity}, ${s.agent_id || null}, ${now}, ${now})
+            ON CONFLICT (org_id, signal_hash) DO UPDATE SET
+              last_seen_at = ${now},
+              severity = ${s.severity}
+          `;
+        }
+
+        if (newSignals.length === 0) {
+          summary.orgs_processed++;
+          continue;
+        }
+
+        summary.new_signals += newSignals.length;
+
+        // Clean _hash before sending
+        const cleanSignals = newSignals.map(({ _hash, ...rest }) => rest);
+
+        // Log signal detection
+        logActivity({
+          orgId: org.id, actorId: 'cron', actorType: 'cron',
+          action: 'signal.detected', resourceType: 'signal',
+          details: { count: cleanSignals.length, types: [...new Set(cleanSignals.map(s => s.type))] },
+        }, sql);
+
+        // Fire webhooks
+        const whResults = await fireWebhooksForOrg(org.id, cleanSignals, sql);
+        const whFired = whResults.filter(r => r.success).length;
+        summary.webhooks_fired += whFired;
+
+        if (whFired > 0) {
+          logActivity({
+            orgId: org.id, actorId: 'system', actorType: 'system',
+            action: 'webhook.fired', resourceType: 'webhook',
+            details: { count: whFired, signal_count: cleanSignals.length },
+          }, sql);
+        }
+
+        // Send email alerts to opted-in users
+        const prefs = await sql`
+          SELECT np.user_id, np.signal_types, u.email
+          FROM notification_preferences np
+          JOIN users u ON np.user_id = u.id
+          WHERE np.org_id = ${org.id}
+            AND np.channel = 'email'
+            AND np.enabled = 1
+            AND u.org_id = ${org.id}
+        `;
+
+        for (const pref of prefs) {
+          let subscribedTypes;
+          try {
+            subscribedTypes = JSON.parse(pref.signal_types);
+          } catch {
+            subscribedTypes = ['all'];
+          }
+
+          const relevantSignals = subscribedTypes.includes('all')
+            ? cleanSignals
+            : cleanSignals.filter(s => subscribedTypes.includes(s.type));
+
+          if (relevantSignals.length === 0) continue;
+
+          const sent = await sendSignalAlertEmail(pref.email, org.name, relevantSignals);
+          if (sent) {
+            summary.emails_sent++;
+            logActivity({
+              orgId: org.id, actorId: 'system', actorType: 'system',
+              action: 'alert.email_sent', resourceType: 'signal',
+              details: { to: pref.email, signal_count: relevantSignals.length },
+            }, sql);
+          }
+        }
+
+        summary.orgs_processed++;
+      } catch (err) {
+        console.error(`[CRON] Error processing org ${org.id}:`, err.message);
+        summary.orgs_processed++;
+      }
+    }
+
+    return NextResponse.json({ success: true, summary });
+  } catch (error) {
+    console.error('Cron signals error:', error);
+    return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
+  }
+}

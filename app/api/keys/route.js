@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { getOrgId, getOrgRole } from '../../lib/org.js';
+import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/billing.js';
+import { logActivity } from '../../lib/audit.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -97,6 +98,12 @@ export async function POST(request) {
     // Fire-and-forget meter increment
     incrementMeter(orgId, 'api_keys', sql).catch(() => {});
 
+    logActivity({
+      orgId, actorId: getUserId(request) || 'unknown', action: 'key.created',
+      resourceType: 'api_key', resourceId: keyId,
+      details: { label, prefix: keyPrefix }, request,
+    }, sql);
+
     return NextResponse.json({
       key: {
         id: keyId,
@@ -152,6 +159,11 @@ export async function DELETE(request) {
 
     // Fire-and-forget meter decrement
     incrementMeter(orgId, 'api_keys', sql, -1).catch(() => {});
+
+    logActivity({
+      orgId, actorId: getUserId(request) || 'unknown', action: 'key.revoked',
+      resourceType: 'api_key', resourceId: keyId, request,
+    }, sql);
 
     return NextResponse.json({ success: true, revoked: keyId });
   } catch (error) {

@@ -23,6 +23,10 @@ app/
 ├── lib/auth.js                # NextAuth config (GitHub + Google, JWT, user upsert)
 ├── lib/billing.js             # Plan limits, usage metering, quota checking
 ├── lib/colors.js              # Agent color hashing, action type icon map
+├── lib/audit.js               # Fire-and-forget activity logging (logActivity)
+├── lib/signals.js             # Shared signal computation (computeSignals)
+├── lib/webhooks.js            # Webhook HMAC signing, delivery, dispatch
+├── lib/notifications.js       # Email alerts via Resend
 ├── components/
 │   ├── ui/                    # Shared primitives (Card, Badge, Stat, ProgressBar, EmptyState, Skeleton)
 │   ├── Sidebar.js             # Persistent sidebar navigation (links to /dashboard)
@@ -46,6 +50,9 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
+├── activity/                  # Activity log page (audit trail)
+├── webhooks/                  # Webhook management page
+├── notifications/             # Notification preferences page
 ├── team/                      # Team management page (members, invites, roles)
 ├── invite/[token]/            # Invite accept page (standalone layout)
 ├── setup/                     # Redirects to /dashboard (legacy)
@@ -73,6 +80,10 @@ app/
     ├── onboarding/            # Onboarding endpoints (status, workspace, api-key)
     ├── tokens/                # Token usage snapshots (disabled — API exists but not used by UI)
     ├── waitlist/              # Waitlist signups (public — no auth required)
+    ├── activity/              # Activity log API (GET, paginated)
+    ├── webhooks/              # Webhooks CRUD + test + deliveries
+    ├── notifications/         # Notification preferences API
+    ├── cron/signals/          # Vercel Cron: signal detection + alerting (every 10 min)
     └── workflows/             # Workflow definitions
 
 sdk/
@@ -100,6 +111,7 @@ clawd-tools/                   # Agent workspace tools bundle (memory, security,
 - **Font**: Inter (via `next/font/google`, CSS variable `--font-inter`)
 - **Database**: Neon PostgreSQL (`@neondatabase/serverless`)
 - **Charts**: Recharts (brand orange theme)
+- **Email**: Resend (signal alert emails)
 - **Local DB**: better-sqlite3 (for wes-context tools only)
 - **Package Manager**: npm
 - **Linter**: ESLint (`next/core-web-vitals` — `.eslintrc.json`)
@@ -136,6 +148,9 @@ See `.env.example`. Key vars:
 | `GITHUB_SECRET` | For GitHub login | GitHub OAuth App client secret |
 | `GOOGLE_ID` | For Google login | Google OAuth client ID |
 | `GOOGLE_SECRET` | For Google login | Google OAuth client secret |
+| `RESEND_API_KEY` | For email alerts | Resend API key for signal alert emails |
+| `ALERT_FROM_EMAIL` | No | From address for alerts (default: `alerts@openclaw.dev`) |
+| `CRON_SECRET` | For cron auth | Bearer token for Vercel Cron endpoint |
 
 ## Key Patterns
 
@@ -171,9 +186,9 @@ function getSql() {
 - Middleware matcher includes both API routes and all authenticated page routes (`/dashboard`, `/actions`, `/goals`, etc.)
 - Page routes use `getToken()` from `next-auth/jwt` (Edge-compatible) for session checks
 - `PROTECTED_ROUTES` array — prefix matching (includes `/api/orgs`, `/api/team`, `/api/invite`)
-- `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`, `/api/waitlist`, `/api/auth`
+- `PUBLIC_ROUTES` — `/api/health`, `/api/setup/status`, `/api/waitlist`, `/api/auth`, `/api/webhooks/stripe`, `/api/cron`
 - **Role-based access**: Two roles (`admin`, `member`). `session.user.role` available client-side via `useSession()`
-- **Admin-only API routes** (return 403 for members): POST/DELETE `/api/keys`, POST/DELETE `/api/settings`, all `/api/team/invite`, PATCH/DELETE `/api/team/[userId]`, all `/api/orgs`
+- **Admin-only API routes** (return 403 for members): POST/DELETE `/api/keys`, POST/DELETE `/api/settings`, all `/api/team/invite`, PATCH/DELETE `/api/team/[userId]`, all `/api/orgs`, POST/DELETE `/api/webhooks`
 - **Admin-only UI**: Generate/revoke API keys hidden for members; Integrations configure modal disabled; Team invite/role/remove sections hidden
 - **Member-accessible**: All GET endpoints, all data APIs (actions, goals, learning, etc.)
 - Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
@@ -223,6 +238,12 @@ function getSql() {
 - `GET /api/onboarding/status` — onboarding progress (workspace_created, api_key_exists, first_action_sent)
 - `POST /api/onboarding/workspace` — create workspace (org) during onboarding
 - `POST /api/onboarding/api-key` — generate first API key during onboarding
+- `GET /api/activity` — activity logs (paginated, filtered by action/actor/resource_type/date, joins users for actor info)
+- `GET/POST/DELETE /api/webhooks` — webhook CRUD (GET: all members; POST/DELETE: admin only; max 10 per org)
+- `POST /api/webhooks/[webhookId]/test` — send test webhook payload (admin only)
+- `GET /api/webhooks/[webhookId]/deliveries` — recent delivery history (last 20)
+- `GET/POST /api/notifications` — notification preferences per user (email channel, signal type filters)
+- `GET /api/cron/signals` — Vercel Cron handler: detect new signals, fire webhooks, send email alerts
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -340,6 +361,49 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Meter increment points: `POST /api/actions` (+actions, +agents if new), `POST/DELETE /api/keys` (+/-api_keys), `POST /api/invite/[token]` accept (+members), `DELETE /api/team/[userId]` (-members)
 - Migration Step 19 in `migrate-multi-tenant.mjs`
 
+## Activity Log (Implemented)
+- Route: `/activity` — audit trail of admin actions + system events
+- Table: `activity_logs` (id `al_` prefix, org_id, actor_id, actor_type, action, resource_type, resource_id, details JSON, ip_address, created_at)
+- Library: `app/lib/audit.js` — fire-and-forget `logActivity()` (same pattern as `incrementMeter()`)
+- API: `GET /api/activity` — paginated, filtered by action/actor_id/resource_type/before/after, JOINs users for actor name/image
+- Stats: total events, today's events, unique actors
+- Actor types: `user`, `system`, `api_key`, `cron`
+- Audited events: `key.created`, `key.revoked`, `invite.created`, `invite.revoked`, `invite.accepted`, `role.changed`, `member.removed`, `member.left`, `setting.updated`, `setting.deleted`, `billing.checkout_started`, `webhook.created`, `webhook.deleted`, `webhook.tested`, `webhook.fired`, `signal.detected`, `alert.email_sent`
+- Indexes: org_id, created_at, action, actor_id
+- Sidebar: "Activity" link with Clock icon in System group (after Billing)
+- Migration Step 20 in `migrate-multi-tenant.mjs`
+
+## Webhooks (Implemented)
+- Route: `/webhooks` — manage webhook endpoints for signal notifications
+- Tables: `webhooks` (id `wh_` prefix), `webhook_deliveries` (id `wd_` prefix)
+- Library: `app/lib/webhooks.js` — `signPayload()` (HMAC-SHA256), `deliverWebhook()`, `fireWebhooksForOrg()`
+- API: `GET/POST/DELETE /api/webhooks` (GET: all members; POST/DELETE: admin only)
+- API: `POST /api/webhooks/[webhookId]/test` — send test payload (admin only)
+- API: `GET /api/webhooks/[webhookId]/deliveries` — recent delivery history (last 20)
+- Webhook secret: 32-byte hex, shown once on creation, HMAC-SHA256 signature in `X-OpenClaw-Signature` header
+- Event subscription: JSON array of signal types or `["all"]`
+- Max 10 webhooks per org; auto-disabled after 10 consecutive failures
+- Delivery logging: status (pending/success/failed), response_status, response_body (truncated to 2000 chars), duration_ms
+- Sidebar: "Webhooks" link with Webhook icon in System group (after Activity)
+- Migration Steps 21-22 in `migrate-multi-tenant.mjs`
+
+## Email Alerts & Cron (Implemented)
+- Route: `/notifications` — email alert preferences per user
+- Tables: `notification_preferences` (id `np_` prefix, unique on org_id+user_id+channel), `signal_snapshots` (deduplication via signal_hash)
+- Library: `app/lib/signals.js` — `computeSignals()` extracted from signals API route (shared by API + cron)
+- Library: `app/lib/notifications.js` — `sendSignalAlertEmail()` via Resend SDK (no-op if `RESEND_API_KEY` not set)
+- API: `GET/POST /api/notifications` — user preference CRUD (email channel, signal type filters)
+- Cron: `GET /api/cron/signals` — Vercel Cron every 10 min:
+  1. Auth via `Authorization: Bearer CRON_SECRET` (skip in dev)
+  2. For each org: compute signals → hash → compare to `signal_snapshots` → find NEW signals
+  3. Upsert all current signals into snapshots (update `last_seen_at`)
+  4. For new signals: fire webhooks, send emails to opted-in users, log activities
+- Signal hashing: MD5 of `type:agent_id:action_id:loop_id:assumption_id`
+- Vercel Cron config: `vercel.json` with `*/10 * * * *` schedule
+- Sidebar: "Notifications" link with Bell icon in System group (after Webhooks)
+- Migration Step 23 in `migrate-multi-tenant.mjs`
+- Env vars: `RESEND_API_KEY`, `ALERT_FROM_EMAIL` (default: `alerts@openclaw.dev`), `CRON_SECRET`
+
 ## Onboarding Flow (Implemented)
 - 4-step guided checklist displayed on dashboard via `OnboardingChecklist.js` (full-width, self-hides when complete)
 - **Step 1**: Create Workspace — text input, calls `POST /api/onboarding/workspace` (creates org, updates user)
@@ -382,7 +446,7 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 ### Tables
 - `organizations` — id (TEXT PK `org_`), name, slug (unique), plan
 - `api_keys` — id (TEXT PK `key_`), org_id (FK), key_hash (SHA-256), key_prefix, label, role, revoked_at
-- All 28 data tables have `org_id TEXT NOT NULL DEFAULT 'org_default'` + index
+- All 33 data tables have `org_id TEXT NOT NULL DEFAULT 'org_default'` + index
 
 ### Key Format
 `oc_live_{32_hex_chars}` — stored as SHA-256 hash in `api_keys.key_hash`. First 8 chars in `key_prefix` for display.
@@ -429,6 +493,8 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 | `GITHUB_SECRET` | Production | Yes |
 | `GOOGLE_ID` | Production | Yes |
 | `GOOGLE_SECRET` | Production | Yes |
+| `RESEND_API_KEY` | Production (optional) | Yes |
+| `CRON_SECRET` | Production | Yes |
 
 ### Deploy Commands
 ```bash

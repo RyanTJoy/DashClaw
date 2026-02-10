@@ -30,6 +30,9 @@ const PROTECTED_ROUTES = [
   '/api/team',
   '/api/invite',
   '/api/billing',
+  '/api/activity',
+  '/api/webhooks',
+  '/api/notifications',
 ];
 
 // Routes that are always public (health checks, setup, auth)
@@ -38,7 +41,8 @@ const PUBLIC_ROUTES = [
   '/api/setup/status',
   '/api/waitlist',
   '/api/auth',
-  '/api/webhooks',
+  '/api/webhooks/stripe',
+  '/api/cron',
 ];
 
 // Simple in-memory rate limiting (resets on deploy)
@@ -349,6 +353,12 @@ export const config = {
     '/team/:path*',
     '/billing',
     '/billing/:path*',
+    '/activity',
+    '/activity/:path*',
+    '/webhooks',
+    '/webhooks/:path*',
+    '/notifications',
+    '/notifications/:path*',
     '/invite/:path*',
     '/login',
   ],
