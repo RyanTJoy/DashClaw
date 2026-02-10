@@ -311,6 +311,23 @@ CREATE TABLE IF NOT EXISTS sync_log (
 CREATE INDEX IF NOT EXISTS idx_sync_log_org_id ON sync_log(org_id);
 
 -- ============================================
+-- CALENDAR
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS calendar_events (
+    id SERIAL PRIMARY KEY,
+    org_id TEXT NOT NULL DEFAULT 'org_default',
+    summary TEXT NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP,
+    location TEXT,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_org_id ON calendar_events(org_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time);
+
+-- ============================================
 -- SETTINGS
 -- ============================================
 
