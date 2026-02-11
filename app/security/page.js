@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ShieldAlert, AlertTriangle, Zap, Eye, RotateCw,
-  ChevronRight, CircleAlert
+  ChevronRight, CircleAlert, X as XIcon, EyeOff, Undo2
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -21,6 +21,46 @@ export default function SecurityDashboard() {
   const [invalidatedAssumptions, setInvalidatedAssumptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
+
+  // Signal dismissal state
+  const [dismissedSignals, setDismissedSignals] = useState(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const stored = localStorage.getItem('dashclaw_dismissed_signals');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+  const [showDismissed, setShowDismissed] = useState(false);
+
+  const getSignalHash = (signal) =>
+    `${signal.type || signal.signal_type || ''}:${signal.agent_id || ''}:${signal.action_id || ''}:${signal.loop_id || ''}:${signal.assumption_id || ''}`;
+
+  const dismissSignal = (signal) => {
+    const hash = getSignalHash(signal);
+    setDismissedSignals(prev => {
+      const next = new Set(prev);
+      next.add(hash);
+      localStorage.setItem('dashclaw_dismissed_signals', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const restoreSignal = (signal) => {
+    const hash = getSignalHash(signal);
+    setDismissedSignals(prev => {
+      const next = new Set(prev);
+      next.delete(hash);
+      localStorage.setItem('dashclaw_dismissed_signals', JSON.stringify([...next]));
+      return next;
+    });
+  };
+
+  const dismissAllVisible = () => {
+    const next = new Set(dismissedSignals);
+    activeSignals.forEach(s => next.add(getSignalHash(s)));
+    localStorage.setItem('dashclaw_dismissed_signals', JSON.stringify([...next]));
+    setDismissedSignals(next);
+  };
 
   // Detail panel state
   const [panelItem, setPanelItem] = useState(null);
@@ -88,8 +128,12 @@ export default function SecurityDashboard() {
     setPanelType(null);
   };
 
-  // Stats
-  const totalSignals = signals.length;
+  // Split signals into active vs dismissed
+  const activeSignals = signals.filter(s => !dismissedSignals.has(getSignalHash(s)));
+  const dismissedList = signals.filter(s => dismissedSignals.has(getSignalHash(s)));
+
+  // Stats (use active signals only)
+  const totalSignals = activeSignals.length;
   const now24h = Date.now() - 24 * 60 * 60 * 1000;
   const highRisk24h = highRiskActions.filter(a => {
     const ts = new Date(a.timestamp_start).getTime();
@@ -158,51 +202,119 @@ export default function SecurityDashboard() {
         {/* Signal Feed - left */}
         <div className="lg:col-span-3">
           <Card>
-            <CardHeader title="Risk Signals" icon={ShieldAlert} count={signals.length} />
+            <CardHeader title="Risk Signals" icon={ShieldAlert} count={activeSignals.length}>
+              <div className="flex items-center gap-2">
+                {activeSignals.length > 0 && (
+                  <button
+                    onClick={dismissAllVisible}
+                    className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    Clear All
+                  </button>
+                )}
+                {dismissedList.length > 0 && (
+                  <button
+                    onClick={() => setShowDismissed(!showDismissed)}
+                    className={`flex items-center gap-1 text-[10px] transition-colors ${showDismissed ? 'text-zinc-300' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  >
+                    <EyeOff size={10} />
+                    {dismissedList.length} dismissed
+                  </button>
+                )}
+              </div>
+            </CardHeader>
             <CardContent>
               {loading ? (
                 <ListSkeleton rows={5} />
-              ) : signals.length === 0 ? (
+              ) : activeSignals.length === 0 && !showDismissed ? (
                 <EmptyState
                   icon={ShieldAlert}
                   title="No active signals"
-                  description="All clear. No risk signals detected."
+                  description={dismissedList.length > 0 ? `${dismissedList.length} signal${dismissedList.length !== 1 ? 's' : ''} dismissed.` : 'All clear. No risk signals detected.'}
                 />
               ) : (
                 <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                  {signals.map((signal, idx) => {
+                  {activeSignals.map((signal, idx) => {
                     const SeverityIcon = getSeverityIcon(signal.severity);
                     return (
-                      <button
-                        key={idx}
-                        onClick={() => openPanel(signal, 'signal')}
-                        className="w-full bg-surface-tertiary rounded-lg p-3.5 text-left hover:bg-white/[0.04] transition-colors duration-150 group"
+                      <div
+                        key={`active-${idx}`}
+                        className="w-full bg-surface-tertiary rounded-lg p-3.5 text-left hover:bg-white/[0.04] transition-colors duration-150 group flex items-start justify-between gap-2"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2.5 min-w-0">
-                            <SeverityIcon
-                              size={16}
-                              className={`mt-0.5 shrink-0 ${signal.severity === 'red' ? 'text-red-400' : 'text-yellow-400'}`}
-                            />
-                            <div className="min-w-0">
-                              <div className="text-sm text-white truncate">{signal.label}</div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant={signal.severity === 'red' ? 'error' : 'warning'} size="xs">
-                                  {signal.severity}
-                                </Badge>
-                                {signal.agent_id && (
-                                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getAgentColor(signal.agent_id)}`}>
-                                    {signal.agent_id}
-                                  </span>
-                                )}
-                              </div>
+                        <button
+                          onClick={() => openPanel(signal, 'signal')}
+                          className="flex items-start gap-2.5 min-w-0 flex-1 text-left"
+                        >
+                          <SeverityIcon
+                            size={16}
+                            className={`mt-0.5 shrink-0 ${signal.severity === 'red' ? 'text-red-400' : 'text-yellow-400'}`}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-sm text-white truncate">{signal.label}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant={signal.severity === 'red' ? 'error' : 'warning'} size="xs">
+                                {signal.severity}
+                              </Badge>
+                              {signal.agent_id && (
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getAgentColor(signal.agent_id)}`}>
+                                  {signal.agent_id}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <ChevronRight size={14} className="text-zinc-600 group-hover:text-zinc-400 mt-0.5 shrink-0" />
+                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); dismissSignal(signal); }}
+                            className="p-1 text-zinc-600 hover:text-zinc-300 transition-colors"
+                            title="Dismiss signal"
+                          >
+                            <XIcon size={14} />
+                          </button>
+                          <ChevronRight size={14} className="text-zinc-600 group-hover:text-zinc-400" />
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
+
+                  {/* Dismissed signals section */}
+                  {showDismissed && dismissedList.length > 0 && (
+                    <>
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-wider pt-3 pb-1 px-1">Dismissed</div>
+                      {dismissedList.map((signal, idx) => {
+                        const SeverityIcon = getSeverityIcon(signal.severity);
+                        return (
+                          <div
+                            key={`dismissed-${idx}`}
+                            className="w-full bg-surface-tertiary/50 rounded-lg p-3.5 text-left opacity-60 hover:opacity-80 transition-opacity flex items-start justify-between gap-2"
+                          >
+                            <button
+                              onClick={() => openPanel(signal, 'signal')}
+                              className="flex items-start gap-2.5 min-w-0 flex-1 text-left"
+                            >
+                              <SeverityIcon
+                                size={16}
+                                className={`mt-0.5 shrink-0 ${signal.severity === 'red' ? 'text-red-400' : 'text-yellow-400'}`}
+                              />
+                              <div className="min-w-0">
+                                <div className="text-sm text-zinc-400 truncate">{signal.label}</div>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="default" size="xs">dismissed</Badge>
+                                </div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); restoreSignal(signal); }}
+                              className="p-1 text-zinc-600 hover:text-zinc-300 transition-colors shrink-0"
+                              title="Restore signal"
+                            >
+                              <Undo2 size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -264,7 +376,7 @@ export default function SecurityDashboard() {
       </div>
 
       {/* Detail Panel */}
-      <SecurityDetailPanel item={panelItem} type={panelType} onClose={closePanel} />
+      <SecurityDetailPanel item={panelItem} type={panelType} onClose={closePanel} onDismiss={dismissSignal} />
     </PageLayout>
   );
 }

@@ -30,7 +30,7 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Flame size={32} className="text-brand" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Sign in to OpenClaw</h1>
+          <h1 className="text-2xl font-bold text-white">Sign in to DashClaw</h1>
           <p className="text-sm text-zinc-400 mt-2">Agent observability starts here.</p>
         </div>
 

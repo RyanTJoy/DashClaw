@@ -1,4 +1,4 @@
-# OpenClaw Pro
+# DashClaw
 
 ## What This Is
 
@@ -9,7 +9,7 @@ AI agent observability platform — a Next.js 14 app (JavaScript, not TypeScript
 - **`/dashboard`** — Authenticated operations dashboard (client component, behind sidebar)
 - **`/workspace`** — Agent workspace with 6 tabs: digest, context, handoffs, snippets, preferences, memory
 
-Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included.
+Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included. User-facing brand is "DashClaw" (repo name remains OpenClaw-Pro for backward compat).
 
 ## Architecture
 
@@ -299,7 +299,7 @@ function getSql() {
 ## ActionRecord Control Plane
 - 3 tables: `action_records`, `open_loops`, `assumptions` (with `invalidated_at` column)
 - 13 API routes under `/api/actions/`:
-  - `GET/POST /api/actions` — list + create actions
+  - `GET/POST /api/actions` — list + create actions (stats respect all query filters: agent_id, status, action_type, risk_min)
   - `GET/PATCH /api/actions/[actionId]` — single action + update outcome
   - `GET /api/actions/[actionId]/trace` — root-cause trace (assumptions, loops, parent chain, related actions)
   - `GET/POST /api/actions/assumptions` — list + create assumptions (supports `drift=true` for drift scoring)
@@ -355,7 +355,10 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Stats bar: Active Signals, High-Risk (24h), Unscoped Actions, Invalidated Assumptions (7d)
 - Signal feed (left): clickable rows sorted by severity, opens SecurityDetailPanel
 - High-risk actions (right): actions with risk_score>=70 OR (unscoped AND irreversible)
-- SecurityDetailPanel: slide-out drawer from right, closes on Escape/backdrop click
+- SecurityDetailPanel: slide-out drawer from right, closes on Escape/backdrop click, supports `onDismiss` callback
+- Signal dismissal: client-side via localStorage (`dashclaw_dismissed_signals`), hash = `type:agent_id:action_id:loop_id:assumption_id`
+- Dismiss per-signal (X button), "Clear All" header action, "Show Dismissed" toggle with restore (Undo2) buttons
+- Stats bar reflects active (non-dismissed) signals only
 - Auto-refresh every 30 seconds; respects global agent filter
 - Sidebar: "Security" link with ShieldAlert icon in Operations group
 
