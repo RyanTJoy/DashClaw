@@ -9,6 +9,8 @@ import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Skeleton } from '../components/ui/Skeleton';
 import { getAgentColor } from '../lib/colors';
+import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useSession } from 'next-auth/react';
 import {
   Zap, Hammer, Rocket, FileText, Briefcase, Shield, MessageSquare,
   Link as LinkIcon, Calendar, Search, Eye, Wrench, RefreshCw, FlaskConical,
@@ -33,6 +35,10 @@ const statusVariantMap = {
 };
 
 export default function ActionsTimeline() {
+  const { agentId: globalAgentId } = useAgentFilter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
+
   const [actions, setActions] = useState([]);
   const [stats, setStats] = useState({});
   const [total, setTotal] = useState(0);
@@ -40,6 +46,7 @@ export default function ActionsTimeline() {
   const [lastUpdated, setLastUpdated] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [expandedData, setExpandedData] = useState({});
+  const [clearing, setClearing] = useState(false);
 
   const [filterAgent, setFilterAgent] = useState('');
   const [filterType, setFilterType] = useState('');
@@ -48,6 +55,12 @@ export default function ActionsTimeline() {
   const [page, setPage] = useState(0);
   const [knownAgents, setKnownAgents] = useState([]);
   const pageSize = 25;
+
+  // Sync global agent filter → local filter
+  useEffect(() => {
+    setFilterAgent(globalAgentId || '');
+    setPage(0);
+  }, [globalAgentId]);
 
   const fetchActions = useCallback(async () => {
     try {
@@ -92,6 +105,38 @@ export default function ActionsTimeline() {
     setLoading(true);
     fetchActions();
   }, [fetchActions]);
+
+  const handleClearActions = async () => {
+    const agentLabel = filterAgent || 'all agents';
+    const statusLabel = filterStatus || 'all statuses';
+    const msg = `Delete actions for ${agentLabel} (${statusLabel})? This cannot be undone.`;
+    if (!confirm(msg)) return;
+
+    setClearing(true);
+    try {
+      const params = new URLSearchParams();
+      if (filterAgent) params.set('agent_id', filterAgent);
+      if (filterStatus) params.set('status', filterStatus);
+      // If no filters set, require at least a status to prevent accidental full wipe
+      if (!filterAgent && !filterStatus) {
+        params.set('status', 'completed');
+      }
+      const res = await fetch(`/api/actions?${params}`, { method: 'DELETE' });
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Deleted ${data.deleted} action(s).`);
+        setPage(0);
+        fetchActions();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete actions');
+      }
+    } catch {
+      alert('Failed to delete actions');
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const toggleExpand = async (actionId) => {
     if (expandedId === actionId) {
@@ -161,13 +206,25 @@ export default function ActionsTimeline() {
       subtitle={`Agent Operations Control Plane${lastUpdated ? ` \u00B7 Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Actions']}
       actions={
-        <button
-          onClick={() => { setLoading(true); fetchActions(); }}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
-        >
-          <RotateCw size={14} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={handleClearActions}
+              disabled={clearing}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:text-red-300 bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-red-500/30 transition-colors duration-150 disabled:opacity-50"
+            >
+              <Trash2 size={14} />
+              {clearing ? 'Clearing...' : 'Clear Actions'}
+            </button>
+          )}
+          <button
+            onClick={() => { setLoading(true); fetchActions(); }}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+          >
+            <RotateCw size={14} />
+            Refresh
+          </button>
+        </div>
       }
     >
       {/* Stats Overview */}
