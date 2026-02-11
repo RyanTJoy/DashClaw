@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, MessageSquare,
+  Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
   GitBranch, Settings, Crosshair, Calendar, CreditCard,
   Clock, Webhook, Bell, FolderKanban,
@@ -23,6 +23,7 @@ const navGroups = [
     items: [
       { href: '/actions', icon: Zap, label: 'Actions' },
       { href: '/security', icon: ShieldAlert, label: 'Security' },
+      { href: '/policies', icon: Shield, label: 'Policies' },
       { href: '/messages', icon: MessageSquare, label: 'Messages' },
       { href: '/workspace', icon: FolderKanban, label: 'Workspace' },
     ],

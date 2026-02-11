@@ -184,4 +184,78 @@ export function validateAssumptionUpdate(body) {
   return result;
 }
 
-export { ACTION_TYPES, ACTION_STATUSES, LOOP_TYPES, LOOP_STATUSES, LOOP_PRIORITIES, OUTCOME_FIELDS };
+// ── Guard & Policy validation ──
+
+const GUARD_INPUT_SCHEMA = {
+  action_type:     { type: 'string', required: true, maxLength: 128 },
+  risk_score:      { type: 'integer', min: 0, max: 100 },
+  agent_id:        { type: 'string', maxLength: 128 },
+  systems_touched: { type: 'array', maxItems: 50 },
+  reversible:      { type: 'boolean' },
+  declared_goal:   { type: 'string', maxLength: 2000 },
+};
+
+const POLICY_TYPES = ['risk_threshold', 'require_approval', 'block_action_type', 'rate_limit'];
+const GUARD_ACTIONS = ['allow', 'warn', 'block', 'require_approval'];
+
+const POLICY_SCHEMA = {
+  name:        { type: 'string', required: true, maxLength: 256 },
+  policy_type: { type: 'string', required: true, enum: POLICY_TYPES },
+  rules:       { type: 'string', required: true, maxLength: 4000 },
+  active:      { type: 'integer', min: 0, max: 1 },
+};
+
+export function validateGuardInput(body) {
+  return validate(body, GUARD_INPUT_SCHEMA);
+}
+
+export function validatePolicy(body) {
+  const result = validate(body, POLICY_SCHEMA);
+  if (!result.valid) return result;
+
+  // Validate rules JSON structure
+  let rules;
+  try {
+    rules = JSON.parse(result.data.rules);
+  } catch {
+    result.valid = false;
+    result.errors.push('rules must be valid JSON');
+    return result;
+  }
+
+  if (rules.action && !GUARD_ACTIONS.includes(rules.action)) {
+    result.valid = false;
+    result.errors.push(`rules.action must be one of: ${GUARD_ACTIONS.join(', ')}`);
+    return result;
+  }
+
+  switch (result.data.policy_type) {
+    case 'risk_threshold':
+      if (typeof rules.threshold !== 'number' || rules.threshold < 0 || rules.threshold > 100) {
+        result.valid = false;
+        result.errors.push('risk_threshold policy requires rules.threshold (0-100)');
+      }
+      break;
+    case 'require_approval':
+    case 'block_action_type':
+      if (!Array.isArray(rules.action_types) || rules.action_types.length === 0) {
+        result.valid = false;
+        result.errors.push(`${result.data.policy_type} policy requires rules.action_types array`);
+      }
+      break;
+    case 'rate_limit':
+      if (typeof rules.max_actions !== 'number' || rules.max_actions <= 0) {
+        result.valid = false;
+        result.errors.push('rate_limit policy requires rules.max_actions > 0');
+      }
+      if (typeof rules.window_minutes !== 'number' || rules.window_minutes <= 0) {
+        result.valid = false;
+        result.errors.push('rate_limit policy requires rules.window_minutes > 0');
+      }
+      break;
+  }
+
+  return result;
+}
+
+export { ACTION_TYPES, ACTION_STATUSES, LOOP_TYPES, LOOP_STATUSES, LOOP_PRIORITIES, OUTCOME_FIELDS, POLICY_TYPES };
