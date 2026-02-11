@@ -7,7 +7,7 @@ import {
 import CopyDocsButton from '../components/CopyDocsButton';
 
 export const metadata = {
-  title: 'DashClaw SDK Documentation — OpenClaw',
+  title: 'DashClaw SDK Documentation',
   description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 45 methods across action recording, context management, session handoffs, security scanning, and more.',
 };
 
@@ -176,7 +176,7 @@ export default function DocsPage() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <Flame size={20} className="text-brand" />
-            <span className="text-lg font-semibold">OpenClaw</span>
+            <span className="text-lg font-semibold">DashClaw</span>
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
             <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
@@ -196,7 +196,7 @@ export default function DocsPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-28 pb-12 px-6">
+      <section className="pt-32 pb-12 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-2 text-sm text-zinc-500 mb-4">
             <Link href="/" className="hover:text-zinc-300 transition-colors">Home</Link>
@@ -210,7 +210,7 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK (formerly OpenClaw Agent SDK). 55 methods to instrument your AI agents with
+            Full reference for the DashClaw SDK. 55 methods to instrument your AI agents with
             action recording, context management, session handoffs, security scanning, and more.
           </p>
           <CopyDocsButton />
@@ -298,7 +298,7 @@ await claw.updateOutcome(action_id, {
 
             <div className="mt-6">
               <ParamTable params={[
-                { name: 'baseUrl', type: 'string', required: true, desc: 'OpenClaw dashboard URL (e.g. "https://your-app.vercel.app")' },
+                { name: 'baseUrl', type: 'string', required: true, desc: 'DashClaw dashboard URL (e.g. "https://your-app.vercel.app")' },
                 { name: 'apiKey', type: 'string', required: true, desc: 'API key for authentication (determines which org\'s data you access)' },
                 { name: 'agentId', type: 'string', required: true, desc: 'Unique identifier for this agent' },
                 { name: 'agentName', type: 'string', required: false, desc: 'Human-readable agent name' },
@@ -609,7 +609,7 @@ for (const signal of signals) {
               </div>
               <h2 className="text-2xl font-bold tracking-tight">Dashboard Data</h2>
             </div>
-            <p className="text-sm text-zinc-400 mb-4">Push data from your agent directly to the OpenClaw dashboard. All methods auto-attach the agent&apos;s agentId.</p>
+            <p className="text-sm text-zinc-400 mb-4">Push data from your agent directly to the DashClaw dashboard. All methods auto-attach the agent&apos;s agentId.</p>
 
             <MethodEntry
               id="recordDecision"
@@ -1041,7 +1041,7 @@ console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Flame size={16} className="text-brand" />
-            <span className="text-sm text-zinc-400">OpenClaw Pro</span>
+            <span className="text-sm text-zinc-400">DashClaw</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-zinc-500">
             <a href="https://github.com/ucsandman/OpenClaw-Pro" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">

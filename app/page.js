@@ -102,13 +102,13 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Flame size={20} className="text-brand" />
-            <span className="text-lg font-semibold">OpenClaw</span>
+            <span className="text-lg font-semibold">DashClaw</span>
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <a href="#signals" className="hover:text-white transition-colors">Signals</a>
             <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+            <a href="#signals" className="hover:text-white transition-colors">Signals</a>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
@@ -433,7 +433,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Flame size={16} className="text-brand" />
-            <span className="text-sm text-zinc-400">OpenClaw Pro</span>
+            <span className="text-sm text-zinc-400">DashClaw</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-zinc-500">
             <a href="https://github.com/ucsandman/OpenClaw-Pro" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">

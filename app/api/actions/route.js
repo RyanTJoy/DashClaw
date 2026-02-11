@@ -71,8 +71,8 @@ export async function GET(request) {
       sql.query(countQuery, countParams)
     ]);
 
-    // Stats aggregation
-    const stats = await sql`
+    // Stats aggregation (uses same filters as list query)
+    const statsQuery = `
       SELECT
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE status = 'completed') as completed,
@@ -81,8 +81,9 @@ export async function GET(request) {
         COUNT(*) FILTER (WHERE risk_score >= 70) as high_risk,
         COALESCE(AVG(risk_score), 0) as avg_risk,
         COALESCE(SUM(cost_estimate), 0) as total_cost
-      FROM action_records WHERE org_id = ${orgId}
+      FROM action_records ${where}
     `;
+    const stats = await sql.query(statsQuery, countParams);
 
     return NextResponse.json({
       actions,

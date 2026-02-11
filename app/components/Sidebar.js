@@ -73,7 +73,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-[rgba(255,255,255,0.06)]">
         <Flame size={20} className="text-brand flex-shrink-0" />
-        {!collapsed && <span className="text-lg font-semibold text-white">OpenClaw</span>}
+        {!collapsed && <span className="text-lg font-semibold text-white">DashClaw</span>}
       </div>
 
       {/* Nav Groups */}
@@ -114,7 +114,7 @@ export default function Sidebar() {
       {/* Bottom */}
       <div className="border-t border-[rgba(255,255,255,0.06)] px-4 py-3">
         {!collapsed && (
-          <div className="text-[10px] text-zinc-600">OpenClaw Pro v1.0</div>
+          <div className="text-[10px] text-zinc-600">DashClaw v1.0</div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

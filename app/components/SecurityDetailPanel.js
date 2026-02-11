@@ -19,7 +19,7 @@ function AgentDot({ agentId }) {
   );
 }
 
-function SignalDetail({ signal, onClose }) {
+function SignalDetail({ signal, onClose, onDismiss }) {
   const severityVariant = signal.severity === 'red' ? 'error' : 'warning';
 
   return (
@@ -73,6 +73,17 @@ function SignalDetail({ signal, onClose }) {
           <ExternalLink size={14} />
           View Action Post-Mortem
         </a>
+      )}
+
+      {/* Dismiss */}
+      {onDismiss && (
+        <button
+          onClick={() => { onDismiss(signal); onClose(); }}
+          className="w-full mt-2 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[rgba(255,255,255,0.06)] text-sm text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <X size={14} />
+          Dismiss Signal
+        </button>
       )}
     </div>
   );
@@ -166,7 +177,7 @@ function ActionDetail({ action }) {
   );
 }
 
-export default function SecurityDetailPanel({ item, type, onClose }) {
+export default function SecurityDetailPanel({ item, type, onClose, onDismiss }) {
   const panelRef = useRef(null);
 
   useEffect(() => {
@@ -205,7 +216,7 @@ export default function SecurityDetailPanel({ item, type, onClose }) {
         {/* Content */}
         <div className="p-5">
           {type === 'signal' ? (
-            <SignalDetail signal={item} onClose={onClose} />
+            <SignalDetail signal={item} onClose={onClose} onDismiss={onDismiss} />
           ) : (
             <ActionDetail action={item} />
           )}
