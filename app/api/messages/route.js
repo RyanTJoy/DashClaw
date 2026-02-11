@@ -71,13 +71,18 @@ export async function GET(request) {
       [...params, limit, offset]
     );
 
-    // Get unread count for this agent
+    // Get unread count (for specific agent or all)
     let unreadCount = 0;
     if (agentId) {
       const countResult = await sql.query(
         `SELECT COUNT(*)::int as count FROM agent_messages WHERE org_id = $1 AND (to_agent_id = $2 OR to_agent_id IS NULL) AND from_agent_id != $2 AND status = 'sent'`,
         [orgId, agentId]
       );
+      unreadCount = countResult[0]?.count || 0;
+    } else {
+      const countResult = await sql`
+        SELECT COUNT(*)::int as count FROM agent_messages WHERE org_id = ${orgId} AND status = 'sent'
+      `;
       unreadCount = countResult[0]?.count || 0;
     }
 
@@ -163,14 +168,11 @@ export async function PATCH(request) {
     if (!action || !['read', 'archive'].includes(action)) {
       return NextResponse.json({ error: 'action must be "read" or "archive"' }, { status: 400 });
     }
-    if (!agent_id) {
-      return NextResponse.json({ error: 'agent_id is required' }, { status: 400 });
-    }
-
     const now = new Date().toISOString();
     let updated = 0;
 
     if (action === 'read') {
+      const readerId = agent_id || 'dashboard';
       for (const msgId of message_ids) {
         // For direct messages: set read_at + status
         // For broadcasts: append to read_by JSON array
@@ -184,14 +186,13 @@ export async function PATCH(request) {
             const parsed = JSON.parse(msg[0].read_by || '[]');
             readBy = Array.isArray(parsed) ? parsed : [];
           } catch { readBy = []; }
-          if (!readBy.includes(agent_id)) {
-            readBy.push(agent_id);
+          if (!readBy.includes(readerId)) {
+            readBy.push(readerId);
             await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${msgId}`;
             updated++;
           }
-        } else {
-          // Direct message — verify agent is the recipient
-          if (msg[0].to_agent_id !== agent_id) continue;
+        } else if (readerId === 'dashboard' || msg[0].to_agent_id === readerId) {
+          // Direct message — dashboard can mark any, agents only their own
           await sql`UPDATE agent_messages SET status = 'read', read_at = ${now} WHERE id = ${msgId} AND status = 'sent'`;
           updated++;
         }

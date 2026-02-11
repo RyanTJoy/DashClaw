@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   MessageSquare, Send, Archive, Eye, Inbox, Hash,
-  FileText, AlertCircle, ChevronRight, X, Plus, Users
+  FileText, AlertCircle, ChevronRight, X, Plus, Users, CheckCheck
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent } from '../components/ui/Card';
@@ -177,22 +177,43 @@ export default function MessagesPage() {
   }
 
   async function handleMarkRead(msgId) {
-    if (!filterAgentId) return;
     await fetch('/api/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message_ids: [msgId], action: 'read', agent_id: filterAgentId }),
+      body: JSON.stringify({ message_ids: [msgId], action: 'read', agent_id: filterAgentId || 'dashboard' }),
     });
     fetchAll();
   }
 
   async function handleArchive(msgId) {
-    if (!filterAgentId) return;
     await fetch('/api/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message_ids: [msgId], action: 'archive', agent_id: filterAgentId }),
+      body: JSON.stringify({ message_ids: [msgId], action: 'archive', agent_id: filterAgentId || 'dashboard' }),
     });
+    fetchAll();
+  }
+
+  async function handleMarkAllRead() {
+    const unread = messages.filter(m => m.status === 'sent');
+    if (unread.length === 0) return;
+    await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message_ids: unread.map(m => m.id), action: 'read', agent_id: filterAgentId || 'dashboard' }),
+    });
+    fetchAll();
+  }
+
+  async function handleArchiveAll() {
+    if (messages.length === 0) return;
+    if (!confirm(`Archive ${messages.length} message(s)?`)) return;
+    await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message_ids: messages.map(m => m.id), action: 'archive', agent_id: filterAgentId || 'dashboard' }),
+    });
+    setSelected(null);
     fetchAll();
   }
 
@@ -240,7 +261,7 @@ export default function MessagesPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 border-b border-[rgba(255,255,255,0.06)] pb-px">
+      <div className="flex items-center gap-1 mb-4 border-b border-[rgba(255,255,255,0.06)] pb-px">
         {TABS.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -264,6 +285,24 @@ export default function MessagesPage() {
             </button>
           );
         })}
+        {tab === 'inbox' && messages.length > 0 && (
+          <div className="ml-auto flex gap-2">
+            {stats.unread > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-300 hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+              >
+                <CheckCheck size={12} /> Mark All Read
+              </button>
+            )}
+            <button
+              onClick={handleArchiveAll}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <Archive size={12} /> Archive All
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -639,7 +678,7 @@ function MessageDetail({ message, onMarkRead, onArchive, agentId }) {
           </span>
         )}
       </div>
-      {agentId && message.status === 'sent' && message.to_agent_id === agentId && (
+      {message.status === 'sent' && (
         <div className="flex gap-2">
           <button
             onClick={() => onMarkRead(message.id)}
