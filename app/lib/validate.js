@@ -195,7 +195,7 @@ const GUARD_INPUT_SCHEMA = {
   declared_goal:   { type: 'string', maxLength: 2000 },
 };
 
-const POLICY_TYPES = ['risk_threshold', 'require_approval', 'block_action_type', 'rate_limit'];
+const POLICY_TYPES = ['risk_threshold', 'require_approval', 'block_action_type', 'rate_limit', 'webhook_check'];
 const GUARD_ACTIONS = ['allow', 'warn', 'block', 'require_approval'];
 
 const POLICY_SCHEMA = {
@@ -251,6 +251,40 @@ export function validatePolicy(body) {
       if (typeof rules.window_minutes !== 'number' || rules.window_minutes <= 0) {
         result.valid = false;
         result.errors.push('rate_limit policy requires rules.window_minutes > 0');
+      }
+      break;
+    case 'webhook_check':
+      if (typeof rules.url !== 'string' || !rules.url.startsWith('https://')) {
+        result.valid = false;
+        result.errors.push('webhook_check policy requires rules.url starting with https://');
+      } else {
+        try {
+          const parsed = new URL(rules.url);
+          const host = parsed.hostname;
+          const blocked = [
+            /^localhost$/i, /^127\./, /^10\./, /^172\.(1[6-9]|2\d|3[0-1])\./,
+            /^192\.168\./, /^169\.254\./, /^\[::1?\]$/, /^::1?$/,
+          ];
+          if (!host || blocked.some(p => p.test(host))) {
+            result.valid = false;
+            result.errors.push('webhook_check URL cannot point to localhost or private networks');
+          }
+        } catch {
+          result.valid = false;
+          result.errors.push('webhook_check rules.url must be a valid URL');
+        }
+      }
+      if (rules.timeout_ms !== undefined) {
+        if (typeof rules.timeout_ms !== 'number' || rules.timeout_ms < 1000 || rules.timeout_ms > 10000) {
+          result.valid = false;
+          result.errors.push('webhook_check rules.timeout_ms must be 1000-10000');
+        }
+      }
+      if (rules.on_timeout !== undefined) {
+        if (!['allow', 'block'].includes(rules.on_timeout)) {
+          result.valid = false;
+          result.errors.push('webhook_check rules.on_timeout must be "allow" or "block"');
+        }
       }
       break;
   }

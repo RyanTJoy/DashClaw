@@ -69,6 +69,68 @@ export async function deliverWebhook({ webhookId, orgId, url, secret, eventType,
 }
 
 /**
+ * Deliver a guard webhook: POST evaluation context to customer URL for custom decision logic.
+ * No HMAC signing — guard webhooks are policy-based, not integration-based.
+ *
+ * @returns {Promise<{success: boolean, response: Object|null, status: number|null}>}
+ */
+export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeoutMs, sql }) {
+  const deliveryId = `wd_${crypto.randomUUID()}`;
+  const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  const now = new Date().toISOString();
+  const start = Date.now();
+
+  let status = 'failed';
+  let responseStatus = null;
+  let responseBody = null;
+  let parsedResponse = null;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs || 5000);
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-OpenClaw-Event': 'guard.evaluation',
+        'X-OpenClaw-Delivery': deliveryId,
+        'User-Agent': 'OpenClaw-Guard/1.0',
+      },
+      body: payloadStr,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+    responseStatus = res.status;
+    responseBody = await res.text().catch(() => '');
+    if (responseBody.length > 2000) responseBody = responseBody.substring(0, 2000);
+    status = res.ok ? 'success' : 'failed';
+
+    if (res.ok) {
+      try {
+        parsedResponse = JSON.parse(responseBody);
+      } catch { /* non-JSON response treated as no-op */ }
+    }
+  } catch (err) {
+    responseBody = err.name === 'AbortError' ? 'Request timed out' : (err.message || 'Request failed');
+    status = 'failed';
+  }
+
+  const durationMs = Date.now() - start;
+
+  // Log delivery (use policyId as webhook_id for guard webhooks)
+  sql`
+    INSERT INTO webhook_deliveries (id, webhook_id, org_id, event_type, payload, status, response_status, response_body, attempted_at, duration_ms)
+    VALUES (${deliveryId}, ${policyId}, ${orgId}, ${'guard.evaluation'}, ${payloadStr}, ${status}, ${responseStatus}, ${responseBody}, ${now}, ${durationMs})
+  `.catch((err) => {
+    console.error('[GUARD WEBHOOK] Failed to log delivery:', err.message);
+  });
+
+  return { success: status === 'success', response: parsedResponse, status: responseStatus };
+}
+
+/**
  * Fire webhooks for an org when new signals are detected.
  * Loads active webhooks, filters by event subscription, delivers, manages failure_count.
  */

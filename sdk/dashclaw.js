@@ -27,17 +27,26 @@ class DashClaw {
    * @param {string} options.agentId - Unique identifier for this agent
    * @param {string} [options.agentName] - Human-readable agent name
    * @param {string} [options.swarmId] - Swarm/group identifier if part of a multi-agent system
+   * @param {string} [options.guardMode='off'] - Auto guard check before createAction: 'off' | 'warn' | 'enforce'
+   * @param {Function} [options.guardCallback] - Called with guard decision object when guardMode is active
    */
-  constructor({ baseUrl, apiKey, agentId, agentName, swarmId }) {
+  constructor({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback }) {
     if (!baseUrl) throw new Error('baseUrl is required');
     if (!apiKey) throw new Error('apiKey is required');
     if (!agentId) throw new Error('agentId is required');
+
+    const validModes = ['off', 'warn', 'enforce'];
+    if (guardMode && !validModes.includes(guardMode)) {
+      throw new Error(`guardMode must be one of: ${validModes.join(', ')}`);
+    }
 
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
     this.agentId = agentId;
     this.agentName = agentName || null;
     this.swarmId = swarmId || null;
+    this.guardMode = guardMode || 'off';
+    this.guardCallback = guardCallback || null;
   }
 
   async _request(path, method, body) {
@@ -65,6 +74,49 @@ class DashClaw {
     return data;
   }
 
+  /**
+   * Internal: check guard policies before action creation.
+   * Only active when guardMode is 'warn' or 'enforce'.
+   * @param {Object} actionDef - Action definition from createAction()
+   */
+  async _guardCheck(actionDef) {
+    if (this.guardMode === 'off') return;
+
+    const context = {
+      action_type: actionDef.action_type,
+      risk_score: actionDef.risk_score,
+      systems_touched: actionDef.systems_touched,
+      reversible: actionDef.reversible,
+      declared_goal: actionDef.declared_goal,
+    };
+
+    let decision;
+    try {
+      decision = await this.guard(context);
+    } catch (err) {
+      // Guard API failure is fail-open — log and proceed
+      console.warn(`[DashClaw] Guard check failed (proceeding): ${err.message}`);
+      return;
+    }
+
+    if (this.guardCallback) {
+      try { this.guardCallback(decision); } catch { /* ignore callback errors */ }
+    }
+
+    const isBlocked = decision.decision === 'block' || decision.decision === 'require_approval';
+
+    if (this.guardMode === 'warn' && isBlocked) {
+      console.warn(
+        `[DashClaw] Guard ${decision.decision}: ${decision.reasons.join('; ') || 'no reason'}. Proceeding in warn mode.`
+      );
+      return;
+    }
+
+    if (this.guardMode === 'enforce' && isBlocked) {
+      throw new GuardBlockedError(decision);
+    }
+  }
+
   // ══════════════════════════════════════════════
   // Category 1: Action Recording (6 methods)
   // ══════════════════════════════════════════════
@@ -87,6 +139,7 @@ class DashClaw {
    * @returns {Promise<{action: Object, action_id: string}>}
    */
   async createAction(action) {
+    await this._guardCheck(action);
     return this._request('/api/actions', 'POST', {
       agent_id: this.agentId,
       agent_name: this.agentName,
@@ -1010,8 +1063,27 @@ class DashClaw {
   }
 }
 
+/**
+ * Error thrown when guardMode is 'enforce' and guard blocks an action.
+ */
+class GuardBlockedError extends Error {
+  /**
+   * @param {Object} decision - Guard decision object
+   */
+  constructor(decision) {
+    const reasons = (decision.reasons || []).join('; ') || 'no reason';
+    super(`Guard blocked action: ${decision.decision}. Reasons: ${reasons}`);
+    this.name = 'GuardBlockedError';
+    this.decision = decision.decision;
+    this.reasons = decision.reasons || [];
+    this.warnings = decision.warnings || [];
+    this.matchedPolicies = decision.matched_policies || [];
+    this.riskScore = decision.risk_score ?? null;
+  }
+}
+
 // Backward compatibility alias
 const OpenClawAgent = DashClaw;
 
 export default DashClaw;
-export { DashClaw, OpenClawAgent };
+export { DashClaw, OpenClawAgent, GuardBlockedError };

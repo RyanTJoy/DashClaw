@@ -297,7 +297,7 @@ await claw.updateOutcome(action_id, {
             <h2 className="text-2xl font-bold tracking-tight mb-2">Constructor</h2>
             <p className="text-sm text-zinc-400 mb-6">Create a DashClaw instance. Requires Node 18+ (native fetch).</p>
 
-            <CodeBlock>{`const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId });`}</CodeBlock>
+            <CodeBlock>{`const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback });`}</CodeBlock>
 
             <div className="mt-6">
               <ParamTable params={[
@@ -306,7 +306,34 @@ await claw.updateOutcome(action_id, {
                 { name: 'agentId', type: 'string', required: true, desc: 'Unique identifier for this agent' },
                 { name: 'agentName', type: 'string', required: false, desc: 'Human-readable agent name' },
                 { name: 'swarmId', type: 'string', required: false, desc: 'Swarm/group identifier if part of a multi-agent system' },
+                { name: 'guardMode', type: 'string', required: false, desc: 'Auto guard check before createAction/track: "off" (default), "warn" (log + proceed), "enforce" (throw on block)' },
+                { name: 'guardCallback', type: 'Function', required: false, desc: 'Called with guard decision object when guardMode is active' },
               ]} />
+            </div>
+
+            <div className="mt-6 p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+              <h4 className="text-sm font-semibold text-white mb-3">Guard Mode</h4>
+              <p className="text-xs text-zinc-400 mb-3">
+                When <code className="font-mono text-brand">guardMode</code> is set, every call to <code className="font-mono text-zinc-300">createAction()</code> and <code className="font-mono text-zinc-300">track()</code> automatically checks guard policies before proceeding.
+              </p>
+              <CodeBlock>{`import { DashClaw, GuardBlockedError } from 'dashclaw';
+
+const claw = new DashClaw({
+  baseUrl: 'https://your-app.vercel.app',
+  apiKey: process.env.OPENCLAW_API_KEY,
+  agentId: 'my-agent',
+  guardMode: 'enforce', // throws GuardBlockedError on block/require_approval
+  guardCallback: (decision) => console.log('Guard:', decision.decision),
+});
+
+try {
+  await claw.createAction({ action_type: 'deploy', declared_goal: 'Ship v2' });
+} catch (err) {
+  if (err instanceof GuardBlockedError) {
+    console.log(err.decision);  // 'block' or 'require_approval'
+    console.log(err.reasons);   // ['Risk score 90 >= threshold 80']
+  }
+}`}</CodeBlock>
             </div>
           </section>
 
@@ -676,6 +703,7 @@ console.log(\`\${stats.blocks_24h} blocks in last 24h\`);`}
                   { name: 'require_approval', desc: 'Require human approval for specific action types (e.g., deploy, security)' },
                   { name: 'block_action_type', desc: 'Unconditionally block specific action types from executing' },
                   { name: 'rate_limit', desc: 'Warn or block when an agent exceeds a configured action frequency' },
+                  { name: 'webhook_check', desc: 'Call an external HTTPS endpoint for custom decision logic (can only escalate severity, never downgrade)' },
                 ].map((s) => (
                   <div key={s.name} className="flex items-start gap-3">
                     <code className="font-mono text-xs text-brand shrink-0 pt-0.5">{s.name}</code>

@@ -27,7 +27,7 @@ app/
 ├── lib/audit.js               # Fire-and-forget activity logging (logActivity)
 ├── lib/signals.js             # Shared signal computation (computeSignals)
 ├── lib/guard.js               # Guard evaluation engine (evaluateGuard)
-├── lib/webhooks.js            # Webhook HMAC signing, delivery, dispatch
+├── lib/webhooks.js            # Webhook HMAC signing, delivery, dispatch + guard webhook delivery
 ├── lib/notifications.js       # Email alerts via Resend
 ├── components/
 │   ├── ui/                    # Shared primitives (Card, Badge, Stat, ProgressBar, EmptyState, Skeleton)
@@ -38,6 +38,7 @@ app/
 │   ├── OnboardingChecklist.js # 4-step guided onboarding (workspace, key, SDK, first action)
 │   ├── WaitlistForm.js        # Email capture form (client component)
 │   ├── SecurityDetailPanel.js  # Slide-out detail drawer (signal + action detail)
+│   ├── AssumptionGraph.js     # SVG+HTML trace visualization (parent chain, assumptions, loops)
 │   ├── SessionWrapper.js      # NextAuth SessionProvider + AgentFilterProvider wrapper
 │   ├── UserMenu.js            # User avatar + sign-out dropdown (client component)
 │   └── *.js                   # 12 dashboard widget cards
@@ -565,8 +566,8 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - Route: `/policies` — manage guard policies that govern agent behavior
 - Library: `app/lib/guard.js` — `evaluateGuard(orgId, context, sql, options)` core evaluation engine
 - Tables: `guard_policies` (gp_ prefix), `guard_decisions` (gd_ prefix)
-- 4 policy types: `risk_threshold`, `require_approval`, `block_action_type`, `rate_limit`
-- Guard evaluation: fetches active policies, evaluates each against context, returns highest severity decision
+- 5 policy types: `risk_threshold`, `require_approval`, `block_action_type`, `rate_limit`, `webhook_check`
+- Guard evaluation: fetches active policies, evaluates local policies first, then webhook policies with snapshotted preliminary decision
 - Decisions: `allow` (200), `warn` (200), `block` (403), `require_approval` (403)
 - Optional signal check: `?include_signals=true` adds live risk signal warnings (expensive — 7 extra queries)
 - Guard decisions logged fire-and-forget (same pattern as `incrementMeter()`)
@@ -576,11 +577,41 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - Sidebar: Shield icon in Operations group (after Security)
 - Migration Step 33 in `migrate-multi-tenant.mjs`
 
+### Webhook-Based Intervention (Tier 2)
+- Policy type: `webhook_check` — calls customer HTTPS endpoint for custom decision logic
+- Rules: `url` (HTTPS required, SSRF-protected), `timeout_ms` (1000-10000, default 5000), `on_timeout` ('allow'|'block', default 'allow')
+- Customer endpoint receives: event, org_id, timestamp, context, preliminary_decision, matched_policies, reasons, warnings
+- Customer responds with: `{ decision, reasons, warnings }` — decision can only escalate severity (never downgrade)
+- Delivery logged to `webhook_deliveries` table (event_type `guard.evaluation`, webhook_id = policyId)
+- Library: `app/lib/webhooks.js` — `deliverGuardWebhook()` (no HMAC signing, policy-based)
+- SSRF protection: private IPs, localhost, link-local addresses blocked in validation
+- All webhook policies receive the same snapshotted preliminary decision (no order-dependency)
+
+### beforeAction SDK Hook (Tier 2)
+- Constructor params: `guardMode` ('off'|'warn'|'enforce'), `guardCallback` (function)
+- `createAction()` calls `_guardCheck()` before API request (also applies to `track()` which calls `createAction()`)
+- `off` (default): no guard check (backward compatible)
+- `warn`: logs console.warn if blocked/require_approval, proceeds anyway
+- `enforce`: throws `GuardBlockedError` if blocked/require_approval
+- Guard API failure is fail-open (logs warning, proceeds)
+- `GuardBlockedError` class: extends Error, properties: decision, reasons, warnings, matchedPolicies, riskScore
+- Exported from SDK: `import { GuardBlockedError } from 'dashclaw'`
+
+### Assumption Graph Visualization (Tier 2)
+- Component: `app/components/AssumptionGraph.js` — pure client, no external deps
+- SVG bezier connectors (underneath) + absolute-positioned HTML nodes (on top)
+- Center column: parent chain (oldest at top) + current action (bottom, brand border)
+- Left branches: assumptions as pills (green=validated, red=invalidated, amber=unvalidated)
+- Right branches: loops as pills (green=resolved, gray=cancelled, amber=open)
+- Bottom row: related actions (up to 5)
+- Click: assumptions/loops scroll to detail section, action nodes open in new tab
+- Renders on post-mortem page (`/actions/[actionId]`) between metrics and Root Cause Analysis
+
 ### Guard Policies Table (Step 33)
 - `guard_policies` (`gp_`) — org-level rules governing agent behavior
 - Columns: `id`, `org_id`, `name`, `policy_type`, `rules` (JSON string), `active` (0/1), `created_by`, `created_at`, `updated_at`
 - UNIQUE index: `(org_id, name)`
-- Policy types: risk_threshold, require_approval, block_action_type, rate_limit
+- Policy types: risk_threshold, require_approval, block_action_type, rate_limit, webhook_check
 
 ### Guard Decisions Table (Step 33)
 - `guard_decisions` (`gd_`) — audit log of every guard evaluation
@@ -684,9 +715,11 @@ const claw = new DashClaw({
 
 **Agent Messaging (9)**: `sendMessage()`, `getInbox()`, `markRead()`, `archiveMessages()`, `broadcast()`, `createMessageThread()`, `getMessageThreads()`, `resolveMessageThread()`, `saveSharedDoc()`
 
-**Behavior Guard (2)**: `guard()`, `getGuardDecisions()`
+**Behavior Guard (2)**: `guard()`, `getGuardDecisions()` — `guardMode` constructor option enables auto guard check before `createAction()`/`track()`
 
 **Bulk Sync (1)**: `syncState()`
+
+**Error Classes**: `GuardBlockedError` — thrown when `guardMode: 'enforce'` and guard blocks an action
 
 **Disabled**: `reportTokenUsage()` — exists in SDK but token tracking is disabled in the dashboard
 

@@ -17,6 +17,7 @@ const POLICY_TYPES = [
   { value: 'require_approval', label: 'Require Approval', desc: 'Require approval for specific action types' },
   { value: 'block_action_type', label: 'Block Action Type', desc: 'Block specific action types entirely' },
   { value: 'rate_limit', label: 'Rate Limit', desc: 'Warn or block when an agent exceeds action frequency' },
+  { value: 'webhook_check', label: 'Webhook Check', desc: 'Call an external endpoint for custom decision logic' },
 ];
 
 const ACTION_OPTIONS = [
@@ -51,6 +52,10 @@ function formatRules(policy) {
       return `Types: ${(rules.action_types || []).join(', ')} → block`;
     case 'rate_limit':
       return `Max ${rules.max_actions} actions / ${rules.window_minutes}min → ${rules.action || 'warn'}`;
+    case 'webhook_check': {
+      const host = (() => { try { return new URL(rules.url).hostname; } catch { return rules.url; } })();
+      return `Webhook → ${host} (timeout: ${rules.timeout_ms || 5000}ms, on_timeout: ${rules.on_timeout || 'allow'})`;
+    }
     default:
       return JSON.stringify(rules);
   }
@@ -75,6 +80,9 @@ export default function PoliciesPage() {
   const [formActionTypes, setFormActionTypes] = useState([]);
   const [formMaxActions, setFormMaxActions] = useState(50);
   const [formWindowMinutes, setFormWindowMinutes] = useState(60);
+  const [formWebhookUrl, setFormWebhookUrl] = useState('');
+  const [formWebhookTimeout, setFormWebhookTimeout] = useState(5000);
+  const [formWebhookOnTimeout, setFormWebhookOnTimeout] = useState('allow');
   const [creating, setCreating] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -118,6 +126,9 @@ export default function PoliciesPage() {
       case 'rate_limit':
         rules = JSON.stringify({ max_actions: formMaxActions, window_minutes: formWindowMinutes, action: formAction });
         break;
+      case 'webhook_check':
+        rules = JSON.stringify({ url: formWebhookUrl, timeout_ms: formWebhookTimeout, on_timeout: formWebhookOnTimeout });
+        break;
       default:
         rules = '{}';
     }
@@ -136,6 +147,9 @@ export default function PoliciesPage() {
         setFormName('');
         setFormType('risk_threshold');
         setFormActionTypes([]);
+        setFormWebhookUrl('');
+        setFormWebhookTimeout(5000);
+        setFormWebhookOnTimeout('allow');
         fetchData();
       }
     } catch {
@@ -328,9 +342,48 @@ export default function PoliciesPage() {
               </div>
             )}
 
+            {formType === 'webhook_check' && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-3">
+                  <label className="block text-xs text-zinc-400 mb-1">Webhook URL (HTTPS required)</label>
+                  <input
+                    type="url"
+                    value={formWebhookUrl}
+                    onChange={(e) => setFormWebhookUrl(e.target.value)}
+                    placeholder="https://your-api.example.com/guard"
+                    required
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">Timeout (ms)</label>
+                  <input
+                    type="number"
+                    min="1000"
+                    max="10000"
+                    step="500"
+                    value={formWebhookTimeout}
+                    onChange={(e) => setFormWebhookTimeout(parseInt(e.target.value, 10) || 5000)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">On Timeout</label>
+                  <select
+                    value={formWebhookOnTimeout}
+                    onChange={(e) => setFormWebhookOnTimeout(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                  >
+                    <option value="allow">Allow (fail-open)</option>
+                    <option value="block">Block (fail-closed)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={creating || !formName.trim() || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0)}
+              disabled={creating || !formName.trim() || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0) || (formType === 'webhook_check' && (() => { try { const u = new URL(formWebhookUrl); return u.protocol !== 'https:' || !u.hostname; } catch { return true; } })())}
               className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
             >
               {creating ? 'Creating...' : 'Create Policy'}

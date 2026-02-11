@@ -20,6 +20,21 @@ module.exports = new Proxy({}, {
     if (prop === 'then') return undefined; // Prevent Promise-like behavior
 
     // Return a lazy-loading constructor wrapper
+    if (prop === 'GuardBlockedError') {
+      // Return a placeholder that resolves to the real class
+      return class GuardBlockedErrorProxy extends Error {
+        constructor(decision) {
+          const reasons = (decision.reasons || []).join('; ') || 'no reason';
+          super(`Guard blocked action: ${decision.decision}. Reasons: ${reasons}`);
+          this.name = 'GuardBlockedError';
+          this.decision = decision.decision;
+          this.reasons = decision.reasons || [];
+          this.warnings = decision.warnings || [];
+          this.matchedPolicies = decision.matched_policies || [];
+          this.riskScore = decision.risk_score ?? null;
+        }
+      };
+    }
     if (prop === 'DashClaw' || prop === 'OpenClawAgent' || prop === 'default') {
       return class DashClawProxy {
         constructor(opts) {
