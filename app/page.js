@@ -107,8 +107,8 @@ export default function LandingPage() {
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
-            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
             <a href="#signals" className="hover:text-white transition-colors">Signals</a>
+            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
