@@ -8,6 +8,10 @@ import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 
+function getSignalHash(signal) {
+  return `${signal.type || signal.signal_type || ''}:${signal.agent_id || ''}:${signal.action_id || ''}:${signal.loop_id || ''}:${signal.assumption_id || ''}`;
+}
+
 export default function RiskSignalsCard() {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +38,15 @@ export default function RiskSignalsCard() {
     return <CardSkeleton />;
   }
 
-  const filteredSignals = agentId ? signals.filter(s => s.agent_id === agentId) : signals;
+  // Respect dismissals from the Security page
+  let dismissed = new Set();
+  try {
+    const stored = typeof window !== 'undefined' && localStorage.getItem('dashclaw_dismissed_signals');
+    if (stored) dismissed = new Set(JSON.parse(stored));
+  } catch { /* ignore */ }
+
+  const agentFiltered = agentId ? signals.filter(s => s.agent_id === agentId) : signals;
+  const filteredSignals = agentFiltered.filter(s => !dismissed.has(getSignalHash(s)));
   const redCount = filteredSignals.filter(s => s.severity === 'red').length;
   const amberCount = filteredSignals.filter(s => s.severity === 'amber').length;
 
