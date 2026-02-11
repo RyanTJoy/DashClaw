@@ -4,6 +4,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import { deliverGuardWebhook } from './webhooks.js';
 
 const DECISION_SEVERITY = { allow: 0, warn: 1, require_approval: 2, block: 3 };
 
@@ -43,6 +44,30 @@ export async function evaluateGuard(orgId, context, sql, options = {}) {
       applyResult(result, policy, reasons, warnings, matchedPolicies);
       if (DECISION_SEVERITY[result.action] > DECISION_SEVERITY[highestDecision]) {
         highestDecision = result.action;
+      }
+    }
+  }
+
+  // Process webhook_check policies (after local policies, so preliminary decision is known)
+  // Snapshot the preliminary state so all webhooks see the same baseline
+  const webhookPolicies = policies.filter(p => p.policy_type === 'webhook_check');
+  const preliminary = {
+    decision: highestDecision,
+    reasons: [...reasons],
+    warnings: [...warnings],
+    matchedPolicies: [...matchedPolicies],
+  };
+  for (const policy of webhookPolicies) {
+    let rules;
+    try { rules = JSON.parse(policy.rules); } catch { continue; }
+
+    const webhookResult = await evaluateWebhookPolicy(
+      policy, rules, context, orgId, sql, preliminary
+    );
+    if (webhookResult) {
+      applyResult(webhookResult, policy, reasons, warnings, matchedPolicies);
+      if (DECISION_SEVERITY[webhookResult.action] > DECISION_SEVERITY[highestDecision]) {
+        highestDecision = webhookResult.action;
       }
     }
   }
@@ -95,6 +120,9 @@ function applyResult(result, policy, reasons, warnings, matchedPolicies) {
   } else if (result.action !== 'allow') {
     reasons.push(`${policy.name}: ${result.reason}`);
   }
+  if (result.extraWarnings) {
+    warnings.push(...result.extraWarnings);
+  }
   matchedPolicies.push(policy.id);
 }
 
@@ -145,7 +173,79 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
       return null;
     }
 
+    case 'webhook_check':
+      // Handled separately after local policy loop
+      return null;
+
     default:
       return null;
   }
+}
+
+/**
+ * Evaluate a webhook_check policy by calling the customer's endpoint.
+ * Customer decision can only upgrade severity (never downgrade).
+ */
+async function evaluateWebhookPolicy(policy, rules, context, orgId, sql, preliminary) {
+  const payload = {
+    event: 'guard.evaluation',
+    org_id: orgId,
+    timestamp: new Date().toISOString(),
+    context: {
+      action_type: context.action_type,
+      risk_score: context.risk_score ?? null,
+      agent_id: context.agent_id ?? null,
+      systems_touched: context.systems_touched ?? [],
+      reversible: context.reversible ?? null,
+      declared_goal: context.declared_goal ?? null,
+    },
+    preliminary_decision: preliminary.decision,
+    matched_policies: preliminary.matchedPolicies,
+    reasons: preliminary.reasons,
+    warnings: preliminary.warnings,
+  };
+
+  const timeoutMs = rules.timeout_ms || 5000;
+  const onTimeout = rules.on_timeout || 'allow';
+
+  const result = await deliverGuardWebhook({
+    url: rules.url,
+    policyId: policy.id,
+    orgId,
+    payload,
+    timeoutMs,
+    sql,
+  });
+
+  if (!result.success || !result.response) {
+    // Timeout or error — apply on_timeout rule
+    if (onTimeout === 'block') {
+      return { action: 'block', reason: 'Webhook check failed or timed out (on_timeout: block)' };
+    }
+    return null; // fail-open
+  }
+
+  const resp = result.response;
+  const customerDecision = resp.decision;
+
+  const customerReasons = Array.isArray(resp.reasons) ? resp.reasons : [];
+  const customerWarnings = Array.isArray(resp.warnings)
+    ? resp.warnings.map(w => `${policy.name} (webhook): ${w}`)
+    : [];
+
+  // Only accept valid decisions that are more restrictive than preliminary
+  if (customerDecision && DECISION_SEVERITY[customerDecision] !== undefined) {
+    if (DECISION_SEVERITY[customerDecision] > DECISION_SEVERITY[preliminary.decision]) {
+      const reason = customerReasons.length > 0
+        ? customerReasons.join('; ')
+        : `Webhook escalated to ${customerDecision}`;
+      return { action: customerDecision, reason: `${policy.name} (webhook): ${reason}`, extraWarnings: customerWarnings };
+    }
+  }
+
+  // Customer response doesn't escalate — return warnings only (as a warn-level result)
+  if (customerWarnings.length > 0) {
+    return { action: 'warn', reason: customerWarnings[0], extraWarnings: customerWarnings.slice(1) };
+  }
+  return null;
 }

@@ -12,6 +12,7 @@ import PageLayout from '../../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Stat } from '../../components/ui/Stat';
+import AssumptionGraph from '../../components/AssumptionGraph';
 
 export default function ActionPostMortem() {
   const params = useParams();
@@ -318,6 +319,25 @@ export default function ActionPostMortem() {
         </Card>
       </div>
 
+      {/* Trace Graph Visualization */}
+      {trace && (
+        <AssumptionGraph
+          trace={trace}
+          currentActionId={actionId}
+          onNodeClick={({ type, id, actionId: nodeActionId }) => {
+            if (type === 'assumption') {
+              const el = document.getElementById(`assumption-${id}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (type === 'loop') {
+              const el = document.getElementById(`loop-${id}`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if ((type === 'action' || type === 'related') && nodeActionId && nodeActionId !== actionId) {
+              window.open(`/actions/${nodeActionId}`, '_blank');
+            }
+          }}
+        />
+      )}
+
       {/* Root Cause Trace (for failed/completed with indicators) */}
       {trace && trace.root_cause_indicators && trace.root_cause_indicators.length > 0 && (
         <Card hover={false} className="mb-8 border border-red-500/30">
@@ -506,7 +526,7 @@ export default function ActionPostMortem() {
                     const isUnresolved = !asm.validated && !asm.invalidated;
                     const isPending = !!pendingOps[asm.assumption_id];
                     return (
-                      <div key={asm.assumption_id} className="bg-surface-tertiary rounded-lg p-4">
+                      <div key={asm.assumption_id} id={`assumption-${asm.assumption_id}`} className="bg-surface-tertiary rounded-lg p-4">
                         <div className="flex items-start space-x-3">
                           <span className="mt-0.5">
                             {asm.validated
@@ -601,7 +621,7 @@ export default function ActionPostMortem() {
                       {openLoops.map(loop => {
                         const isPending = !!pendingOps[loop.loop_id];
                         return (
-                          <div key={loop.loop_id} className="bg-surface-tertiary rounded-lg p-3 border-l-2 border-yellow-500">
+                          <div key={loop.loop_id} id={`loop-${loop.loop_id}`} className="bg-surface-tertiary rounded-lg p-3 border-l-2 border-yellow-500">
                             <div className="flex items-center justify-between">
                               <div className="text-sm text-white">{loop.description}</div>
                               <Badge variant="warning" size="xs">{loop.priority}</Badge>
@@ -646,7 +666,7 @@ export default function ActionPostMortem() {
                     <div className="text-sm text-green-400 mb-2 font-semibold">Resolved ({resolvedLoops.length})</div>
                     <div className="space-y-2">
                       {resolvedLoops.map(loop => (
-                        <div key={loop.loop_id} className="bg-surface-tertiary rounded-lg p-3 border-l-2 border-green-500 opacity-70">
+                        <div key={loop.loop_id} id={`loop-${loop.loop_id}`} className="bg-surface-tertiary rounded-lg p-3 border-l-2 border-green-500 opacity-70">
                           <div className="text-sm text-white">{loop.description}</div>
                           {loop.resolution && (
                             <div className="text-xs text-green-400 mt-1">Resolution: {loop.resolution}</div>
