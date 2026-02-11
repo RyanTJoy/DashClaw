@@ -47,13 +47,13 @@ export default function ActionsTimeline() {
   const [expandedId, setExpandedId] = useState(null);
   const [expandedData, setExpandedData] = useState({});
   const [clearing, setClearing] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const [filterAgent, setFilterAgent] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterRiskMin, setFilterRiskMin] = useState('');
   const [page, setPage] = useState(0);
-  const [knownAgents, setKnownAgents] = useState([]);
   const pageSize = 25;
 
   // Sync global agent filter → local filter
@@ -80,20 +80,6 @@ export default function ActionsTimeline() {
       setStats(data.stats || {});
       setTotal(data.total || 0);
       setLastUpdated(new Date().toLocaleTimeString());
-
-      if (!filterAgent) {
-        const agentMap = new Map();
-        actionsList.forEach(a => {
-          if (a.agent_id && !agentMap.has(a.agent_id)) {
-            agentMap.set(a.agent_id, a.agent_name || a.agent_id);
-          }
-        });
-        setKnownAgents(prev => {
-          const merged = new Map(prev.map(a => [a.id, a.name]));
-          agentMap.forEach((name, id) => merged.set(id, name));
-          return Array.from(merged, ([id, name]) => ({ id, name }));
-        });
-      }
     } catch (error) {
       console.error('Failed to fetch actions:', error);
     } finally {
@@ -135,6 +121,27 @@ export default function ActionsTimeline() {
       alert('Failed to delete actions');
     } finally {
       setClearing(false);
+    }
+  };
+
+  const handleDeleteAction = async (actionId, e) => {
+    e.stopPropagation();
+    if (!confirm('Delete this action? This cannot be undone.')) return;
+    setDeletingId(actionId);
+    try {
+      const res = await fetch(`/api/actions?action_id=${actionId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setActions(prev => prev.filter(a => a.action_id !== actionId));
+        if (expandedId === actionId) setExpandedId(null);
+        setTotal(prev => Math.max(0, prev - 1));
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to delete action');
+      }
+    } catch {
+      alert('Failed to delete action');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -248,11 +255,7 @@ export default function ActionsTimeline() {
       {/* Filters */}
       <Card hover={false} className="mb-6">
         <div className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <select value={filterAgent} onChange={(e) => { setFilterAgent(e.target.value); setPage(0); }} className={selectClass}>
-              <option value="">All Agents</option>
-              {knownAgents.map(a => <option key={a.id} value={a.id}>{a.name || a.id}</option>)}
-            </select>
+          <div className="grid grid-cols-3 gap-3">
             <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(0); }} className={selectClass}>
               <option value="">All Types</option>
               {['build','deploy','post','apply','security','message','api','calendar','research','review','fix','refactor','test','config','monitor','alert','cleanup','sync','migrate','other'].map(t => (
@@ -340,6 +343,16 @@ export default function ActionsTimeline() {
                           <Badge variant={statusVariantMap[action.status] || 'default'} size="xs">
                             {action.status}
                           </Badge>
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => handleDeleteAction(action.action_id, e)}
+                              disabled={deletingId === action.action_id}
+                              className="p-1 rounded text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                              title="Delete action"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                           {isExpanded ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
                         </div>
                       </div>
