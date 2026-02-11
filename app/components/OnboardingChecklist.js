@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Building2, KeyRound, Terminal, Rocket, CheckCircle2, Copy, Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { Building2, KeyRound, Terminal, Rocket, CheckCircle2, Copy, Check, AlertTriangle, Loader2, X } from 'lucide-react';
 import { Card, CardContent } from './ui/Card';
 import { ProgressBar } from './ui/ProgressBar';
 import { Badge } from './ui/Badge';
@@ -16,7 +16,11 @@ const STEPS = [
 export default function OnboardingChecklist() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return typeof window !== 'undefined' && localStorage.getItem('dashclaw_onboarding_dismissed') === 'true';
+    } catch { return false; }
+  });
 
   // Step-specific state
   const [workspaceName, setWorkspaceName] = useState('');
@@ -135,8 +139,13 @@ export default function OnboardingChecklist() {
     setKeyLoading(false);
   };
 
-  const handleFinish = () => {
+  const handleDismiss = () => {
     setDismissed(true);
+    try { localStorage.setItem('dashclaw_onboarding_dismissed', 'true'); } catch {}
+  };
+
+  const handleFinish = () => {
+    handleDismiss();
     // Force page reload to pick up refreshed JWT with new org
     window.location.reload();
   };
@@ -163,19 +172,26 @@ export default function OnboardingChecklist() {
 
   // SDK snippets with key pre-filled
   const apiKeyDisplay = generatedKey || 'oc_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://your-app.vercel.app';
   const installSnippet = 'npm install dashclaw';
-  const initSnippet = `import { DashClaw } from 'dashclaw';
+  const initSnippet = `// Add this to your agent's entry point or a shared config file
+import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: '${typeof window !== 'undefined' ? window.location.origin : 'https://your-app.vercel.app'}',
-  apiKey: '${apiKeyDisplay}',
-  agentId: 'my-agent',
-  agentName: 'My Agent',
-});`;
-  const actionSnippet = `await claw.createAction({
-  type: 'test',
-  goal: 'Verify OpenClaw connection',
-  context: 'Onboarding test action',
+  baseUrl: '${baseUrl}',
+  apiKey: process.env.DASHCLAW_API_KEY, // Set in your .env: DASHCLAW_API_KEY=${apiKeyDisplay}
+  agentId: 'my-agent',     // Unique ID for this agent
+  agentName: 'My Agent',   // Display name in the dashboard
+});
+
+export default claw;`;
+  const actionSnippet = `// Call this from anywhere in your agent code
+import claw from './dashclaw-client'; // or wherever you put the init above
+
+await claw.createAction({
+  action_type: 'test',
+  declared_goal: 'Verify DashClaw connection',
+  risk_score: 10,
 });`;
 
   return (
@@ -186,7 +202,16 @@ const claw = new DashClaw({
             <Rocket size={16} className="text-brand" />
             <span className="text-sm font-medium text-zinc-200 uppercase tracking-wider">Getting Started</span>
           </div>
-          <Badge variant="brand">{completedCount} of 4 complete</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="brand">{completedCount} of 4 complete</Badge>
+            <button
+              onClick={handleDismiss}
+              className="p-1 rounded text-zinc-600 hover:text-zinc-300 hover:bg-white/5 transition-colors"
+              title="Dismiss getting started"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
         <ProgressBar value={progress} color="brand" />
       </div>
@@ -294,7 +319,7 @@ const claw = new DashClaw({
           >
             {(activeStep === 'install' || activeStep === 'first_action' || activeStep === 'done') && steps.api_key_exists && (
               <div className="mt-3 space-y-3">
-                <p className="text-xs text-zinc-400">Install the SDK and initialize it in your agent:</p>
+                <p className="text-xs text-zinc-400">Install the SDK, then create a client in your agent&apos;s entry point:</p>
                 <CodeBlock
                   code={installSnippet}
                   copyId="install"
