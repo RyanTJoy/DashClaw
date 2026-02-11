@@ -26,6 +26,7 @@ app/
 ├── lib/colors.js              # Agent color hashing, action type icon map
 ├── lib/audit.js               # Fire-and-forget activity logging (logActivity)
 ├── lib/signals.js             # Shared signal computation (computeSignals)
+├── lib/guard.js               # Guard evaluation engine (evaluateGuard)
 ├── lib/webhooks.js            # Webhook HMAC signing, delivery, dispatch
 ├── lib/notifications.js       # Email alerts via Resend
 ├── components/
@@ -51,6 +52,7 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
+├── policies/                  # Guard policies management page
 ├── messages/                  # Agent communication hub (inbox, threads, shared docs)
 ├── workspace/                 # Agent workspace (digest, context, handoffs, snippets, preferences, memory)
 ├── activity/                  # Activity log page (audit trail)
@@ -95,10 +97,12 @@ app/
     ├── digest/                # Daily digest aggregation (GET only)
     ├── security/scan/         # Content security scanning (POST only)
     ├── sync/                  # Bulk sync (POST — all categories in one request)
+    ├── guard/                 # Guard evaluation (POST: check policies, GET: recent decisions)
+    ├── policies/              # Guard policy CRUD (GET/POST/PATCH/DELETE — POST/PATCH/DELETE admin only)
     └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (55 methods, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (57 methods, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -274,6 +278,9 @@ function getSql() {
 - `GET/POST/PATCH /api/messages` — agent messages (GET: `?agent_id`, `?direction=inbox|sent|all`, `?type`, `?unread=true`, `?thread_id`; POST: send message; PATCH: batch read/archive)
 - `GET/POST/PATCH /api/messages/threads` — message threads (GET: `?status`, `?agent_id`; POST: create; PATCH: resolve/update)
 - `GET/POST /api/messages/docs` — shared workspace documents (GET: `?id`, `?search`; POST: upsert by name)
+- `POST /api/guard` — evaluate guard policies before action execution (returns allow/warn/block/require_approval; ?include_signals=true for live signal check)
+- `GET /api/guard` — recent guard decisions (paginated; ?agent_id, ?decision, ?limit, ?offset)
+- `GET/POST/PATCH/DELETE /api/policies` — guard policy CRUD (GET: all members; POST/PATCH/DELETE: admin only)
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable — NULL = org-level default)
@@ -554,6 +561,32 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - Columns: `id`, `org_id`, `name`, `content`, `created_by`, `last_edited_by`, `version` (auto-incrementing on upsert), `created_at`, `updated_at`
 - Indexes: org_id; UNIQUE (org_id, name) for upsert
 
+## Behavior Guard (Implemented)
+- Route: `/policies` — manage guard policies that govern agent behavior
+- Library: `app/lib/guard.js` — `evaluateGuard(orgId, context, sql, options)` core evaluation engine
+- Tables: `guard_policies` (gp_ prefix), `guard_decisions` (gd_ prefix)
+- 4 policy types: `risk_threshold`, `require_approval`, `block_action_type`, `rate_limit`
+- Guard evaluation: fetches active policies, evaluates each against context, returns highest severity decision
+- Decisions: `allow` (200), `warn` (200), `block` (403), `require_approval` (403)
+- Optional signal check: `?include_signals=true` adds live risk signal warnings (expensive — 7 extra queries)
+- Guard decisions logged fire-and-forget (same pattern as `incrementMeter()`)
+- API: `POST /api/guard` (evaluate), `GET /api/guard` (recent decisions + 24h stats)
+- API: `GET/POST/PATCH/DELETE /api/policies` (CRUD — POST/PATCH/DELETE admin only)
+- SDK: `claw.guard(context, options?)`, `claw.getGuardDecisions(filters?)`
+- Sidebar: Shield icon in Operations group (after Security)
+- Migration Step 33 in `migrate-multi-tenant.mjs`
+
+### Guard Policies Table (Step 33)
+- `guard_policies` (`gp_`) — org-level rules governing agent behavior
+- Columns: `id`, `org_id`, `name`, `policy_type`, `rules` (JSON string), `active` (0/1), `created_by`, `created_at`, `updated_at`
+- UNIQUE index: `(org_id, name)`
+- Policy types: risk_threshold, require_approval, block_action_type, rate_limit
+
+### Guard Decisions Table (Step 33)
+- `guard_decisions` (`gd_`) — audit log of every guard evaluation
+- Columns: `id`, `org_id`, `agent_id`, `decision`, `reason`, `matched_policies` (JSON array), `context` (JSON), `risk_score`, `action_type`, `created_at`
+- Indexes: org_id, created_at, agent_id
+
 ## Agent Workspace Page (Implemented)
 - Route: `/workspace` — single tabbed interface for agent operational state
 - 6 tabs: Overview (Digest), Context (Points + Threads), Handoffs, Snippets, Preferences, Memory
@@ -650,6 +683,8 @@ const claw = new DashClaw({
 **Security Scanning (2)**: `scanContent()`, `reportSecurityFinding()`
 
 **Agent Messaging (9)**: `sendMessage()`, `getInbox()`, `markRead()`, `archiveMessages()`, `broadcast()`, `createMessageThread()`, `getMessageThreads()`, `resolveMessageThread()`, `saveSharedDoc()`
+
+**Behavior Guard (2)**: `guard()`, `getGuardDecisions()`
 
 **Bulk Sync (1)**: `syncState()`
 

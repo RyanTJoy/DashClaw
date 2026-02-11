@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  Flame, Zap, ShieldAlert, CircleDot, Eye, ArrowRight, Github,
+  Flame, Zap, ShieldAlert, Shield, CircleDot, Eye, ArrowRight, Github,
   ExternalLink, BookOpen, FolderKanban, MessageSquare, ArrowLeftRight,
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
   Webhook, Clock, Compass, Building2, CreditCard, Check, BarChart3,
@@ -26,9 +26,9 @@ const coreFeatures = [
     description: 'Session handoffs, context threads, key points, automation snippets, user preferences, and daily digests in one tabbed interface.',
   },
   {
-    icon: MessageSquare,
-    title: 'Agent-to-Agent Messaging',
-    description: 'Direct messaging, broadcasts, conversation threads, and shared workspace documents. Full inbox semantics across your agent fleet.',
+    icon: Shield,
+    title: 'Behavior Guard',
+    description: 'Agents check in before risky actions. Set risk thresholds, require approvals, and block dangerous operations — without changing agent code.',
   },
 ];
 
@@ -40,7 +40,7 @@ const platformFeatures = [
   { icon: ScanSearch, title: 'Security Scanning', description: '18 regex patterns detect API keys, tokens, and PII before data leaves your system.' },
   { icon: HeartPulse, title: 'Memory Health', description: 'Track memory file counts, duplicates, stale facts, entities, and topics over time.' },
   { icon: Newspaper, title: 'Daily Digest', description: 'Aggregated daily summary from actions, decisions, lessons, content, and goals.' },
-  { icon: Package, title: '55-Method SDK', description: 'Zero-dependency npm package. ESM + CJS. Drop into any Node.js agent in minutes.' },
+  { icon: Package, title: '57-Method SDK', description: 'Zero-dependency npm package. ESM + CJS. Drop into any Node.js agent in minutes.' },
 ];
 
 const operationalFeatures = [
@@ -133,8 +133,8 @@ export default function LandingPage() {
             <span className="text-brand">actually doing</span>.
           </h1>
           <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Real-time observability, risk signals, and operational control for autonomous AI agents.
-            Know when they drift, fail silently, or act without oversight.
+            Real-time observability, risk signals, and behavior governance for autonomous AI agents.
+            Guard what they do before they do it.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/login" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
@@ -220,7 +220,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
                 <Package size={12} />
-                55 methods across 12 categories
+                57 methods across 13 categories
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">
@@ -257,6 +257,23 @@ export default function LandingPage() {
               </div>
               <div className="text-zinc-300 pl-4">
                 agentId: <span className="text-green-400">&apos;my-agent&apos;</span>,
+              </div>
+              <div className="text-zinc-300">{'})'}</div>
+
+              <div className="mt-4 text-zinc-500">{'// check guard before acting'}</div>
+              <div>
+                <span className="text-purple-400">const</span>
+                <span className="text-zinc-300">{' { decision } = '}</span>
+                <span className="text-purple-400">await</span>
+                <span className="text-zinc-300"> claw.</span>
+                <span className="text-yellow-300">guard</span>
+                <span className="text-zinc-300">({'{'}</span>
+              </div>
+              <div className="text-zinc-300 pl-4">
+                action_type: <span className="text-green-400">&apos;deploy&apos;</span>,
+              </div>
+              <div className="text-zinc-300 pl-4">
+                risk_score: <span className="text-cyan-300">85</span>,
               </div>
               <div className="text-zinc-300">{'})'}</div>
 

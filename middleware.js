@@ -41,6 +41,8 @@ const PROTECTED_ROUTES = [
   '/api/security',
   '/api/messages',
   '/api/sync',
+  '/api/guard',
+  '/api/policies',
 ];
 
 // Routes that are always public (health checks, setup, auth)
@@ -371,6 +373,8 @@ export const config = {
     '/messages/:path*',
     '/workspace',
     '/workspace/:path*',
+    '/policies',
+    '/policies/:path*',
     '/invite/:path*',
     '/login',
   ],

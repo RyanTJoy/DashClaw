@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import {
   Flame, ArrowRight, Github, ExternalLink, BookOpen,
-  Terminal, Zap, CircleDot, Eye, ShieldAlert, BarChart3,
+  Terminal, Zap, CircleDot, Eye, ShieldAlert, Shield, BarChart3,
   ChevronRight,
 } from 'lucide-react';
 import CopyDocsButton from '../components/CopyDocsButton';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
-  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 45 methods across action recording, context management, session handoffs, security scanning, and more.',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 57 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.',
 };
 
 /* ─── helpers ─── */
@@ -113,6 +113,9 @@ const navItems = [
   { href: '#getDriftReport', label: 'getDriftReport', indent: true },
   { href: '#signals', label: 'Signals' },
   { href: '#getSignals', label: 'getSignals', indent: true },
+  { href: '#behavior-guard', label: 'Behavior Guard' },
+  { href: '#guard', label: 'guard', indent: true },
+  { href: '#getGuardDecisions', label: 'getGuardDecisions', indent: true },
   { href: '#dashboard-data', label: 'Dashboard Data' },
   { href: '#recordDecision', label: 'recordDecision', indent: true },
   { href: '#createGoal', label: 'createGoal', indent: true },
@@ -210,7 +213,7 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK. 55 methods to instrument your AI agents with
+            Full reference for the DashClaw SDK. 57 methods to instrument your AI agents with
             action recording, context management, session handoffs, security scanning, and more.
           </p>
           <CopyDocsButton />
@@ -598,6 +601,91 @@ for (const signal of signals) {
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+
+          {/* ── Behavior Guard ── */}
+          <section id="behavior-guard" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(59,130,246,0.1)] flex items-center justify-center">
+                <Shield size={16} className="text-blue-400" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Behavior Guard</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">
+              Check org-level policies before executing risky actions. Returns allow, warn, block, or require_approval based on configured guard policies.
+            </p>
+
+            <MethodEntry
+              id="guard"
+              signature="claw.guard(context, options?)"
+              description="Evaluate guard policies for a proposed action. Call this before risky operations to get a go/no-go decision. The agent_id is auto-attached from the SDK constructor."
+              params={[
+                { name: 'context.action_type', type: 'string', required: true, desc: 'The type of action being proposed' },
+                { name: 'context.risk_score', type: 'number', required: false, desc: 'Risk score 0-100' },
+                { name: 'context.systems_touched', type: 'string[]', required: false, desc: 'Systems this action will affect' },
+                { name: 'context.reversible', type: 'boolean', required: false, desc: 'Whether the action can be undone' },
+                { name: 'context.declared_goal', type: 'string', required: false, desc: 'What the action aims to accomplish' },
+                { name: 'options.includeSignals', type: 'boolean', required: false, desc: 'Also check live risk signals (adds latency)' },
+              ]}
+              returns="Promise<{ decision: string, reasons: string[], warnings: string[], matched_policies: string[], evaluated_at: string }>"
+              example={`const result = await claw.guard({
+  action_type: 'deploy',
+  risk_score: 85,
+  systems_touched: ['production-api'],
+  reversible: false,
+  declared_goal: 'Deploy auth service v2',
+});
+
+if (result.decision === 'block') {
+  console.log('Blocked:', result.reasons);
+  return; // abort the action
+}
+
+if (result.decision === 'warn') {
+  console.log('Warnings:', result.warnings);
+}
+
+// proceed with the action
+await claw.createAction({ action_type: 'deploy', ... });`}
+            />
+
+            <MethodEntry
+              id="getGuardDecisions"
+              signature="claw.getGuardDecisions(filters?)"
+              description="Retrieve recent guard evaluation decisions for audit and review."
+              params={[
+                { name: 'filters.decision', type: 'string', required: false, desc: 'Filter by decision: allow, warn, block, require_approval' },
+                { name: 'filters.limit', type: 'number', required: false, desc: 'Max results (default 20, max 100)' },
+                { name: 'filters.offset', type: 'number', required: false, desc: 'Pagination offset' },
+              ]}
+              returns="Promise<{ decisions: Object[], total: number, stats: { total_24h, blocks_24h, warns_24h, approvals_24h } }>"
+              example={`const { decisions, stats } = await claw.getGuardDecisions({
+  decision: 'block',
+  limit: 10,
+});
+
+console.log(\`\${stats.blocks_24h} blocks in last 24h\`);`}
+            />
+
+            <div className="mt-6 p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+              <h4 className="text-sm font-semibold text-white mb-3">Policy Types</h4>
+              <div className="space-y-2">
+                {[
+                  { name: 'risk_threshold', desc: 'Block or warn when an action\'s risk score exceeds a configured threshold' },
+                  { name: 'require_approval', desc: 'Require human approval for specific action types (e.g., deploy, security)' },
+                  { name: 'block_action_type', desc: 'Unconditionally block specific action types from executing' },
+                  { name: 'rate_limit', desc: 'Warn or block when an agent exceeds a configured action frequency' },
+                ].map((s) => (
+                  <div key={s.name} className="flex items-start gap-3">
+                    <code className="font-mono text-xs text-brand shrink-0 pt-0.5">{s.name}</code>
+                    <span className="text-xs text-zinc-400">{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-zinc-500">
+                Policies are configured per-org via the Policies page in the dashboard. The guard endpoint evaluates all active policies and returns the strictest applicable decision.
+              </p>
             </div>
           </section>
 

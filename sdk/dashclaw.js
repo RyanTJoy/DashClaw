@@ -3,7 +3,7 @@
  * Full-featured agent toolkit for the OpenClaw Pro platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 55 methods across 12 categories:
+ * 57 methods across 13 categories:
  * - Action Recording (6)
  * - Loops & Assumptions (7)
  * - Signals (1)
@@ -15,6 +15,7 @@
  * - Daily Digest (1)
  * - Security Scanning (2)
  * - Agent Messaging (9)
+ * - Behavior Guard (2)
  * - Bulk Sync (1)
  */
 
@@ -948,6 +949,49 @@ class DashClaw {
       content,
       agent_id: this.agentId,
     });
+  }
+
+  // ══════════════════════════════════════════════
+  // Category 13: Behavior Guard (2 methods)
+  // ══════════════════════════════════════════════
+
+  /**
+   * Check guard policies before executing a risky action.
+   * Returns allow/warn/block/require_approval.
+   * @param {Object} context
+   * @param {string} context.action_type - Action type (required)
+   * @param {number} [context.risk_score] - Risk score 0-100
+   * @param {string[]} [context.systems_touched] - Systems involved
+   * @param {boolean} [context.reversible] - Whether the action is reversible
+   * @param {string} [context.declared_goal] - What the action aims to do
+   * @param {Object} [options]
+   * @param {boolean} [options.includeSignals=false] - Include live signal warnings
+   * @returns {Promise<{decision: string, reasons: string[], warnings: string[], matched_policies: string[], evaluated_at: string}>}
+   */
+  async guard(context, options = {}) {
+    const params = new URLSearchParams();
+    if (options.includeSignals) params.set('include_signals', 'true');
+    const qs = params.toString();
+    return this._request(`/api/guard${qs ? `?${qs}` : ''}`, 'POST', {
+      ...context,
+      agent_id: context.agent_id || this.agentId,
+    });
+  }
+
+  /**
+   * Get recent guard decisions (audit log).
+   * @param {Object} [filters]
+   * @param {string} [filters.decision] - Filter by decision: allow|warn|block|require_approval
+   * @param {number} [filters.limit=20] - Max results
+   * @param {number} [filters.offset=0] - Pagination offset
+   * @returns {Promise<{decisions: Object[], total: number, stats: Object}>}
+   */
+  async getGuardDecisions(filters = {}) {
+    const params = new URLSearchParams({ agent_id: this.agentId });
+    if (filters.decision) params.set('decision', filters.decision);
+    if (filters.limit) params.set('limit', String(filters.limit));
+    if (filters.offset) params.set('offset', String(filters.offset));
+    return this._request(`/api/guard?${params}`, 'GET');
   }
 
   // ─── Bulk Sync ────────────────────────────────────────────

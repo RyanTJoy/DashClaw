@@ -1063,6 +1063,55 @@ async function run() {
     log('⚠️', `shared_docs migration: ${err.message}`);
   }
 
+  // Step 33: Create guard_policies and guard_decisions tables
+  console.log('Step 33: Creating guard_policies and guard_decisions tables...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS guard_policies (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        name TEXT NOT NULL,
+        policy_type TEXT NOT NULL,
+        rules TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1,
+        created_by TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guard_policies_org_id ON guard_policies(org_id)`;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS guard_policies_org_name_unique
+      ON guard_policies (org_id, name)
+    `;
+    log('✅', 'guard_policies table + indexes ready');
+  } catch (err) {
+    log('⚠️', `guard_policies migration: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS guard_decisions (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        decision TEXT NOT NULL,
+        reason TEXT,
+        matched_policies TEXT,
+        context TEXT,
+        risk_score INTEGER,
+        action_type TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guard_decisions_org_id ON guard_decisions(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guard_decisions_created_at ON guard_decisions(created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guard_decisions_agent_id ON guard_decisions(agent_id)`;
+    log('✅', 'guard_decisions table + indexes ready');
+  } catch (err) {
+    log('⚠️', `guard_decisions migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 
