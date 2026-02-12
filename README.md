@@ -4,7 +4,7 @@ AI agent observability platform — a Next.js 14 app that gives AI agents (and t
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
-### Support the Project ☕
+### Support the Project ☕ (help me I'm poor and this cost a lot of tokens)
 If you find DashClaw useful and would like to support its development, tips are greatly appreciated!  
 **Venmo: [@Wes_Sander](https://venmo.com/Wes_Sander)**
 
@@ -277,5 +277,9 @@ MIT -- see [LICENSE](LICENSE)
 ---
 
 Built by Wes Sander
-[X](https://x.com/wes_sander)
-[LinkedIn](https://www.linkedin.com/in/wes-sander-01b180319/)
+
+**X: [@Wes_Sander](https://x.com/wes_sander)**
+
+**LinkedIn: [Wes Sander](https://www.linkedin.com/in/wes-sander-01b180319/)**
+
+**Venmo: [@Wes_Sander](https://venmo.com/Wes_Sander)**
