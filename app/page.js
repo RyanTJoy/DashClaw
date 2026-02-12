@@ -253,7 +253,7 @@ export default function LandingPage() {
                 <span className="text-zinc-300">({'{'}</span>
               </div>
               <div className="text-zinc-300 pl-4">
-                apiKey: <span className="text-zinc-300">process.env.</span><span className="text-cyan-300">OPENCLAW_API_KEY</span>,
+                apiKey: <span className="text-zinc-300">process.env.</span><span className="text-cyan-300">DASHCLAW_API_KEY</span>,
               </div>
               <div className="text-zinc-300 pl-4">
                 agentId: <span className="text-green-400">&apos;my-agent&apos;</span>,

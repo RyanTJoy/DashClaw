@@ -1,6 +1,6 @@
 # Agent Bootstrap System
 
-Three tools for importing existing agent state into the OpenClaw dashboard:
+Three tools for importing existing agent state into the DashClaw dashboard:
 
 ## CLI Scanner (`scripts/bootstrap-agent.mjs`)
 Mechanical scanner that reads an agent's workspace and pushes discovered data.
@@ -23,7 +23,7 @@ node scripts/bootstrap-agent.mjs \
   --api-key oc_live_xxx  # Push to production
 ```
 
-**Flags**: `--dir` (required), `--agent-id` (required), `--agent-name`, `--base-url`, `--api-key` (falls back to `OPENCLAW_API_KEY`/`DASHBOARD_API_KEY`), `--local`, `--dry-run`
+**Flags**: `--dir` (required), `--agent-id` (required), `--agent-name`, `--base-url`, `--api-key` (falls back to `DASHCLAW_API_KEY`/`DASHCLAW_API_KEY`), `--local`, `--dry-run`
 
 **7 scanners**: connections (env keys + package.json deps), memory (.claude/ health + entities), goals (todo.md), learning (lessons.md), context points (CLAUDE.md sections), context threads (CLAUDE.md headings), snippets (fenced code blocks)
 

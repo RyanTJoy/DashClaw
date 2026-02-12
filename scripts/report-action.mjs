@@ -11,7 +11,7 @@
  * Track mode (create + complete in one call):
  *   node scripts/report-action.mjs --agent-id my-agent --type deploy --goal "Push to prod" --status completed --output "Done"
  *
- * Loads DASHBOARD_API_KEY from .env.local. Defaults to Vercel production URL; use --local for localhost:3000.
+ * Loads DASHCLAW_API_KEY from .env.local. Defaults to Vercel production URL; use --local for localhost:3000.
  */
 
 import { readFileSync, existsSync } from 'fs';
@@ -285,11 +285,11 @@ async function main() {
 
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : 'https://dashclaw.vercel.app';
-  const apiKey = process.env.DASHBOARD_API_KEY || process.env.OPENCLAW_API_KEY;
+    : 'https://dash-claw.vercel.app';
+  const apiKey = process.env.DASHCLAW_API_KEY;
 
   if (!apiKey && !args.local) {
-    console.error('Error: DASHBOARD_API_KEY or OPENCLAW_API_KEY not found (required for production)');
+    console.error('Error: DASHCLAW_API_KEY not found (required for production)');
     process.exit(1);
   }
 

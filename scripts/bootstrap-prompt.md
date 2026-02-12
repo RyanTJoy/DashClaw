@@ -22,8 +22,8 @@ First, initialize the DashClaw SDK:
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: process.env.OPENCLAW_BASE_URL || 'https://dashclaw.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  baseUrl: process.env.DASHCLAW_BASE_URL || 'https://dash-claw.vercel.app',
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'YOUR_AGENT_ID',      // Replace with your agent identifier
   agentName: 'YOUR_AGENT_NAME',  // Replace with a human-readable name
 });

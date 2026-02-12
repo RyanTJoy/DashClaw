@@ -7,7 +7,7 @@
  *   node scripts/report-tokens.mjs --agent-id my-agent --context-used 87000 --context-max 200000 --hourly-left 72
  *   node scripts/report-tokens.mjs --agent-id my-agent --status "..." --local
  *
- * Loads DASHBOARD_API_KEY from .env.local (same dir convention as _run-with-env.mjs).
+ * Loads DASHCLAW_API_KEY from .env.local (same dir convention as _run-with-env.mjs).
  * Defaults to Vercel production URL; use --local for http://localhost:3000.
  */
 
@@ -200,11 +200,11 @@ Options:
 
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : 'https://dashclaw.vercel.app';
-  const apiKey = process.env.DASHBOARD_API_KEY || process.env.OPENCLAW_API_KEY;
+    : 'https://dash-claw.vercel.app';
+  const apiKey = process.env.DASHCLAW_API_KEY;
 
   if (!apiKey && !args.local) {
-    console.error('Error: DASHBOARD_API_KEY or OPENCLAW_API_KEY not found (required for production)');
+    console.error('Error: DASHCLAW_API_KEY not found (required for production)');
     process.exit(1);
   }
 

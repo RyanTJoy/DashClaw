@@ -256,7 +256,7 @@ export default function DocsPage() {
 
 const claw = new DashClaw({
   baseUrl: 'https://your-dashboard.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
 });`}</CodeBlock>
@@ -320,7 +320,7 @@ await claw.updateOutcome(action_id, {
 
 const claw = new DashClaw({
   baseUrl: 'https://your-app.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   guardMode: 'enforce', // throws GuardBlockedError on block/require_approval
   guardCallback: (decision) => console.log('Guard:', decision.decision),

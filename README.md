@@ -115,8 +115,8 @@ See the full SDK reference at `/docs` on your deployment, or read `docs/client-s
 
 ## Security
 
-- **Local-only (http://localhost:3000):** you can run without `DASHBOARD_API_KEY`.
-- **Public deployment:** set `DASHBOARD_API_KEY` or your dashboard data may be readable by anyone.
+- **Local-only (http://localhost:3000):** you can run without `DASHCLAW_API_KEY`.
+- **Public deployment:** set `DASHCLAW_API_KEY` or your dashboard data may be readable by anyone.
 
 ### Run Security Scan
 
@@ -137,7 +137,7 @@ node scripts/security-scan.js
 1. Push to GitHub (or fork this repo)
 2. Import in [Vercel](https://vercel.com)
 3. Add environment variables (`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`)
-4. Set `DASHBOARD_API_KEY` (protects your `/api/*` data)
+4. Set `DASHCLAW_API_KEY` (protects your `/api/*` data)
 5. Configure OAuth (GitHub/Google) for login
 6. Deploy!
 

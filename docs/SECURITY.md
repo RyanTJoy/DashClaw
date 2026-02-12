@@ -1,6 +1,6 @@
 # Security Guide
 
-OpenClaw Dashboard takes security seriously. This guide covers how we protect your data and how you can run your own security audits.
+DashClaw takes security seriously. This guide covers how we protect your data and how you can run your own security audits.
 
 ## How We Protect Your Data
 

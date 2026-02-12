@@ -404,7 +404,7 @@ function BillingContent() {
               <span className="text-xs text-zinc-500 ml-2">Enterprise plans with unlimited everything and dedicated support.</span>
             </div>
             <a
-              href="mailto:support@openclaw.dev"
+              href="mailto:support@dashclaw.dev"
               className="text-xs text-brand hover:text-brand/80 transition-colors"
             >
               Contact Sales

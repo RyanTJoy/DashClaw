@@ -1,11 +1,11 @@
 @echo off
 setlocal EnableExtensions
-title OpenClaw Dashboard Installer
+title DashClaw Installer
 color 0A
 
 echo.
 echo  ========================================
-echo   OpenClaw Dashboard - Easy Installer
+echo   DashClaw - Easy Installer
 echo  ========================================
 echo.
 
@@ -99,8 +99,8 @@ echo.
 
 :: Create start script
 echo @echo off > START-DASHBOARD.bat
-echo title OpenClaw Dashboard >> START-DASHBOARD.bat
-echo echo Starting OpenClaw Dashboard... >> START-DASHBOARD.bat
+echo title DashClaw >> START-DASHBOARD.bat
+echo echo Starting DashClaw... >> START-DASHBOARD.bat
 echo echo. >> START-DASHBOARD.bat
 echo echo Opening http://localhost:3000 in your browser... >> START-DASHBOARD.bat
 echo timeout /t 3 /nobreak ^>nul >> START-DASHBOARD.bat

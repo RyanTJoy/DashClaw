@@ -9,7 +9,7 @@
  * Usage:
  *   node scripts/test-actions.mjs
  *   node scripts/test-actions.mjs http://localhost:3000
- *   DASHBOARD_API_KEY=xxx node scripts/test-actions.mjs https://your-app.vercel.app
+ *   DASHCLAW_API_KEY=xxx node scripts/test-actions.mjs https://your-app.vercel.app
  */
 
 process.on('unhandledRejection', (reason) => {
@@ -18,7 +18,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 const BASE_URL = process.argv[2] || 'http://localhost:3000';
-const API_KEY = process.env.DASHBOARD_API_KEY || '';
+const API_KEY = process.env.DASHCLAW_API_KEY || '';
 
 let passed = 0;
 let failed = 0;

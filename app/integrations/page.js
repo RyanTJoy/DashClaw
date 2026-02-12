@@ -884,7 +884,7 @@ export default function IntegrationsPage() {
             </p>
             <p className="flex items-center gap-2">
               <Settings size={14} className="text-zinc-400 shrink-0" />
-              <span><strong className="text-white">Environment:</strong> For Clawdbot gateway settings, update your config file</span>
+              <span><strong className="text-white">Environment:</strong> For agent gateway settings, update your config file</span>
             </p>
           </div>
         </CardContent>

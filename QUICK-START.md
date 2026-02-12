@@ -81,12 +81,12 @@ Want it running 24/7 without leaving your computer on?
 1. Click the **Deploy with Vercel** button in the README
 2. Connect your GitHub account
 3. Set your environment variables (`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`)
-4. **Set `DASHBOARD_API_KEY`** to protect your data
+4. **Set `DASHCLAW_API_KEY`** to protect your data
 5. Done! You get a free URL like `your-dashboard.vercel.app`
 
 **Security note:**
-- **Local-only**: you can run without `DASHBOARD_API_KEY`
-- **Public deployment**: set `DASHBOARD_API_KEY` or your `/api/*` data may be readable by anyone
+- **Local-only**: you can run without `DASHCLAW_API_KEY`
+- **Public deployment**: set `DASHCLAW_API_KEY` or your `/api/*` data may be readable by anyone
 
 ---
 

@@ -24,7 +24,7 @@ export default function NotificationCenter() {
     }
   };
 
-  const addNotification = useCallback((type, message, title = 'OpenClaw') => {
+  const addNotification = useCallback((type, message, title = 'DashClaw') => {
     const newNotif = {
       id: Date.now(),
       type,
