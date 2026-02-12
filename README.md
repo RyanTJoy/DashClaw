@@ -18,6 +18,8 @@ DashClaw is more than just a dashboard; it's a dual-layer observability ecosyste
 
 Whether you're running a local CLI agent or a complex cloud-based swarm, DashClaw provides the infrastructure to track every thought, decision, and action.
 
+![DashClaw Dashboard](docs/images/screenshots/Dashboard.png)
+
 ## One-Click Deploy
 [![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/DashClaw&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)
 
@@ -64,6 +66,20 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 - **Real-time Updates** -- Auto-refresh with configurable intervals
 - **Mobile Responsive** -- Collapsible sidebar, works on any device
 - **Dark Theme** -- Flat surface design with Inter font and Lucide icons
+
+## 📸 Product Gallery
+
+### Agent Workspace
+Unified view of today's digest, context threads, handoffs, and memory health.
+![Workspace](docs/images/screenshots/Workspace.png)
+
+### Action Post-Mortems
+Deep dive into any action with root-cause tracing, SVG assumption graphs, and loop resolution.
+![Actions](docs/images/screenshots/Actions.png)
+
+### Real-time Security
+Monitor red/amber risk signals and high-risk agent behavior as it happens.
+![Security](docs/images/screenshots/Security.png)
 
 ## Quick Start (Local)
 
