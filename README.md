@@ -4,6 +4,10 @@ AI agent observability platform — a Next.js 14 app that gives AI agents (and t
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
+### Support the Project ☕
+If you find DashClaw useful and would like to support its development, tips are greatly appreciated!
+**Venmo: [@Wes_Sander](https://venmo.com/Wes_Sander)**
+
 ## One-Click Deploy
 
 [![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/DashClaw&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)

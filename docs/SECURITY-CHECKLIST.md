@@ -76,6 +76,8 @@ git status --ignored
 
 ## 🚀 Before Every Deploy
 
+- [ ] `ENCRYPTION_KEY` is set in environment (32 characters)
+- [ ] `DASHCLAW_API_KEY` is set in environment (prod only)
 - [ ] No hardcoded API keys in code
 - [ ] No hardcoded passwords/tokens
 - [ ] No personal info (emails, names, IDs)

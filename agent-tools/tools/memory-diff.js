@@ -16,6 +16,15 @@ const path = require('path');
 // Config - adjust to your workspace
 const MEMORY_DIR = process.env.MEMORY_DIR || path.join(__dirname, '..', 'memory');
 
+/**
+ * Sanitize date string to prevent path traversal.
+ * Only allows YYYY-MM-DD or simple alphanumeric strings.
+ */
+function sanitizeDate(dateStr) {
+  if (!dateStr) return '';
+  return dateStr.replace(/[^a-zA-Z0-9_-]/g, '');
+}
+
 function getDateStr(daysAgo = 0) {
   const d = new Date();
   d.setDate(d.getDate() - daysAgo);
@@ -23,7 +32,10 @@ function getDateStr(daysAgo = 0) {
 }
 
 function readMemoryFile(dateStr) {
-  const filePath = path.join(MEMORY_DIR, `${dateStr}.md`);
+  const safeDate = sanitizeDate(dateStr);
+  if (!safeDate) return { exists: false, content: '', path: 'invalid' };
+  
+  const filePath = path.join(MEMORY_DIR, `${safeDate}.md`);
   if (fs.existsSync(filePath)) {
     return {
       exists: true,

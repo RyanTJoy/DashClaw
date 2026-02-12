@@ -1210,6 +1210,7 @@ Idempotent — safe to run multiple times.
 ### API Key Management
 
 - **Never commit API keys to git.** Store in `.env` files or secret managers.
+- **Set ENCRYPTION_KEY**: In production, ensure the `ENCRYPTION_KEY` (32 characters) environment variable is set. This key is used to encrypt all sensitive settings (AI provider keys, etc.) at rest in your database.
 - **Rotate keys** if compromised. Revoke from the API Keys page; revocation is instant.
 - **Use separate keys** for each agent or environment.
 - **Key format:** `oc_live_{32_hex_chars}` — stored as SHA-256 hash server-side.
