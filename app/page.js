@@ -5,6 +5,7 @@ import {
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
   Webhook, Clock, Compass, Building2, Terminal,
 } from 'lucide-react';
+import PublicNavbar from './components/PublicNavbar';
 
 /* ─── data ─── */
 
@@ -76,29 +77,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* ── 1. Navbar ── */}
-      <nav className="fixed top-0 w-full z-50 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]/80 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Flame size={20} className="text-brand" />
-            <span className="text-lg font-semibold">DashClaw</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/toolkit" className="hover:text-white transition-colors">Toolkit</Link>
-            <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5"><Github size={14} /> GitHub</a>
-            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
-              Sign In
-            </Link>
-            <Link href="/login" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* ── 2. Hero ── */}
       <section className="pt-32 pb-20 px-6">
