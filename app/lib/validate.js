@@ -254,24 +254,14 @@ export function validatePolicy(body) {
       }
       break;
     case 'webhook_check':
-      if (typeof rules.url !== 'string' || !rules.url.startsWith('https://')) {
+      if (typeof rules.url !== 'string') {
         result.valid = false;
-        result.errors.push('webhook_check policy requires rules.url starting with https://');
+        result.errors.push('webhook_check policy requires rules.url as a string');
       } else {
-        try {
-          const parsed = new URL(rules.url);
-          const host = parsed.hostname;
-          const blocked = [
-            /^localhost$/i, /^127\./, /^10\./, /^172\.(1[6-9]|2\d|3[0-1])\./,
-            /^192\.168\./, /^169\.254\./, /^\[::1?\]$/, /^::1?$/,
-          ];
-          if (!host || blocked.some(p => p.test(host))) {
-            result.valid = false;
-            result.errors.push('webhook_check URL cannot point to localhost or private networks');
-          }
-        } catch {
+        const urlErr = isValidWebhookUrl(rules.url);
+        if (urlErr) {
           result.valid = false;
-          result.errors.push('webhook_check rules.url must be a valid URL');
+          result.errors.push(urlErr);
         }
       }
       if (rules.timeout_ms !== undefined) {
@@ -290,6 +280,43 @@ export function validatePolicy(body) {
   }
 
   return result;
+}
+
+/**
+ * SECURITY: Centralized SSRF protection for webhooks.
+ * Returns null if valid, or a string error message if invalid.
+ */
+export function isValidWebhookUrl(url) {
+  if (!url || typeof url !== 'string') return 'URL is required';
+  if (!url.startsWith('https://')) return 'URL must use HTTPS';
+
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+
+    // Block localhost, private IPs, and zero-host variants
+    const blockedPatterns = [
+      /^localhost$/i,
+      /^0\./,
+      /^127\./,
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[0-1])\./,
+      /^192\.168\./,
+      /^169\.254\./,
+      /^\[::1?\]$/,
+      /^::1?$/,
+      /^\[0:0:0:0:0:0:0:0\]$/,
+      /^\[::\]$/,
+    ];
+
+    if (!host || blockedPatterns.some(p => p.test(host))) {
+      return 'URL cannot point to localhost or private networks';
+    }
+
+    return null;
+  } catch {
+    return 'Invalid URL format';
+  }
 }
 
 /**

@@ -80,13 +80,20 @@ function checkRateLimit(ip) {
 // SECURITY: Timing-safe string comparison to prevent timing attacks
 function timingSafeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  // SECURITY: Pad both strings to the same length to prevent length-based timing leaks
-  const maxLen = Math.max(a.length, b.length, 1);
-  const paddedA = a.padEnd(maxLen, '\0');
-  const paddedB = b.padEnd(maxLen, '\0');
-  let result = a.length ^ b.length; // length mismatch = nonzero result
-  for (let i = 0; i < maxLen; i++) {
-    result |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i);
+  if (a.length !== b.length) {
+    // Still do a "fake" comparison to keep timing somewhat consistent
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(a));
+    return false;
+  }
+  
+  const aBuf = new TextEncoder().encode(a);
+  const bBuf = new TextEncoder().encode(b);
+  
+  if (aBuf.length !== bBuf.length) return false;
+
+  let result = 0;
+  for (let i = 0; i < aBuf.length; i++) {
+    result |= aBuf[i] ^ bBuf[i];
   }
   return result === 0;
 }
@@ -255,23 +262,37 @@ export async function middleware(request) {
     // No key provided — check if this is a same-origin dashboard request
     if (!apiKey) {
       const secFetchSite = request.headers.get('sec-fetch-site');
-      const referer = request.headers.get('referer');
-      const requestOrigin = request.nextUrl.origin;
-
+      
       // SECURITY: Only trust Sec-Fetch-Site for same-origin detection.
-      // Referer is spoofable by non-browser clients so we don't use it as a fallback.
-      // All modern browsers (Chrome 76+, Firefox 90+, Safari 16.1+) send Sec-Fetch-Site.
       const isSameOrigin = secFetchSite === 'same-origin';
 
       if (isSameOrigin) {
-        // Resolve org from NextAuth session token if available
+        // Resolve org from NextAuth session token
         const { getToken } = require('next-auth/jwt');
         const sessionToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-        const orgId = sessionToken?.orgId || 'org_default';
-        const role = sessionToken?.role || 'admin';
+        
+        if (!sessionToken) {
+          return NextResponse.json({ error: 'Unauthorized - Session required' }, { status: 401 });
+        }
+
+        const orgId = sessionToken.orgId || 'org_default';
+        const role = sessionToken.role || 'member';
+
+        // SECURITY: Users on org_default are only allowed to access onboarding and health APIs
+        const ONBOARDING_PREFIXES = ['/api/onboarding', '/api/setup', '/api/health'];
+        const isAllowedForOnboarding = ONBOARDING_PREFIXES.some(p => pathname.startsWith(p));
+
+        if (orgId === 'org_default' && !isAllowedForOnboarding) {
+          console.warn(`[SECURITY] Blocked org_default access to: ${pathname} from user ${sessionToken.userId}`);
+          return NextResponse.json(
+            { error: 'Forbidden - Complete onboarding to access this resource', needsOnboarding: true },
+            { status: 403 }
+          );
+        }
+
         requestHeaders.set('x-org-id', orgId);
         requestHeaders.set('x-org-role', role);
-        requestHeaders.set('x-user-id', sessionToken?.userId || '');
+        requestHeaders.set('x-user-id', sessionToken.userId || '');
         const response = NextResponse.next({ request: { headers: requestHeaders } });
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('X-Frame-Options', 'DENY');

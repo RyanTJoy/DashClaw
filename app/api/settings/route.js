@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
 import { logActivity } from '../../lib/audit.js';
+import { encrypt } from '../../lib/encryption.js';
 
 export const dynamic = 'force-dynamic';
 
@@ -176,12 +177,22 @@ export async function POST(request) {
       return NextResponse.json({ error: 'agent_id too long (max 255 chars)' }, { status: 400 });
     }
 
+    let finalValue = value;
+    if (encrypted && value) {
+      try {
+        finalValue = encrypt(value);
+      } catch (err) {
+        console.error('[SETTINGS] Encryption failed:', err.message);
+        return NextResponse.json({ error: 'Server configuration error: encryption failed' }, { status: 500 });
+      }
+    }
+
     // Use COALESCE-based conflict target matching the functional unique index
     await sql`
       INSERT INTO settings (org_id, agent_id, key, value, category, encrypted, updated_at)
-      VALUES (${orgId}, ${agent_id}, ${key}, ${value}, ${category}, ${encrypted}, NOW())
+      VALUES (${orgId}, ${agent_id}, ${key}, ${finalValue}, ${category}, ${encrypted}, NOW())
       ON CONFLICT (org_id, COALESCE(agent_id, ''), key) DO UPDATE SET
-        value = ${value},
+        value = ${finalValue},
         category = ${category},
         encrypted = ${encrypted},
         updated_at = NOW()

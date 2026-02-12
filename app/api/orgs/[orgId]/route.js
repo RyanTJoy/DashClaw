@@ -77,7 +77,7 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    const { name, plan } = body;
+    const { name } = body;
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
@@ -88,17 +88,12 @@ export async function PATCH(request, { params }) {
       }
     }
 
-    if (plan !== undefined) {
-      const validPlans = ['free', 'pro', 'team', 'enterprise'];
-      if (!validPlans.includes(plan)) {
-        return NextResponse.json({ error: `plan must be one of: ${validPlans.join(', ')}` }, { status: 400 });
-      }
-    }
+    // SECURITY: 'plan' is intentionally excluded from PATCH.
+    // Plan updates must be handled via Stripe webhooks or a dedicated billing service.
 
     const result = await sql`
       UPDATE organizations
       SET name = COALESCE(${name?.trim() || null}, name),
-          plan = COALESCE(${plan || null}, plan),
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${orgId}
       RETURNING *

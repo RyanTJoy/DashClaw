@@ -5,16 +5,18 @@ DashClaw takes security seriously. This guide covers how we protect your data an
 ## How We Protect Your Data
 
 ### Credentials Storage
-- All API keys and credentials are stored **encrypted** in your Neon database
-- Credentials never touch client-side code
-- Environment variables used for all sensitive configuration
-- No credentials are ever logged or exposed in error messages
+- All API keys and credentials are stored **encrypted** in your Neon database using AES-256-CBC.
+- **IMPORTANT**: You must set a 32-character `ENCRYPTION_KEY` environment variable for encryption to function.
+- Credentials never touch client-side code in plaintext.
+- Environment variables used for all sensitive configuration.
+- No credentials are ever logged or exposed in error messages.
 
 ### API Security
-- All API endpoints validate required fields
-- Database connections use SSL/TLS encryption
-- CORS configured for your deployment domain only
-- No sensitive data in URL parameters
+- All API endpoints validate required fields and enforce string length limits.
+- **SSRF Protection**: Centralized URL validation blocks webhook/guard requests to localhost and private networks.
+- Database connections use SSL/TLS encryption.
+- CORS configured for your deployment domain only.
+- No sensitive data in URL parameters (API keys must be in headers).
 
 ### What We DON'T Store
 - We don't store your actual data - just references and metadata
