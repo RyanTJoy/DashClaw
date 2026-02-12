@@ -5,6 +5,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import CopyDocsButton from '../components/CopyDocsButton';
+import PublicNavbar from '../components/PublicNavbar';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
@@ -176,28 +177,7 @@ export default function DocsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]/80 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Flame size={20} className="text-brand" />
-            <span className="text-lg font-semibold">DashClaw</span>
-          </Link>
-          <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5"><Github size={14} /> GitHub</a>
-            <Link href="/docs" className="text-white">Docs</Link>
-            <Link href="/#signals" className="hover:text-white transition-colors">Signals</Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
-              Sign In
-            </Link>
-            <Link href="/login" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
-              Get Started
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       {/* Hero */}
       <section className="pt-32 pb-12 px-6">
@@ -653,7 +633,7 @@ for (const signal of signals) {
                 { name: 'context.risk_score', type: 'number', required: false, desc: 'Risk score 0-100' },
                 { name: 'context.systems_touched', type: 'string[]', required: false, desc: 'Systems this action will affect' },
                 { name: 'context.reversible', type: 'boolean', required: false, desc: 'Whether the action can be undone' },
-                { name: 'context.declared_goal', type: 'string', required: false, desc: 'What the action aims to accomplish' },
+                { name: 'context.declared_goal', type: 'string', required: false, desc: 'What the action accomplishes' },
                 { name: 'options.includeSignals', type: 'boolean', required: false, desc: 'Also check live risk signals (adds latency)' },
               ]}
               returns="Promise<{ decision: string, reasons: string[], warnings: string[], matched_policies: string[], evaluated_at: string }>"
@@ -1254,30 +1234,18 @@ python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-[rgba(255,255,255,0.06)] py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <Flame size={16} className="text-brand" />
             <span className="text-sm text-zinc-400">DashClaw</span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-zinc-500">
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
-              <Github size={14} />
-              GitHub
-            </a>
-            <Link href="/docs" className="flex items-center gap-1.5 text-zinc-300">
-              <BookOpen size={14} />
-              Docs
-            </Link>
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
-              <Github size={14} />
-              GitHub
-            </a>
-            <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
-              <ExternalLink size={14} />
-              Dashboard
-            </Link>
+          <div className="flex items-center gap-6 text-sm text-zinc-500">
+            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors">GitHub</a>
+            <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
+            <Link href="/toolkit" className="hover:text-zinc-300">Toolkit</Link>
+            <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
+            <Link href="/dashboard" className="hover:text-zinc-300">Dashboard</Link>
           </div>
         </div>
       </footer>
