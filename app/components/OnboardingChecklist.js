@@ -10,6 +10,7 @@ const STEPS = [
   { id: 'workspace', label: 'Create your workspace', icon: Building2 },
   { id: 'api_key', label: 'Generate your API key', icon: KeyRound },
   { id: 'install', label: 'Install the SDK', icon: Terminal },
+  { id: 'bootstrap', label: 'Import existing state', icon: CheckCircle2 },
   { id: 'first_action', label: 'Send your first action', icon: Rocket },
 ];
 
@@ -160,13 +161,15 @@ export default function OnboardingChecklist() {
     (steps.workspace_created ? 1 : 0) +
     (steps.api_key_exists ? 1 : 0) +
     (steps.api_key_exists ? 1 : 0) + // install is "done" once key exists (static step)
+    (steps.api_key_exists ? 1 : 0) + // bootstrap is "done" once key exists (static step)
     (steps.first_action_sent || actionDetected ? 1 : 0);
-  const progress = Math.round((completedCount / 4) * 100);
+  const progress = Math.round((completedCount / 5) * 100);
 
   // Determine current active step
   let activeStep = 'workspace';
   if (steps.workspace_created) activeStep = 'api_key';
   if (steps.api_key_exists) activeStep = 'install';
+  if (steps.api_key_exists && activeStep === 'install') activeStep = 'bootstrap';
   if (steps.api_key_exists && generatedKey) activeStep = 'first_action';
   if (steps.first_action_sent || actionDetected) activeStep = 'done';
 
@@ -174,6 +177,7 @@ export default function OnboardingChecklist() {
   const apiKeyDisplay = generatedKey || 'oc_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://your-app.vercel.app';
   const installSnippet = 'npm install dashclaw';
+  const bootstrapSnippet = `node scripts/bootstrap-agent.mjs --dir . --agent-id my-agent --api-key ${apiKeyDisplay} --base-url ${baseUrl}`;
   const initSnippet = `// Add this to your agent's entry point or a shared config file
 import { DashClaw } from 'dashclaw';
 
@@ -336,9 +340,29 @@ await claw.createAction({
             )}
           </StepRow>
 
-          {/* Step 4: Send First Action */}
+          {/* Step 4: Bootstrap Data */}
           <StepRow
             step={STEPS[3]}
+            completed={steps.api_key_exists && (activeStep === 'first_action' || activeStep === 'done')}
+            active={activeStep === 'bootstrap'}
+            future={!steps.api_key_exists}
+          >
+            {(activeStep === 'bootstrap' || activeStep === 'first_action' || activeStep === 'done') && steps.api_key_exists && (
+              <div className="mt-3 space-y-3">
+                <p className="text-xs text-zinc-400">Optional: Import your current integrations, goals, and memory immediately:</p>
+                <CodeBlock
+                  code={bootstrapSnippet}
+                  copyId="bootstrap"
+                  copied={copied}
+                  onCopy={copyToClipboard}
+                />
+              </div>
+            )}
+          </StepRow>
+
+          {/* Step 5: Send First Action */}
+          <StepRow
+            step={STEPS[4]}
             completed={steps.first_action_sent || actionDetected}
             active={activeStep === 'first_action'}
             future={activeStep !== 'first_action' && activeStep !== 'done'}
