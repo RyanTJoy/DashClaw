@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId, getUserId } from '../../lib/org.js';
+import { enforceFieldLimits } from '../../lib/validate.js';
 import { randomUUID } from 'node:crypto';
 
 const VALID_TYPES = ['observation', 'preference', 'mood', 'approach'];
@@ -90,6 +91,11 @@ export async function POST(request) {
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json({ error: `type is required and must be one of: ${VALID_TYPES.join(', ')}` }, { status: 400 });
+    }
+
+    const { ok, errors: fieldErrors } = enforceFieldLimits(body, { observation: 2000, preference: 2000, mood: 200, approach: 2000, category: 200, context: 2000, notes: 2000, energy: 100 });
+    if (!ok) {
+      return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
     const now = new Date().toISOString();

@@ -59,6 +59,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
+    // SECURITY: Check API key quota (same as POST /api/keys)
+    const { checkQuotaFast } = require('../../../lib/billing');
+    const quotaCheck = await checkQuotaFast(orgId, 'api_keys', sql);
+    if (quotaCheck?.blocked) {
+      return NextResponse.json({ error: quotaCheck.message || 'API key quota exceeded' }, { status: 402 });
+    }
+
     const rawKey = generateApiKey();
     const keyHash = hashKey(rawKey);
     const keyPrefix = rawKey.substring(0, 8);

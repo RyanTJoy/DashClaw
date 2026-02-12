@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../../../../lib/org.js';
+import { enforceFieldLimits } from '../../../../../lib/validate.js';
 import { randomUUID } from 'node:crypto';
 
 export async function POST(request, { params }) {
@@ -12,6 +13,11 @@ export async function POST(request, { params }) {
     const orgId = getOrgId(request);
     const { threadId } = params;
     const body = await request.json();
+
+    const { ok, errors: fieldErrors } = enforceFieldLimits(body, { content: 5000, entry_type: 100 });
+    if (!ok) {
+      return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
+    }
 
     const { content, entry_type } = body;
 

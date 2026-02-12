@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
-import { getOrgRole } from '../../../lib/org.js';
+import { getOrgId, getOrgRole } from '../../../lib/org.js';
 
 let _sql;
 function getSql() {
@@ -24,6 +24,12 @@ export async function GET(request, { params }) {
 
     const sql = getSql();
     const { orgId } = await params;
+
+    // SECURITY: Only allow accessing your own org
+    const callerOrgId = getOrgId(request);
+    if (orgId !== callerOrgId) {
+      return NextResponse.json({ error: 'Forbidden - cannot access other organizations' }, { status: 403 });
+    }
 
     const orgs = await sql`
       SELECT * FROM organizations WHERE id = ${orgId}
@@ -57,6 +63,13 @@ export async function PATCH(request, { params }) {
 
     const sql = getSql();
     const { orgId } = await params;
+
+    // SECURITY: Only allow updating your own org
+    const callerOrgId = getOrgId(request);
+    if (orgId !== callerOrgId) {
+      return NextResponse.json({ error: 'Forbidden - cannot access other organizations' }, { status: 403 });
+    }
+
     const body = await request.json();
 
     const existing = await sql`SELECT id FROM organizations WHERE id = ${orgId}`;

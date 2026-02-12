@@ -69,6 +69,15 @@ export async function POST(request) {
       if (parsed.protocol !== 'https:') {
         return NextResponse.json({ error: 'URL must use HTTPS' }, { status: 400 });
       }
+      // SECURITY: Block private/internal IPs (SSRF prevention)
+      const host = parsed.hostname;
+      const blocked = [
+        /^localhost$/i, /^127\./, /^10\./, /^172\.(1[6-9]|2\d|3[0-1])\./,
+        /^192\.168\./, /^169\.254\./, /^\[::1?\]$/, /^::1?$/, /^0\./,
+      ];
+      if (!host || blocked.some(p => p.test(host))) {
+        return NextResponse.json({ error: 'URL cannot point to localhost or private networks' }, { status: 400 });
+      }
     } catch {
       return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
     }

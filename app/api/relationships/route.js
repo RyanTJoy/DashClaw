@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../lib/org.js';
+import { enforceFieldLimits } from '../../lib/validate.js';
 
 // sql initialized inside handler for serverless compatibility
 
@@ -94,6 +95,11 @@ export async function POST(request) {
     const sql = neon(process.env.DATABASE_URL);
     const orgId = getOrgId(request);
     const body = await request.json();
+
+    const { ok, errors: fieldErrors } = enforceFieldLimits(body, { summary: 2000, contact_name: 500, direction: 50, type: 100, platform: 100 });
+    if (!ok) {
+      return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
+    }
 
     const { contact_name, contact_id, direction, summary, type, platform, agent_id } = body;
 

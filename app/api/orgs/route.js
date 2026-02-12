@@ -35,10 +35,14 @@ export async function GET(request) {
     }
 
     const sql = getSql();
+    const callerOrgId = getOrgId(request);
+
+    // SECURITY: Only return the caller's own org (not all orgs)
     const orgs = await sql`
       SELECT o.*,
         (SELECT COUNT(*) FROM api_keys WHERE org_id = o.id AND revoked_at IS NULL) as active_keys
       FROM organizations o
+      WHERE o.id = ${callerOrgId}
       ORDER BY o.created_at DESC
     `;
 

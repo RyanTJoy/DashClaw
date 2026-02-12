@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../lib/org.js';
+import { enforceFieldLimits } from '../../lib/validate.js';
 import { randomUUID } from 'node:crypto';
 
 const VALID_TYPES = ['action', 'info', 'lesson', 'question', 'status'];
@@ -99,19 +100,18 @@ export async function POST(request) {
     const orgId = getOrgId(request);
     const body = await request.json();
 
+    const { ok, errors: fieldErrors } = enforceFieldLimits(body, { subject: 200, body: 2000 });
+    if (!ok) {
+      return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
+    }
+
     const { from_agent_id, to_agent_id, message_type, subject, body: msgBody, thread_id, urgent, doc_ref } = body;
 
     if (!msgBody) {
       return NextResponse.json({ error: 'body is required' }, { status: 400 });
     }
-    if (msgBody.length > 2000) {
-      return NextResponse.json({ error: 'body must be 2000 characters or less' }, { status: 400 });
-    }
     if (!from_agent_id) {
       return NextResponse.json({ error: 'from_agent_id is required' }, { status: 400 });
-    }
-    if (subject && subject.length > 200) {
-      return NextResponse.json({ error: 'subject must be 200 characters or less' }, { status: 400 });
     }
     const msgType = message_type || 'info';
     if (!VALID_TYPES.includes(msgType)) {

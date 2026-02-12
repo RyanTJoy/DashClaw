@@ -292,4 +292,21 @@ export function validatePolicy(body) {
   return result;
 }
 
-export { ACTION_TYPES, ACTION_STATUSES, LOOP_TYPES, LOOP_STATUSES, LOOP_PRIORITIES, OUTCOME_FIELDS, POLICY_TYPES };
+/**
+ * SECURITY: Enforce max length on string fields to prevent storage abuse.
+ * Returns { ok: true, truncated } or { ok: false, error }.
+ * Truncates instead of rejecting — use validateRequiredLength for hard limits.
+ */
+const DEFAULT_MAX_LENGTH = 5000;
+
+export function enforceFieldLimits(body, limits = {}) {
+  const errors = [];
+  for (const [field, maxLen] of Object.entries(limits)) {
+    if (body[field] != null && typeof body[field] === 'string' && body[field].length > maxLen) {
+      errors.push(`${field} exceeds max length of ${maxLen}`);
+    }
+  }
+  return errors.length > 0 ? { ok: false, errors } : { ok: true };
+}
+
+export { ACTION_TYPES, ACTION_STATUSES, LOOP_TYPES, LOOP_STATUSES, LOOP_PRIORITIES, OUTCOME_FIELDS, POLICY_TYPES, DEFAULT_MAX_LENGTH };

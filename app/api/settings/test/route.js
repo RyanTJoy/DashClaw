@@ -27,9 +27,15 @@ function validateUrl(url, type) {
   }
 }
 
-// POST - Test a connection with provided credentials
+// POST - Test a connection with provided credentials (admin only)
 export async function POST(request) {
   try {
+    // SECURITY: Only admins can test credentials
+    const orgRole = request.headers.get('x-org-role');
+    if (orgRole !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { integration, credentials } = body;
 

@@ -37,11 +37,7 @@ export async function GET() {
     health.checks.environment = { status: 'healthy' };
   }
 
-  // Check if API key auth is configured
-  health.checks.authentication = {
-    status: process.env.DASHCLAW_API_KEY ? 'configured' : 'not_configured',
-    warning: !process.env.DASHCLAW_API_KEY ? 'API endpoints are unprotected - set DASHCLAW_API_KEY' : null
-  };
+  // SECURITY: Don't expose auth configuration status to public endpoint
 
   const statusCode = health.status === 'healthy' ? 200 : 503;
   return NextResponse.json(health, { status: statusCode });
