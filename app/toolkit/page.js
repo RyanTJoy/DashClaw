@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Flame, Github, Terminal, ArrowLeft, Zap, Brain, Shield, Rocket, HeartPulse, Search, MessageSquare, ClipboardCheck, History } from 'lucide-react';
+import PublicNavbar from '../components/PublicNavbar';
 
 const toolCategories = [
   {
@@ -48,23 +49,7 @@ export default function ToolkitPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* Navbar */}
-      <nav className="fixed top-0 w-full z-50 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]/80 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <Flame size={20} className="text-brand" />
-            <span className="text-lg font-semibold">DashClaw</span>
-          </Link>
-          <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/toolkit" className="text-white transition-colors">Toolkit</Link>
-            <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5"><Github size={14} /> GitHub</a>
-            <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-          </div>
-          <Link href="/login" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
-            Get Started
-          </Link>
-        </div>
-      </nav>
+      <PublicNavbar />
 
       <main className="pt-28 pb-20 px-6 max-w-6xl mx-auto">
         <div className="flex items-center gap-3 mb-12">
