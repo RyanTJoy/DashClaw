@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
-import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/billing.js';
+import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { logActivity } from '../../lib/audit.js';
 import crypto from 'crypto';
 

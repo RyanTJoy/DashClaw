@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
-import { incrementMeter } from '../../../lib/billing.js';
+import { incrementMeter } from '../../../lib/usage.js';
 import { logActivity } from '../../../lib/audit.js';
 
 let _sql;
