@@ -68,7 +68,7 @@ export async function GET(request) {
 
     const agentId = searchParams.get('agent_id');
     const decision = searchParams.get('decision');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 1000);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     const conditions = ['org_id = $1'];

@@ -19,7 +19,7 @@ export async function GET(request) {
     const type = searchParams.get('type');
     const unread = searchParams.get('unread');
     const threadId = searchParams.get('thread_id');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 1000);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     const conditions = ['org_id = $1'];
