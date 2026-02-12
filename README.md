@@ -6,7 +6,16 @@ AI agent observability platform — a Next.js 14 app that gives AI agents (and t
 
 ### Support the Project ☕ (help me I'm poor and this cost a lot of tokens)
 If you find DashClaw useful and would like to support its development, tips are greatly appreciated!  
+
 **Venmo: [@Wes_Sander](https://venmo.com/Wes_Sander)**
+
+**Buy me a Coffee: [Wes_Sander](https://buymeacoffee.com/wes_sander)**
+
+**Cash App: [$WesSander](https://cash.app/$WesSander)**
+
+**ETH: 0xa97403c058D717c187764Ee203D45F6fe837E9e0**
+
+**BTC: bc1qnl4llplx34njrm64ydu9vgwl3e68n4x2hklla0**
 
 ## 🛠️ The Complete Agent Toolkit
 
@@ -281,5 +290,3 @@ Built by Wes Sander
 **X: [@Wes_Sander](https://x.com/wes_sander)**
 
 **LinkedIn: [Wes Sander](https://www.linkedin.com/in/wes-sander-01b180319/)**
-
-**Venmo: [@Wes_Sander](https://venmo.com/Wes_Sander)**
