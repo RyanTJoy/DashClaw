@@ -2,7 +2,7 @@
 
 /**
  * Bootstrap Agent Scanner
- * Reads an agent's workspace and pushes discovered state to OpenClaw Pro.
+ * Reads an agent's workspace and pushes discovered state to DashClaw.
  *
  * Usage:
  *   node scripts/bootstrap-agent.mjs --dir /path/to/agent --agent-id my-agent [options]
@@ -11,7 +11,7 @@
  *   --dir          Agent workspace directory (required)
  *   --agent-id     Agent identifier (required)
  *   --agent-name   Human-readable agent name
- *   --base-url     API base URL (default: https://openclaw-pro.vercel.app)
+ *   --base-url     API base URL (default: https://dashclaw.vercel.app)
  *   --api-key      API key (falls back to OPENCLAW_API_KEY / DASHBOARD_API_KEY env)
  *   --local        Shorthand for --base-url http://localhost:3000
  *   --dry-run      Print discovered data without pushing
@@ -676,7 +676,7 @@ async function main() {
   // Live mode — push via SDK
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : (args.baseUrl || 'https://openclaw-pro.vercel.app');
+    : (args.baseUrl || 'https://dashclaw.vercel.app');
   const apiKey = args.apiKey || process.env.OPENCLAW_API_KEY || process.env.DASHBOARD_API_KEY;
 
   if (!apiKey) {

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * report-action.mjs — Create or update ActionRecords via the OpenClaw Pro API.
+ * report-action.mjs — Create or update ActionRecords via the DashClaw API.
  *
  * Create mode:
- *   node scripts/report-action.mjs --agent-id moltfire --type build --goal "Deploy feature X"
+ *   node scripts/report-action.mjs --agent-id my-agent --type build --goal "Deploy feature X"
  *
  * Update mode:
  *   node scripts/report-action.mjs --update act_abc123 --status completed --output "Done"
  *
  * Track mode (create + complete in one call):
- *   node scripts/report-action.mjs --agent-id moltfire --type deploy --goal "Push to prod" --status completed --output "Done"
+ *   node scripts/report-action.mjs --agent-id my-agent --type deploy --goal "Push to prod" --status completed --output "Done"
  *
  * Loads DASHBOARD_API_KEY from .env.local. Defaults to Vercel production URL; use --local for localhost:3000.
  */
@@ -285,7 +285,7 @@ async function main() {
 
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : 'https://openclaw-pro.vercel.app';
+    : 'https://dashclaw.vercel.app';
   const apiKey = process.env.DASHBOARD_API_KEY || process.env.OPENCLAW_API_KEY;
 
   if (!apiKey && !args.local) {

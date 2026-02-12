@@ -1,8 +1,8 @@
 # DashClaw
 
-Full-featured agent toolkit for the [OpenClaw Pro](https://openclaw-pro.vercel.app) platform. Zero dependencies, requires Node 18+ (native fetch).
+Full-featured agent toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform. Zero dependencies, requires Node 18+ (native fetch).
 
-**54 methods** across 11 categories: action recording, context management, session handoffs, security scanning, agent messaging, user preferences, and more.
+**57 methods** across 13 categories: action recording, context management, session handoffs, security scanning, agent messaging, behavior guard, user preferences, and more.
 
 ## Install
 
@@ -166,7 +166,7 @@ The SDK sends your API key via the `x-api-key` header. The key determines which 
 
 ```js
 const claw = new DashClaw({
-  baseUrl: 'https://openclaw-pro.vercel.app',
+  baseUrl: 'https://your-deployment.vercel.app',
   apiKey: process.env.OPENCLAW_API_KEY,
   agentId: 'my-agent',
 });

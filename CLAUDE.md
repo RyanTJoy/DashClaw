@@ -9,7 +9,7 @@ AI agent observability platform — a Next.js 14 app (JavaScript, not TypeScript
 - **`/dashboard`** — Authenticated operations dashboard (client component, behind sidebar)
 - **`/workspace`** — Agent workspace with 6 tabs: digest, context, handoffs, snippets, preferences, memory
 
-Forked from OpenClaw-OPS-Suite as a starting point. This is the full-featured version with the ActionRecord Control Plane included. User-facing brand is "DashClaw" (repo name remains OpenClaw-Pro for backward compat).
+Full-featured version with the ActionRecord Control Plane, Behavior Guard, Agent Workspace, and Messaging.
 
 ## Architecture
 
@@ -150,7 +150,7 @@ node scripts/security-scan.js   # Security audit
 node scripts/test-actions.mjs   # ActionRecord tests (needs DATABASE_URL)
 node scripts/migrate-multi-tenant.mjs  # Run multi-tenant migration
 node scripts/create-org.mjs --name "Acme" --slug "acme"  # Create org
-node scripts/report-action.mjs --agent-id moltfire --type build --goal "Deploy X"  # Create action
+node scripts/report-action.mjs --agent-id my-agent --type build --goal "Deploy X"  # Create action
 node scripts/report-action.mjs --update act_xxx --status completed --output "Done"  # Update action
 node scripts/cleanup-actions.mjs --before "2026-02-09" --dry-run  # Preview stale record cleanup
 ```

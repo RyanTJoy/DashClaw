@@ -1,77 +1,64 @@
-# OpenClaw Pro
+# DashClaw
 
-AI agent operations dashboard — a Next.js 14 app that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
+AI agent observability platform — a Next.js 14 app that gives AI agents (and their operators) a command center for tracking actions, learning, relationships, goals, content, and workflows.
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## One-Click Deploy
 
-[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/OpenClaw-Pro&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)
+[![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/DashClaw&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)
 
 **New to this?** Check out our [Quick Start Guide](QUICK-START.md) - no coding required!
 
 **Already deployed?** Sign in and the onboarding checklist will guide you through workspace setup!
 
-## Using this with Clawd/Clawdbot (recommended)
-
-This repo includes a **tools bundle** (memory, security, learning, token tracking, etc.) designed to be installed into your **Clawd workspace**.
-
-From this repo root:
-- Windows: `powershell -ExecutionPolicy Bypass -File .\clawd-tools\install-windows.ps1`
-- Mac/Linux: `bash ./clawd-tools/install-mac.sh`
-
-See: [`clawd-tools/README.md`](clawd-tools/README.md)
-
-### Tools bundle (at a glance)
-
-Installed into your Clawd workspace, you get:
-- **Security**: outbound filter, secret rotation tracker, audit logger, skill safety checker
-- **Tokens**: token capture + dashboards, efficiency/budget helpers
-- **Memory**: memory search, memory health scanner, memory extractor
-- **Ops tracking**: learning database, relationship tracker, goal tracker, open loops
-- **Workflow/ops helpers**: session handoff, context manager, daily digest, error logger, project monitor, API monitor
-
 ## Features
 
 ### Operations & Monitoring
 
-- **ActionRecord Control Plane** — Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
-- **Risk Signals** — 7 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
-- **Open Loops** — Track unresolved items with priority and type classification
+- **ActionRecord Control Plane** -- Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
+- **Behavior Guard** -- Policy engine (risk thresholds, rate limits, action blocking, approval gates, webhook checks)
+- **Risk Signals** -- 7 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
+- **Open Loops** -- Track unresolved items with priority and type classification
+- **Agent Workspace** -- Digest, context manager, handoffs, snippets, preferences, memory health
 
 ### Data & Insights
 
-- **Learning Database** — Track decisions, lessons, and outcomes over time
-- **Relationship Tracker (Mini-CRM)** — Contacts, interactions, and follow-up reminders
-- **Goal Tracking** — Goals, milestones, and progress visualization
-- **Content Tracker** — Capture writing ideas and content workflows
-- **Workflows / SOPs** — Document repeatable processes and runbooks
+- **Learning Database** -- Track decisions, lessons, and outcomes over time
+- **Relationship Tracker (Mini-CRM)** -- Contacts, interactions, and follow-up reminders
+- **Goal Tracking** -- Goals, milestones, and progress visualization
+- **Content Tracker** -- Capture writing ideas and content workflows
+- **Workflows / SOPs** -- Document repeatable processes and runbooks
+- **Agent Messaging** -- Async inbox, threads, shared docs between agents
 
-### Security
+### Security & Governance
 
-- **Secure Settings Store** — Credentials encrypted and stored in your database
-- **Connection Tests** — Verify integrations before saving
-- **Security Scanner** — Pre-deploy audit script (`node scripts/security-scan.js`)
-- **Multi-Tenant Isolation** — Org-scoped data with API key authentication
+- **Secure Settings Store** -- Credentials encrypted and stored in your database
+- **Guard Policies** -- Block, warn, or require approval for risky actions
+- **Webhook Interventions** -- Call external endpoints for custom guard logic
+- **Security Scanner** -- Pre-deploy audit script (`node scripts/security-scan.js`)
+- **Multi-Tenant Isolation** -- Org-scoped data with API key authentication
+- **Activity Log** -- Full audit trail of admin actions and system events
 
 ### Platform & UX
 
-- **Guided Onboarding** — 4-step checklist (workspace, API key, SDK install, first action)
-- **API Key Management** — Generate, list, and revoke keys from `/api-keys`
-- **SDK Documentation** — Full public reference at `/docs` (22 methods, code examples)
-- **Integrations Settings** — Configure services from the UI
-- **Calendar Integration** — Upcoming events at a glance
-- **Real-time Updates** — Auto-refresh with configurable intervals
-- **Mobile Responsive** — Collapsible sidebar, works on any device
-- **Dark Theme** — Flat surface design with Inter font and Lucide icons
+- **Guided Onboarding** -- 4-step checklist (workspace, API key, SDK install, first action)
+- **API Key Management** -- Generate, list, and revoke keys from `/api-keys`
+- **SDK Documentation** -- Full public reference at `/docs` (55+ methods, code examples)
+- **Team Management** -- Invite links, role-based access (admin/member)
+- **Billing & Plans** -- Free, Pro ($29/mo), Team ($79/mo) via Stripe
+- **Webhooks & Email Alerts** -- Signal notifications via webhooks and Resend email
+- **Real-time Updates** -- Auto-refresh with configurable intervals
+- **Mobile Responsive** -- Collapsible sidebar, works on any device
+- **Dark Theme** -- Flat surface design with Inter font and Lucide icons
 
 ## Quick Start (Local)
 
 ### 1) Clone the project
 
 ```bash
-git clone git@github.com:ucsandman/OpenClaw-Pro.git
-cd OpenClaw-Pro
+git clone git@github.com:ucsandman/DashClaw.git
+cd DashClaw
 ```
 
 ### 2) Set up your database
@@ -84,6 +71,8 @@ Create `.env.local` (you can copy `.env.example`) and set:
 
 ```bash
 DATABASE_URL=postgresql://...
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-random-secret-here
 ```
 
 ### 4) Install and run
@@ -95,14 +84,41 @@ npm run dev
 
 Open http://localhost:3000
 
+## SDK
+
+Install the SDK to connect your AI agents:
+
+```bash
+npm install dashclaw
+```
+
+```javascript
+import { DashClaw } from 'dashclaw';
+
+const claw = new DashClaw({
+  baseUrl: 'https://your-deployment.vercel.app',
+  apiKey: process.env.DASHCLAW_API_KEY,
+  agentId: 'my-agent',
+  agentName: 'My Agent',
+});
+
+// Record an action
+await claw.createAction({
+  action_type: 'deploy',
+  declared_goal: 'Push feature X to production',
+  systems_touched: ['github', 'vercel'],
+  risk_score: 30,
+});
+```
+
+See the full SDK reference at `/docs` on your deployment, or read `docs/client-setup-guide.md`.
+
 ## Security
 
 - **Local-only (http://localhost:3000):** you can run without `DASHBOARD_API_KEY`.
-- **Public deployment (Vercel / any URL on the internet):** set `DASHBOARD_API_KEY` or your dashboard API data may be readable by anyone who has the link.
+- **Public deployment:** set `DASHBOARD_API_KEY` or your dashboard data may be readable by anyone.
 
 ### Run Security Scan
-
-Before deploying, scan your codebase:
 
 ```bash
 node scripts/security-scan.js
@@ -110,9 +126,9 @@ node scripts/security-scan.js
 
 ### Security Documentation
 
-- [Security Guide](docs/SECURITY.md) - How we protect your data
-- [Security Checklist](docs/SECURITY-CHECKLIST.md) - Quick deployment checklist
-- [Audit Template](docs/SECURITY-AUDIT-TEMPLATE.md) - Full audit methodology
+- [Security Guide](docs/SECURITY.md)
+- [Security Checklist](docs/SECURITY-CHECKLIST.md)
+- [Audit Template](docs/SECURITY-AUDIT-TEMPLATE.md)
 
 ## Deployment
 
@@ -120,62 +136,49 @@ node scripts/security-scan.js
 
 1. Push to GitHub (or fork this repo)
 2. Import in [Vercel](https://vercel.com)
-3. Add `DATABASE_URL` environment variable
-4. **Set `DASHBOARD_API_KEY`** (protects your `/api/*` data)
-5. Deploy!
+3. Add environment variables (`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`)
+4. Set `DASHBOARD_API_KEY` (protects your `/api/*` data)
+5. Configure OAuth (GitHub/Google) for login
+6. Deploy!
 
 ### Other platforms
 
-Any platform supporting Next.js 14+ will work. Just set the `DATABASE_URL` environment variable.
+Any platform supporting Next.js 14+ will work. See `.env.example` for all configuration options.
 
 ## Agent Action Reporting (CLI)
 
-For agents with exec/shell capabilities (e.g. Claude Code agents), use the CLI scripts directly — no SDK integration needed.
-
-### Report an action
+For agents with exec/shell capabilities, use the CLI scripts directly:
 
 ```bash
-# Create an action (returns action_id=act_xxx on stdout)
-node scripts/report-action.mjs --agent-id moltfire --type build --goal "Deploy feature X" \
+# Create an action
+node scripts/report-action.mjs --agent-id my-agent --type build --goal "Deploy feature X" \
   --systems "github,vercel" --risk 30 --confidence 80
 
 # Update an action
 node scripts/report-action.mjs --update act_xxx --status completed --output "Deployed successfully"
 
-# One-shot: create + complete in one call
-node scripts/report-action.mjs --agent-id moltfire --type deploy --goal "Push to prod" \
-  --status completed --output "Done"
-```
-
-### Cleanup stale records
-
-```bash
+# Cleanup stale records
 node scripts/cleanup-actions.mjs --before "2026-02-09" --dry-run
-node scripts/cleanup-actions.mjs --before "2026-02-09" --include-loops --include-assumptions
 ```
-
-Both CLI scripts load `DASHBOARD_API_KEY` from `.env.local` and default to the Vercel production URL. Use `--local` for localhost, `--dry-run` to preview, `--json` for machine-readable output.
 
 ## API Endpoints
 
-All endpoints return JSON and support CORS.
+All endpoints return JSON and support CORS. See `CLAUDE.md` for the full API reference.
 
 | Endpoint | Description |
 |----------|-------------|
 | `/api/actions` | ActionRecord CRUD + signals + loops + assumptions |
-| `/api/settings` | Integration credentials (CRUD) |
-| `/api/settings/test` | Test connection with credentials |
-| `/api/tokens` | Token usage snapshots (disabled) |
+| `/api/guard` | Behavior guard evaluation |
+| `/api/policies` | Guard policy management |
+| `/api/settings` | Integration credentials |
 | `/api/learning` | Decisions and lessons |
-| `/api/inspiration` | Ideas and ratings |
-| `/api/relationships` | Contacts and interactions |
 | `/api/goals` | Goals and milestones |
-| `/api/calendar` | Upcoming events |
-| `/api/bounties` | Bounty tracking |
-| `/api/workflows` | Workflow definitions |
-| `/api/keys` | API key management (list, generate, revoke) |
-| `/api/onboarding/*` | Onboarding status, workspace creation, API key gen |
-| `/api/orgs` | Organization management (admin) |
+| `/api/relationships` | Contacts and interactions |
+| `/api/messages` | Agent messaging (inbox, threads, docs) |
+| `/api/keys` | API key management |
+| `/api/team` | Team management |
+| `/api/webhooks` | Webhook management |
+| `/api/activity` | Activity log (audit trail) |
 | `/api/health` | Database connectivity check |
 
 ## Tech Stack
@@ -186,16 +189,25 @@ All endpoints return JSON and support CORS.
 - **Icons**: lucide-react
 - **Font**: Inter (next/font/google)
 - **Database**: Neon PostgreSQL
+- **Auth**: NextAuth.js v4 (GitHub + Google OAuth)
 - **Charts**: Recharts
+- **Payments**: Stripe
+- **Email**: Resend
 - **Deployment**: Vercel
 
 ## Contributing
 
-PRs welcome! This is a community project for the Clawd ecosystem.
+PRs welcome! Please:
+
+1. Fork the repo
+2. Create a feature branch
+3. Make your changes
+4. Run `npm run lint` and `npm run build`
+5. Open a PR with a clear description
 
 ## License
 
-MIT
+MIT -- see [LICENSE](LICENSE)
 
 ---
 

@@ -18,7 +18,7 @@ Node.js is what runs the dashboard. If you don't have it:
 
 1. Go to **[nodejs.org](https://nodejs.org/)**
 2. Click the big green **"LTS"** button
-3. Run the installer (just click Next → Next → Finish)
+3. Run the installer (just click Next > Next > Finish)
 4. Restart your computer
 
 **How to check if it worked:**
@@ -44,107 +44,85 @@ Your dashboard needs somewhere to store data. Neon gives you a free database:
 
 ## Step 3: Download & Install
 
-**Where to put it:** extract it anywhere you want (Desktop, Documents, etc). It does **not** need to go in any Clawdbot/Clawd folder.
+### Option A: Clone with Git
 
-**Recommended locations**
-- Windows: `Documents\OpenClaw-OPS-Suite` or `Desktop\OpenClaw-OPS-Suite`
-- Mac/Linux: `~/Desktop/OpenClaw-OPS-Suite` or `~/Projects/OpenClaw-OPS-Suite`
+```bash
+git clone git@github.com:ucsandman/DashClaw.git
+cd DashClaw
+```
 
-**Avoid** extracting into a very deep folder path on Windows (Node can hit path-length issues inside `node_modules`).
+### Option B: Download ZIP
 
-### Option A: One-Click Install (Easiest)
+1. Go to the [GitHub repo](https://github.com/ucsandman/DashClaw)
+2. Click **Code** > **Download ZIP**
+3. Extract to a folder (Desktop, Documents, etc.)
 
-1. Download the ZIP:
-   - GitHub UI: **Code** → **Download ZIP**
-   - Direct link: https://github.com/ucsandman/OpenClaw-OPS-Suite/archive/refs/heads/main.zip
-2. Extract the ZIP to a folder (like Desktop)
-3. Open the extracted folder
+### Configure
 
-**Windows:**
-- Double-click `install-windows.bat`
-- Paste your database connection string when asked
-- Wait for it to finish
+```bash
+cp .env.example .env.local
+```
 
-**Mac/Linux:**
-- Open Terminal
-- Navigate to the folder: `cd ~/Desktop/OpenClaw-OPS-Suite-main`
-- Run: `chmod +x install-mac.sh && ./install-mac.sh`
-- Paste your database connection string when asked
+Edit `.env.local` and set your `DATABASE_URL` to the connection string from Step 2.
 
-### Option B: Deploy to Cloud (No Installation)
+### Install & Run
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Step 4: Deploy to Cloud (Optional)
 
 Want it running 24/7 without leaving your computer on?
 
-Security note:
-- **Local-only**: you can run without `DASHBOARD_API_KEY`
-- **Public deployment**: set `DASHBOARD_API_KEY` or your `/api/*` data may be readable by anyone who has the link
-
 1. Click the **Deploy with Vercel** button in the README
 2. Connect your GitHub account
-3. Paste your `DATABASE_URL` when prompted
-4. **Set `DASHBOARD_API_KEY`**
+3. Set your environment variables (`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`)
+4. **Set `DASHBOARD_API_KEY`** to protect your data
 5. Done! You get a free URL like `your-dashboard.vercel.app`
 
----
-
-## Optional: Install the OpenClaw Tools into your Clawd workspace
-
-If you’re using Clawd/Clawdbot, you can install the included ops tools bundle into your workspace.
-
-**Tools bundle (quick glance)**
-- Security (outbound filter, secret tracker, audit logger, skill checker)
-- Tokens (token capture + efficiency helpers)
-- Memory (memory search + memory health + extractor)
-- Ops tracking (learning DB, relationships, goals, open loops)
-- Workflow helpers (session handoff, context manager, daily digest, error logger, project/API monitor)
-
-From the repo root:
-
-**Windows:**
-```powershell
-powershell -ExecutionPolicy Bypass -File .\clawd-tools\install-windows.ps1
-```
-
-**Mac/Linux:**
-```bash
-bash ./clawd-tools/install-mac.sh
-```
+**Security note:**
+- **Local-only**: you can run without `DASHBOARD_API_KEY`
+- **Public deployment**: set `DASHBOARD_API_KEY` or your `/api/*` data may be readable by anyone
 
 ---
 
-## Step 4: Start the Dashboard
+## Step 5: Start the Dashboard
 
-After installation:
+After installation, open http://localhost:3000
 
-**Windows:** Double-click `START-DASHBOARD.bat`
-
-**Mac/Linux:** Run `./start-dashboard.sh`
-
-Your browser will open to **http://localhost:3000** 🎉
+The onboarding checklist will guide you through:
+1. Creating a workspace
+2. Generating an API key
+3. Installing the SDK
+4. Sending your first action
 
 ---
 
 ## Troubleshooting
 
 ### "node is not recognized"
-→ Node.js isn't installed. Go back to Step 1.
+Node.js isn't installed. Go back to Step 1.
 
 ### "Cannot connect to database"
-→ Double-check your connection string. Make sure you copied the whole thing.
+Double-check your connection string. Make sure you copied the whole thing.
 
 ### "Port 3000 is already in use"
-→ Another app is using that port. Close it, or edit `.env.local` and add `PORT=3001`
+Another app is using that port. Close it, or edit `.env.local` and add `PORT=3001`
 
 ### The page is blank or shows errors
-→ Try refreshing. If that doesn't work, check that your database URL is correct in `.env.local`
+Try refreshing. If that doesn't work, check that your database URL is correct in `.env.local`
 
 ---
 
 ## Getting Help
 
 - **GitHub Issues:** [Report a bug](../../issues)
-- **Documentation:** Check the `docs/` folder
-- **Community:** Join the Clawdbot Discord
+- **Documentation:** Check the `docs/` folder and `/docs` page on your deployment
+- **Client Setup Guide:** See `docs/client-setup-guide.md` for the full reference
 
 ---
 
@@ -152,8 +130,7 @@ Your browser will open to **http://localhost:3000** 🎉
 
 Once your dashboard is running:
 
-1. Visit the **Setup** page (`/setup`) for a guided tour
-2. Configure your **Integrations** (API keys, etc.)
-3. Start tracking your AI agent's activity!
-
-Happy dashboarding! 🚀
+1. Follow the **onboarding checklist** on the dashboard
+2. Install the SDK: `npm install dashclaw`
+3. Configure your **Integrations** (API keys, etc.)
+4. Start tracking your AI agent's activity!

@@ -2,8 +2,8 @@
 
 > **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do — every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
 >
-> **Live Dashboard:** https://openclaw-pro.vercel.app
-> **SDK Docs:** https://openclaw-pro.vercel.app/docs
+> **Live Dashboard:** https://dashclaw.vercel.app
+> **SDK Docs:** https://dashclaw.vercel.app/docs
 > **npm Package:** `dashclaw`
 
 ---
@@ -34,7 +34,7 @@
 
 ### Step 1: Sign In
 
-Go to **https://openclaw-pro.vercel.app** and click **Get Started** or **Sign In**.
+Go to **https://dashclaw.vercel.app** and click **Get Started** or **Sign In**.
 
 You can sign in with:
 - **GitHub** (recommended for developers)
@@ -82,7 +82,7 @@ Add this to your agent's code:
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://openclaw-pro.vercel.app',
+  baseUrl: 'https://dashclaw.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',          // unique ID for this agent
   agentName: 'My First Agent',  // human-readable name (optional)
@@ -124,7 +124,7 @@ import { DashClaw } from 'dashclaw';
 // CJS requires async factory
 const { create } = require('dashclaw');
 const claw = await create({
-  baseUrl: 'https://openclaw-pro.vercel.app',
+  baseUrl: 'https://dashclaw.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
 });
@@ -134,7 +134,7 @@ const claw = await create({
 
 ```javascript
 const claw = new DashClaw({
-  baseUrl: 'https://openclaw-pro.vercel.app',  // Required — your dashboard URL
+  baseUrl: 'https://dashclaw.vercel.app',  // Required — your dashboard URL
   apiKey: process.env.DASHCLAW_API_KEY,          // Required — your API key
   agentId: 'my-agent',                           // Required — unique agent identifier
   agentName: 'My Agent',                         // Optional — display name
@@ -856,7 +856,7 @@ Instead of calling `guard()` manually, enable automatic checks:
 import { DashClaw, GuardBlockedError } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://openclaw-pro.vercel.app',
+  baseUrl: 'https://dashclaw.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   guardMode: 'enforce',  // auto-check before every createAction/track
@@ -1305,8 +1305,8 @@ Both agents share the same org data but are tracked separately. Use the global *
 ### "How do I run DashClaw locally?"
 
 ```bash
-git clone git@github.com:ucsandman/OpenClaw-Pro.git
-cd OpenClaw-Pro
+git clone git@github.com:ucsandman/DashClaw.git
+cd DashClaw
 npm install
 cp .env.example .env
 # Fill in DATABASE_URL (get a free Neon DB at neon.tech)
@@ -1342,8 +1342,8 @@ The `bootstrap-agent.mjs` scanner reads workspace files but only sends structure
 ```
 INSTALL:    npm install dashclaw
 IMPORT:     import { DashClaw, GuardBlockedError } from 'dashclaw';
-DASHBOARD:  https://openclaw-pro.vercel.app
-DOCS:       https://openclaw-pro.vercel.app/docs
+DASHBOARD:  https://dashclaw.vercel.app
+DOCS:       https://dashclaw.vercel.app/docs
 
 CONSTRUCTOR:
   new DashClaw({ baseUrl, apiKey, agentId, agentName?, swarmId?, guardMode?, guardCallback? })
