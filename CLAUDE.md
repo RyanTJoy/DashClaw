@@ -120,7 +120,30 @@ scripts/
 ├── bootstrap-agent.mjs        # CLI: scan agent workspace + push state to API
 └── bootstrap-prompt.md        # Prompt file: agent self-discovery (paste to agent)
 
-clawd-tools/                   # Agent workspace tools bundle (memory, security, tokens, etc.)
+agent-tools/                   # Python CLI tools for local agent ops (memory, security, learning, etc.)
+├── tools/                     # Individual tool directories
+│   ├── _shared/               # Shared push module (dashclaw_push.py)
+│   ├── learning-database/     # Decision/lesson logging
+│   ├── goal-tracker/          # Goal tracking with milestones
+│   ├── context-manager/       # Key points + threads
+│   ├── session-handoff/       # Session continuity documents
+│   ├── automation-library/    # Reusable code snippets
+│   ├── user-context/          # User preference tracking
+│   ├── memory-health/         # Memory health scanner + knowledge graph
+│   ├── memory-search/         # Full-text memory search
+│   ├── relationship-tracker/  # Mini-CRM for contacts
+│   ├── communication-analytics/ # Communication pattern analysis
+│   ├── open-loops/            # Unresolved item tracking
+│   ├── error-logger/          # Error pattern analysis
+│   ├── security/              # Outbound filter, session isolator, audit logger
+│   ├── daily-digest/          # Daily summary generator
+│   ├── api-monitor/           # API cost/reliability tracking
+│   ├── token-efficiency/      # Token budget management
+│   ├── token-capture/         # Session token capture
+│   └── sync_to_dashclaw.py   # Bulk sync all local data to dashboard
+├── install-mac.sh             # Mac/Linux installer
+├── install-windows.ps1        # Windows installer
+└── .env.example               # Push config template
 ```
 
 ## Tech Stack

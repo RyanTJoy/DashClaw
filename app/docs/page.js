@@ -167,6 +167,7 @@ const navItems = [
   { href: '#bulk-sync', label: 'Bulk Sync' },
   { href: '#syncState', label: 'syncState', indent: true },
   { href: '#error-handling', label: 'Error Handling' },
+  { href: '#agent-tools', label: 'Agent Tools (Python)' },
 ];
 
 /* ─── page ─── */
@@ -1150,6 +1151,70 @@ console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`
             </div>
           </section>
         </div>
+      </div>
+
+      {/* Agent Tools */}
+      <div className="max-w-4xl mx-auto px-6 pb-16">
+        <section id="agent-tools" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <Terminal size={24} className="text-brand" />
+            Agent Tools (Python)
+          </h2>
+          <p className="text-zinc-400 mb-6">
+            The <code className="text-zinc-300">agent-tools/</code> directory contains Python CLI tools that run locally alongside your agent. They track learning, goals, context, memory health, security, and more in local SQLite databases. Each tool supports an optional <code className="text-zinc-300">--push</code> flag to sync data to your DashClaw dashboard.
+          </p>
+
+          <h3 className="text-lg font-semibold mb-3 text-zinc-200">Tool-to-SDK Mapping</h3>
+          <p className="text-sm text-zinc-500 mb-4">
+            Python CLI tools push to the same API endpoints as the JavaScript SDK methods.
+          </p>
+          <div className="overflow-x-auto mb-8">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[rgba(255,255,255,0.06)]">
+                  <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Python Tool</th>
+                  <th className="text-left py-2 pr-4 text-zinc-400 font-medium">Command</th>
+                  <th className="text-left py-2 pr-4 text-zinc-400 font-medium">API Endpoint</th>
+                  <th className="text-left py-2 text-zinc-400 font-medium">JS SDK Method</th>
+                </tr>
+              </thead>
+              <tbody className="text-zinc-300">
+                {[
+                  ['learner.py', 'log --push', 'POST /api/learning', 'recordDecision()'],
+                  ['goals.py', 'add --push', 'POST /api/goals', 'createGoal()'],
+                  ['tracker.py', 'log --push', 'POST /api/relationships', 'recordInteraction()'],
+                  ['scanner.py', 'scan --push', 'POST /api/memory', 'reportMemoryHealth()'],
+                  ['context.py', 'capture --push', 'POST /api/context/points', 'captureKeyPoint()'],
+                  ['context.py', 'thread --push', 'POST /api/context/threads', 'createThread()'],
+                  ['handoff.py', 'create --push', 'POST /api/handoffs', 'createHandoff()'],
+                  ['snippets.py', 'add --push', 'POST /api/snippets', 'saveSnippet()'],
+                  ['user_context.py', 'note --push', 'POST /api/preferences', 'logObservation()'],
+                  ['loops.py', 'add --push', 'POST /api/actions/loops', 'registerOpenLoop()'],
+                  ['comms.py', 'log --push', 'POST /api/relationships', 'recordInteraction()'],
+                  ['errors.py', 'log --push', 'POST /api/learning', 'recordDecision()'],
+                  ['outbound_filter.py', 'scan --push', 'POST /api/security/scan', 'scanContent()'],
+                ].map(([tool, cmd, endpoint, sdk], i) => (
+                  <tr key={i} className="border-b border-[rgba(255,255,255,0.03)]">
+                    <td className="py-2 pr-4 font-mono text-xs">{tool}</td>
+                    <td className="py-2 pr-4 font-mono text-xs">{cmd}</td>
+                    <td className="py-2 pr-4 font-mono text-xs text-zinc-500">{endpoint}</td>
+                    <td className="py-2 font-mono text-xs text-brand">{sdk}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="text-lg font-semibold mb-3 text-zinc-200">Bulk Sync</h3>
+          <CodeBlock title="Sync all local data">{`# Preview what would sync
+python agent-tools/tools/sync_to_dashclaw.py --dry-run
+
+# Sync everything
+python agent-tools/tools/sync_to_dashclaw.py
+
+# Sync specific categories
+python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context_points`}</CodeBlock>
+        </section>
       </div>
 
       {/* Footer */}
