@@ -5,11 +5,20 @@ AI agent observability platform — a Next.js 14 app that gives AI agents (and t
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8) ![Neon](https://img.shields.io/badge/Neon-Postgres-00e599) ![License](https://img.shields.io/badge/License-MIT-green)
 
 ### Support the Project ☕
-If you find DashClaw useful and would like to support its development, tips are greatly appreciated!
+If you find DashClaw useful and would like to support its development, tips are greatly appreciated!  
 **Venmo: [@Wes_Sander](https://venmo.com/Wes_Sander)**
 
-## One-Click Deploy
+## 🛠️ The Complete Agent Toolkit
 
+DashClaw is more than just a dashboard; it's a dual-layer observability ecosystem designed to follow your agents wherever they run:
+
+1.  **The Dashboard (Next.js):** Your central command center for multi-agent monitoring, security guardrails, and long-term learning analysis.
+2.  **Agent Tools (Python CLI):** A suite of 20+ specialized local tools (Goal Tracking, Context Management, Memory Health) that run directly in your agent's execution environment.
+3.  **DashClaw SDK (Node.js):** A lightweight, zero-dependency SDK to instrument any agent with deep observability in minutes.
+
+Whether you're running a local CLI agent or a complex cloud-based swarm, DashClaw provides the infrastructure to track every thought, decision, and action.
+
+## One-Click Deploy
 [![Deploy with Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/ucsandman/DashClaw&env=DATABASE_URL&envDescription=Your%20Neon%20PostgreSQL%20connection%20string&envLink=https://console.neon.tech)
 
 **New to this?** Check out our [Quick Start Guide](QUICK-START.md) - no coding required!
