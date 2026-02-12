@@ -13,7 +13,7 @@ import crypto from 'crypto';
  * @param {string} opts.actorId - user ID, 'system', or 'cron'
  * @param {string} [opts.actorType='user'] - user|system|api_key|cron
  * @param {string} opts.action - e.g. 'key.created', 'alert.email_sent'
- * @param {string} [opts.resourceType] - api_key|invite|member|setting|webhook|signal|billing
+ * @param {string} [opts.resourceType] - api_key|invite|member|setting|webhook|signal|usage
  * @param {string} [opts.resourceId]
  * @param {object} [opts.details] - arbitrary JSON-serializable details
  * @param {Request} [opts.request] - optional request for IP extraction

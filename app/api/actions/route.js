@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateActionRecord } from '../../lib/validate.js';
 import { getOrgId, getOrgRole } from '../../lib/org.js';
-import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/billing.js';
+import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import crypto from 'crypto';
 
 let _sql;

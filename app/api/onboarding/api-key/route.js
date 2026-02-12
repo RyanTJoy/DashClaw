@@ -60,7 +60,7 @@ export async function POST(request) {
     }
 
     // SECURITY: Check API key quota (same as POST /api/keys)
-    const { checkQuotaFast } = require('../../../lib/billing');
+    const { checkQuotaFast } = require('../../../lib/usage');
     const quotaCheck = await checkQuotaFast(orgId, 'api_keys', sql);
     if (quotaCheck?.blocked) {
       return NextResponse.json({ error: quotaCheck.message || 'API key quota exceeded' }, { status: 402 });
