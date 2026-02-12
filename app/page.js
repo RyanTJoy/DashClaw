@@ -5,7 +5,6 @@ import {
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
   Webhook, Clock, Compass, Building2, Terminal,
 } from 'lucide-react';
-import WaitlistForm from './components/WaitlistForm';
 
 /* ─── data ─── */
 
@@ -395,10 +394,6 @@ export default function LandingPage() {
             <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
               <BookOpen size={16} /> Read the Docs
             </Link>
-          </div>
-          <div id="waitlist" className="mt-10 pt-8 border-t border-[rgba(255,255,255,0.06)]">
-            <p className="text-sm text-zinc-500 mb-3">Want early access to upcoming features?</p>
-            <WaitlistForm />
           </div>
         </div>
       </section>

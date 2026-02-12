@@ -49,7 +49,6 @@ const PROTECTED_ROUTES = [
 const PUBLIC_ROUTES = [
   '/api/health',
   '/api/setup/status',
-  '/api/waitlist',
   '/api/auth',
   '/api/webhooks/stripe',
   '/api/cron',
