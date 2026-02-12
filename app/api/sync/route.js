@@ -65,7 +65,7 @@ async function syncConnections(sql, orgId, agentId, connections) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`connection ${conn.provider}: ${e.message}`);
+      errors.push(`connection ${conn.provider}: sync failed`);
     }
   }
   return { synced, errors };
@@ -124,7 +124,7 @@ async function syncMemory(sql, orgId, memory) {
       }
     }
   } catch (e) {
-    errors.push(`memory: ${e.message}`);
+    errors.push(`memory: sync failed`);
   }
 
   return { synced, errors };
@@ -147,7 +147,7 @@ async function syncGoals(sql, orgId, agentId, goals) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`goal "${g.title}": ${e.message}`);
+      errors.push(`goal "${g.title}": sync failed`);
     }
   }
   return { synced, errors };
@@ -169,7 +169,7 @@ async function syncLearning(sql, orgId, agentId, learning) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`learning "${l.decision?.slice(0, 30)}": ${e.message}`);
+      errors.push(`learning "${l.decision?.slice(0, 30)}": sync failed`);
     }
   }
   return { synced, errors };
@@ -191,7 +191,7 @@ async function syncContent(sql, orgId, agentId, content) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`content "${c.title}": ${e.message}`);
+      errors.push(`content "${c.title}": sync failed`);
     }
   }
   return { synced, errors };
@@ -213,7 +213,7 @@ async function syncInspiration(sql, orgId, inspiration) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`idea "${i.title}": ${e.message}`);
+      errors.push(`idea "${i.title}": sync failed`);
     }
   }
   return { synced, errors };
@@ -237,7 +237,7 @@ async function syncContextPoints(sql, orgId, agentId, points) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`context point: ${e.message}`);
+      errors.push(`context point: sync failed`);
     }
   }
   return { synced, errors };
@@ -259,7 +259,7 @@ async function syncContextThreads(sql, orgId, agentId, threads) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`thread "${t.name}": ${e.message}`);
+      errors.push(`thread "${t.name}": sync failed`);
     }
   }
   return { synced, errors };
@@ -287,7 +287,7 @@ async function syncHandoffs(sql, orgId, agentId, handoffs) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`handoff: ${e.message}`);
+      errors.push(`handoff: sync failed`);
     }
   }
   return { synced, errors };
@@ -309,7 +309,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         `;
         synced++;
       } catch (e) {
-        errors.push(`observation: ${e.message}`);
+        errors.push(`observation: sync failed`);
       }
     }
   }
@@ -325,7 +325,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         `;
         synced++;
       } catch (e) {
-        errors.push(`preference: ${e.message}`);
+        errors.push(`preference: sync failed`);
       }
     }
   }
@@ -341,7 +341,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         `;
         synced++;
       } catch (e) {
-        errors.push(`mood: ${e.message}`);
+        errors.push(`mood: sync failed`);
       }
     }
   }
@@ -365,7 +365,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         `;
         synced++;
       } catch (e) {
-        errors.push(`approach "${a.approach}": ${e.message}`);
+        errors.push(`approach "${a.approach}": sync failed`);
       }
     }
   }
@@ -392,7 +392,7 @@ async function syncSnippets(sql, orgId, agentId, snippets) {
       `;
       synced++;
     } catch (e) {
-      errors.push(`snippet "${s.name}": ${e.message}`);
+      errors.push(`snippet "${s.name}": sync failed`);
     }
   }
   return { synced, errors };
@@ -438,7 +438,7 @@ export async function POST(request) {
         }
         totalSynced += result.synced;
       } catch (e) {
-        results[key] = { synced: 0, errors: [e.message] };
+        results[key] = { synced: 0, errors: ['sync failed'] };
         totalErrors++;
       }
     }
@@ -451,6 +451,6 @@ export async function POST(request) {
     });
   } catch (err) {
     console.error('Sync error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

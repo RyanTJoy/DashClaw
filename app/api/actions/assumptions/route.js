@@ -57,7 +57,7 @@ export async function GET(request) {
     const query = `
       SELECT a.*, ar.agent_id, ar.agent_name, ar.declared_goal
       FROM assumptions a
-      LEFT JOIN action_records ar ON a.action_id = ar.action_id
+      LEFT JOIN action_records ar ON a.action_id = ar.action_id AND ar.org_id = a.org_id
       ${where}
       ORDER BY a.created_at DESC
       LIMIT $${paramIdx++} OFFSET $${paramIdx++}

@@ -80,10 +80,13 @@ function checkRateLimit(ip) {
 // SECURITY: Timing-safe string comparison to prevent timing attacks
 function timingSafeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // SECURITY: Pad both strings to the same length to prevent length-based timing leaks
+  const maxLen = Math.max(a.length, b.length, 1);
+  const paddedA = a.padEnd(maxLen, '\0');
+  const paddedB = b.padEnd(maxLen, '\0');
+  let result = a.length ^ b.length; // length mismatch = nonzero result
+  for (let i = 0; i < maxLen; i++) {
+    result |= paddedA.charCodeAt(i) ^ paddedB.charCodeAt(i);
   }
   return result === 0;
 }
@@ -255,10 +258,10 @@ export async function middleware(request) {
       const referer = request.headers.get('referer');
       const requestOrigin = request.nextUrl.origin;
 
-      // Allow same-origin browser requests (dashboard UI fetching its own API)
-      // Sec-Fetch-Site is set by browsers automatically; Referer is a fallback
-      const isSameOrigin = secFetchSite === 'same-origin' ||
-        (referer && referer.startsWith(requestOrigin));
+      // SECURITY: Only trust Sec-Fetch-Site for same-origin detection.
+      // Referer is spoofable by non-browser clients so we don't use it as a fallback.
+      // All modern browsers (Chrome 76+, Firefox 90+, Safari 16.1+) send Sec-Fetch-Site.
+      const isSameOrigin = secFetchSite === 'same-origin';
 
       if (isSameOrigin) {
         // Resolve org from NextAuth session token if available

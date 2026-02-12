@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
-import { getOrgRole } from '../../../../lib/org.js';
+import { getOrgId, getOrgRole } from '../../../../lib/org.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -34,6 +34,12 @@ export async function GET(request, { params }) {
 
     const sql = getSql();
     const { orgId } = await params;
+
+    // SECURITY: Only allow accessing your own org's keys
+    const callerOrgId = getOrgId(request);
+    if (orgId !== callerOrgId) {
+      return NextResponse.json({ error: 'Forbidden - cannot access other organizations' }, { status: 403 });
+    }
 
     // Verify org exists
     const org = await sql`SELECT id FROM organizations WHERE id = ${orgId}`;
@@ -66,6 +72,13 @@ export async function POST(request, { params }) {
 
     const sql = getSql();
     const { orgId } = await params;
+
+    // SECURITY: Only allow generating keys for your own org
+    const callerOrgId = getOrgId(request);
+    if (orgId !== callerOrgId) {
+      return NextResponse.json({ error: 'Forbidden - cannot access other organizations' }, { status: 403 });
+    }
+
     const body = await request.json();
 
     // Verify org exists
@@ -121,6 +134,13 @@ export async function DELETE(request, { params }) {
 
     const sql = getSql();
     const { orgId } = await params;
+
+    // SECURITY: Only allow revoking keys for your own org
+    const callerOrgId = getOrgId(request);
+    if (orgId !== callerOrgId) {
+      return NextResponse.json({ error: 'Forbidden - cannot access other organizations' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const keyId = searchParams.get('id');
 

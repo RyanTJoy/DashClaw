@@ -56,19 +56,5 @@ export async function POST(request) {
   }
 }
 
-export async function GET() {
-  try {
-    await ensureTable();
-    const sql = getSql();
-    const rows = await sql`
-      SELECT id, email, signed_up_at, signup_count, source
-      FROM waitlist
-      ORDER BY signed_up_at DESC
-      LIMIT 500
-    `;
-    return Response.json({ signups: rows, total: rows.length });
-  } catch (err) {
-    console.error('[WAITLIST] GET error:', err.message);
-    return Response.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
+// SECURITY: GET handler removed — waitlist emails are PII.
+// Query the database directly for waitlist signups.

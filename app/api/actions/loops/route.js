@@ -55,7 +55,7 @@ export async function GET(request) {
     const query = `
       SELECT ol.*, ar.agent_id, ar.agent_name, ar.declared_goal, ar.action_type
       FROM open_loops ol
-      LEFT JOIN action_records ar ON ol.action_id = ar.action_id
+      LEFT JOIN action_records ar ON ol.action_id = ar.action_id AND ar.org_id = ol.org_id
       ${where}
       ORDER BY
         CASE ol.priority

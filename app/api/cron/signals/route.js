@@ -36,15 +36,14 @@ function hashSignal(signal) {
 // GET /api/cron/signals - Vercel Cron handler
 export async function GET(request) {
   try {
-    // Auth: verify CRON_SECRET (skip in dev)
+    // SECURITY: Always require CRON_SECRET — no dev bypass
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader !== `Bearer ${cronSecret}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    } else if (process.env.NODE_ENV === 'production') {
+    if (!cronSecret) {
       return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
+    }
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const sql = getSql();
