@@ -1,13 +1,13 @@
 # Agent Bootstrap Prompt
 
-> Paste this to any AI agent to have it self-discover its state and push it to OpenClaw Pro.
+> Paste this to any AI agent to have it self-discover its state and push it to DashClaw.
 > Prerequisites: `dashclaw` package installed, API key available.
 
 ---
 
 ## Your Task
 
-You are going to introspect your own workspace and report your current state to OpenClaw Pro, an observability platform. This lets the dashboard display your connections, memory health, goals, learning, context, and more.
+You are going to introspect your own workspace and report your current state to DashClaw, an observability platform. This lets the dashboard display your connections, memory health, goals, learning, context, and more.
 
 **Important security rules:**
 - NEVER transmit secrets, API keys, passwords, or tokens as values
@@ -22,7 +22,7 @@ First, initialize the DashClaw SDK:
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: process.env.OPENCLAW_BASE_URL || 'https://openclaw-pro.vercel.app',
+  baseUrl: process.env.OPENCLAW_BASE_URL || 'https://dashclaw.vercel.app',
   apiKey: process.env.OPENCLAW_API_KEY,
   agentId: 'YOUR_AGENT_ID',      // Replace with your agent identifier
   agentName: 'YOUR_AGENT_NAME',  // Replace with a human-readable name
@@ -316,7 +316,7 @@ console.log(digest);
 // Should show counts for today's synced data
 ```
 
-You can also check the OpenClaw Pro dashboard:
+You can also check the DashClaw dashboard:
 - `/workspace` — Overview tab shows today's digest
 - `/workspace` — Context tab shows points and threads
 - `/dashboard` — Widgets show goals, learning, integrations

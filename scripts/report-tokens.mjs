@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * report-tokens.mjs — Parse Claude Code /status output and POST to OpenClaw Pro /api/tokens
+ * report-tokens.mjs — Parse Claude Code /status output and POST to DashClaw /api/tokens
  *
  * Usage:
- *   node scripts/report-tokens.mjs --agent-id moltfire --status "Tokens: 10 in / 885 out ..."
- *   node scripts/report-tokens.mjs --agent-id moltfire --context-used 87000 --context-max 200000 --hourly-left 72
- *   node scripts/report-tokens.mjs --agent-id moltfire --status "..." --local
+ *   node scripts/report-tokens.mjs --agent-id my-agent --status "Tokens: 10 in / 885 out ..."
+ *   node scripts/report-tokens.mjs --agent-id my-agent --context-used 87000 --context-max 200000 --hourly-left 72
+ *   node scripts/report-tokens.mjs --agent-id my-agent --status "..." --local
  *
  * Loads DASHBOARD_API_KEY from .env.local (same dir convention as _run-with-env.mjs).
  * Defaults to Vercel production URL; use --local for http://localhost:3000.
@@ -165,7 +165,7 @@ async function main() {
   node scripts/report-tokens.mjs --agent-id <id> --tokens-in 10 --tokens-out 885 --context-used 87000
 
 Options:
-  --agent-id <id>        Agent identifier (e.g. moltfire)
+  --agent-id <id>        Agent identifier (e.g. my-agent)
   --status "<text>"      Raw /status output to parse
   --tokens-in <n>        Explicit input tokens
   --tokens-out <n>       Explicit output tokens
@@ -200,7 +200,7 @@ Options:
 
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : 'https://openclaw-pro.vercel.app';
+    : 'https://dashclaw.vercel.app';
   const apiKey = process.env.DASHBOARD_API_KEY || process.env.OPENCLAW_API_KEY;
 
   if (!apiKey && !args.local) {

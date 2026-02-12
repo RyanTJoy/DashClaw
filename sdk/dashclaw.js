@@ -1,6 +1,6 @@
 /**
  * DashClaw SDK
- * Full-featured agent toolkit for the OpenClaw Pro platform.
+ * Full-featured agent toolkit for the DashClaw platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
  * 57 methods across 13 categories:
@@ -22,7 +22,7 @@
 class DashClaw {
   /**
    * @param {Object} options
-   * @param {string} options.baseUrl - OpenClaw Pro base URL (e.g. "https://your-app.vercel.app")
+   * @param {string} options.baseUrl - DashClaw base URL (e.g. "https://your-app.vercel.app")
    * @param {string} options.apiKey - API key for authentication (determines which org's data you access)
    * @param {string} options.agentId - Unique identifier for this agent
    * @param {string} [options.agentName] - Human-readable agent name

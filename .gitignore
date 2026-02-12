@@ -36,6 +36,16 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+NUL
+
+# Claude Code local settings
+.claude/
+
+# Session tracking
+tasks/
+
+# Internal agent tooling (not part of open-source distribution)
+clawd-tools/
 
 # Secrets (paranoid mode)
 secrets/

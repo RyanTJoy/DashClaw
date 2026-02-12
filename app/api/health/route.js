@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 
 /**
- * Health check endpoint for OpenClaw Pro
+ * Health check endpoint for DashClaw
  * Returns system health status for monitoring
  */
 export async function GET() {

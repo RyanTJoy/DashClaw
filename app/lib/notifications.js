@@ -33,7 +33,7 @@ export async function sendSignalAlertEmail(to, orgName, signals) {
 
   const html = `
     <div style="font-family:Inter,system-ui,sans-serif;max-width:600px;margin:0 auto;background:#1a1a1a;color:#e4e4e7;padding:24px;border-radius:8px;">
-      <h2 style="color:#f97316;margin:0 0 8px;">OpenClaw Signal Alert</h2>
+      <h2 style="color:#f97316;margin:0 0 8px;">DashClaw Signal Alert</h2>
       <p style="color:#a1a1aa;margin:0 0 20px;">${signals.length} new signal(s) detected for <strong>${escapeHtml(orgName)}</strong></p>
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
         <thead>
@@ -47,12 +47,12 @@ export async function sendSignalAlertEmail(to, orgName, signals) {
           ${signalRows}
         </tbody>
       </table>
-      <p style="margin:20px 0 0;"><a href="${process.env.NEXTAUTH_URL || 'https://openclaw-pro.vercel.app'}/security" style="color:#f97316;text-decoration:underline;">View in Security Dashboard →</a></p>
-      <p style="color:#52525b;font-size:12px;margin:20px 0 0;">You are receiving this because you have email alerts enabled in OpenClaw. Manage preferences in Settings → Notifications.</p>
+      <p style="margin:20px 0 0;"><a href="${process.env.NEXTAUTH_URL || 'https://dashclaw.vercel.app'}/security" style="color:#f97316;text-decoration:underline;">View in Security Dashboard →</a></p>
+      <p style="color:#52525b;font-size:12px;margin:20px 0 0;">You are receiving this because you have email alerts enabled in DashClaw. Manage preferences in Settings → Notifications.</p>
     </div>
   `;
 
-  const text = `OpenClaw Signal Alert\n\n${signals.length} new signal(s) detected for ${orgName}:\n\n${signals.map(s => `[${s.severity.toUpperCase()}] ${s.type}: ${s.label}`).join('\n')}\n\nView: ${process.env.NEXTAUTH_URL || 'https://openclaw-pro.vercel.app'}/security`;
+  const text = `DashClaw Signal Alert\n\n${signals.length} new signal(s) detected for ${orgName}:\n\n${signals.map(s => `[${s.severity.toUpperCase()}] ${s.type}: ${s.label}`).join('\n')}\n\nView: ${process.env.NEXTAUTH_URL || 'https://dashclaw.vercel.app'}/security`;
 
   try {
     const { Resend } = require('resend');

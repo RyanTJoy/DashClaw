@@ -1,7 +1,7 @@
 {
   "name": "dashclaw",
   "version": "1.0.0",
-  "description": "Full-featured agent toolkit for the OpenClaw Pro platform. 55 methods for action recording, context management, session handoffs, security scanning, bulk sync, and more.",
+  "description": "Full-featured agent toolkit for the DashClaw platform. 57 methods for action recording, context management, session handoffs, security scanning, behavior guard, bulk sync, and more.",
   "type": "module",
   "main": "./index.cjs",
   "module": "./dashclaw.js",
@@ -27,11 +27,11 @@
     "context-management",
     "security-scanning"
   ],
-  "author": "OpenClaw",
+  "author": "DashClaw",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ucsandman/openclaw-pro.git",
+    "url": "git+https://github.com/ucsandman/DashClaw.git",
     "directory": "sdk"
   },
   "engines": {

@@ -1160,7 +1160,7 @@ console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`
             <span className="text-sm text-zinc-400">DashClaw</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-zinc-500">
-            <a href="https://github.com/ucsandman/OpenClaw-Pro" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <Github size={14} />
               GitHub
             </a>
