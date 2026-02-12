@@ -9,7 +9,7 @@
  *
  * Usage:
  *   DATABASE_URL=<neon_url> node scripts/migrate-multi-tenant.mjs
- *   DATABASE_URL=<neon_url> DASHBOARD_API_KEY=<key> node scripts/migrate-multi-tenant.mjs
+ *   DATABASE_URL=<neon_url> DASHCLAW_API_KEY=<key> node scripts/migrate-multi-tenant.mjs
  */
 
 process.on('unhandledRejection', (reason) => {
@@ -129,10 +129,10 @@ async function run() {
   `;
   log('✅', 'org_default exists');
 
-  // Step 4: Seed admin key from DASHBOARD_API_KEY (if set)
-  const dashboardKey = process.env.DASHBOARD_API_KEY;
+  // Step 4: Seed admin key from DASHCLAW_API_KEY (if set)
+  const dashboardKey = process.env.DASHCLAW_API_KEY;
   if (dashboardKey) {
-    console.log('Step 4: Seeding admin API key from DASHBOARD_API_KEY...');
+    console.log('Step 4: Seeding admin API key from DASHCLAW_API_KEY...');
     const keyHash = createHash('sha256').update(dashboardKey).digest('hex');
     const keyPrefix = dashboardKey.substring(0, 8);
     const keyId = 'key_default_admin';
@@ -146,8 +146,8 @@ async function run() {
     `;
     log('✅', `Admin key seeded (prefix: ${keyPrefix}...)`);
   } else {
-    console.log('Step 4: No DASHBOARD_API_KEY set — skipping admin key seed');
-    log('⚠️', 'Set DASHBOARD_API_KEY and re-run to seed admin key');
+    console.log('Step 4: No DASHCLAW_API_KEY set — skipping admin key seed');
+    log('⚠️', 'Set DASHCLAW_API_KEY and re-run to seed admin key');
   }
 
   // Step 5: Add org_id column to all existing tables

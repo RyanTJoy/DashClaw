@@ -162,7 +162,7 @@ See `.env.example`. Key vars:
 | Variable | Required | Purpose |
 |---|---|---|
 | `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
-| `DASHBOARD_API_KEY` | Prod only | Protects `/api/*` routes (maps to `org_default`) |
+| `DASHCLAW_API_KEY` | Prod only | Protects `/api/*` routes (maps to `org_default`) |
 | `ALLOWED_ORIGIN` | No | CORS lock to deployment domain |
 | `NEXTAUTH_URL` | Yes | Canonical URL (e.g. `http://localhost:3000`) |
 | `NEXTAUTH_SECRET` | Yes | Random 32+ char secret for JWT signing |
@@ -171,7 +171,7 @@ See `.env.example`. Key vars:
 | `GOOGLE_ID` | For Google login | Google OAuth client ID |
 | `GOOGLE_SECRET` | For Google login | Google OAuth client secret |
 | `RESEND_API_KEY` | For email alerts | Resend API key for signal alert emails |
-| `ALERT_FROM_EMAIL` | No | From address for alerts (default: `alerts@openclaw.dev`) |
+| `ALERT_FROM_EMAIL` | No | From address for alerts (default: `alerts@dashclaw.dev`) |
 | `CRON_SECRET` | For cron auth | Bearer token for Vercel Cron endpoint |
 
 ## Key Patterns
@@ -213,8 +213,8 @@ function getSql() {
 - **Admin-only API routes** (return 403 for members): POST/DELETE `/api/keys`, POST/DELETE `/api/settings`, all `/api/team/invite`, PATCH/DELETE `/api/team/[userId]`, all `/api/orgs`, POST/DELETE `/api/webhooks`
 - **Admin-only UI**: Generate/revoke API keys hidden for members; Integrations configure modal disabled; Team invite/role/remove sections hidden
 - **Member-accessible**: All GET endpoints, all data APIs (actions, goals, learning, etc.)
-- Dev mode (no `DASHBOARD_API_KEY` set) allows unauthenticated access → `org_default`
-- Production without key returns 503 (if `DASHBOARD_API_KEY` not configured)
+- Dev mode (no `DASHCLAW_API_KEY` set) allows unauthenticated access → `org_default`
+- Production without key returns 503 (if `DASHCLAW_API_KEY` not configured)
 - Same-origin dashboard requests resolve org from NextAuth JWT token (falls back to `org_default`)
 - Rate limiting: 100 req/min per IP
 - **API key resolution flow**: legacy env key → `org_default` (fast path); otherwise SHA-256 hash → `api_keys` table lookup (5-min cache)
@@ -315,7 +315,7 @@ function getSql() {
   - `GET/POST /api/actions/loops` — list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` — single loop + resolve/cancel
   - `GET /api/actions/signals` — 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/openclaw-agent.js` — 20 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, reportTokenUsage, recordDecision, createGoal, recordContent, recordInteraction, reportConnections, track)
+- SDK: `sdk/dashclaw.js` — 57 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, reportTokenUsage, recordDecision, createGoal, recordContent, recordInteraction, reportConnections, track)
 - Tests: `scripts/test-actions.mjs` — ~95 assertions across 11 phases
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
@@ -421,7 +421,7 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - API: `GET/POST/DELETE /api/webhooks` (GET: all members; POST/DELETE: admin only)
 - API: `POST /api/webhooks/[webhookId]/test` — send test payload (admin only)
 - API: `GET /api/webhooks/[webhookId]/deliveries` — recent delivery history (last 20)
-- Webhook secret: 32-byte hex, shown once on creation, HMAC-SHA256 signature in `X-OpenClaw-Signature` header
+- Webhook secret: 32-byte hex, shown once on creation, HMAC-SHA256 signature in `X-DashClaw-Signature` header
 - Event subscription: JSON array of signal types or `["all"]`
 - Max 10 webhooks per org; auto-disabled after 10 consecutive failures
 - Delivery logging: status (pending/success/failed), response_status, response_body (truncated to 2000 chars), duration_ms
@@ -443,7 +443,7 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Vercel Cron config: `vercel.json` with `*/10 * * * *` schedule
 - Sidebar: "Notifications" link with Bell icon in System group (after Webhooks)
 - Migration Step 23 in `migrate-multi-tenant.mjs`
-- Env vars: `RESEND_API_KEY`, `ALERT_FROM_EMAIL` (default: `alerts@openclaw.dev`), `CRON_SECRET`
+- Env vars: `RESEND_API_KEY`, `ALERT_FROM_EMAIL` (default: `alerts@dashclaw.dev`), `CRON_SECRET`
 
 ## Onboarding Flow (Implemented)
 - 4-step guided checklist displayed on dashboard via `OnboardingChecklist.js` (full-width, self-hides when complete)
@@ -498,11 +498,11 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - `GET/POST/DELETE /api/orgs/[orgId]/keys` — manage API keys
 
 ### Resolution Flow
-1. No key + dev mode (no `DASHBOARD_API_KEY` set) → `org_default` (admin)
-2. No key + production (no `DASHBOARD_API_KEY` set) → 503
+1. No key + dev mode (no `DASHCLAW_API_KEY` set) → `org_default` (admin)
+2. No key + production (no `DASHCLAW_API_KEY` set) → 503
 3. No key + same-origin browser request (dashboard UI) → `org_default` (admin)
 4. No key + external request → 401
-5. Key matches `DASHBOARD_API_KEY` env → `org_default` (admin, fast path)
+5. Key matches `DASHCLAW_API_KEY` env → `org_default` (admin, fast path)
 6. Key doesn't match env → SHA-256 hash → DB lookup → org_id + role
 7. DB miss or revoked → 401
 
@@ -511,7 +511,7 @@ No code changes needed. The API key determines which organization's data you're 
 
 ### Migration (from single-tenant)
 ```bash
-DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
+DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 ```
 
 ## DashClaw Tables (Migration Steps 24-29)
@@ -635,8 +635,8 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 ## Deployment
 
 ### Vercel (Production)
-- **URL**: https://openclaw-pro.vercel.app
-- **Project**: `ucsandmans-projects/openclaw-pro`
+- **URL**: https://dash-claw.vercel.app
+- **Project**: `ucsandmans-projects/dash-claw`
 - **GitHub**: Connected — auto-deploys on push to `main`
 - **Region**: Washington, D.C. (iad1)
 
@@ -644,7 +644,7 @@ DATABASE_URL=... DASHBOARD_API_KEY=... node scripts/migrate-multi-tenant.mjs
 | Variable | Environment | Sensitive |
 |---|---|---|
 | `DATABASE_URL` | Production | Yes |
-| `DASHBOARD_API_KEY` | Production | Yes |
+| `DASHCLAW_API_KEY` | Production | Yes |
 | `ALLOWED_ORIGIN` | Production | No |
 | `NEXTAUTH_URL` | Production | No |
 | `NEXTAUTH_SECRET` | Production | Yes |
@@ -665,8 +665,8 @@ git push origin main         # Auto-deploy via GitHub integration
 Agents connect to the deployed API — they only need the base URL and an API key:
 ```js
 const claw = new DashClaw({
-  baseUrl: 'https://openclaw-pro.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  baseUrl: 'https://dash-claw.vercel.app',
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
 });
@@ -686,8 +686,8 @@ import { DashClaw } from 'dashclaw';
 // or: import { OpenClawAgent } from 'dashclaw';  // backward compat
 
 const claw = new DashClaw({
-  baseUrl: 'https://openclaw-pro.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  baseUrl: 'https://dash-claw.vercel.app',
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
 });

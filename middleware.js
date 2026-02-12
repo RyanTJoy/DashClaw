@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Authentication middleware for OpenClaw Dashboard
+ * Authentication middleware for DashClaw
  *
  * SECURITY: Protects API routes with API key authentication.
  * Resolves API keys to org_id via SHA-256 hash lookup.
- * Set DASHBOARD_API_KEY environment variable in production.
+ * Set DASHCLAW_API_KEY environment variable in production.
  */
 
 // Routes that require authentication
@@ -220,7 +220,7 @@ export async function middleware(request) {
     const apiKey = request.headers.get('x-api-key');
 
     // Get expected API key from environment
-    const expectedKey = process.env.DASHBOARD_API_KEY;
+    const expectedKey = process.env.DASHCLAW_API_KEY;
 
     // SECURITY: Strip any externally-provided org headers (prevent injection)
     const requestHeaders = new Headers(request.headers);
@@ -232,9 +232,9 @@ export async function middleware(request) {
     // - production: block (prevents accidentally exposing your dashboard data)
     if (!expectedKey) {
       if (process.env.NODE_ENV === 'production') {
-        console.warn(`[SECURITY] DASHBOARD_API_KEY not set in production - blocking access to: ${pathname}`);
+        console.warn(`[SECURITY] DASHCLAW_API_KEY not set in production - blocking access to: ${pathname}`);
         return NextResponse.json(
-          { error: 'Server misconfigured: set DASHBOARD_API_KEY to protect /api/* endpoints.' },
+          { error: 'Server misconfigured: set DASHCLAW_API_KEY to protect /api/* endpoints.' },
           { status: 503 }
         );
       }
@@ -284,7 +284,7 @@ export async function middleware(request) {
       );
     }
 
-    // Fast path: legacy DASHBOARD_API_KEY matches → org_default
+    // Fast path: legacy DASHCLAW_API_KEY matches → org_default
     if (timingSafeEqual(apiKey, expectedKey)) {
       requestHeaders.set('x-org-id', 'org_default');
       requestHeaders.set('x-org-role', 'admin');

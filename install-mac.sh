@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 
 echo ""
 echo "========================================"
-echo "  OpenClaw Dashboard - Easy Installer"
+echo "  DashClaw - Easy Installer"
 echo "========================================"
 echo ""
 
@@ -103,7 +103,7 @@ echo ""
 # Create start script
 cat > start-dashboard.sh << 'EOF'
 #!/bin/bash
-echo "Starting OpenClaw Dashboard..."
+echo "Starting DashClaw..."
 echo ""
 echo "Opening http://localhost:3000 in your browser..."
 

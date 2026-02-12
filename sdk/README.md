@@ -17,7 +17,7 @@ import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
   baseUrl: 'https://your-app.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
 });
@@ -167,7 +167,7 @@ The SDK sends your API key via the `x-api-key` header. The key determines which 
 ```js
 const claw = new DashClaw({
   baseUrl: 'https://your-deployment.vercel.app',
-  apiKey: process.env.OPENCLAW_API_KEY,
+  apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
 });
 ```

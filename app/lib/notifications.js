@@ -15,12 +15,12 @@ export async function sendSignalAlertEmail(to, orgName, signals) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return false;
 
-  const fromEmail = process.env.ALERT_FROM_EMAIL || 'alerts@openclaw.dev';
+  const fromEmail = process.env.ALERT_FROM_EMAIL || 'alerts@dashclaw.dev';
   const redCount = signals.filter(s => s.severity === 'red').length;
   const amberCount = signals.filter(s => s.severity === 'amber').length;
 
   const severityLabel = redCount > 0 ? 'critical' : 'warning';
-  const subject = `[OpenClaw] ${signals.length} ${severityLabel} signal(s) detected — ${orgName}`;
+  const subject = `[DashClaw] ${signals.length} ${severityLabel} signal(s) detected — ${orgName}`;
 
   const signalRows = signals.map(s => {
     const icon = s.severity === 'red' ? '🔴' : '🟡';
@@ -47,18 +47,18 @@ export async function sendSignalAlertEmail(to, orgName, signals) {
           ${signalRows}
         </tbody>
       </table>
-      <p style="margin:20px 0 0;"><a href="${process.env.NEXTAUTH_URL || 'https://dashclaw.vercel.app'}/security" style="color:#f97316;text-decoration:underline;">View in Security Dashboard →</a></p>
+      <p style="margin:20px 0 0;"><a href="${process.env.NEXTAUTH_URL || 'https://dash-claw.vercel.app'}/security" style="color:#f97316;text-decoration:underline;">View in Security Dashboard →</a></p>
       <p style="color:#52525b;font-size:12px;margin:20px 0 0;">You are receiving this because you have email alerts enabled in DashClaw. Manage preferences in Settings → Notifications.</p>
     </div>
   `;
 
-  const text = `DashClaw Signal Alert\n\n${signals.length} new signal(s) detected for ${orgName}:\n\n${signals.map(s => `[${s.severity.toUpperCase()}] ${s.type}: ${s.label}`).join('\n')}\n\nView: ${process.env.NEXTAUTH_URL || 'https://dashclaw.vercel.app'}/security`;
+  const text = `DashClaw Signal Alert\n\n${signals.length} new signal(s) detected for ${orgName}:\n\n${signals.map(s => `[${s.severity.toUpperCase()}] ${s.type}: ${s.label}`).join('\n')}\n\nView: ${process.env.NEXTAUTH_URL || 'https://dash-claw.vercel.app'}/security`;
 
   try {
     const { Resend } = require('resend');
     const resend = new Resend(apiKey);
     await resend.emails.send({
-      from: `OpenClaw Alerts <${fromEmail}>`,
+      from: `DashClaw Alerts <${fromEmail}>`,
       to,
       subject,
       html,
