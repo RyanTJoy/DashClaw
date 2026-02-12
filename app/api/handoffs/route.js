@@ -15,7 +15,7 @@ export async function GET(request) {
     const agentId = searchParams.get('agent_id');
     const date = searchParams.get('date');
     const latest = searchParams.get('latest');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 1000);
 
     if (latest === 'true') {
       const rows = agentId

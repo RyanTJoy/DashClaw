@@ -26,19 +26,19 @@ function genId(prefix) {
 
 // Category limits
 const LIMITS = {
-  connections: 50,
-  goals: 100,
-  learning: 100,
-  content: 100,
-  inspiration: 100,
-  context_points: 200,
-  context_threads: 50,
-  snippets: 50,
-  handoffs: 50,
-  observations: 50,
-  preferences: 50,
-  moods: 50,
-  approaches: 50,
+  connections: 1000,
+  goals: 2000,
+  learning: 2000,
+  content: 2000,
+  inspiration: 2000,
+  context_points: 5000,
+  context_threads: 1000,
+  snippets: 1000,
+  handoffs: 1000,
+  observations: 1000,
+  preferences: 1000,
+  moods: 1000,
+  approaches: 1000,
 };
 
 // --- Category sync functions ---

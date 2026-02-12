@@ -9,22 +9,22 @@
 
 export const PLAN_LIMITS = {
   free: {
-    actions_per_month: 100,
-    agents: 1,
-    members: 2,
-    api_keys: 2,
+    actions_per_month: Infinity,
+    agents: Infinity,
+    members: Infinity,
+    api_keys: Infinity,
   },
   pro: {
-    actions_per_month: 5000,
-    agents: 10,
-    members: 5,
-    api_keys: 10,
+    actions_per_month: Infinity,
+    agents: Infinity,
+    members: Infinity,
+    api_keys: Infinity,
   },
   team: {
-    actions_per_month: 50000,
+    actions_per_month: Infinity,
     agents: Infinity,
-    members: 25,
-    api_keys: 50,
+    members: Infinity,
+    api_keys: Infinity,
   },
   enterprise: {
     actions_per_month: Infinity,
@@ -42,7 +42,13 @@ const WARNING_THRESHOLD = 0.80;
  * Returns limits object for a plan name (falls back to free).
  */
 export function getPlanLimits(plan) {
-  return PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  // Now all plans are effectively unlimited
+  return {
+    actions_per_month: Infinity,
+    agents: Infinity,
+    members: Infinity,
+    api_keys: Infinity,
+  };
 }
 
 /**
@@ -207,45 +213,7 @@ export async function getUsage(orgId, sql) {
  * @returns {{ allowed: boolean, warning: boolean, usage: number, limit: number, percent: number, hardLimit: number }}
  */
 export async function checkQuotaFast(orgId, resource, plan, sql) {
-  const limits = getPlanLimits(plan);
-  const limit = limits[resource];
-
-  // Unlimited resources always pass
-  if (limit === Infinity) {
-    return { allowed: true, warning: false, usage: 0, limit: Infinity, percent: 0, hardLimit: Infinity };
-  }
-
-  const period = (resource === 'members' || resource === 'api_keys')
-    ? 'current'
-    : getCurrentPeriod();
-
-  const rows = await sql`
-    SELECT count FROM usage_meters
-    WHERE org_id = ${orgId} AND period = ${period} AND resource = ${resource}
-    LIMIT 1
-  `;
-
-  let current;
-  if (rows.length > 0) {
-    current = rows[0].count;
-  } else {
-    // Cold start — seed this resource from a live COUNT
-    const meterMap = new Map();
-    await seedMeters(orgId, getCurrentPeriod(), meterMap, sql);
-    current = meterMap.get(resource) || 0;
-  }
-
-  const hardLimit = Math.ceil(limit * (1 + GRACE_BUFFER));
-  const percent = limit > 0 ? current / limit : 0;
-
-  return {
-    allowed: current < hardLimit,
-    warning: percent >= WARNING_THRESHOLD,
-    usage: current,
-    limit,
-    percent: Math.round(percent * 100),
-    hardLimit,
-  };
+  return { allowed: true, warning: false, usage: 0, limit: Infinity, percent: 0, hardLimit: Infinity };
 }
 
 /**

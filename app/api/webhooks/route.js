@@ -77,12 +77,6 @@ export async function POST(request) {
       }
     }
 
-    // Max 10 webhooks per org
-    const countRows = await sql`SELECT COUNT(*) as count FROM webhooks WHERE org_id = ${orgId}`;
-    if (parseInt(countRows[0].count, 10) >= 10) {
-      return NextResponse.json({ error: 'Maximum 10 webhooks per organization' }, { status: 409 });
-    }
-
     const webhookId = `wh_${crypto.randomUUID()}`;
     const secret = crypto.randomBytes(32).toString('hex');
     const now = new Date().toISOString();
