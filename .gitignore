@@ -15,6 +15,7 @@ dist/
 .env.production
 .env.staging
 *.env
+!.env.example
 
 # Vercel
 .vercel/
@@ -44,8 +45,9 @@ NUL
 # Session tracking
 tasks/
 
-# Internal agent tooling (not part of open-source distribution)
-clawd-tools/
+# Agent tools local data (SQLite databases, secrets)
+agent-tools/tools/*/data/
+agent-tools/secrets/
 
 # Secrets (paranoid mode)
 secrets/

@@ -145,6 +145,43 @@ node scripts/security-scan.js
 
 Any platform supporting Next.js 14+ will work. See `.env.example` for all configuration options.
 
+## Agent Tools (Python)
+
+The `agent-tools/` directory contains ~20 Python CLI tools that run locally alongside your agent. They track learning, goals, context, memory health, security, and more — all in local SQLite databases.
+
+```bash
+# Install tools to your agent workspace
+bash ./agent-tools/install-mac.sh          # Mac/Linux
+powershell -ExecutionPolicy Bypass -File .\agent-tools\install-windows.ps1  # Windows
+
+# Use any tool locally
+python learner.py log "Made decision X" --context "situation"
+
+# Optionally sync to your DashClaw dashboard
+python learner.py log "Made decision X" --push
+
+# Bulk sync all local data
+python sync_to_dashclaw.py --dry-run
+```
+
+Configure dashboard sync in `agent-tools/secrets/dashclaw.env` or via `DASHCLAW_URL`, `DASHCLAW_API_KEY`, `DASHCLAW_AGENT_ID` environment variables.
+
+| Tool | Description |
+|------|-------------|
+| `learning-database` | Decision/lesson logging with outcome tracking |
+| `goal-tracker` | Goal tracking with milestones and progress |
+| `context-manager` | Key points and threaded context |
+| `session-handoff` | Session continuity documents |
+| `memory-health` | Memory health scanning and knowledge graph |
+| `relationship-tracker` | Mini-CRM for contacts and interactions |
+| `open-loops` | Unresolved item tracking |
+| `security` | Outbound filter, session isolator, audit logger |
+| `user-context` | User preference and mood tracking |
+| `automation-library` | Reusable code snippets |
+| `error-logger` | Error pattern analysis |
+| `communication-analytics` | Communication pattern analysis |
+| `daily-digest` | Daily summary generator |
+
 ## Agent Action Reporting (CLI)
 
 For agents with exec/shell capabilities, use the CLI scripts directly:
