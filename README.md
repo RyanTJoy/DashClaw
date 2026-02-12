@@ -46,7 +46,7 @@ AI agent observability platform — a Next.js 14 app that gives AI agents (and t
 - **API Key Management** -- Generate, list, and revoke keys from `/api-keys`
 - **SDK Documentation** -- Full public reference at `/docs` (55+ methods, code examples)
 - **Team Management** -- Invite links, role-based access (admin/member)
-- **Billing & Plans** -- Free, Pro ($29/mo), Team ($79/mo) via Stripe
+- **Self-Hosted** -- Deploy your own instance, full control, no vendor lock-in
 - **Webhooks & Email Alerts** -- Signal notifications via webhooks and Resend email
 - **Real-time Updates** -- Auto-refresh with configurable intervals
 - **Mobile Responsive** -- Collapsible sidebar, works on any device
@@ -228,7 +228,6 @@ All endpoints return JSON and support CORS. See `CLAUDE.md` for the full API ref
 - **Database**: Neon PostgreSQL
 - **Auth**: NextAuth.js v4 (GitHub + Google OAuth)
 - **Charts**: Recharts
-- **Payments**: Stripe
 - **Email**: Resend
 - **Deployment**: Vercel
 

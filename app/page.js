@@ -3,7 +3,7 @@ import {
   Flame, Zap, ShieldAlert, Shield, CircleDot, Eye, ArrowRight, Github,
   ExternalLink, BookOpen, FolderKanban, MessageSquare, ArrowLeftRight,
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
-  Webhook, Clock, Compass, Building2, CreditCard, Check, BarChart3,
+  Webhook, Clock, Compass, Building2, Terminal,
 } from 'lucide-react';
 import WaitlistForm from './components/WaitlistForm';
 
@@ -49,7 +49,7 @@ const operationalFeatures = [
   { icon: Clock, title: 'Activity Audit Log', description: 'Every admin action logged — key creation, invites, role changes, billing events.' },
   { icon: Compass, title: 'Guided Onboarding', description: '4-step checklist: create workspace, generate key, install SDK, send first action.' },
   { icon: Building2, title: 'Multi-Tenant', description: 'Full org isolation with API key scoping, per-agent settings, and org management.' },
-  { icon: CreditCard, title: 'Billing & Plans', description: 'Free, Pro, and Team tiers with usage metering and Stripe Checkout integration.' },
+  { icon: Terminal, title: 'Agent Tools', description: '20+ Python CLI tools for local ops with optional --push sync to the dashboard.' },
 ];
 
 const signals = [
@@ -62,34 +62,13 @@ const signals = [
   { name: 'Stale Running Action', description: 'Actions stuck in running state for over 4 hours' },
 ];
 
-const pricingPlans = [
-  {
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    description: 'Get started with one agent.',
-    features: ['100 actions/month', '1 agent', '2 team members', '2 API keys', 'All dashboard pages', '7 risk signals'],
-    cta: 'Get Started Free',
-    highlighted: false,
-  },
-  {
-    name: 'Pro',
-    price: '$29',
-    period: '/month',
-    description: 'For teams running agents in production.',
-    features: ['5,000 actions/month', '10 agents', '5 team members', '10 API keys', 'Webhooks & alerts', 'Activity audit log'],
-    cta: 'Start Pro Trial',
-    highlighted: true,
-  },
-  {
-    name: 'Team',
-    price: '$79',
-    period: '/month',
-    description: 'For organizations with agent fleets.',
-    features: ['50,000 actions/month', 'Unlimited agents', '25 team members', '50 API keys', 'Priority support', 'Everything in Pro'],
-    cta: 'Start Team Trial',
-    highlighted: false,
-  },
+const agentToolCategories = [
+  { title: 'Learning & Decisions', desc: 'Log decisions, lessons, and outcomes. Track what worked and why.', example: 'learner.py log "Used JWT" --push' },
+  { title: 'Context & Handoffs', desc: 'Key points, threads, and session continuity documents.', example: 'context.py capture "Dark theme" --push' },
+  { title: 'Memory & Health', desc: 'Scan memory files, track entities, detect stale facts.', example: 'scanner.py scan ~/.agent/memory --push' },
+  { title: 'Goals & Relationships', desc: 'Goal milestones, contacts, interactions, and follow-ups.', example: 'goals.py add "Ship auth" --push' },
+  { title: 'Security & Audit', desc: 'Outbound content filtering, session isolation, audit logging.', example: 'outbound_filter.py scan message.txt --push' },
+  { title: 'Automation & Snippets', desc: 'Reusable code snippets with search, tags, and use tracking.', example: 'snippets.py add "retry logic" --push' },
 ];
 
 /* ─── page ─── */
@@ -106,7 +85,7 @@ export default function LandingPage() {
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
             <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5"><Github size={14} /> GitHub</a>
             <a href="#signals" className="hover:text-white transition-colors">Signals</a>
             <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           </div>
@@ -133,7 +112,7 @@ export default function LandingPage() {
             <span className="text-brand">actually doing</span>.
           </h1>
           <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Real-time observability, risk signals, and behavior governance for autonomous AI agents.
+            Open-source, self-hosted observability, risk signals, and behavior governance for autonomous AI agents.
             Guard what they do before they do it.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -369,54 +348,33 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 8. Pricing ── */}
-      <section id="pricing" className="py-20 px-6 border-t border-[rgba(255,255,255,0.06)]">
+      {/* ── 8. Agent Tools ── */}
+      <section id="agent-tools" className="py-20 px-6 border-t border-[rgba(255,255,255,0.06)]">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Simple, transparent pricing</h2>
-            <p className="mt-3 text-zinc-400">Start free. Upgrade when your agent fleet grows.</p>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
+              <Terminal size={12} />
+              20+ Python CLI tools
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Local Agent Toolkit</h2>
+            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
+              Python CLI tools that run alongside your agent. Local-first with SQLite storage.
+              Add <code className="text-zinc-300 font-mono">--push</code> to sync anything to your dashboard.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {pricingPlans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`p-6 rounded-xl border ${
-                  plan.highlighted
-                    ? 'bg-[#111] border-brand/40 ring-1 ring-brand/20'
-                    : 'bg-[#111] border-[rgba(255,255,255,0.06)]'
-                }`}
-              >
-                {plan.highlighted && (
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold text-brand bg-brand/10 uppercase tracking-wider mb-3">
-                    Most Popular
-                  </span>
-                )}
-                <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-white">{plan.price}</span>
-                  <span className="text-sm text-zinc-500">{plan.period}</span>
-                </div>
-                <p className="mt-2 text-sm text-zinc-400">{plan.description}</p>
-                <ul className="mt-5 space-y-2.5">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm text-zinc-300">
-                      <Check size={14} className="text-brand flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/login"
-                  className={`mt-6 block text-center py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    plan.highlighted
-                      ? 'bg-brand text-white hover:bg-brand-hover'
-                      : 'bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 hover:bg-[#222] hover:text-white'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+            {agentToolCategories.map((cat) => (
+              <div key={cat.title} className="p-5 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] transition-colors">
+                <h3 className="text-base font-semibold text-white mb-1.5">{cat.title}</h3>
+                <p className="text-sm text-zinc-400 leading-relaxed mb-3">{cat.desc}</p>
+                <pre className="bg-[#0a0a0a] rounded-lg px-3 py-2 text-xs text-zinc-300 font-mono overflow-x-auto">{cat.example}</pre>
               </div>
             ))}
+          </div>
+          <div className="text-center">
+            <Link href="/docs#agent-tools" className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-hover transition-colors">
+              View full toolkit docs <ArrowRight size={14} />
+            </Link>
           </div>
         </div>
       </section>
@@ -428,7 +386,7 @@ export default function LandingPage() {
             Start monitoring in 5 minutes
           </h2>
           <p className="mt-3 text-zinc-400">
-            Install the SDK, send your first action, and see signals on the dashboard. Free forever for small teams.
+            Install the SDK, send your first action, and see signals on the dashboard. Open-source and self-hosted.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/login" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
@@ -461,10 +419,10 @@ export default function LandingPage() {
               <BookOpen size={14} />
               Docs
             </Link>
-            <a href="#pricing" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
-              <BarChart3 size={14} />
-              Pricing
-            </a>
+            <Link href="/docs#agent-tools" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <Terminal size={14} />
+              Agent Tools
+            </Link>
             <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />
               Dashboard

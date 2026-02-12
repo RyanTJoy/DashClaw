@@ -184,7 +184,7 @@ export default function DocsPage() {
           </Link>
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
             <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
-            <Link href="/#pricing" className="hover:text-white transition-colors">Pricing</Link>
+            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5"><Github size={14} /> GitHub</a>
             <Link href="/docs" className="text-white">Docs</Link>
             <Link href="/#signals" className="hover:text-white transition-colors">Signals</Link>
           </div>
@@ -1164,6 +1164,43 @@ console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`
             The <code className="text-zinc-300">agent-tools/</code> directory contains Python CLI tools that run locally alongside your agent. They track learning, goals, context, memory health, security, and more in local SQLite databases. Each tool supports an optional <code className="text-zinc-300">--push</code> flag to sync data to your DashClaw dashboard.
           </p>
 
+          <h3 className="text-lg font-semibold mb-3 text-zinc-200">Install &amp; Configure</h3>
+          <p className="text-sm text-zinc-400 mb-4">
+            Run the installer for your platform, then configure dashboard sync (optional).
+          </p>
+          <div className="space-y-4 mb-8">
+            <CodeBlock title="Mac / Linux">{`bash ./agent-tools/install-mac.sh`}</CodeBlock>
+            <CodeBlock title="Windows (PowerShell)">{`powershell -ExecutionPolicy Bypass -File .\\agent-tools\\install-windows.ps1`}</CodeBlock>
+            <CodeBlock title="Configure dashboard sync (optional)">{`# Copy and edit the config file
+cp agent-tools/.env.example agent-tools/secrets/dashclaw.env
+
+# Set your dashboard URL, API key, and agent ID
+DASHCLAW_URL=https://your-deployment.vercel.app
+DASHCLAW_API_KEY=oc_live_...
+DASHCLAW_AGENT_ID=my-agent`}</CodeBlock>
+          </div>
+
+          <h3 className="text-lg font-semibold mb-3 text-zinc-200">Tool Categories</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            {[
+              { group: 'Ops & Learning', tools: ['learning-database', 'error-logger', 'daily-digest', 'api-monitor'] },
+              { group: 'Context & Sessions', tools: ['context-manager', 'session-handoff', 'open-loops'] },
+              { group: 'Memory & Knowledge', tools: ['memory-health', 'memory-search', 'token-efficiency'] },
+              { group: 'Security & Audit', tools: ['outbound-filter', 'session-isolator', 'audit-logger'] },
+              { group: 'Relationships', tools: ['relationship-tracker', 'communication-analytics', 'user-context'] },
+              { group: 'Automation', tools: ['automation-library', 'token-capture', 'sync_to_dashclaw'] },
+            ].map((cat) => (
+              <div key={cat.group} className="p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+                <h4 className="text-sm font-semibold text-white mb-2">{cat.group}</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {cat.tools.map((t) => (
+                    <span key={t} className="px-2 py-0.5 rounded bg-[#1a1a1a] border border-[rgba(255,255,255,0.06)] text-xs text-zinc-400 font-mono">{t}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <h3 className="text-lg font-semibold mb-3 text-zinc-200">Tool-to-SDK Mapping</h3>
           <p className="text-sm text-zinc-500 mb-4">
             Python CLI tools push to the same API endpoints as the JavaScript SDK methods.
@@ -1233,10 +1270,10 @@ python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context
               <BookOpen size={14} />
               Docs
             </Link>
-            <Link href="/#pricing" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
-              <BarChart3 size={14} />
-              Pricing
-            </Link>
+            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <Github size={14} />
+              GitHub
+            </a>
             <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />
               Dashboard
