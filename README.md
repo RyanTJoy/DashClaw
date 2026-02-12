@@ -276,4 +276,6 @@ MIT -- see [LICENSE](LICENSE)
 
 ---
 
-Built by [ucsandman](https://github.com/ucsandman)
+Built by Wes Sander
+[X](https://x.com/wes_sander)
+[LinkedIn](https://www.linkedin.com/in/wes-sander-01b180319/)
