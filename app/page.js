@@ -83,9 +83,10 @@ export default function LandingPage() {
             <span className="text-lg font-semibold">DashClaw</span>
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
+            <Link href="/toolkit" className="hover:text-white transition-colors">Toolkit</Link>
+            <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors inline-flex items-center gap-1.5"><Github size={14} /> GitHub</a>
-            <a href="#signals" className="hover:text-white transition-colors">Signals</a>
             <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
           </div>
           <div className="flex items-center gap-3">
@@ -414,9 +415,13 @@ export default function LandingPage() {
               <BookOpen size={14} />
               Docs
             </Link>
-            <Link href="/docs#agent-tools" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+            <Link href="/gallery" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <Eye size={14} />
+              Gallery
+            </Link>
+            <Link href="/toolkit" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <Terminal size={14} />
-              Agent Tools
+              Toolkit
             </Link>
             <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />
