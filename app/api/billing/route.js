@@ -15,13 +15,13 @@ function getSql() {
   return _sql;
 }
 
-// GET /api/billing - Returns plan, limits, usage, subscription info
+// GET /api/billing - Returns limits and usage info
 export async function GET(request) {
   try {
     const orgId = getOrgId(request);
     if (orgId === 'org_default') {
       return NextResponse.json(
-        { error: 'Complete onboarding to view billing', needsOnboarding: true },
+        { error: 'Complete onboarding to view usage', needsOnboarding: true },
         { status: 403 }
       );
     }
@@ -56,7 +56,7 @@ export async function GET(request) {
       stripe_configured: !!process.env.STRIPE_SECRET_KEY,
     });
   } catch (error) {
-    console.error('Billing API GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch billing info' }, { status: 500 });
+    console.error('Usage API GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch usage info' }, { status: 500 });
   }
 }

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
-  GitBranch, Settings, Crosshair, Calendar, CreditCard,
+  GitBranch, Settings, Crosshair, Calendar, BarChart3,
   Clock, Webhook, Bell, FolderKanban,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react';
@@ -43,7 +43,7 @@ const navGroups = [
       { href: '/integrations', icon: Plug, label: 'Integrations' },
       { href: '/api-keys', icon: KeyRound, label: 'API Keys' },
       { href: '/team', icon: UsersRound, label: 'Team' },
-      { href: '/billing', icon: CreditCard, label: 'Billing' },
+      { href: '/usage', icon: BarChart3, label: 'Usage' },
       { href: '/activity', icon: Clock, label: 'Activity' },
       { href: '/webhooks', icon: Webhook, label: 'Webhooks' },
       { href: '/notifications', icon: Bell, label: 'Notifications' },

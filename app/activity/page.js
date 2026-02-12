@@ -86,7 +86,7 @@ export default function ActivityPage() {
     if (action.startsWith('invite.')) return Mail;
     if (action.startsWith('member.') || action.startsWith('role.')) return UsersRound;
     if (action.startsWith('setting.')) return Settings;
-    if (action.startsWith('billing.')) return CreditCard;
+    if (action.startsWith('usage.')) return BarChart3;
     if (action.startsWith('webhook.')) return Webhook;
     if (action.startsWith('signal.') || action.startsWith('alert.')) return ShieldAlert;
     return Cog;
@@ -144,7 +144,7 @@ export default function ActivityPage() {
     { value: 'member.left', label: 'Member Left' },
     { value: 'setting.updated', label: 'Setting Updated' },
     { value: 'setting.deleted', label: 'Setting Deleted' },
-    { value: 'billing.checkout_started', label: 'Checkout Started' },
+    { value: 'usage.limit_reached', label: 'Usage Limit Reached' },
     { value: 'webhook.created', label: 'Webhook Created' },
     { value: 'webhook.deleted', label: 'Webhook Deleted' },
     { value: 'webhook.tested', label: 'Webhook Tested' },
