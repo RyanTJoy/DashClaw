@@ -50,7 +50,6 @@ const PUBLIC_ROUTES = [
   '/api/health',
   '/api/setup/status',
   '/api/auth',
-  '/api/webhooks/stripe',
   '/api/cron',
 ];
 
@@ -384,8 +383,8 @@ export const config = {
     '/api-keys/:path*',
     '/team',
     '/team/:path*',
-    '/billing',
-    '/billing/:path*',
+    '/usage',
+    '/usage/:path*',
     '/activity',
     '/activity/:path*',
     '/webhooks',

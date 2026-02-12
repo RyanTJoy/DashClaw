@@ -45,7 +45,7 @@ const platformFeatures = [
 const operationalFeatures = [
   { icon: UsersRound, title: 'Team Management', description: 'Invite links, role-based access (admin/member), and workspace isolation.' },
   { icon: Webhook, title: 'Webhooks & Alerts', description: 'HMAC-signed webhook delivery plus email alerts via Resend for signal notifications.' },
-  { icon: Clock, title: 'Activity Audit Log', description: 'Every admin action logged — key creation, invites, role changes, billing events.' },
+  { icon: Clock, title: 'Activity Audit Log', description: 'Every admin action logged — key creation, invites, role changes, and usage activity.' },
   { icon: Compass, title: 'Guided Onboarding', description: '4-step checklist: create workspace, generate key, install SDK, send first action.' },
   { icon: Building2, title: 'Multi-Tenant', description: 'Full org isolation with API key scoping, per-agent settings, and org management.' },
   { icon: Terminal, title: 'Agent Tools', description: '20+ Python CLI tools for local ops with optional --push sync to the dashboard.' },
@@ -328,7 +328,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Production-ready operations</h2>
-            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Team management, audit trails, webhooks, billing, and more — built in from day one.</p>
+            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Team management, audit trails, webhooks, and more — built in from day one.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {operationalFeatures.map((feature) => {
