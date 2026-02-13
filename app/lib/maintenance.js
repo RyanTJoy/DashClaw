@@ -74,37 +74,35 @@ export async function runMemoryMaintenance(orgId, sql) {
 }
 
 function composeMaintenanceMessage(data) {
-  let msg = "### 🧹 Memory Maintenance Required
+  let msg = `### 🧹 Memory Maintenance Required
 
-";
-  msg += "I've identified items in your long-term memory that require verification or pruning to maintain operational accuracy.
+`;
+  msg += `I've identified items in your long-term memory that require verification or pruning to maintain operational accuracy.
 
-";
+`;
 
   if (data.assumptions.length > 0) {
-    msg += "#### ⚠️ Stale Assumptions
+    msg += `#### ⚠️ Stale Assumptions
 The following assumptions have been unvalidated for over 7 days. Please verify if these still hold true:
-";
+`;
     data.assumptions.slice(0, 5).forEach(a => {
       msg += `- **${a.assumption}** (Action: ${a.action_id})
 `;
     });
     if (data.assumptions.length > 5) msg += `- ...and ${data.assumptions.length - 5} more.
 `;
-    msg += "
-";
+    msg += "\n";
   }
 
   if (data.conflicts.length > 0) {
-    msg += "#### 📉 Recent Decision Failures
+    msg += `#### 📉 Recent Decision Failures
 You've had recent failures that might contradict established patterns. Review these cases:
-";
+`;
     data.conflicts.slice(0, 3).forEach(f => {
       msg += `- **${f.decision}**: ${f.outcome_notes || 'No notes provided.'}
 `;
     });
-    msg += "
-";
+    msg += "\n";
   }
 
   msg += "Suggested Action: Use the `validate_assumption` tool to update your state, or archive stale lessons in your local memory.";
