@@ -64,7 +64,10 @@ export async function POST(request) {
     const sql = getSql();
     const body = await request.json();
 
-    const { name, slug, plan = 'free' } = body;
+    // SECURITY: Ignore 'plan' from user input. New orgs always start on 'free'.
+    // Use Stripe webhooks or an internal service to upgrade plans.
+    const { name, slug } = body;
+    const plan = 'free';
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
@@ -77,11 +80,6 @@ export async function POST(request) {
     }
     if (name.length > 256) {
       return NextResponse.json({ error: 'name must be 256 characters or fewer' }, { status: 400 });
-    }
-
-    const validPlans = ['free', 'pro', 'team', 'enterprise'];
-    if (!validPlans.includes(plan)) {
-      return NextResponse.json({ error: `plan must be one of: ${validPlans.join(', ')}` }, { status: 400 });
     }
 
     const orgId = `org_${crypto.randomUUID()}`;

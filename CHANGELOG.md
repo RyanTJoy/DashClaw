@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-02-13
+
+### Added
+- **Security Dashboard API**: New endpoint `/api/security/status` for monitoring encryption health and system security score.
+
+### Security
+- **Comprehensive Audit**: Full IDOR (Insecure Direct Object Reference) audit of all resource endpoints to ensure strict multi-tenant isolation.
+- **Plan Escalation Fix**: Restricted organization creation to the 'free' plan by default, ignoring unauthorized user-provided plan overrides.
+- **Auto-Encryption**: Added server-side enforcement for sensitive keys (API_KEY, DATABASE_URL, etc.) to ensure they are always encrypted before storage.
+- **Hardened Error Handling**: Standardized generic error responses across the API to prevent information leakage.
+
 ## [1.2.2] - 2026-02-13
 
 ### Fixed

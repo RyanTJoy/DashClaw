@@ -151,7 +151,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { key, value, category = 'general', encrypted = false, agent_id = null } = body;
+    let { key, value, category = 'general', encrypted = false, agent_id = null } = body;
 
     if (!key) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
@@ -160,6 +160,14 @@ export async function POST(request) {
     // SECURITY: Validate key against allowlist
     if (!VALID_SETTING_KEYS.includes(key)) {
       return NextResponse.json({ error: `Invalid setting key: ${key}` }, { status: 400 });
+    }
+
+    // SECURITY: Force encryption for sensitive keys if not already requested
+    const SENSITIVE_SUFFIXES = ['_KEY', '_TOKEN', '_SECRET', '_URL', '_URI', '_DSN', '_PASSWORD', '_ID', '_CREDENTIALS_PATH'];
+    const EXCEPTIONS = ['TELEGRAM_CHAT_ID', 'DISCORD_CLIENT_ID', 'DISCORD_GUILD_ID', 'VERCEL_PROJECT_ID', 'CLOUDFLARE_ACCOUNT_ID', 'AIRTABLE_BASE_ID', 'ELEVENLABS_VOICE_ID', 'OPENAI_ORG_ID'];
+    
+    if (!encrypted && value && SENSITIVE_SUFFIXES.some(s => key.endsWith(s)) && !EXCEPTIONS.includes(key)) {
+      encrypted = true;
     }
 
     // SECURITY: Validate category
