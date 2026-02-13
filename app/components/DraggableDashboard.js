@@ -80,35 +80,66 @@ const WIDGETS = {
 
 const DEFAULT_LAYOUTS = {
   lg: [
-    // Row 1: Status (4 cols total)
+    // --- Row 1 (Status) ---
     { i: 'risk_signals', x: 0, y: 0, w: 2, h: 2 },
     { i: 'open_loops', x: 2, y: 0, w: 2, h: 2 },
-    
-    // Row 2: Activity
+    // --- Row 2 (Activity) ---
     { i: 'recent_actions', x: 0, y: 2, w: 2, h: 2 },
     { i: 'projects', x: 2, y: 2, w: 2, h: 2 },
-    
-    // Row 3: Goals & Learning (1x1s)
+    // --- Row 3 (Metrics) ---
     { i: 'goals', x: 0, y: 4, w: 1, h: 2 },
     { i: 'learning', x: 1, y: 4, w: 1, h: 2 },
     { i: 'follow_ups', x: 2, y: 4, w: 1, h: 2 },
     { i: 'calendar', x: 3, y: 4, w: 1, h: 2 },
-    
-    // Row 4: Context & System
+    // --- Row 4 (Context) ---
     { i: 'context', x: 0, y: 6, w: 2, h: 2 },
     { i: 'token_budget', x: 2, y: 6, w: 1, h: 2 },
     { i: 'memory_health', x: 3, y: 6, w: 1, h: 2 },
-    
-    // Row 5: Analytics & Extras
+    // --- Row 5 (System) ---
     { i: 'token_chart', x: 0, y: 8, w: 2, h: 2 },
     { i: 'integrations', x: 2, y: 8, w: 1, h: 2 },
     { i: 'inspiration', x: 3, y: 8, w: 1, h: 2 },
   ],
-  md: Object.keys(WIDGETS).map((key, i) => ({ i: key, w: 1, h: 2, x: i % 2, y: Math.floor(i / 2) * 2 })),
-  sm: Object.keys(WIDGETS).map((key, i) => ({ i: key, w: 1, h: 2, x: 0, y: i * 2 })),
+  md: [
+    // 2-Column Layout for Tablet/Laptop
+    { i: 'risk_signals', x: 0, y: 0, w: 2, h: 2 },
+    { i: 'open_loops', x: 0, y: 2, w: 2, h: 2 },
+    { i: 'recent_actions', x: 0, y: 4, w: 2, h: 2 },
+    { i: 'projects', x: 0, y: 6, w: 2, h: 2 },
+    // Metrics 2x2
+    { i: 'goals', x: 0, y: 8, w: 1, h: 2 },
+    { i: 'learning', x: 1, y: 8, w: 1, h: 2 },
+    { i: 'follow_ups', x: 0, y: 10, w: 1, h: 2 },
+    { i: 'calendar', x: 1, y: 10, w: 1, h: 2 },
+    // Context
+    { i: 'context', x: 0, y: 12, w: 2, h: 2 },
+    { i: 'token_budget', x: 0, y: 14, w: 1, h: 2 },
+    { i: 'memory_health', x: 1, y: 14, w: 1, h: 2 },
+    { i: 'token_chart', x: 0, y: 16, w: 2, h: 2 },
+    { i: 'integrations', x: 0, y: 18, w: 1, h: 2 },
+    { i: 'inspiration', x: 1, y: 18, w: 1, h: 2 },
+  ],
+  sm: [
+    // 1-Column Layout for Mobile
+    { i: 'risk_signals', x: 0, y: 0, w: 1, h: 2 },
+    { i: 'open_loops', x: 0, y: 2, w: 1, h: 2 },
+    { i: 'recent_actions', x: 0, y: 4, w: 1, h: 2 },
+    { i: 'projects', x: 0, y: 6, w: 1, h: 2 },
+    { i: 'goals', x: 0, y: 8, w: 1, h: 2 },
+    { i: 'learning', x: 0, y: 10, w: 1, h: 2 },
+    { i: 'follow_ups', x: 0, y: 12, w: 1, h: 2 },
+    { i: 'calendar', x: 0, y: 14, w: 1, h: 2 },
+    { i: 'context', x: 0, y: 16, w: 1, h: 2 },
+    { i: 'token_budget', x: 0, y: 18, w: 1, h: 2 },
+    { i: 'memory_health', x: 0, y: 20, w: 1, h: 2 },
+    { i: 'token_chart', x: 0, y: 22, w: 1, h: 2 },
+    { i: 'integrations', x: 0, y: 24, w: 1, h: 2 },
+    { i: 'inspiration', x: 0, y: 26, w: 1, h: 2 },
+  ],
 };
 
-const BREAKPOINTS = { lg: 1200, md: 768, sm: 480 };
+// Adjusted breakpoints to prevent premature switching to mobile view
+const BREAKPOINTS = { lg: 1000, md: 700, sm: 0 };
 const COLS = { lg: 4, md: 2, sm: 1 };
 
 // --- Storage Keys ---
