@@ -42,6 +42,7 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 ### Operations & Monitoring
 
 - **ActionRecord Control Plane** -- Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
+- **Real-Time Flight Recorder** -- Watch actions stream in live via Server-Sent Events (SSE) with "Mission Control" UI
 - **Behavior Guard** -- Policy engine (risk thresholds, rate limits, action blocking, approval gates, webhook checks)
 - **Risk Signals** -- 7 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
 - **Open Loops** -- Track unresolved items with priority and type classification
