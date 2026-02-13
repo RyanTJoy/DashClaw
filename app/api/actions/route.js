@@ -11,18 +11,82 @@ import { estimateCost } from '../../lib/billing.js';
 import { eventBus, EVENTS } from '../../lib/events.js';
 import crypto from 'crypto';
 
+// In-memory store for local development without DB
+const MEMORY_STORE = {
+  actions: [],
+  meters: {}
+};
+
 let _sql;
 function getSql() {
   if (_sql) return _sql;
+  if (!process.env.DATABASE_URL) {
+    console.warn('[API] DATABASE_URL not set. Using in-memory mock driver.');
+    
+    // Mock driver that mimics neon interface (callable + .query)
+    const mockSql = async (strings, ...values) => {
+      return mockSqlTag(strings, ...values);
+    };
+    mockSql.query = async (text, params) => {
+      // Mock SELECT * FROM action_records
+      if (text.includes('SELECT * FROM action_records')) {
+        const limit = params[params.length - 2] || 50;
+        return MEMORY_STORE.actions.slice(0, limit);
+      }
+      // Mock COUNT(*)
+      if (text.includes('SELECT COUNT(*)')) {
+        return [{ total: MEMORY_STORE.actions.length }];
+      }
+      // Mock Stats
+      if (text.includes('SELECT') && text.includes('AVG(risk_score)')) {
+        return [{ total: MEMORY_STORE.actions.length, completed: 0, failed: 0, running: 0, high_risk: 0, avg_risk: 0, total_cost: 0 }];
+      }
+      return [];
+    };
+    return mockSql;
+  }
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
   _sql = neon(url);
   return _sql;
+}
+
+// Helper for SQL template tag emulation in mock driver
+async function mockSqlTag(strings, ...values) {
+  const query = strings[0].trim();
+  
+  // INSERT
+  if (query.startsWith('INSERT INTO action_records')) {
+    // Extract values from the parameter array based on known position
+    // Values order: orgId, action_id, agent_id, agent_name... (see POST handler)
+    const action = {
+      org_id: values[0],
+      action_id: values[1],
+      agent_id: values[2],
+      agent_name: values[3],
+      swarm_id: values[4],
+      parent_action_id: values[5],
+      action_type: values[6],
+      declared_goal: values[7],
+      reasoning: values[8],
+      // ... simplified mapping for dev visualization
+      status: values[13] || 'running',
+      risk_score: values[15] || 0,
+      timestamp_start: values[21] || new Date().toISOString(),
+      cost_estimate: values[24] || 0
+    };
+    MEMORY_STORE.actions.unshift(action); // Add to top
+    return [action];
+  }
+  
+  return [];
 }
 
 export async function GET(request) {
   try {
     const sql = getSql();
+    // If mocking, sql is an object, not a function. But real neon is a function.
+    // We need to handle both call signatures if we want to be pure.
+    // But for this specific GET, we only use sql.query(), so the mock object works.
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
 

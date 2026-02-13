@@ -276,6 +276,7 @@ export async function middleware(request) {
         const orgId = sessionToken.orgId || 'org_default';
         const role = sessionToken.role || 'member';
 
+
         // SECURITY: Users on org_default are only allowed to access onboarding and health APIs
         const ONBOARDING_PREFIXES = ['/api/onboarding', '/api/setup', '/api/health'];
         const isAllowedForOnboarding = ONBOARDING_PREFIXES.some(p => pathname.startsWith(p));

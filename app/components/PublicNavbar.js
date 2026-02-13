@@ -26,11 +26,8 @@ export default function PublicNavbar() {
           <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">
-            Sign In
-          </Link>
-          <Link href="/login" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
-            Get Started
+          <Link href="/dashboard" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
+            Dashboard
           </Link>
         </div>
       </div>

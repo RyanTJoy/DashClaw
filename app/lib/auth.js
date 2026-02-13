@@ -5,6 +5,14 @@ import GoogleProvider from 'next-auth/providers/google';
 let _sql;
 function getSql() {
   if (!_sql) {
+    if (!process.env.DATABASE_URL) {
+      console.warn('[AUTH] DATABASE_URL is not set. Using mock SQL driver.');
+      // Return a dummy driver that returns empty arrays or safely ignores writes
+      return async (strings, ...values) => {
+        console.warn('[AUTH] Mock SQL executed:', strings[0]);
+        return [];
+      };
+    }
     const { neon } = require('@neondatabase/serverless');
     _sql = neon(process.env.DATABASE_URL);
   }
@@ -14,12 +22,12 @@ function getSql() {
 export const authOptions = {
   providers: [
     GitHubProvider({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
+      clientId: process.env.GITHUB_ID || 'mock_github_id',
+      clientSecret: process.env.GITHUB_SECRET || 'mock_github_secret',
     }),
     GoogleProvider({
-      clientId: process.env.GOOGLE_ID,
-      clientSecret: process.env.GOOGLE_SECRET,
+      clientId: process.env.GOOGLE_ID || 'mock_google_id',
+      clientSecret: process.env.GOOGLE_SECRET || 'mock_google_secret',
     }),
   ],
   session: { strategy: 'jwt' },
@@ -28,6 +36,13 @@ export const authOptions = {
     async signIn({ user, account }) {
       try {
         const sql = getSql();
+        // If mock driver, skip logic
+        if (!process.env.DATABASE_URL) return true;
+
+        const now = new Date().toISOString();
+        // If mock driver, skip logic
+        if (!process.env.DATABASE_URL) return true;
+
         const now = new Date().toISOString();
 
         // Upsert user on every login
@@ -68,6 +83,8 @@ export const authOptions = {
       // On initial sign-in, attach org info from DB
       if (account) {
         try {
+          if (!process.env.DATABASE_URL) throw new Error('No DB');
+          
           const sql = getSql();
           const rows = await sql`
             SELECT u.id, u.org_id, u.role, COALESCE(o.plan, 'free') AS plan
@@ -88,9 +105,10 @@ export const authOptions = {
             token.plan = 'free';
           }
         } catch (err) {
-          console.error('[AUTH] jwt callback error:', err.message);
+          if (err.message !== 'No DB') console.error('[AUTH] jwt callback error:', err.message);
           token.orgId = 'org_default';
           token.role = 'member';
+          token.plan = 'free';
         }
         token.orgRefreshedAt = Date.now();
       } else if (token.userId) {
@@ -98,6 +116,7 @@ export const authOptions = {
         const age = Date.now() - (token.orgRefreshedAt || 0);
         if (age > 5 * 60 * 1000) {
           try {
+            if (!process.env.DATABASE_URL) throw new Error('No DB');
             const sql = getSql();
             const rows = await sql`
               SELECT u.org_id, u.role, COALESCE(o.plan, 'free') AS plan
@@ -111,13 +130,14 @@ export const authOptions = {
               token.plan = rows[0].plan;
             }
           } catch (err) {
-            console.error('[AUTH] jwt refresh error:', err.message);
+             if (err.message !== 'No DB') console.error('[AUTH] jwt refresh error:', err.message);
           }
           token.orgRefreshedAt = Date.now();
         }
       }
       return token;
     },
+
 
     async session({ session, token }) {
       session.user.id = token.userId || null;

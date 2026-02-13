@@ -9,6 +9,16 @@ const nextConfig = {
   },
   // Security headers
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      // In dev mode, Next.js needs 'unsafe-eval' for hot reloading
+      `script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''}`,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.neon.tech https://github.com https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
+    ].join('; ');
+
     return [
       {
         source: '/:path*',
@@ -35,7 +45,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://*.neon.tech https://github.com https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
+            value: csp,
           },
           {
             key: 'Strict-Transport-Security',
