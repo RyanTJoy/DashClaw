@@ -8,6 +8,7 @@ import { getOrgId, getOrgRole } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { verifyAgentSignature } from '../../lib/identity.js';
 import { estimateCost } from '../../lib/billing.js';
+import { eventBus, EVENTS } from '../../lib/events.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -219,6 +220,13 @@ export async function POST(request) {
     Promise.all(meterUpdates).catch(() => {});
 
     const response = NextResponse.json({ action: result[0], action_id }, { status: 201 });
+    
+    // Emit real-time event
+    eventBus.emit(EVENTS.ACTION_CREATED, { 
+      orgId, 
+      action: result[0] 
+    });
+
     if (actionsQuota.warning) {
       response.headers.set('x-quota-warning', `actions_per_month at ${actionsQuota.percent}%`);
     }

@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateActionOutcome } from '../../../lib/validate.js';
 import { getOrgId } from '../../../lib/org.js';
+import { eventBus, EVENTS } from '../../../lib/events.js';
 
 let _sql;
 function getSql() {
@@ -102,6 +103,12 @@ export async function PATCH(request, { params }) {
     values.push(actionId, orgId);
 
     const result = await sql.query(query, values);
+
+    // Emit real-time event
+    eventBus.emit(EVENTS.ACTION_UPDATED, {
+      orgId,
+      action: result[0]
+    });
 
     return NextResponse.json({ action: result[0] });
   } catch (error) {
