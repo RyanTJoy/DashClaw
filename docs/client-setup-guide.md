@@ -24,9 +24,10 @@
 12. [Team Management](#12-team-management)
 13. [Webhooks & Email Alerts](#13-webhooks--email-alerts)
 14. [Billing & Plans](#14-billing--plans)
-15. [CLI Tools](#15-cli-tools)
-16. [Security Best Practices](#16-security-best-practices)
-17. [FAQ & Troubleshooting](#17-faq--troubleshooting)
+15. [Token & Cost Analytics](#15-token--cost-analytics)
+16. [CLI Tools](#16-cli-tools)
+17. [Security Best Practices](#17-security-best-practices)
+18. [FAQ & Troubleshooting](#18-faq--troubleshooting)
 
 ---
 
@@ -1108,7 +1109,59 @@ Admins can upgrade from the **Billing** page. Checkout redirects to Stripe.
 
 ---
 
-## 15. CLI Tools
+## 15. Token & Cost Analytics
+
+DashClaw provides real-time financial tracking for your AI agents. You can monitor token usage, see estimated costs per model, and track the total cost of achieving specific goals.
+
+### Automatic Cost Calculation
+
+When you create an action, you can include token usage and the model name. DashClaw will automatically estimate the cost based on current provider pricing.
+
+```javascript
+// Node.js
+await claw.createAction({
+  action_type: 'research',
+  declared_goal: 'Scan latest market trends',
+  tokens_in: 1200,
+  tokens_out: 850,
+  model: 'claude-3-5-sonnet-20240620'
+});
+```
+
+```python
+# Python
+claw.create_action(
+    action_type='research',
+    declared_goal='Scan latest market trends',
+    tokens_in=1200,
+    tokens_out=850,
+    model='gpt-4o'
+)
+```
+
+### Manual Token Reporting
+
+For fine-grained tracking (e.g., periodic snapshots of context window usage), use the manual reporting method:
+
+```javascript
+await claw.reportTokenUsage({
+  tokens_in: 5000,
+  tokens_out: 2000,
+  context_used: 150000,
+  context_max: 200000,
+  model: 'claude-3-opus'
+});
+```
+
+### Dashboard Visuals
+
+- **Token Usage Card**: Shows current hourly/weekly budget remaining and today's total cost.
+- **Token Chart**: Visualizes token consumption and financial "burn rate" over the last 7 days.
+- **Goal Efficiency**: Hover over any goal in the Goal Progress chart to see the total USD spent to achieve it.
+
+---
+
+## 16. CLI Tools
 
 ### Report an Action (from terminal)
 

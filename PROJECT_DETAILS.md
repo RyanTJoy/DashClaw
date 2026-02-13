@@ -75,7 +75,7 @@ app/
 ├── team/                      # Team management page (members, invites, roles)
 ├── invite/[token]/            # Invite accept page (standalone layout)
 ├── setup/                     # Redirects to /dashboard (legacy)
-├── tokens/                    # Token usage page (disabled — not linked from UI)
+├── tokens/                    # Token usage and cost analytics page
 ├── workflows/                 # Workflows/SOPs page
 └── api/
     ├── auth/[...nextauth]/    # NextAuth route handler (GitHub + Google OAuth)
@@ -756,7 +756,7 @@ const claw = new DashClaw({
 
 **Error Classes**: `GuardBlockedError` — thrown when `guardMode: 'enforce'` and guard blocks an action
 
-**Disabled**: `reportTokenUsage()` — exists in SDK but token tracking is disabled in the dashboard
+**Cost Analytics**: `reportTokenUsage()` — real-time financial tracking and budget monitoring on the dashboard.
 
 ## Agent Bootstrap System
 

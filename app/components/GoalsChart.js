@@ -15,11 +15,12 @@ function getBarColor(progress) {
 
 function CustomTooltip({ active, payload }) {
   if (active && payload && payload.length) {
-    const { name, progress } = payload[0].payload;
+    const { name, progress, cost } = payload[0].payload;
     return (
       <div className="bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-sm shadow-lg">
         <p className="text-white font-medium">{name}</p>
         <p className="text-zinc-400 mt-0.5">Progress: <span className="text-white tabular-nums">{progress}%</span></p>
+        <p className="text-zinc-500 mt-0.5">Total Cost: <span className="text-green-400 tabular-nums">${cost.toFixed(2)}</span></p>
       </div>
     );
   }
@@ -40,6 +41,7 @@ export default function GoalsChart() {
           const chartData = result.goals.map(goal => ({
             name: goal.title?.substring(0, 20) || 'Goal',
             progress: goal.progress || 0,
+            cost: goal.total_cost || 0,
             target: 100
           }));
           setData(chartData);

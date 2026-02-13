@@ -59,13 +59,19 @@ export default function DraggableDashboard() {
         <ContextCard />
       </div>
       <div>
-        <IntegrationsCard />
+        <TokenBudgetCard />
       </div>
       <div>
         <MemoryHealthCard />
       </div>
 
-      {/* Row 5: Extra */}
+      {/* Row 5: Analytics & Extras */}
+      <div className="md:col-span-2">
+        <TokenChart />
+      </div>
+      <div>
+        <IntegrationsCard />
+      </div>
       <div>
         <InspirationCard />
       </div>
