@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://dashclaw:dashclaw@db:5432/dashclaw
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=replace-this-with-a-random-secret-at-runtime
+      - DASHCLAW_API_KEY=replace-this-with-an-admin-api-key
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=dashclaw
+      - POSTGRES_PASSWORD=dashclaw
+      - POSTGRES_DB=dashclaw
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
