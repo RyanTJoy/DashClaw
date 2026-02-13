@@ -26,6 +26,21 @@ with claw.track(action_type="research", declared_goal="Explore Python SDK capabi
     print("Working...")
 ```
 
+## Integrations
+
+### LangChain
+
+Automatically log LLM calls, tool usage, and costs with one line of code.
+
+```python
+from dashclaw.integrations.langchain import DashClawCallbackHandler
+
+handler = DashClawCallbackHandler(claw)
+
+# Pass to your agent or chain
+agent.run("Hello world", callbacks=[handler])
+```
+
 ## API Parity
 
 This SDK provides parity with the [DashClaw Node.js SDK](https://github.com/ucsandman/DashClaw/tree/main/sdk).
