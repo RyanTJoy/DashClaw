@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: dashclaw
-Version: 1.3.0
+Version: 1.5.0
 Summary: Python SDK for the DashClaw AI agent observability platform
 Home-page: https://github.com/ucsandman/DashClaw
 Author: Wes Sander
@@ -39,7 +39,8 @@ claw = DashClaw(
     base_url="https://your-app.vercel.app",
     api_key="your-api-key",
     agent_id="my-python-agent",
-    agent_name="My Python Agent"
+    agent_name="My Python Agent",
+    hitl_mode="wait" # Optional: automatically wait for human approval
 )
 
 # Record an action
@@ -73,6 +74,18 @@ claw = DashClaw(
 )
 ```
 
+## Human-in-the-Loop (HITL) Governance
+
+When `hitl_mode="wait"` is set, any action that triggers a "Require Approval" policy will automatically pause.
+
+```python
+try:
+    claw.create_action(action_type="deploy", declared_goal="Ship to production")
+    # Agent automatically pauses here until approved in the dashboard
+except ApprovalDeniedError:
+    print("Human operator denied the action!")
+```
+
 ## Integrations
 
 ### LangChain
@@ -86,6 +99,39 @@ handler = DashClawCallbackHandler(claw)
 
 # Pass to your agent or chain
 agent.run("Hello world", callbacks=[handler])
+```
+
+### CrewAI
+
+Instrument CrewAI tasks and agents to track research and decision-making.
+
+```python
+from dashclaw.integrations.crewai import DashClawCrewIntegration
+
+integration = DashClawCrewIntegration(claw)
+
+# Method A: Task callback
+task = Task(
+    description="Analyze market trends",
+    agent=analyst,
+    callback=integration.task_callback
+)
+
+# Method B: Instrument Agent (Step-by-step tracking)
+analyst = integration.instrument_agent(analyst)
+```
+
+### AutoGen
+
+Monitor multi-agent conversations and protocol exchanges.
+
+```python
+from dashclaw.integrations.autogen import DashClawAutoGenIntegration
+
+integration = DashClawAutoGenIntegration(claw)
+
+# Instrument an agent to log all received messages
+integration.instrument_agent(assistant)
 ```
 
 ## API Parity
