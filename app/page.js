@@ -3,7 +3,7 @@ import {
   Flame, Zap, ShieldAlert, Shield, CircleDot, Eye, ArrowRight, Github,
   ExternalLink, BookOpen, FolderKanban, MessageSquare, ArrowLeftRight,
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
-  Webhook, Clock, Compass, Building2, Terminal,
+  Webhook, Clock, Compass, Building2, Terminal, BarChart3,
 } from 'lucide-react';
 import PublicNavbar from './components/PublicNavbar';
 
