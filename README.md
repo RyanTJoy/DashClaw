@@ -57,6 +57,7 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 
 ### Security & Governance
 
+- **Identity Binding** -- Cryptographic agent verification via Web Crypto signatures
 - **Secure Settings Store** -- Credentials encrypted and stored in your database
 - **Guard Policies** -- Block, warn, or require approval for risky actions
 - **Webhook Interventions** -- Call external endpoints for custom guard logic
@@ -138,6 +139,8 @@ const claw = new DashClaw({
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
+  // Optional: identity binding for cryptographic verification
+  // privateKey: JSON.parse(process.env.AGENT_PRIVATE_KEY)
 });
 
 // Record an action

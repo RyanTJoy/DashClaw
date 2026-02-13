@@ -29,8 +29,9 @@ class DashClaw {
    * @param {string} [options.swarmId] - Swarm/group identifier if part of a multi-agent system
    * @param {string} [options.guardMode='off'] - Auto guard check before createAction: 'off' | 'warn' | 'enforce'
    * @param {Function} [options.guardCallback] - Called with guard decision object when guardMode is active
+   * @param {CryptoKey} [options.privateKey] - Web Crypto API Private Key for signing actions
    */
-  constructor({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback }) {
+  constructor({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback, privateKey }) {
     if (!baseUrl) throw new Error('baseUrl is required');
     if (!apiKey) throw new Error('apiKey is required');
     if (!agentId) throw new Error('agentId is required');
@@ -47,6 +48,29 @@ class DashClaw {
     this.swarmId = swarmId || null;
     this.guardMode = guardMode || 'off';
     this.guardCallback = guardCallback || null;
+    this.privateKey = privateKey || null;
+    
+    // Auto-import JWK if passed as plain object
+    if (this.privateKey && typeof this.privateKey === 'object' && this.privateKey.kty) {
+      this._pendingKeyImport = this._importJwk(this.privateKey);
+    }
+  }
+
+  async _importJwk(jwk) {
+    try {
+      const cryptoSubtle = globalThis.crypto?.subtle || (await import('node:crypto')).webcrypto.subtle;
+      this.privateKey = await cryptoSubtle.importKey(
+        "jwk",
+        jwk,
+        { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      delete this._pendingKeyImport;
+    } catch (err) {
+      console.warn(`[DashClaw] Failed to auto-import privateKey JWK: ${err.message}`);
+      this.privateKey = null;
+    }
   }
 
   async _request(path, method, body) {
@@ -140,11 +164,38 @@ class DashClaw {
    */
   async createAction(action) {
     await this._guardCheck(action);
-    return this._request('/api/actions', 'POST', {
+    if (this._pendingKeyImport) await this._pendingKeyImport;
+    
+    const payload = {
       agent_id: this.agentId,
       agent_name: this.agentName,
       swarm_id: this.swarmId,
       ...action
+    };
+
+    let signature = null;
+    if (this.privateKey) {
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(JSON.stringify(payload));
+        // Use global crypto or fallback to node:crypto
+        const cryptoSubtle = globalThis.crypto?.subtle || (await import('node:crypto')).webcrypto.subtle;
+        
+        const sigBuffer = await cryptoSubtle.sign(
+          { name: "RSASSA-PKCS1-v1_5" },
+          this.privateKey,
+          data
+        );
+        // Base64 encode signature
+        signature = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
+      } catch (err) {
+        throw new Error(`Failed to sign action: ${err.message}`);
+      }
+    }
+
+    return this._request('/api/actions', 'POST', {
+      ...payload,
+      _signature: signature
     });
   }
 

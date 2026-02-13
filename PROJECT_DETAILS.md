@@ -581,6 +581,24 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - Columns: `id`, `org_id`, `agent_id`, `decision`, `reason`, `matched_policies` (JSON array), `context` (JSON), `risk_score`, `action_type`, `created_at`
 - Indexes: org_id, created_at, agent_id
 
+## Identity Binding (Tier 3)
+- **Concept**: Moves from string-based attribution to cryptographic node identity.
+- **Architecture**: Sign-on-Source (SDK), Verify-on-Sink (API).
+- **Database**:
+  - `agent_identities`: org_id, agent_id, public_key, algorithm.
+  - `action_records`: added `signature` (TEXT) and `verified` (BOOLEAN) columns.
+- **SDK**:
+  - Constructor accepts `privateKey` (Web Crypto API `CryptoKey`).
+  - `createAction` automatically signs payload if private key is present.
+  - Sends `_signature` field in POST body.
+- **API**:
+  - `POST /api/actions`: verifies signature against registered public key.
+  - `POST /api/identities`: register/rotate public keys (admin only).
+  - `GET /api/identities`: list registered identities.
+- **UI**:
+  - `RecentActionsCard`: displays green ShieldCheck icon for verified actions.
+- **Migration**: `scripts/migrate-identity-binding.mjs`
+
 ## Agent Workspace Page (Implemented)
 - Route: `/workspace` — single tabbed interface for agent operational state
 - 6 tabs: Overview (Digest), Context (Points + Threads), Handoffs, Snippets, Preferences, Memory
