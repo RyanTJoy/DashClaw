@@ -13,7 +13,8 @@ DashClaw takes security seriously. This guide covers how we protect your data an
 
 ### API Security
 - All API endpoints validate required fields and enforce string length limits.
-- **SSRF Protection**: Centralized URL validation blocks webhook/guard requests to localhost and private networks.
+- **SSRF Protection**: Centralized URL validation blocks webhook/guard requests to localhost, private networks, and invalid domains (e.g., .local, .internal).
+- **Domain Allowlist**: Support for optional `WEBHOOK_ALLOWED_DOMAINS` environment variable to strictly limit external requests to trusted providers.
 - Database connections use SSL/TLS encryption.
 - CORS configured for your deployment domain only.
 - No sensitive data in URL parameters (API keys must be in headers).

@@ -307,10 +307,28 @@ export function isValidWebhookUrl(url) {
       /^::1?$/,
       /^\[0:0:0:0:0:0:0:0\]$/,
       /^\[::\]$/,
+      /\.local$/i,
+      /\.internal$/i,
+      /\.test$/i,
+      /\.invalid$/i,
+      /\.onion$/i,
     ];
 
     if (!host || blockedPatterns.some(p => p.test(host))) {
-      return 'URL cannot point to localhost or private networks';
+      return 'URL cannot point to localhost, private networks, or invalid domains';
+    }
+
+    // SECURITY: Optional: Enforce an allowlist of trusted domains if configured in environment
+    const allowedDomains = process.env.WEBHOOK_ALLOWED_DOMAINS ? 
+      process.env.WEBHOOK_ALLOWED_DOMAINS.split(',').map(d => d.trim().toLowerCase()) : 
+      [];
+    
+    if (allowedDomains.length > 0 && !allowedDomains.includes(host)) {
+      // Check if host ends with any of the allowed domains (to allow subdomains)
+      const isSubdomain = allowedDomains.some(domain => host.endsWith('.' + domain));
+      if (!isSubdomain) {
+        return 'URL domain is not on the trusted allowlist';
+      }
     }
 
     return null;

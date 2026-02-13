@@ -37,7 +37,7 @@ const SECRET_PATTERNS = [
 ];
 
 // Files/directories to skip
-const SKIP_DIRS = ['node_modules', '.next', '.git', 'dist', 'build', '.vercel', '.claude', '.minimax'];
+const SKIP_DIRS = ['node_modules', '.next', '.git', 'dist', 'build', '.vercel', '.claude'];
 const SKIP_FILES = ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml'];
 const SKIP_EXTENSIONS = ['.md']; // Docs often contain examples
 
