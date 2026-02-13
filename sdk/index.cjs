@@ -21,8 +21,7 @@ module.exports = new Proxy({}, {
 
     // Return a lazy-loading constructor wrapper
     if (prop === 'GuardBlockedError') {
-      // Return a placeholder that resolves to the real class
-      return class GuardBlockedErrorProxy extends Error {
+      const Placeholder = class GuardBlockedError extends Error {
         constructor(decision) {
           const reasons = (decision.reasons || []).join('; ') || 'no reason';
           super(`Guard blocked action: ${decision.decision}. Reasons: ${reasons}`);
@@ -34,15 +33,41 @@ module.exports = new Proxy({}, {
           this.riskScore = decision.risk_score ?? null;
         }
       };
+      
+      // Support instanceof across ESM/CJS boundary
+      loadModule().then(m => {
+        if (m.GuardBlockedError) {
+          Object.defineProperty(Placeholder, Symbol.hasInstance, {
+            value: (instance) => instance && (instance.name === 'GuardBlockedError' || instance instanceof m.GuardBlockedError)
+          });
+        }
+      });
+      
+      return Placeholder;
     }
     if (prop === 'DashClaw' || prop === 'OpenClawAgent' || prop === 'default') {
       return class DashClawProxy {
         constructor(opts) {
-          // Store options, actual instance created async
           this._opts = opts;
           this._ready = loadModule().then(m => {
             const Cls = m.DashClaw || m.default;
             this._instance = new Cls(opts);
+          });
+
+          // Return a proxy that forwards all method calls to the async instance
+          return new Proxy(this, {
+            get(target, prop) {
+              if (prop in target) return target[prop];
+              if (prop === 'then') return undefined;
+
+              return async (...args) => {
+                await target._ready;
+                if (!target._instance[prop]) {
+                  throw new Error(`Method ${String(prop)} does not exist on DashClaw`);
+                }
+                return target._instance[prop](...args);
+              };
+            }
           });
         }
 

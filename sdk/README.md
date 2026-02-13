@@ -2,7 +2,7 @@
 
 Full-featured agent toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform. Zero dependencies, requires Node 18+ (native fetch).
 
-**57 methods** across 13 categories: action recording, context management, session handoffs, security scanning, agent messaging, behavior guard, user preferences, and more.
+**58 methods** across 13 categories: action recording, context management, session handoffs, security scanning, agent messaging, behavior guard, user preferences, and more.
 
 ## Install
 
@@ -52,7 +52,7 @@ import { DashClaw } from 'dashclaw';
 import { OpenClawAgent } from 'dashclaw';
 ```
 
-## API Reference (54 methods)
+## API Reference (58 methods)
 
 ### Action Recording (6)
 
@@ -83,7 +83,7 @@ import { OpenClawAgent } from 'dashclaw';
 |--------|-------------|
 | `getSignals()` | Get computed risk signals |
 
-### Dashboard Data (8)
+### Dashboard Data (9)
 
 | Method | Description |
 |--------|-------------|
@@ -95,6 +95,7 @@ import { OpenClawAgent } from 'dashclaw';
 | `createCalendarEvent(event)` | Create a calendar event |
 | `recordIdea(idea)` | Record an idea/inspiration |
 | `reportMemoryHealth(report)` | Report memory health snapshot |
+| `reportTokenUsage(usage)` | Report token usage (legacy) |
 
 ### Session Handoffs (3)
 
@@ -162,6 +163,19 @@ import { OpenClawAgent } from 'dashclaw';
 | `getMessageThreads(filters?)` | List message threads |
 | `resolveMessageThread(threadId, summary?)` | Close a thread |
 | `saveSharedDoc(params)` | Create/update shared document |
+
+### Behavior Guard (2)
+
+| Method | Description |
+|--------|-------------|
+| `guard(context, options?)` | Check policies before action |
+| `getGuardDecisions(filters?)` | List recent decisions |
+
+### Bulk Sync (1)
+
+| Method | Description |
+|--------|-------------|
+| `syncState(state)` | Sync multiple categories in one request |
 
 ## Authentication
 
