@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="dashclaw",
-    version="1.0.0",
+    version="1.0.1",
     description="Python SDK for the DashClaw AI agent observability platform",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -15,5 +15,8 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
-    install_requires=[], # Zero dependencies
+    install_requires=[], # Zero dependencies for core
+    extras_require={
+        "langchain": ["langchain-core>=0.1.0"],
+    },
 )
