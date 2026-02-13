@@ -121,6 +121,26 @@ npm install
 npm run dev
 ```
 
+### 5) Testing
+
+DashClaw uses Vitest for unit testing. To run the tests:
+
+```bash
+npm run test
+```
+
+### 6) Database Migrations
+
+We use Drizzle ORM to manage schema migrations.
+
+```bash
+# Generate migration files
+npm run db:generate
+
+# Push changes to your database
+npm run db:push
+```
+
 Open http://localhost:3000
 
 ## SDK
