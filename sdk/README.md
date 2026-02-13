@@ -1,6 +1,8 @@
 # DashClaw SDK Reference (Full)
 
-Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 57 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
+Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
+
+Install, configure, and instrument your AI agents with 57 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
 
 ---
 
@@ -188,6 +190,40 @@ Get root-cause trace for an action, including its assumptions, open loops, paren
 | actionId | string | Yes | The action_id to trace |
 
 **Returns:** `Promise<{ action: Object, trace: Object }>`
+
+---
+
+## Real-Time Flight Recorder
+
+Stream actions live to the dashboard as they happen.
+
+### claw.track(actionDef, fn)
+(Already documented above) - Use `track()` to automatically emit `running` events at start and `completed`/`failed` events at finish. These show up instantly on the "Flight Recorder" dashboard.
+
+---
+
+## Token & Cost Analytics
+
+Track token usage and estimated costs for every action. DashClaw automatically aggregates these into "Cost per Goal" metrics.
+
+**Usage:**
+Pass `tokens_in`, `tokens_out`, and `model` when creating or updating actions.
+
+```javascript
+await claw.createAction({
+  action_type: 'generation',
+  declared_goal: 'Generate blog post',
+  model: 'gpt-4o',
+  tokens_in: 1500,
+  tokens_out: 400,
+  // cost_estimate is auto-calculated on the server if model is known
+});
+```
+
+**Supported Models for Auto-Pricing:**
+- GPT-4o, GPT-4-Turbo
+- Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
+- Llama 3 (70b, 8b)
 
 ---
 
