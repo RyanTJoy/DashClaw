@@ -17,7 +17,8 @@ claw = DashClaw(
     base_url="https://your-app.vercel.app",
     api_key="your-api-key",
     agent_id="my-python-agent",
-    agent_name="My Python Agent"
+    agent_name="My Python Agent",
+    hitl_mode="wait" # Optional: automatically wait for human approval
 )
 
 # Record an action
@@ -49,6 +50,18 @@ claw = DashClaw(
     ...,
     private_key=private_key
 )
+```
+
+## Human-in-the-Loop (HITL) Governance
+
+When `hitl_mode="wait"` is set, any action that triggers a "Require Approval" policy will automatically pause.
+
+```python
+try:
+    claw.create_action(action_type="deploy", declared_goal="Ship to production")
+    # Agent automatically pauses here until approved in the dashboard
+except ApprovalDeniedError:
+    print("Human operator denied the action!")
 ```
 
 ## Integrations

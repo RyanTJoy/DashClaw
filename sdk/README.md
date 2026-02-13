@@ -2,7 +2,7 @@
 
 Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
 
-Install, configure, and instrument your AI agents with 57 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
+Install, configure, and instrument your AI agents with 59 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
 
 ---
 
@@ -23,6 +23,7 @@ const claw = new DashClaw({
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
+  hitlMode: 'wait', // Optional: automatically wait for human approval
 });
 ```
 
@@ -51,7 +52,7 @@ await claw.updateOutcome(action_id, {
 Create a DashClaw instance. Requires Node 18+ (native fetch).
 
 ```javascript
-const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback });
+const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback, hitlMode });
 ```
 
 ### Parameters
@@ -64,27 +65,30 @@ const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardM
 | swarmId | string | No | Swarm/group identifier if part of a multi-agent system |
 | guardMode | string | No | Auto guard check before createAction/track: "off" (default), "warn" (log + proceed), "enforce" (throw on block) |
 | guardCallback | Function | No | Called with guard decision object when guardMode is active |
+| hitlMode | string | No | HITL behavior: "off" (default - return 202 immediately), "wait" (automatically block and poll until approved/denied) |
 
-### Guard Mode
+### Guard Mode & HITL
 When `guardMode` is set, every call to `createAction()` and `track()` automatically checks guard policies before proceeding.
 
 ```javascript
-import { DashClaw, GuardBlockedError } from 'dashclaw';
+import { DashClaw, GuardBlockedError, ApprovalDeniedError } from 'dashclaw';
 
 const claw = new DashClaw({
   baseUrl: 'https://your-app.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
-  guardMode: 'enforce', // throws GuardBlockedError on block/require_approval
-  guardCallback: (decision) => console.log('Guard:', decision.decision),
+  guardMode: 'enforce', // throws GuardBlockedError on block
+  hitlMode: 'wait',     // poll until approved or throw ApprovalDeniedError
 });
 
 try {
   await claw.createAction({ action_type: 'deploy', declared_goal: 'Ship v2' });
+  // If a policy triggers 'require_approval', the SDK will pause here until an admin clicks 'Allow'
 } catch (err) {
   if (err instanceof GuardBlockedError) {
-    console.log(err.decision);  // 'block' or 'require_approval'
-    console.log(err.reasons);   // ['Risk score 90 >= threshold 80']
+    console.log('Blocked by policy:', err.reasons);
+  } else if (err instanceof ApprovalDeniedError) {
+    console.log('Denied by human operator');
   }
 }
 ```
@@ -97,6 +101,8 @@ Create, update, and query action records. Every agent action gets a full audit t
 
 ### claw.createAction(action)
 Create a new action record. The agent's agentId, agentName, and swarmId are automatically attached.
+
+If `hitlMode` is set to `'wait'` and the action requires approval, this method will not return until the action is approved or denied (or it times out).
 
 **Parameters:**
 | Parameter | Type | Required | Description |
@@ -126,6 +132,19 @@ const { action_id } = await claw.createAction({
   reasoning: 'Scheduled release after QA approval',
 });
 ```
+
+### claw.waitForApproval(actionId, options?)
+Manual poll for human approval. Only needed if `hitlMode` is `'off'`.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| actionId | string | Yes | The action_id to poll |
+| options.timeout | number | No | Max wait time in ms (default: 300000 / 5 min) |
+| options.interval | number | No | Poll interval in ms (default: 5000) |
+
+**Returns:** `Promise<{ action: Object, action_id: string }>`
+**Throws:** `ApprovalDeniedError` if denied.
 
 ### claw.updateOutcome(actionId, outcome)
 Update the outcome of an existing action. Automatically sets timestamp_end if not provided.

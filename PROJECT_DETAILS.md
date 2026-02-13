@@ -71,6 +71,7 @@ app/
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
 ├── policies/                  # Guard policies management page
+├── approvals/                 # Human-in-the-loop approval queue page
 ├── messages/                  # Agent communication hub (inbox, threads, shared docs)
 ├── workspace/                 # Agent workspace (digest, context, handoffs, snippets, preferences, memory)
 ├── activity/                  # Activity log page (audit trail)
@@ -84,6 +85,7 @@ app/
 └── api/
     ├── auth/[...nextauth]/    # NextAuth route handler (GitHub + Google OAuth)
     ├── actions/               # ActionRecord Control Plane (CRUD + signals + loops + assumptions + trace)
+    ├── actions/[actionId]/approve # HITL approval decision endpoint (POST)
     ├── bounties/              # Bounty tracking
     ├── orgs/                  # Organization + API key management (admin only)
     ├── calendar/              # Calendar events
@@ -107,6 +109,7 @@ app/
     ├── webhooks/              # Webhooks CRUD + test + deliveries
     ├── notifications/         # Notification preferences API
     ├── cron/signals/          # Vercel Cron: signal detection + alerting (every 10 min)
+    ├── cron/memory-maintenance # Vercel Cron: memory health cleanup
     ├── workflows/             # Workflow definitions
     ├── handoffs/              # Session handoffs API (GET/POST)
     ├── context/               # Context manager: points, threads, entries
@@ -120,7 +123,7 @@ app/
     └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (57 methods, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (59 methods, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -128,7 +131,7 @@ sdk/
 
 sdk-python/
 ├── dashclaw/
-│   ├── __init__.py            # Exports (DashClaw, OpenClawAgent)
+│   ├── __init__.py            # Exports (DashClaw, OpenClawAgent, ApprovalDeniedError)
 │   └── client.py              # Python SDK Core (urllib-based, zero deps)
 ├── README.md                  # Python SDK docs
 ├── setup.py                   # PyPI package config
