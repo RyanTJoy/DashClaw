@@ -182,7 +182,7 @@ export default function LandingPage() {
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">
-                Install from npm or pip. Zero dependencies. Native adapters for **CrewAI**, **AutoGen**, and **LangChain**.
+                Install from npm or pip. Zero dependencies. Native adapters for <span className="text-zinc-200 font-semibold">CrewAI</span>, <span className="text-zinc-200 font-semibold">AutoGen</span>, and <span className="text-zinc-200 font-semibold">LangChain</span>.
                 Actions, handoffs, context, snippets, messaging, security scanning, and more.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
