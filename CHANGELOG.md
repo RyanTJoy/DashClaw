@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-02-13
+
+### Added
+- **Swarm Intelligence**: New visual dashboard at `/swarm` for monitoring multi-agent communication maps and operational risk.
+- **Swarm Graph API**: New endpoint `/api/swarm/graph` providing node-link data for large agent swarms (up to 50+ agents).
+- **Communication Topology**: Visual mapping of agent-to-agent message flow with risk-based node highlighting.
+
 ## [1.3.2] - 2026-02-13
 
 ### Added
