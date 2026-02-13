@@ -9,6 +9,7 @@ import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { verifyAgentSignature } from '../../lib/identity.js';
 import { estimateCost } from '../../lib/billing.js';
 import { eventBus, EVENTS } from '../../lib/events.js';
+import { generateActionEmbedding } from '../../lib/embeddings.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -233,7 +234,23 @@ export async function POST(request) {
     if (isNewAgent) {
       meterUpdates.push(incrementMeter(orgId, 'agents', sql));
     }
-    Promise.all(meterUpdates).catch(() => {});
+    
+    // Background indexing for behavioral anomaly detection
+    const indexAction = async () => {
+      try {
+        const embedding = await generateActionEmbedding(data);
+        if (embedding) {
+          await sql`
+            INSERT INTO action_embeddings (org_id, agent_id, action_id, embedding)
+            VALUES (${orgId}, ${data.agent_id}, ${action_id}, ${JSON.stringify(embedding)}::vector)
+          `;
+        }
+      } catch (e) {
+        console.warn('[API] Background indexing failed:', e.message);
+      }
+    };
+
+    Promise.all([...meterUpdates, indexAction()]).catch(() => {});
 
     const response = NextResponse.json({ action: result[0], action_id }, { status: 201 });
     

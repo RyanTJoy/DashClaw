@@ -195,7 +195,7 @@ const GUARD_INPUT_SCHEMA = {
   declared_goal:   { type: 'string', maxLength: 2000 },
 };
 
-const POLICY_TYPES = ['risk_threshold', 'require_approval', 'block_action_type', 'rate_limit', 'webhook_check'];
+const POLICY_TYPES = ['risk_threshold', 'require_approval', 'block_action_type', 'rate_limit', 'webhook_check', 'behavioral_anomaly', 'semantic_check'];
 const GUARD_ACTIONS = ['allow', 'warn', 'block', 'require_approval'];
 
 const POLICY_SCHEMA = {
@@ -230,6 +230,18 @@ export function validatePolicy(body) {
   }
 
   switch (result.data.policy_type) {
+    case 'behavioral_anomaly':
+      if (typeof rules.similarity_threshold !== 'number' || rules.similarity_threshold < 0 || rules.similarity_threshold > 1) {
+        result.valid = false;
+        result.errors.push('behavioral_anomaly policy requires rules.similarity_threshold (0.0-1.0)');
+      }
+      break;
+    case 'semantic_check':
+      if (typeof rules.instruction !== 'string' || rules.instruction.length === 0) {
+        result.valid = false;
+        result.errors.push('semantic_check policy requires rules.instruction string');
+      }
+      break;
     case 'risk_threshold':
       if (typeof rules.threshold !== 'number' || rules.threshold < 0 || rules.threshold > 100) {
         result.valid = false;
