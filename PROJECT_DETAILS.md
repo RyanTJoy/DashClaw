@@ -2,6 +2,28 @@
 
 This file contains detailed technical information about the OpenClaw-Pro (DashClaw) project, moved from CLAUDE.md to keep it concise.
 
+## Operational Maturity
+
+### Testing (Vitest)
+- **Environment**: Vitest with `jsdom` and `@vitejs/plugin-react`.
+- **Config**: `vitest.config.js` with Next.js alias resolution (`@/*`).
+- **Location**: `__tests__/unit/` for unit tests.
+- **Command**: `npm run test` (runs in watch mode by default).
+
+### Database Migrations (Drizzle ORM)
+- **Tooling**: `drizzle-orm` and `drizzle-kit`.
+- **Schema**: `schema/schema.js` (baseline definition mirroring raw SQL).
+- **Workflow**: `npm run db:generate` to generate SQL migrations, `npm run db:push` to sync schema with Neon.
+- **Note**: The application currently uses raw SQL via `@neondatabase/serverless`; Drizzle is used primarily for schema management and migration tracking.
+
+### CI/CD (GitHub Actions)
+- **Workflow**: `.github/workflows/ci.yml`.
+- **Gates**: Every PR to `main` must pass:
+  1. `npm ci` (clean install)
+  2. `npm run lint` (ESLint)
+  3. `npm run test` (Vitest unit tests)
+  4. `npm run build` (Next.js production build)
+
 ## Architecture
 
 ```

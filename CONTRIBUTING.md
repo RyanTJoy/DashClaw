@@ -34,6 +34,18 @@ To get started with the codebase:
     ```
     Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
 
+5.  **Run Tests**:
+    ```bash
+    npm run test
+    ```
+
+6.  **Manage Database Schema**:
+    We use Drizzle ORM for schema management.
+    ```bash
+    npm run db:generate  # Generate migration files
+    npm run db:push      # Apply changes to your Neon DB
+    ```
+
 ## Project Structure
 
 -   `app/`: The Next.js 14 dashboard (App Router), API routes, and UI components.
