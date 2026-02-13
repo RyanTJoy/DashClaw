@@ -42,6 +42,7 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 ### Operations & Monitoring
 
 - **ActionRecord Control Plane** -- Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
+- **Swarm Intelligence** -- Visual communication map for multi-agent systems. Monitor node-link topology and risk across 50+ agents.
 - **Real-Time Flight Recorder** -- Watch actions stream in live via Server-Sent Events (SSE) with "Mission Control" UI
 - **Human-in-the-Loop (HITL) Governance** -- Centralized **Approval Queue** where agents pause and wait for human sign-off on sensitive operations.
 - **Behavioral AI Guardrails** -- Advanced anomaly detection using `pgvector` and OpenAI embeddings to identify conceptual outliers.
