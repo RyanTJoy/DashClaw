@@ -15,6 +15,7 @@ import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { getAgentColor } from '../lib/colors';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 
 const TYPE_ICONS = {
   build: Hammer,
@@ -59,6 +60,42 @@ export default function RecentActionsCard() {
   const [actions, setActions] = useState([]);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+
+  useRealtime((event, payload) => {
+    if (event === 'action.created') {
+      // Filter if agentId is active
+      if (agentId && payload.agent_id !== agentId) return;
+
+      const newAction = {
+        id: payload.action_id,
+        type: payload.action_type || 'other',
+        action: payload.declared_goal,
+        agentId: payload.agent_id,
+        agentName: payload.agent_name || payload.agent_id,
+        platform: (() => {
+          try {
+            const systems = JSON.parse(payload.systems_touched || '[]');
+            return systems[0] || 'System';
+          } catch { return 'System'; }
+        })(),
+        timestamp: payload.timestamp_start,
+        status: payload.status === 'running' ? 'in-progress' : payload.status,
+        verified: payload.verified
+      };
+      setActions(prev => [newAction, ...prev].slice(0, 10));
+    } else if (event === 'action.updated') {
+      setActions(prev => prev.map(a => {
+        if (a.id === payload.action_id) {
+          return {
+            ...a,
+            status: payload.status === 'running' ? 'in-progress' : payload.status,
+            timestamp: payload.timestamp_end || a.timestamp // Update time on completion
+          };
+        }
+        return a;
+      }));
+    }
+  });
 
   useEffect(() => {
     async function fetchActions() {
