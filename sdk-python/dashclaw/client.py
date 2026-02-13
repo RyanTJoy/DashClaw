@@ -2,6 +2,7 @@ import json
 import time
 import urllib.request
 import urllib.error
+import base64
 from datetime import datetime
 from contextlib import contextmanager
 
@@ -25,7 +26,7 @@ class GuardBlockedError(DashClawError):
         self.risk_score = decision.get("risk_score")
 
 class DashClaw:
-    def __init__(self, base_url, api_key, agent_id, agent_name=None, swarm_id=None, guard_mode="off", guard_callback=None):
+    def __init__(self, base_url, api_key, agent_id, agent_name=None, swarm_id=None, guard_mode="off", guard_callback=None, private_key=None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.agent_id = agent_id
@@ -33,6 +34,7 @@ class DashClaw:
         self.swarm_id = swarm_id
         self.guard_mode = guard_mode
         self.guard_callback = guard_callback
+        self.private_key = private_key # cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey
 
         if guard_mode not in ["off", "warn", "enforce"]:
             raise ValueError("guard_mode must be one of: off, warn, enforce")
@@ -101,6 +103,29 @@ class DashClaw:
 
     # --- Category 1: Action Recording ---
 
+    def _sign_payload(self, payload):
+        """Sign payload using RSA-PSS SHA-256."""
+        if not self.private_key:
+            return None
+        
+        try:
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives.asymmetric import padding
+            
+            data = json.dumps(payload, sort_keys=True).encode("utf-8")
+            signature = self.private_key.sign(
+                data,
+                padding.PKCS1v15(), # Matches RSASSA-PKCS1-v1_5 used in JS SDK
+                hashes.SHA256()
+            )
+            return base64.b64encode(signature).decode("utf-8")
+        except ImportError:
+            print("[DashClaw] Warning: 'cryptography' library missing. Signatures will be skipped.")
+            return None
+        except Exception as e:
+            print(f"[DashClaw] Failed to sign action: {str(e)}")
+            return None
+
     def create_action(self, action_type, declared_goal, **kwargs):
         action_def = {
             "action_type": action_type,
@@ -115,6 +140,11 @@ class DashClaw:
             "swarm_id": self.swarm_id,
             **action_def
         }
+
+        signature = self._sign_payload(payload)
+        if signature:
+            payload["_signature"] = signature
+
         return self._request("/api/actions", method="POST", body=payload)
 
     def update_outcome(self, action_id, status=None, **kwargs):
