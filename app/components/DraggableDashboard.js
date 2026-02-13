@@ -31,23 +31,39 @@ const withWidth = (ComposedComponent) => {
   const WithWidth = (props) => {
     const [width, setWidth] = useState(1200);
     const elementRef = useRef(null);
+    const mounted = useRef(false);
 
     useEffect(() => {
-      const handleResize = () => {
-        if (elementRef.current) {
-          setWidth(elementRef.current.offsetWidth);
+      mounted.current = true;
+      const element = elementRef.current;
+      
+      if (!element) return;
+
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const newWidth = entry.contentRect.width;
+          // Only update if width is valid and changed
+          if (newWidth > 0) {
+            setWidth(prev => Math.abs(prev - newWidth) > 5 ? newWidth : prev);
+          }
         }
+      });
+
+      observer.observe(element);
+
+      // Immediate check in case observer is slow
+      if (element.offsetWidth > 0) {
+        setWidth(element.offsetWidth);
+      }
+
+      return () => {
+        mounted.current = false;
+        observer.disconnect();
       };
-
-      // Initial measurement
-      handleResize();
-
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     return (
-      <div ref={elementRef} style={{ width: '100%' }}>
+      <div ref={elementRef} style={{ width: '100%', minHeight: '100vh' }}>
         <ComposedComponent {...props} width={width} />
       </div>
     );
