@@ -16,9 +16,9 @@ const coreFeatures = [
     description: 'Watch your agents think and act live. Server-Sent Events (SSE) stream actions, signals, and costs directly to your mission control dashboard.',
   },
   {
-    icon: ShieldAlert,
-    title: '7 Risk Signals',
-    description: 'Automatic detection of autonomy spikes, repeated failures, stale loops, assumption drift, and more. No configuration required.',
+    icon: Shield,
+    title: 'Behavioral AI Guardrails',
+    description: 'Advanced anomaly detection using vector embeddings (pgvector). Detect outlier agent behavior that hard-coded rules might miss.',
   },
   {
     icon: BarChart3,
@@ -26,20 +26,20 @@ const coreFeatures = [
     description: 'Real-time financial tracking. See "Cost per Goal" and "Burn Rate" for every model (GPT-4o, Claude 3.5, etc.) instantly.',
   },
   {
-    icon: Shield,
-    title: 'Semantic & Logic Guardrails',
-    description: 'Control agent behavior with logic rules (rate limits) or natural language policies ("Don\'t delete system files").',
+    icon: ShieldAlert,
+    title: 'Behavior Governance',
+    description: 'Enforce safety with logic rules (rate limits) or semantic natural language policies ("Never access production secrets").',
   },
 ];
 
 const platformFeatures = [
-  { icon: Package, title: 'Node.js & Python SDKs', description: 'Zero-dependency clients for both ecosystems. Drop-in compatible with LangChain, CrewAI, and AutoGen.' },
+  { icon: Package, title: 'Node.js & Python SDKs', description: 'Zero-dependency clients for both ecosystems. Native adapters for CrewAI, AutoGen, and LangChain.' },
+  { icon: Shield, title: 'Identity Binding', description: 'RSA-PSS cryptographic verification ensures every action is signed by your agent\'s private key.' },
+  { icon: Brain, title: 'Memory Health', description: 'Proactive maintenance engine identifies stale facts and sends corrective messages to agents.' },
+  { icon: ScanSearch, title: 'DLP & Redaction', description: 'Automatic secret redaction (OpenAI, AWS, GitHub) in messages and handoffs before data is stored.' },
   { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
-  { icon: Brain, title: 'Context Manager', description: 'Capture key points and organize context into threads for long-running topics.' },
   { icon: CircleDot, title: 'Open Loop Tracking', description: 'Track unresolved dependencies, pending approvals, and blockers across agents.' },
   { icon: Eye, title: 'Assumption Monitoring', description: 'Log what agents assume, validate or invalidate, and catch drift early.' },
-  { icon: ScanSearch, title: 'Security Scanning', description: '18 regex patterns detect API keys, tokens, and PII before data leaves your system.' },
-  { icon: HeartPulse, title: 'Memory Health', description: 'Track memory file counts, duplicates, stale facts, entities, and topics over time.' },
   { icon: Newspaper, title: 'Daily Digest', description: 'Aggregated daily summary from actions, decisions, lessons, content, and goals.' },
 ];
 
@@ -178,11 +178,11 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
                 <Package size={12} />
-                57 methods across 13 categories
+                58 methods across 13 categories
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">
-                Install from npm. Zero dependencies. Works with any Node.js agent framework.
+                Install from npm or pip. Zero dependencies. Native adapters for **CrewAI**, **AutoGen**, and **LangChain**.
                 Actions, handoffs, context, snippets, messaging, security scanning, and more.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">

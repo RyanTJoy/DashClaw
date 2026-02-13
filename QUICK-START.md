@@ -69,6 +69,8 @@ Edit `.env.local` and set your `DATABASE_URL` to the connection string from Step
 
 ```bash
 npm install
+# Optional: Enable Behavioral AI (requires pgvector + OpenAI Key)
+npm run migrate:behavioral
 npm run dev
 ```
 

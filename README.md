@@ -43,10 +43,10 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 
 - **ActionRecord Control Plane** -- Full action lifecycle: create, track, signals, assumptions, open loops, post-mortem
 - **Real-Time Flight Recorder** -- Watch actions stream in live via Server-Sent Events (SSE) with "Mission Control" UI
+- **Behavioral AI Guardrails** -- Advanced anomaly detection using `pgvector` and OpenAI embeddings to identify conceptual outliers.
 - **Behavior Guard** -- Policy engine (risk thresholds, rate limits, action blocking, approval gates, webhook checks)
-- **Advanced Behavioral AI** (Optional) -- Vector-based anomaly detection using `pgvector` and OpenAI embeddings.
 - **Risk Signals** -- 7 automated signal types (autonomy spike, stale loops, assumption drift, etc.)
-- **Open Loops** -- Track unresolved items with priority and type classification
+- **Proactive Memory Maintenance** -- Automated engine that identifies stale facts and sends corrective maintenance messages to agents.
 - **Agent Workspace** -- Digest, context manager, handoffs, snippets, preferences, memory health
 
 ### Data & Insights
@@ -56,30 +56,28 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 - **Goal Tracking** -- Goals, milestones, progress visualization, and **Cost-per-Goal** metrics
 - **Content Tracker** -- Capture writing ideas and content workflows
 - **Token & Cost Analytics** -- Real-time financial "burn rate" tracking and budget monitoring (Node + Python)
-- **Workflows / SOPs** -- Document repeatable processes and runbooks
-- **Agent Messaging** -- Async inbox, threads, shared docs between agents
+- **Agent Messaging** -- Async inbox, threads, and collaborative shared docs with **DLP / Auto-Redaction**.
 
 ### Security & Governance
 
-- **Identity Binding** -- Cryptographic agent verification via Web Crypto signatures
-- **Secure Settings Store** -- Credentials encrypted and stored in your database
-- **Guard Policies** -- Block, warn, or require approval for risky actions
-- **Webhook Interventions** -- Call external endpoints for custom guard logic
+- **Identity Binding** -- Cryptographic agent verification via RSA-PSS signatures (Mandatory in production).
+- **Secure Settings Store** -- Credentials encrypted and stored in your database; agents can decrypt via API.
+- **Data Loss Prevention (DLP)** -- Automatic regex-based redaction of secrets (OpenAI, AWS, GitHub) in all agent sinks.
+- **Guard Policies** -- Block, warn, or require approval for risky or anomalous actions.
+- **Webhook Interventions** -- Call external endpoints for custom guard logic.
 - **Security Scanner** -- Pre-deploy audit script (`node scripts/security-scan.js`)
-- **Multi-Tenant Isolation** -- Org-scoped data with API key authentication
-- **Activity Log** -- Full audit trail of admin actions and system events
+- **Multi-Tenant Isolation** -- Org-scoped data with fail-closed authentication middleware.
+- **Activity Log** -- Full audit trail of admin actions and system events.
 
 ### Platform & UX
 
+- **Node.js & Python SDKs** -- Native adapters for **CrewAI**, **AutoGen**, and **LangChain**.
 - **Guided Onboarding** -- 4-step checklist (workspace, API key, SDK install, first action)
 - **API Key Management** -- Generate, list, and revoke keys from `/api-keys`
-- **SDK Documentation** -- Full public reference at `/docs` (55+ methods, code examples)
-- **Team Management** -- Invite links, role-based access (admin/member)
-- **Self-Hosted** -- Deploy your own instance, full control, no vendor lock-in
-- **Webhooks & Email Alerts** -- Signal notifications via webhooks and Resend email
-- **Real-time Updates** -- Auto-refresh with configurable intervals
-- **Mobile Responsive** -- Collapsible sidebar, works on any device
-- **Dark Theme** -- Flat surface design with Inter font and Lucide icons
+- **SDK Documentation** -- Full public reference at `/docs` (58+ methods, code examples)
+- **Self-Hosted** -- Deploy your own instance via Docker or Vercel, no vendor lock-in.
+- **Webhooks & Email Alerts** -- Signal notifications via webhooks and Resend email.
+- **Dark Theme** -- Flat surface design with Inter font and brand orange flame favicon.
 
 ## 📸 Product Gallery
 
