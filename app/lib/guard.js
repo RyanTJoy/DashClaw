@@ -6,7 +6,7 @@
 import { randomUUID } from 'node:crypto';
 import { deliverGuardWebhook } from './webhooks.js';
 import { checkSemanticGuardrail } from './llm.js';
-import { generateActionEmbedding } from './embeddings.js';
+import { generateActionEmbedding, isEmbeddingsEnabled } from './embeddings.js';
 
 const DECISION_SEVERITY = { allow: 0, warn: 1, require_approval: 2, block: 3 };
 
@@ -180,6 +180,10 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
       return null;
 
     case 'behavioral_anomaly': {
+      if (!isEmbeddingsEnabled()) {
+        console.warn('[Guard] behavioral_anomaly policy skipped: No OpenAI API Key configured.');
+        return null;
+      }
       const threshold = rules.similarity_threshold ?? 0.75;
       const minHistory = rules.min_history ?? 5;
       const agentId = context.agent_id;

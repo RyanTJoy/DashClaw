@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSql } from '../../lib/db.js';
+import { isEmbeddingsEnabled } from '../../lib/embeddings.js';
 
 /**
  * Health check endpoint for DashClaw
@@ -11,6 +12,12 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     version: '1.3.0',
     checks: {}
+  };
+
+  // ... rest of checks ...
+  health.checks.behavioral_ai = {
+    active: isEmbeddingsEnabled(),
+    engine: 'openai/text-embedding-3-small'
   };
 
   // Check database connection
