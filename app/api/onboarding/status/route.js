@@ -17,6 +17,21 @@ function getSql() {
 export async function GET(request) {
   try {
     const userId = request.headers.get('x-user-id');
+    
+    // DEV BYPASS
+    if (process.env.NODE_ENV === 'development' && userId === 'dev_user') {
+      return NextResponse.json({
+        onboarding_required: false, // Don't show onboarding in dev
+        steps: {
+          workspace_created: true,
+          api_key_exists: true,
+          first_action_sent: true,
+        },
+        org_id: 'org_default',
+        user_name: 'Local Developer',
+      });
+    }
+
     if (!userId) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }

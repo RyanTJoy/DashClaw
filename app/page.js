@@ -95,8 +95,8 @@ export default function LandingPage() {
             Guard what they do before they do it.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/login" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
-              Get Started Free <ArrowRight size={16} />
+            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
+              Go to Dashboard <ArrowRight size={16} />
             </Link>
             <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
               <BookOpen size={16} /> Read the Docs
@@ -368,8 +368,8 @@ export default function LandingPage() {
             Install the SDK, send your first action, and see signals on the dashboard. Open-source and self-hosted.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/login" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
-              Get Started Free <ArrowRight size={16} />
+            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
+              Go to Dashboard <ArrowRight size={16} />
             </Link>
             <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
               <BookOpen size={16} /> Read the Docs
