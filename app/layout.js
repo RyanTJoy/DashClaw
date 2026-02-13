@@ -1,5 +1,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
 import SessionWrapper from './components/SessionWrapper'
 
 const inter = Inter({
