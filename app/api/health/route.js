@@ -10,7 +10,7 @@ export async function GET() {
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '1.3.2',
+    version: '1.4.0',
     checks: {}
   };
 

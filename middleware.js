@@ -358,6 +358,8 @@ export const config = {
     '/api/:path*',
     '/dashboard',
     '/dashboard/:path*',
+    '/swarm',
+    '/swarm/:path*',
     '/actions',
     '/actions/:path*',
     '/goals',

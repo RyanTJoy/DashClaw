@@ -16,6 +16,7 @@ const navGroups = [
     label: 'Overview',
     items: [
       { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { href: '/swarm', icon: Users, label: 'Swarm Intelligence' },
     ],
   },
   {
