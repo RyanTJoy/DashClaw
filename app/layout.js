@@ -11,6 +11,9 @@ const inter = Inter({
 export const metadata = {
   title: 'DashClaw — AI Agent Observability',
   description: 'See what your AI agents are actually doing. Real-time observability, risk signals, and operational control for autonomous AI agents.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export const viewport = {
