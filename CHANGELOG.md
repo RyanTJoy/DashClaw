@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-02-13
+
+### Added
+- **Proactive Memory Maintenance**: New server-side cron job that identifies stale assumptions and conflicting decisions.
+- **Memory Correction Messages**: System-to-agent messaging that suggests specific memory pruning and verification tasks.
+
 ## [1.3.1] - 2026-02-13
 
 ### Added
