@@ -8,14 +8,14 @@ export default function CopyDocsButton() {
 
   const handleCopy = useCallback(async () => {
     try {
-      const res = await fetch('/sdk-reference.md');
+      const res = await fetch('/api/docs/raw');
       const text = await res.text();
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback: open the file directly if clipboard fails
-      window.open('/sdk-reference.md', '_blank');
+      window.open('/api/docs/raw', '_blank');
     }
   }, []);
 
@@ -38,7 +38,7 @@ export default function CopyDocsButton() {
         )}
       </button>
       <a
-        href="/sdk-reference.md"
+        href="/api/docs/raw"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
