@@ -3,8 +3,8 @@
  * Full-featured agent toolkit for the DashClaw platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 58 methods across 13 categories:
- * - Action Recording (6)
+ * 59 methods across 13 categories:
+ * - Action Recording (7)
  * - Loops & Assumptions (7)
  * - Signals (1)
  * - Dashboard Data (9)
@@ -29,9 +29,10 @@ class DashClaw {
    * @param {string} [options.swarmId] - Swarm/group identifier if part of a multi-agent system
    * @param {string} [options.guardMode='off'] - Auto guard check before createAction: 'off' | 'warn' | 'enforce'
    * @param {Function} [options.guardCallback] - Called with guard decision object when guardMode is active
+   * @param {string} [options.hitlMode='off'] - How to handle pending approvals: 'off' (return immediately) | 'wait' (block and poll)
    * @param {CryptoKey} [options.privateKey] - Web Crypto API Private Key for signing actions
    */
-  constructor({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback, privateKey }) {
+  constructor({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback, hitlMode, privateKey }) {
     if (!baseUrl) throw new Error('baseUrl is required');
     if (!apiKey) throw new Error('apiKey is required');
     if (!agentId) throw new Error('agentId is required');
@@ -48,6 +49,7 @@ class DashClaw {
     this.swarmId = swarmId || null;
     this.guardMode = guardMode || 'off';
     this.guardCallback = guardCallback || null;
+    this.hitlMode = hitlMode || 'off';
     this.privateKey = privateKey || null;
     
     // Auto-import JWK if passed as plain object
@@ -193,10 +195,46 @@ class DashClaw {
       }
     }
 
-    return this._request('/api/actions', 'POST', {
+    const res = await this._request('/api/actions', 'POST', {
       ...payload,
       _signature: signature
     });
+
+    // Handle HITL Approval
+    if (res.action?.status === 'pending_approval' && this.hitlMode === 'wait') {
+      console.log(`[DashClaw] Action ${res.action_id} requires human approval. Waiting...`);
+      return this.waitForApproval(res.action_id);
+    }
+
+    return res;
+  }
+
+  /**
+   * Poll for human approval of a pending action.
+   * @param {string} actionId 
+   * @param {Object} [options]
+   * @param {number} [options.timeout=300000] - Max wait time (5 min)
+   * @param {number} [options.interval=5000] - Poll interval
+   */
+  async waitForApproval(actionId, { timeout = 300000, interval = 5000 } = {}) {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < timeout) {
+      const { action } = await this.getAction(actionId);
+      
+      if (action.status === 'running') {
+        console.log(`[DashClaw] Action ${actionId} approved by operator.`);
+        return { action, action_id: actionId };
+      }
+      
+      if (action.status === 'failed' || action.status === 'cancelled') {
+        throw new ApprovalDeniedError(action.error_message || 'Operator denied the action.');
+      }
+      
+      await new Promise(r => setTimeout(r, interval));
+    }
+    
+    throw new Error(`[DashClaw] Timed out waiting for approval of action ${actionId}`);
   }
 
   /**
@@ -1133,8 +1171,18 @@ class GuardBlockedError extends Error {
   }
 }
 
+/**
+ * Error thrown when a human operator denies an action.
+ */
+class ApprovalDeniedError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'ApprovalDeniedError';
+  }
+}
+
 // Backward compatibility alias (Legacy)
 const OpenClawAgent = DashClaw;
 
 export default DashClaw;
-export { DashClaw, OpenClawAgent, GuardBlockedError };
+export { DashClaw, OpenClawAgent, GuardBlockedError, ApprovalDeniedError };
