@@ -182,6 +182,16 @@ node scripts/security-scan.js
 5. Configure OAuth (GitHub/Google) for login
 6. Deploy!
 
+### Docker (Self-Hosting)
+
+You can self-host DashClaw using the provided Docker configuration:
+
+```bash
+docker-compose up -d
+```
+
+This will start the DashClaw dashboard on port 3000 and a local PostgreSQL database. See `docker-compose.yml` for configuration options.
+
 ### Other platforms
 
 Any platform supporting Next.js 14+ will work. See `.env.example` for all configuration options.

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-02-12
+
+### Added
+- **Self-Hosting Support**: Added production-optimized `Dockerfile` and `docker-compose.yml`.
+- **Operational Maturity**: Added `CONTRIBUTING.md` for community participation.
+- Enabled `standalone` output in Next.js configuration for leaner container images.
+
 ## [1.1.0] - 2026-02-12
 
 ### Added
@@ -17,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/migrate-identity-binding.mjs` for database schema updates.
 
 ### Changed
-- Updated DashClaw SDK (v1.1.0) to support automatic payload signing with JWK or CryptoKey.
+- Updated DashClaw SDK to support automatic payload signing with JWK or CryptoKey.
 
 ## [1.0.0] - 2026-02-12
 
