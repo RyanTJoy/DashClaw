@@ -6,6 +6,7 @@ import { neon } from '@neondatabase/serverless';
 import { validateActionRecord } from '../../lib/validate.js';
 import { getOrgId, getOrgRole } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
+import { verifyAgentSignature } from '../../lib/identity.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -149,6 +150,16 @@ export async function POST(request) {
     const action_id = data.action_id || `act_${crypto.randomUUID()}`;
     const timestamp_start = data.timestamp_start || new Date().toISOString();
 
+    // Identity Verification
+    const signature = body._signature || null;
+    let verified = false;
+
+    if (signature && data.agent_id) {
+      // verify against the exact payload received (minus signature)
+      const { _signature: s, ...payload } = body;
+      verified = await verifyAgentSignature(orgId, data.agent_id, payload, signature, sql);
+    }
+
     const result = await sql`
       INSERT INTO action_records (
         org_id, action_id, agent_id, agent_name, swarm_id, parent_action_id,
@@ -156,7 +167,8 @@ export async function POST(request) {
         trigger, systems_touched, input_summary,
         status, reversible, risk_score, confidence,
         output_summary, side_effects, artifacts_created, error_message,
-        timestamp_start, timestamp_end, duration_ms, cost_estimate
+        timestamp_start, timestamp_end, duration_ms, cost_estimate,
+        signature, verified
       ) VALUES (
         ${orgId},
         ${action_id},
@@ -182,7 +194,9 @@ export async function POST(request) {
         ${timestamp_start},
         ${data.timestamp_end || null},
         ${data.duration_ms || null},
-        ${data.cost_estimate || 0}
+        ${data.cost_estimate || 0},
+        ${signature},
+        ${verified}
       )
       RETURNING *
     `;

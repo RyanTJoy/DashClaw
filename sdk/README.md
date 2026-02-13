@@ -20,9 +20,12 @@ const claw = new DashClaw({
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
+  // Optional: Cryptographic Identity Binding
+  // Supports CryptoKey object or plain JWK object
+  // privateKey: JSON.parse(process.env.AGENT_PRIVATE_KEY)
 });
 
-// Record an action
+// Record an action (automatically signed if privateKey is provided)
 const { action_id } = await claw.createAction({
   action_type: 'deploy',
   declared_goal: 'Deploy auth service to production',

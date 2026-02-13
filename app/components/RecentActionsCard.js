@@ -5,7 +5,8 @@ import {
   Zap, Hammer, Rocket, FileText, Briefcase, Shield, MessageSquare,
   Link, Calendar, Search, Eye, Wrench, RefreshCw, FlaskConical,
   Settings, Radio, AlertTriangle, Trash2, Package,
-  CheckCircle2, XCircle, Clock, Loader2, Ban, HelpCircle, Inbox
+  CheckCircle2, XCircle, Clock, Loader2, Ban, HelpCircle, Inbox,
+  ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -78,7 +79,8 @@ export default function RecentActionsCard() {
             } catch { return 'System'; }
           })(),
           timestamp: a.timestamp_start,
-          status: a.status === 'running' ? 'in-progress' : a.status
+          status: a.status === 'running' ? 'in-progress' : a.status,
+          verified: a.verified
         })));
       } catch (error) {
         console.error('Failed to fetch actions:', error);
@@ -105,7 +107,12 @@ export default function RecentActionsCard() {
   };
 
   if (loading) {
-    return <CardSkeleton />;
+    return (
+      <Card className="h-full animate-pulse">
+        <CardHeader title="Recent Actions" icon={Zap} />
+        <CardContent className="h-80 bg-zinc-900/50 rounded-lg" />
+      </Card>
+    );
   }
 
   const completed = actions.filter(a => a.status === 'completed').length;
@@ -118,7 +125,7 @@ export default function RecentActionsCard() {
       <CardHeader title="Recent Actions" icon={Zap} count={actions.length} />
 
       <CardContent>
-        <div className="space-y-1 max-h-80 overflow-y-auto">
+        <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
           {actions.length === 0 ? (
             <EmptyState
               icon={Inbox}
@@ -128,34 +135,56 @@ export default function RecentActionsCard() {
           ) : (
             actions.map((action) => {
               const { time, date } = formatTimestamp(action.timestamp);
+              // Fallback for unknown types
               const TypeIcon = TYPE_ICONS[action.type] || Zap;
+              // Generate consistent color based on agent ID
               const agentColorClass = getAgentColor(action.agentId);
 
               return (
                 <div
                   key={action.id}
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-white/[0.03]"
+                  className="group flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-zinc-800 hover:bg-zinc-800/30 transition-all duration-200"
                 >
                   {/* Type icon */}
-                  <TypeIcon size={14} className="text-zinc-400 flex-shrink-0" />
+                  <div className={`p-1.5 rounded-md bg-zinc-900/50 text-zinc-400 group-hover:text-zinc-200 transition-colors`}>
+                    <TypeIcon size={14} />
+                  </div>
 
                   {/* Action name + agent + system */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-zinc-300 truncate">{action.action}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${agentColorClass}`}>
+                    <div className="text-sm font-medium text-zinc-300 truncate group-hover:text-white transition-colors">
+                      {action.action}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${agentColorClass} bg-opacity-10`}>
                         {action.agentName}
+                        {action.verified && (
+                          <ShieldCheck size={10} className="ml-1 text-green-400" aria-label="Verified Identity" />
+                        )}
                       </span>
-                      <span className="text-[10px] text-zinc-600">{action.platform}</span>
+                      <span className="text-[10px] text-zinc-500">•</span>
+                      <span className="text-[10px] text-zinc-500 truncate max-w-[100px]">{action.platform}</span>
                     </div>
                   </div>
 
                   {/* Status + timestamp */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <StatusIcon status={action.status} />
-                    <div className="text-right">
-                      <div className="font-mono text-xs text-zinc-400">{time}</div>
-                      <div className="font-mono text-[10px] text-zinc-600">{date}</div>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0 pl-2 border-l border-zinc-800/50 ml-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[10px] font-medium capitalize ${
+                        action.status === 'completed' ? 'text-green-500' :
+                        action.status === 'failed' ? 'text-red-500' :
+                        action.status === 'in-progress' ? 'text-blue-500' :
+                        'text-yellow-500'
+                      }`}>
+                        {action.status}
+                      </span>
+                      {action.status === 'completed' ? <CheckCircle2 size={12} className="text-green-500" /> :
+                       action.status === 'failed' ? <XCircle size={12} className="text-red-500" /> :
+                       action.status === 'in-progress' ? <Loader2 size={12} className="text-blue-500 animate-spin" /> :
+                       <Clock size={12} className="text-yellow-500" />}
+                    </div>
+                    <div className="text-[10px] text-zinc-600 font-mono tracking-tight">
+                      {date} {time}
                     </div>
                   </div>
                 </div>
@@ -163,18 +192,6 @@ export default function RecentActionsCard() {
             })
           )}
         </div>
-
-        {/* Bottom stats */}
-        {actions.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)]">
-            <div className="grid grid-cols-4 gap-2">
-              <StatCompact label="Done" value={completed} color="text-green-400" />
-              <StatCompact label="Running" value={running} color="text-blue-400" />
-              <StatCompact label="Pending" value={pending} color="text-yellow-400" />
-              <StatCompact label="Failed" value={failed} color="text-red-400" />
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
