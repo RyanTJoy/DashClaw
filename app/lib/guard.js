@@ -6,6 +6,7 @@
 import { randomUUID } from 'node:crypto';
 import { deliverGuardWebhook } from './webhooks.js';
 import { checkSemanticGuardrail } from './llm.js';
+import { generateActionEmbedding } from './embeddings.js';
 
 const DECISION_SEVERITY = { allow: 0, warn: 1, require_approval: 2, block: 3 };
 
@@ -177,6 +178,52 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
     case 'webhook_check':
       // Handled separately after local policy loop
       return null;
+
+    case 'behavioral_anomaly': {
+      const threshold = rules.similarity_threshold ?? 0.75;
+      const minHistory = rules.min_history ?? 5;
+      const agentId = context.agent_id;
+      if (!agentId) return null;
+
+      // 1. Generate embedding for current proposed action
+      const embedding = await generateActionEmbedding(context);
+      if (!embedding) return null;
+
+      // 2. Search for similar actions in history
+      // Note: <=> is cosine distance in pgvector. Similarity = 1 - distance.
+      const similarityQuery = `
+        SELECT 1 - (embedding <=> $1::vector) as similarity
+        FROM action_embeddings
+        WHERE org_id = $2 AND agent_id = $3
+        ORDER BY similarity DESC
+        LIMIT 1
+      `;
+      
+      try {
+        const rows = await sql.query(similarityQuery, [JSON.stringify(embedding), orgId, agentId]);
+        
+        // 3. Evaluate anomaly
+        if (rows.length === 0) {
+          // No history yet
+          return { action: 'warn', reason: 'New agent behavior: No historical data for similarity baseline.' };
+        }
+
+        const maxSimilarity = rows[0].similarity;
+        if (maxSimilarity < threshold) {
+          return { 
+            action: rules.action || 'require_approval', 
+            reason: `Behavioral Anomaly: Action similarity (${(maxSimilarity * 100).toFixed(1)}%) is below the safety threshold (${(threshold * 100).toFixed(0)}%).` 
+          };
+        }
+      } catch (err) {
+        if (err.message.includes('vector') || err.message.includes('does not exist')) {
+          console.warn('[Guard] pgvector not enabled or table missing. Skipping anomaly detection.');
+          return null;
+        }
+        throw err;
+      }
+      return null;
+    }
 
     case 'semantic_check': {
       const instruction = rules.instruction;
