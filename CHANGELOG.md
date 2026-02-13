@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-02-13
+
+### Added
+- **Security Health UI**: Added a real-time "Security Score" and system health checklist to the Security dashboard.
+- **Security Tests**: Added unit tests for SSRF protection and webhook validation.
+
+### Changed
+- **Environment Template**: Updated `.env.example` with `ENCRYPTION_KEY` and `WEBHOOK_ALLOWED_DOMAINS`.
+
 ## [1.2.3] - 2026-02-13
 
 ### Added

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateActionRecord } from '@/lib/validate';
+import { validateActionRecord, isValidWebhookUrl } from '@/lib/validate';
 
 describe('validateActionRecord', () => {
   it('should validate a correct action record', () => {
@@ -32,5 +32,35 @@ describe('validateActionRecord', () => {
     const result = validateActionRecord(invalidRecord);
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain('must be one of');
+  });
+});
+
+describe('isValidWebhookUrl', () => {
+  it('should allow valid external HTTPS URLs', () => {
+    expect(isValidWebhookUrl('https://api.slack.com/webhooks')).toBe(null);
+    expect(isValidWebhookUrl('https://discord.com/api/webhooks')).toBe(null);
+  });
+
+  it('should block non-HTTPS URLs', () => {
+    expect(isValidWebhookUrl('http://api.slack.com')).toBe('URL must use HTTPS');
+    expect(isValidWebhookUrl('ftp://server.com')).toBe('URL must use HTTPS');
+  });
+
+  it('should block localhost and loopback', () => {
+    expect(isValidWebhookUrl('https://localhost')).toContain('cannot point to localhost');
+    expect(isValidWebhookUrl('https://127.0.0.1')).toContain('cannot point to localhost');
+    expect(isValidWebhookUrl('https://[::1]')).toContain('cannot point to localhost');
+  });
+
+  it('should block private networks', () => {
+    expect(isValidWebhookUrl('https://10.0.0.1')).toContain('cannot point to localhost');
+    expect(isValidWebhookUrl('https://192.168.1.1')).toContain('cannot point to localhost');
+    expect(isValidWebhookUrl('https://172.16.0.1')).toContain('cannot point to localhost');
+  });
+
+  it('should block invalid/internal domains', () => {
+    expect(isValidWebhookUrl('https://server.local')).toContain('invalid domains');
+    expect(isValidWebhookUrl('https://api.internal')).toContain('invalid domains');
+    expect(isValidWebhookUrl('https://test.onion')).toContain('invalid domains');
   });
 });
