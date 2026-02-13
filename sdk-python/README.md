@@ -26,6 +26,31 @@ with claw.track(action_type="research", declared_goal="Explore Python SDK capabi
     print("Working...")
 ```
 
+## Identity Binding (Security)
+
+DashClaw v1.3.0+ enforces cryptographic signatures for actions in production. To enable this in your Python agent:
+
+1. Install the `cryptography` library: `pip install cryptography`
+2. Generate an RSA keypair using `node scripts/generate-agent-keys.mjs <agent-id>` from the DashClaw repo.
+3. Pass the private key to the constructor:
+
+```python
+from dashclaw import DashClaw
+from cryptography.hazmat.primitives import serialization
+
+# Load your private key (from env or file)
+with open("private_key.pem", "rb") as key_file:
+    private_key = serialization.load_pem_private_key(
+        key_file.read(),
+        password=None
+    )
+
+claw = DashClaw(
+    ...,
+    private_key=private_key
+)
+```
+
 ## Integrations
 
 ### LangChain
