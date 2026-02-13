@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ShieldAlert, AlertTriangle, Zap, Eye, RotateCw,
-  ChevronRight, CircleAlert, X as XIcon, EyeOff, Undo2
+  ChevronRight, CircleAlert, X as XIcon, EyeOff, Undo2,
+  ShieldCheck, ShieldX, Info
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -19,6 +20,7 @@ export default function SecurityDashboard() {
   const [signals, setSignals] = useState([]);
   const [highRiskActions, setHighRiskActions] = useState([]);
   const [invalidatedAssumptions, setInvalidatedAssumptions] = useState([]);
+  const [securityStatus, setSecurityStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
 
@@ -71,17 +73,20 @@ export default function SecurityDashboard() {
       setLoading(true);
       const params = agentId ? `?agent_id=${agentId}` : '';
 
-      const [signalsRes, actionsRes, assumptionsRes] = await Promise.all([
+      const [signalsRes, actionsRes, assumptionsRes, securityRes] = await Promise.all([
         fetch(`/api/actions/signals${params}`),
         fetch(`/api/actions?limit=100${agentId ? `&agent_id=${agentId}` : ''}`),
         fetch(`/api/actions/assumptions?drift=true${agentId ? `&agent_id=${agentId}` : ''}`),
+        fetch('/api/security/status'),
       ]);
 
       const signalsData = await signalsRes.json();
       const actionsData = await actionsRes.json();
       const assumptionsData = await assumptionsRes.json();
+      const securityData = await securityRes.json();
 
       setSignals(signalsData.signals || []);
+      setSecurityStatus(securityData);
 
       // Filter for high-risk actions: risk_score >= 70 OR (no auth scope AND irreversible)
       const actions = actionsData.actions || [];
@@ -146,6 +151,24 @@ export default function SecurityDashboard() {
     return severity === 'red' ? CircleAlert : AlertTriangle;
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'ok': return ShieldCheck;
+      case 'warning': return AlertTriangle;
+      case 'critical': return ShieldX;
+      default: return Info;
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'ok': return 'text-emerald-400';
+      case 'warning': return 'text-yellow-400';
+      case 'critical': return 'text-red-400';
+      default: return 'text-zinc-400';
+    }
+  };
+
   return (
     <PageLayout
       title="Security"
@@ -161,6 +184,62 @@ export default function SecurityDashboard() {
         </button>
       }
     >
+      {/* Security Health Score Bar */}
+      {securityStatus && (
+        <Card className="mb-6 border-l-4 border-l-emerald-500 overflow-hidden" hover={false}>
+          <div className="flex flex-col md:flex-row items-center gap-6 p-6">
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="relative">
+                <svg className="w-20 h-20">
+                  <circle
+                    className="text-zinc-800"
+                    strokeWidth="6"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="34"
+                    cx="40"
+                    cy="40"
+                  />
+                  <circle
+                    className={securityStatus.score >= 90 ? 'text-emerald-500' : securityStatus.score >= 70 ? 'text-yellow-500' : 'text-red-500'}
+                    strokeWidth="6"
+                    strokeDasharray={2 * Math.PI * 34}
+                    strokeDashoffset={2 * Math.PI * 34 * (1 - securityStatus.score / 100)}
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r="34"
+                    cx="40"
+                    cy="40"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">
+                  {securityStatus.score}
+                </div>
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-2 font-medium">Security Score</div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {securityStatus.checks.map((check) => {
+                  const Icon = getStatusIcon(check.status);
+                  return (
+                    <div key={check.id} className="flex items-start gap-2.5 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04]">
+                      <Icon size={16} className={`mt-0.5 shrink-0 ${getStatusColor(check.status)}`} />
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-white truncate">{check.label}</div>
+                        <div className="text-[10px] text-zinc-500 line-clamp-1">{check.detail || 'System check passed.'}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Stats Bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card hover={false}>
