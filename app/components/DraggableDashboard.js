@@ -129,10 +129,20 @@ export default function DraggableDashboard() {
       const savedLayout = localStorage.getItem(KEY_LAYOUT);
       const savedHidden = localStorage.getItem(KEY_HIDDEN);
       
-      if (savedLayout) setLayouts(JSON.parse(savedLayout));
-      if (savedHidden) setHiddenWidgets(JSON.parse(savedHidden));
+      if (savedLayout && savedLayout !== 'undefined') {
+        const parsed = JSON.parse(savedLayout);
+        if (parsed) setLayouts(parsed);
+      }
+      
+      if (savedHidden && savedHidden !== 'undefined') {
+        const parsed = JSON.parse(savedHidden);
+        if (parsed) setHiddenWidgets(parsed);
+      }
     } catch (e) {
       console.error('Failed to load dashboard preferences', e);
+      // If corrupt, clear it
+      localStorage.removeItem(KEY_LAYOUT);
+      localStorage.removeItem(KEY_HIDDEN);
     }
   }, []);
 
