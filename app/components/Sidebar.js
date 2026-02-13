@@ -23,6 +23,7 @@ const navGroups = [
     label: 'Operations',
     items: [
       { href: '/actions', icon: Zap, label: 'Actions' },
+      { href: '/approvals', icon: Clock, label: 'Approval Queue' },
       { href: '/security', icon: ShieldAlert, label: 'Security' },
       { href: '/policies', icon: Shield, label: 'Policies' },
       { href: '/messages', icon: MessageSquare, label: 'Messages' },

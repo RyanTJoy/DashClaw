@@ -360,6 +360,8 @@ export const config = {
     '/dashboard/:path*',
     '/swarm',
     '/swarm/:path*',
+    '/approvals',
+    '/approvals/:path*',
     '/actions',
     '/actions/:path*',
     '/goals',

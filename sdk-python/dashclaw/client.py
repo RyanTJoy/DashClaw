@@ -25,8 +25,13 @@ class GuardBlockedError(DashClawError):
         self.matched_policies = decision.get("matched_policies", [])
         self.risk_score = decision.get("risk_score")
 
+class ApprovalDeniedError(DashClawError):
+    """Thrown when a human operator denies an action."""
+    def __init__(self, message):
+        super().__init__(message, status=403)
+
 class DashClaw:
-    def __init__(self, base_url, api_key, agent_id, agent_name=None, swarm_id=None, guard_mode="off", guard_callback=None, private_key=None):
+    def __init__(self, base_url, api_key, agent_id, agent_name=None, swarm_id=None, guard_mode="off", guard_callback=None, hitl_mode="off", private_key=None):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.agent_id = agent_id
@@ -34,6 +39,7 @@ class DashClaw:
         self.swarm_id = swarm_id
         self.guard_mode = guard_mode
         self.guard_callback = guard_callback
+        self.hitl_mode = hitl_mode # "off" | "wait"
         self.private_key = private_key # cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey
 
         if guard_mode not in ["off", "warn", "enforce"]:
@@ -145,7 +151,32 @@ class DashClaw:
         if signature:
             payload["_signature"] = signature
 
-        return self._request("/api/actions", method="POST", body=payload)
+        res = self._request("/api/actions", method="POST", body=payload)
+        
+        # Handle HITL Approval
+        if res.get("action", {}).get("status") == "pending_approval" and self.hitl_mode == "wait":
+            print(f"[DashClaw] Action {res.get('action_id')} requires human approval. Waiting...")
+            return self.wait_for_approval(res.get("action_id"))
+            
+        return res
+
+    def wait_for_approval(self, action_id, timeout=300, interval=5):
+        """Poll for human approval of a pending action."""
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            res = self.get_action(action_id)
+            action = res.get("action", {})
+            
+            if action.get("status") == "running":
+                print(f"[DashClaw] Action {action_id} approved by operator.")
+                return res
+                
+            if action.get("status") in ["failed", "cancelled"]:
+                raise ApprovalDeniedError(action.get("error_message") or "Operator denied the action.")
+                
+            time.sleep(interval)
+            
+        raise TimeoutError(f"[DashClaw] Timed out waiting for approval of action {action_id}")
 
     def update_outcome(self, action_id, status=None, **kwargs):
         payload = {

@@ -10,6 +10,7 @@ import { verifyAgentSignature } from '../../lib/identity.js';
 import { estimateCost } from '../../lib/billing.js';
 import { eventBus, EVENTS } from '../../lib/events.js';
 import { generateActionEmbedding, isEmbeddingsEnabled } from '../../lib/embeddings.js';
+import { evaluateGuard } from '../../lib/guard.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -179,6 +180,22 @@ export async function POST(request) {
       }
     }
 
+    // BEHAVIOR GUARD EVALUATION
+    const guardDecision = await evaluateGuard(orgId, {
+      ...data,
+      agent_id: data.agent_id
+    }, sql);
+
+    if (guardDecision.decision === 'block') {
+      return NextResponse.json({ 
+        error: 'Action blocked by policy', 
+        decision: guardDecision 
+      }, { status: 403 });
+    }
+
+    const isPendingApproval = guardDecision.decision === 'require_approval';
+    const actionStatus = isPendingApproval ? 'pending_approval' : (data.status || 'running');
+
     // Auto-calculate cost if tokens are provided
     let costEstimate = data.cost_estimate || 0;
     if ((data.tokens_in || data.tokens_out) && !data.cost_estimate) {
@@ -209,7 +226,7 @@ export async function POST(request) {
         ${data.trigger || null},
         ${JSON.stringify(data.systems_touched || [])},
         ${data.input_summary || null},
-        ${data.status || 'running'},
+        ${actionStatus},
         ${data.reversible !== undefined ? (data.reversible ? 1 : 0) : 1},
         ${data.risk_score || 0},
         ${data.confidence || 50},
@@ -253,7 +270,11 @@ export async function POST(request) {
 
     Promise.all([...meterUpdates, indexAction()]).catch(() => {});
 
-    const response = NextResponse.json({ action: result[0], action_id }, { status: 201 });
+    const response = NextResponse.json({ 
+      action: result[0], 
+      action_id,
+      decision: guardDecision
+    }, { status: isPendingApproval ? 202 : 201 });
     
     // Emit real-time event
     eventBus.emit(EVENTS.ACTION_CREATED, { 

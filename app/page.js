@@ -34,13 +34,13 @@ const coreFeatures = [
 
 const platformFeatures = [
   { icon: Package, title: 'Node.js & Python SDKs', description: 'Zero-dependency clients for both ecosystems. Native adapters for CrewAI, AutoGen, and LangChain.' },
+  { icon: ShieldAlert, title: 'HITL Governance', description: 'Real-time Approval Queue. Agents pause and wait for human sign-off on sensitive operations.' },
   { icon: Shield, title: 'Identity Binding', description: 'RSA-PSS cryptographic verification ensures every action is signed by your agent\'s private key.' },
   { icon: Brain, title: 'Memory Health', description: 'Proactive maintenance engine identifies stale facts and sends corrective messages to agents.' },
   { icon: ScanSearch, title: 'DLP & Redaction', description: 'Automatic secret redaction (OpenAI, AWS, GitHub) in messages and handoffs before data is stored.' },
   { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
   { icon: CircleDot, title: 'Open Loop Tracking', description: 'Track unresolved dependencies, pending approvals, and blockers across agents.' },
   { icon: Eye, title: 'Assumption Monitoring', description: 'Log what agents assume, validate or invalidate, and catch drift early.' },
-  { icon: Newspaper, title: 'Daily Digest', description: 'Aggregated daily summary from actions, decisions, lessons, content, and goals.' },
 ];
 
 const operationalFeatures = [
@@ -178,7 +178,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
                 <Package size={12} />
-                58 methods across 13 categories
+                59 methods across 13 categories
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">
