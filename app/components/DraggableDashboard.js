@@ -12,6 +12,8 @@ import IntegrationsCard from './IntegrationsCard';
 import MemoryHealthCard from './MemoryHealthCard';
 import InspirationCard from './InspirationCard';
 import ContextCard from './ContextCard';
+import TokenBudgetCard from './TokenBudgetCard';
+import TokenChart from './TokenChart';
 import OnboardingChecklist from './OnboardingChecklist';
 
 // Fixed, opinionated layout — no customize mode.
