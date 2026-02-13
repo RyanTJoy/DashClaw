@@ -5,6 +5,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { deliverGuardWebhook } from './webhooks.js';
+import { checkSemanticGuardrail } from './llm.js';
 
 const DECISION_SEVERITY = { allow: 0, warn: 1, require_approval: 2, block: 3 };
 
@@ -176,6 +177,29 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
     case 'webhook_check':
       // Handled separately after local policy loop
       return null;
+
+    case 'semantic_check': {
+      const instruction = rules.instruction;
+      if (!instruction) return null;
+
+      const fallback = rules.fallback || 'allow'; // Default to fail-open if no LLM key
+      const model = rules.model || 'gpt-4o-mini';
+
+      const result = await checkSemanticGuardrail(context, instruction, model);
+
+      if (!result) {
+        // LLM check failed or was skipped (no key)
+        if (fallback === 'block') {
+          return { action: 'block', reason: 'Semantic check failed (fallback: block)' };
+        }
+        return null; // pass-through
+      }
+
+      if (result.allowed === false) {
+        return { action: 'block', reason: `Semantic Violation: ${result.reason}` };
+      }
+      return null;
+    }
 
     default:
       return null;

@@ -18,6 +18,7 @@ const POLICY_TYPES = [
   { value: 'block_action_type', label: 'Block Action Type', desc: 'Block specific action types entirely' },
   { value: 'rate_limit', label: 'Rate Limit', desc: 'Warn or block when an agent exceeds action frequency' },
   { value: 'webhook_check', label: 'Webhook Check', desc: 'Call an external endpoint for custom decision logic' },
+  { value: 'semantic_check', label: 'Semantic Check', desc: 'Use an LLM to evaluate action intent against natural language rules' },
 ];
 
 const ACTION_OPTIONS = [
@@ -56,6 +57,8 @@ function formatRules(policy) {
       const host = (() => { try { return new URL(rules.url).hostname; } catch { return rules.url; } })();
       return `Webhook → ${host} (timeout: ${rules.timeout_ms || 5000}ms, on_timeout: ${rules.on_timeout || 'allow'})`;
     }
+    case 'semantic_check':
+      return `Semantic: "${rules.instruction}" (fallback: ${rules.fallback || 'allow'})`;
     default:
       return JSON.stringify(rules);
   }
@@ -83,6 +86,9 @@ export default function PoliciesPage() {
   const [formWebhookUrl, setFormWebhookUrl] = useState('');
   const [formWebhookTimeout, setFormWebhookTimeout] = useState(5000);
   const [formWebhookOnTimeout, setFormWebhookOnTimeout] = useState('allow');
+  // Semantic Check State
+  const [formInstruction, setFormInstruction] = useState('');
+  const [formFallback, setFormFallback] = useState('allow');
   const [creating, setCreating] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -129,6 +135,9 @@ export default function PoliciesPage() {
       case 'webhook_check':
         rules = JSON.stringify({ url: formWebhookUrl, timeout_ms: formWebhookTimeout, on_timeout: formWebhookOnTimeout });
         break;
+      case 'semantic_check':
+        rules = JSON.stringify({ instruction: formInstruction, fallback: formFallback });
+        break;
       default:
         rules = '{}';
     }
@@ -150,6 +159,8 @@ export default function PoliciesPage() {
         setFormWebhookUrl('');
         setFormWebhookTimeout(5000);
         setFormWebhookOnTimeout('allow');
+        setFormInstruction('');
+        setFormFallback('allow');
         fetchData();
       }
     } catch {
@@ -381,9 +392,39 @@ export default function PoliciesPage() {
               </div>
             )}
 
+            {formType === 'semantic_check' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">Instruction (Natural Language)</label>
+                  <textarea
+                    value={formInstruction}
+                    onChange={(e) => setFormInstruction(e.target.value)}
+                    placeholder="e.g. Do not allow the agent to delete files in the /system directory."
+                    required
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">Fallback Action (if LLM is unavailable)</label>
+                  <select
+                    value={formFallback}
+                    onChange={(e) => setFormFallback(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                  >
+                    <option value="allow">Allow (Fail Open - Recommended)</option>
+                    <option value="block">Block (Fail Closed)</option>
+                  </select>
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    To enable this, set <code className="text-zinc-400">GUARD_LLM_KEY</code> (or OPENAI_API_KEY) in your environment variables.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={creating || !formName.trim() || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0) || (formType === 'webhook_check' && (() => { try { const u = new URL(formWebhookUrl); return u.protocol !== 'https:' || !u.hostname; } catch { return true; } })())}
+              disabled={creating || !formName.trim() || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0) || (formType === 'webhook_check' && (() => { try { const u = new URL(formWebhookUrl); return u.protocol !== 'https:' || !u.hostname; } catch { return true; } })()) || (formType === 'semantic_check' && !formInstruction.trim())}
               className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
             >
               {creating ? 'Creating...' : 'Create Policy'}
