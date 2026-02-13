@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: dashclaw
-Version: 1.0.0
+Version: 1.0.1
 Summary: Python SDK for the DashClaw AI agent observability platform
 Home-page: https://github.com/ucsandman/DashClaw
 Author: Wes Sander
@@ -9,11 +9,14 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
+Provides-Extra: langchain
+Requires-Dist: langchain-core>=0.1.0; extra == "langchain"
 Dynamic: author
 Dynamic: classifier
 Dynamic: description
 Dynamic: description-content-type
 Dynamic: home-page
+Dynamic: provides-extra
 Dynamic: requires-python
 Dynamic: summary
 
@@ -43,6 +46,21 @@ claw = DashClaw(
 with claw.track(action_type="research", declared_goal="Explore Python SDK capabilities"):
     # ... do the work ...
     print("Working...")
+```
+
+## Integrations
+
+### LangChain
+
+Automatically log LLM calls, tool usage, and costs with one line of code.
+
+```python
+from dashclaw.integrations.langchain import DashClawCallbackHandler
+
+handler = DashClawCallbackHandler(claw)
+
+# Pass to your agent or chain
+agent.run("Hello world", callbacks=[handler])
 ```
 
 ## API Parity

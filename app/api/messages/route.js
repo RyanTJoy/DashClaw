@@ -11,7 +11,7 @@ const VALID_TYPES = ['action', 'info', 'lesson', 'question', 'status'];
 
 export async function GET(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id');
@@ -96,7 +96,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const body = await request.json();
 
@@ -105,11 +105,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
-    const { from_agent_id, to_agent_id, message_type, subject, body: msgBody, thread_id, urgent, doc_ref } = body;
+    const { from_agent_id, to_agent_id, message_type, subject, body: msgBodyRaw, thread_id, urgent, doc_ref } = body;
 
-    if (!msgBody) {
+    if (!msgBodyRaw) {
       return NextResponse.json({ error: 'body is required' }, { status: 400 });
     }
+
+    // SECURITY: Scan for sensitive data (API keys, etc.)
+    const { redacted, clean, findings } = scanSensitiveData(msgBodyRaw);
+    const msgBody = redacted;
+
     if (!from_agent_id) {
       return NextResponse.json({ error: 'from_agent_id is required' }, { status: 400 });
     }
@@ -156,7 +161,7 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const body = await request.json();
 

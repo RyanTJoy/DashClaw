@@ -13,12 +13,29 @@ import json
 from datetime import datetime
 from pathlib import Path
 import argparse
+import re
 
 # Fix Windows Unicode encoding
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
 DB_PATH = Path(__file__).parent / "audit.db"
+
+# SECURITY: Redaction patterns for common secrets
+REDACT_PATTERNS = [
+    r'sk-[a-zA-Z0-9]{20,}',  # OpenAI
+    r'sk-ant-[a-zA-Z0-9-]{20,}', # Anthropic
+    r'gh[pousr]_[A-Za-z0-9_]{36,}', # GitHub
+    r'Bearer\s+[a-zA-Z0-9._-]{20,}', # Bearer token
+    r'postgres(?:ql)?://[^:]+:([^@]+)@', # DB password
+]
+
+def redact(text: str) -> str:
+    """Redact sensitive patterns in text."""
+    if not text: return text
+    for pattern in REDACT_PATTERNS:
+        text = re.sub(pattern, "[REDACTED]", text)
+    return text
 
 def init_db():
     """Initialize the audit database."""
@@ -53,6 +70,10 @@ def log_action(action_type: str, target: str = None, content: str = None,
     init_db()
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    
+    # SECURITY: Redact sensitive info in searchable fields
+    target = redact(target)
+    notes = redact(notes)
     
     content_hash = None
     content_preview = None

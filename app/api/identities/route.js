@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../lib/db.js';
 import { getOrgId, getOrgRole } from '../../lib/org.js';
 
 export async function POST(request) {
@@ -21,7 +21,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'agent_id and public_key are required' }, { status: 400 });
     }
 
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     
     const result = await sql`
       INSERT INTO agent_identities (org_id, agent_id, public_key, algorithm)
@@ -43,7 +43,7 @@ export async function POST(request) {
 export async function GET(request) {
   try {
     const orgId = getOrgId(request);
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     
     const identities = await sql`
       SELECT agent_id, algorithm, created_at, updated_at 

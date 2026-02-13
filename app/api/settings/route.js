@@ -1,23 +1,10 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../lib/db.js';
 import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
 import { logActivity } from '../../lib/audit.js';
-import { encrypt } from '../../lib/encryption.js';
+import { encrypt, decrypt } from '../../lib/encryption.js';
 
 export const dynamic = 'force-dynamic';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    // Don't throw at import time (Next builds/imports route handlers).
-    // We only error when the endpoint is actually called.
-    throw new Error('DATABASE_URL is not set. Add it to .env.local (or your hosting provider env vars).');
-  }
-  _sql = neon(url);
-  return _sql;
-}
 
 // Initialize settings table if it doesn't exist
 async function ensureSettingsTable(sql) {
@@ -93,14 +80,31 @@ export async function GET(request) {
       }
     }
 
-    // Mask encrypted values for display
-    const masked = settings.map(s => ({
-      ...s,
-      value: s.encrypted ? maskValue(s.value) : s.value,
-      hasValue: !!s.value
-    }));
+    const isAgentRequest = !!request.headers.get('x-api-key');
 
-    return NextResponse.json({ settings: masked });
+    // SECURITY: Decrypt values only for agents. Dashboard users see masked values.
+    const processed = settings.map(s => {
+      let val = s.value;
+      if (s.encrypted && val) {
+        if (isAgentRequest) {
+          try {
+            val = decrypt(val);
+          } catch (err) {
+            console.error('[SETTINGS] Decryption failed for key:', s.key);
+            val = '[DECRYPTION_FAILED]';
+          }
+        } else {
+          val = maskValue(val);
+        }
+      }
+      return {
+        ...s,
+        value: val,
+        hasValue: !!s.value
+      };
+    });
+
+    return NextResponse.json({ settings: processed });
   } catch (error) {
     console.error('Settings GET error:', error);
     return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });

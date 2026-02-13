@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { getOrgId } from '../../lib/org';
 import crypto from 'crypto';
+import { syncSchema } from '../../lib/validators/sync';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -403,7 +404,18 @@ async function syncSnippets(sql, orgId, agentId, snippets) {
 export async function POST(request) {
   try {
     const orgId = getOrgId(request);
-    const body = await request.json();
+    const bodyRaw = await request.json();
+    
+    // Validate payload
+    const validation = syncSchema.safeParse(bodyRaw);
+    if (!validation.success) {
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: validation.error.format() 
+      }, { status: 400 });
+    }
+    const body = validation.data;
+
     const agentId = body.agent_id || null;
     const sql = getSql();
     const start = Date.now();

@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 
 export async function GET(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id');
@@ -44,7 +44,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const body = await request.json();
 
@@ -53,11 +53,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
-    const { agent_id, summary, session_date, key_decisions, open_tasks, mood_notes, next_priorities } = body;
+    const { agent_id, summary: summaryRaw, session_date, key_decisions, open_tasks, mood_notes: moodRaw, next_priorities } = body;
 
-    if (!summary) {
+    if (!summaryRaw) {
       return NextResponse.json({ error: 'summary is required' }, { status: 400 });
     }
+
+    // SECURITY: Scan for sensitive data (API keys, etc.)
+    const { redacted: summary } = scanSensitiveData(summaryRaw);
+    const { redacted: mood_notes } = scanSensitiveData(moodRaw || '');
+
     if (!agent_id) {
       return NextResponse.json({ error: 'agent_id is required' }, { status: 400 });
     }

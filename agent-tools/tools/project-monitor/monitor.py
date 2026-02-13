@@ -14,7 +14,6 @@ import sqlite3
 import argparse
 from datetime import datetime, timedelta
 from pathlib import Path
-import subprocess
 
 DB_PATH = Path(__file__).parent / "data" / "projects.db"
 WORKSPACE = Path(__file__).parent.parent.parent

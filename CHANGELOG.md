@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-02-13
+
+### Added
+- **Data Loss Prevention (DLP)**: Automated regex-based redaction for sensitive keys (OpenAI, AWS, GitHub, etc.) in agent messages and handoffs.
+- **Strict Sync Validation**: Implemented Zod-based schema validation for the Bulk Sync API to prevent malformed data injection.
+- **Agent Identity Enforcement**: Made agent signatures mandatory in production for all Action Record creations.
+
+### Security
+- **Auth Hardening**: Refactored middleware to "fail closed" in production if security keys are missing.
+- **HSTS Enforcement**: Added `Strict-Transport-Security` headers to all API routes.
+- **Audit Log Redaction**: Added local redaction engine to the Python Audit Logger to prevent secret leakage in local SQLite databases.
+- **Dependency Patching**: Upgraded Next.js to v16 and esbuild to v0.25+ to resolve known vulnerabilities.
+- **Standardized DB Layer**: Centralized all database connection logic into a shared utility with strict production safety checks.
+
 ## [1.2.4] - 2026-02-13
 
 ### Added

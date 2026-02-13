@@ -23,3 +23,9 @@ __pycache__/
 *.db
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+data/
+**/data/*.db
+**/data/*.sqlite*
