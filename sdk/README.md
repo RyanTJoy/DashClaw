@@ -1,193 +1,525 @@
-# DashClaw
+# DashClaw SDK Reference (Full)
 
-Full-featured agent toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform. Zero dependencies, requires Node 18+ (native fetch).
+Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 57 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
 
-**58 methods** across 13 categories: action recording, context management, session handoffs, security scanning, agent messaging, behavior guard, user preferences, and more.
+---
 
-## Install
+## Quick Start
 
+### 1. Copy the SDK
+Install from npm, or copy the single-file SDK directly.
 ```bash
 npm install dashclaw
 ```
 
-## Quick Start
-
-```js
+### 2. Initialize the client
+```javascript
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-app.vercel.app',
+  baseUrl: 'https://your-dashboard.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
-  // Optional: Cryptographic Identity Binding
-  // Supports CryptoKey object or plain JWK object
-  // privateKey: JSON.parse(process.env.AGENT_PRIVATE_KEY)
 });
+```
 
-// Record an action (automatically signed if privateKey is provided)
+### 3. Record your first action
+```javascript
+// Create an action before doing work
 const { action_id } = await claw.createAction({
   action_type: 'deploy',
-  declared_goal: 'Deploy auth service to production',
+  declared_goal: 'Deploy authentication service',
   risk_score: 60,
 });
 
 // ... do the work ...
 
+// Update when done
 await claw.updateOutcome(action_id, {
   status: 'completed',
-  output_summary: 'Auth service deployed successfully',
+  output_summary: 'Auth service deployed to prod',
 });
 ```
 
-## Migration from OpenClaw
+---
 
-If you were using the legacy `OpenClawAgent` class, it has been renamed to `DashClaw`. A backward-compatible alias is preserved:
+## Constructor
 
-```js
-import { DashClaw } from 'dashclaw';
+Create a DashClaw instance. Requires Node 18+ (native fetch).
 
-// Legacy alias also works:
-import { OpenClawAgent } from 'dashclaw';
+```javascript
+const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback });
 ```
 
-## API Reference (58 methods)
+### Parameters
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| baseUrl | string | Yes | DashClaw dashboard URL (e.g. "https://your-app.vercel.app") |
+| apiKey | string | Yes | API key for authentication (determines which org\'s data you access) |
+| agentId | string | Yes | Unique identifier for this agent |
+| agentName | string | No | Human-readable agent name |
+| swarmId | string | No | Swarm/group identifier if part of a multi-agent system |
+| guardMode | string | No | Auto guard check before createAction/track: "off" (default), "warn" (log + proceed), "enforce" (throw on block) |
+| guardCallback | Function | No | Called with guard decision object when guardMode is active |
 
-### Action Recording (6)
+### Guard Mode
+When `guardMode` is set, every call to `createAction()` and `track()` automatically checks guard policies before proceeding.
 
-| Method | Description |
-|--------|-------------|
-| `createAction(action)` | Record a new action |
-| `updateOutcome(actionId, outcome)` | Update action result |
-| `getActions(filters?)` | List actions with filters |
-| `getAction(actionId)` | Get single action with loops + assumptions |
-| `getActionTrace(actionId)` | Get root-cause trace |
-| `track(actionDef, fn)` | Auto-tracked action wrapper |
+```javascript
+import { DashClaw, GuardBlockedError } from 'dashclaw';
 
-### Loops & Assumptions (7)
-
-| Method | Description |
-|--------|-------------|
-| `registerOpenLoop(loop)` | Register an unresolved item |
-| `resolveOpenLoop(loopId, status, resolution)` | Close an open loop |
-| `getOpenLoops(filters?)` | List open loops |
-| `registerAssumption(assumption)` | Record an assumption |
-| `getAssumption(assumptionId)` | Get single assumption |
-| `validateAssumption(id, validated, reason?)` | Validate or invalidate |
-| `getDriftReport(filters?)` | Get assumption drift scores |
-
-### Signals (1)
-
-| Method | Description |
-|--------|-------------|
-| `getSignals()` | Get computed risk signals |
-
-### Dashboard Data (9)
-
-| Method | Description |
-|--------|-------------|
-| `recordDecision(entry)` | Record a decision |
-| `createGoal(goal)` | Create a goal |
-| `recordContent(content)` | Record content creation |
-| `recordInteraction(interaction)` | Record a relationship interaction |
-| `reportConnections(connections)` | Report agent integrations |
-| `createCalendarEvent(event)` | Create a calendar event |
-| `recordIdea(idea)` | Record an idea/inspiration |
-| `reportMemoryHealth(report)` | Report memory health snapshot |
-| `reportTokenUsage(usage)` | Report token usage (legacy) |
-
-### Session Handoffs (3)
-
-| Method | Description |
-|--------|-------------|
-| `createHandoff(handoff)` | Create a session handoff document |
-| `getHandoffs(filters?)` | Get handoffs for this agent |
-| `getLatestHandoff()` | Get the most recent handoff |
-
-### Context Manager (7)
-
-| Method | Description |
-|--------|-------------|
-| `captureKeyPoint(point)` | Capture a key point |
-| `getKeyPoints(filters?)` | Get key points |
-| `createThread(thread)` | Create a context thread |
-| `addThreadEntry(threadId, content)` | Add entry to a thread |
-| `closeThread(threadId, summary?)` | Close a thread |
-| `getThreads(filters?)` | Get threads |
-| `getContextSummary()` | Today's points + active threads |
-
-### Automation Snippets (4)
-
-| Method | Description |
-|--------|-------------|
-| `saveSnippet(snippet)` | Save/update a code snippet |
-| `getSnippets(filters?)` | Search and list snippets |
-| `useSnippet(snippetId)` | Mark snippet as used |
-| `deleteSnippet(snippetId)` | Delete a snippet |
-
-### User Preferences (6)
-
-| Method | Description |
-|--------|-------------|
-| `logObservation(obs)` | Log a user observation |
-| `setPreference(pref)` | Set a learned preference |
-| `logMood(entry)` | Log user mood/energy |
-| `trackApproach(entry)` | Track approach success/failure |
-| `getPreferenceSummary()` | Get preference summary |
-| `getApproaches(filters?)` | Get tracked approaches |
-
-### Daily Digest (1)
-
-| Method | Description |
-|--------|-------------|
-| `getDailyDigest(date?)` | Aggregated daily summary |
-
-### Security Scanning (2)
-
-| Method | Description |
-|--------|-------------|
-| `scanContent(text, destination?)` | Scan text for sensitive data |
-| `reportSecurityFinding(text, dest?)` | Scan + store finding metadata |
-
-### Agent Messaging (9)
-
-| Method | Description |
-|--------|-------------|
-| `sendMessage(params)` | Send message to agent or broadcast |
-| `getInbox(filters?)` | Get inbox messages |
-| `markRead(messageIds)` | Mark messages as read |
-| `archiveMessages(messageIds)` | Archive messages |
-| `broadcast(params)` | Send to all agents in org |
-| `createMessageThread(params)` | Start a conversation thread |
-| `getMessageThreads(filters?)` | List message threads |
-| `resolveMessageThread(threadId, summary?)` | Close a thread |
-| `saveSharedDoc(params)` | Create/update shared document |
-
-### Behavior Guard (2)
-
-| Method | Description |
-|--------|-------------|
-| `guard(context, options?)` | Check policies before action |
-| `getGuardDecisions(filters?)` | List recent decisions |
-
-### Bulk Sync (1)
-
-| Method | Description |
-|--------|-------------|
-| `syncState(state)` | Sync multiple categories in one request |
-
-## Authentication
-
-The SDK sends your API key via the `x-api-key` header. The key determines which organization's data you access.
-
-```js
 const claw = new DashClaw({
-  baseUrl: 'https://your-deployment.vercel.app',
+  baseUrl: 'https://your-app.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
+  guardMode: 'enforce', // throws GuardBlockedError on block/require_approval
+  guardCallback: (decision) => console.log('Guard:', decision.decision),
+});
+
+try {
+  await claw.createAction({ action_type: 'deploy', declared_goal: 'Ship v2' });
+} catch (err) {
+  if (err instanceof GuardBlockedError) {
+    console.log(err.decision);  // 'block' or 'require_approval'
+    console.log(err.reasons);   // ['Risk score 90 >= threshold 80']
+  }
+}
+```
+
+---
+
+## Action Recording
+
+Create, update, and query action records. Every agent action gets a full audit trail.
+
+### claw.createAction(action)
+Create a new action record. The agent's agentId, agentName, and swarmId are automatically attached.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| action_type | string | Yes | One of: build, deploy, post, apply, security, message, api, calendar, research, review, fix, refactor, test, config, monitor, alert, cleanup, sync, migrate, other |
+| declared_goal | string | Yes | What this action aims to accomplish |
+| action_id | string | No | Custom action ID (auto-generated act_ UUID if omitted) |
+| reasoning | string | No | Why the agent decided to take this action |
+| authorization_scope | string | No | What permissions were granted |
+| trigger | string | No | What triggered this action |
+| systems_touched | string[] | No | Systems this action interacts with |
+| input_summary | string | No | Summary of input data |
+| parent_action_id | string | No | Parent action if this is a sub-action |
+| reversible | boolean | No | Whether this action can be undone (default: true) |
+| risk_score | number | No | Risk score 0-100 (default: 0) |
+| confidence | number | No | Confidence level 0-100 (default: 50) |
+
+**Returns:** `Promise<{ action: Object, action_id: string }>`
+
+**Example:**
+```javascript
+const { action_id } = await claw.createAction({
+  action_type: 'deploy',
+  declared_goal: 'Deploy auth service to production',
+  risk_score: 70,
+  systems_touched: ['kubernetes', 'auth-service'],
+  reasoning: 'Scheduled release after QA approval',
 });
 ```
 
-## License
+### claw.updateOutcome(actionId, outcome)
+Update the outcome of an existing action. Automatically sets timestamp_end if not provided.
 
-MIT
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| actionId | string | Yes | The action_id to update |
+| status | string | No | New status: completed, failed, cancelled |
+| output_summary | string | No | What happened |
+| side_effects | string[] | No | Unintended consequences |
+| artifacts_created | string[] | No | Files, records, etc. created |
+| error_message | string | No | Error details if failed |
+| duration_ms | number | No | How long it took in milliseconds |
+| cost_estimate | number | No | Estimated cost in USD |
+
+**Returns:** `Promise<{ action: Object }>`
+
+### claw.track(actionDef, fn)
+Helper that creates an action, runs your async function, and auto-updates the outcome. If fn throws, the action is marked as failed with the error message.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| actionDef | Object | Yes | Action definition (same params as createAction) |
+| fn | Function | Yes | Async function to execute. Receives { action_id } as argument. |
+
+**Returns:** `Promise<*> (the return value of fn)`
+
+### claw.getActions(filters?)
+Get a list of actions with optional filters. Returns paginated results with stats.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| agent_id | string | No | Filter by agent |
+| swarm_id | string | No | Filter by swarm |
+| status | string | No | Filter by status (running, completed, failed, cancelled) |
+| action_type | string | No | Filter by type |
+| risk_min | number | No | Minimum risk score |
+| limit | number | No | Max results (default: 50) |
+| offset | number | No | Pagination offset (default: 0) |
+
+**Returns:** `Promise<{ actions: Object[], total: number, stats: Object }>`
+
+### claw.getAction(actionId)
+Get a single action with its associated open loops and assumptions.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| actionId | string | Yes | The action_id to retrieve |
+
+**Returns:** `Promise<{ action: Object, open_loops: Object[], assumptions: Object[] }>`
+
+### claw.getActionTrace(actionId)
+Get root-cause trace for an action, including its assumptions, open loops, parent chain, and related actions.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| actionId | string | Yes | The action_id to trace |
+
+**Returns:** `Promise<{ action: Object, trace: Object }>`
+
+---
+
+## Loops & Assumptions
+
+Track unresolved dependencies and log what your agents assume. Catch drift before it causes failures.
+
+### claw.registerOpenLoop(loop)
+Register an open loop (unresolved dependency, pending approval, etc.) for an action.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| action_id | string | Yes | Parent action ID |
+| loop_type | string | Yes | One of: followup, question, dependency, approval, review, handoff, other |
+| description | string | Yes | What needs to be resolved |
+| priority | string | No | One of: low, medium, high, critical (default: medium) |
+| owner | string | No | Who is responsible for resolving this |
+
+**Returns:** `Promise<{ loop: Object, loop_id: string }>`
+
+### claw.resolveOpenLoop(loopId, status, resolution?)
+Resolve or cancel an open loop.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| loopId | string | Yes | The loop_id to resolve |
+| status | string | Yes | "resolved" or "cancelled" |
+| resolution | string | No | Resolution description (required when resolving) |
+
+**Returns:** `Promise<{ loop: Object }>`
+
+### claw.registerAssumption(assumption)
+Register an assumption made during an action. Track what your agent assumes so you can validate or invalidate later.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| action_id | string | Yes | Parent action ID |
+| assumption | string | Yes | The assumption being made |
+| basis | string | No | Evidence or reasoning for the assumption |
+| validated | boolean | No | Whether this has been validated (default: false) |
+
+**Returns:** `Promise<{ assumption: Object, assumption_id: string }>`
+
+### claw.getAssumption(assumptionId)
+Get a single assumption by ID.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| assumptionId | string | Yes | The assumption_id to retrieve |
+
+**Returns:** `Promise<{ assumption: Object }>`
+
+### claw.validateAssumption(assumptionId, validated, invalidated_reason?)
+Validate or invalidate an assumption. When invalidating, a reason is required.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| assumptionId | string | Yes | The assumption_id to update |
+| validated | boolean | Yes | true to validate, false to invalidate |
+| invalidated_reason | string | No | Required when invalidating (validated = false) |
+
+**Returns:** `Promise<{ assumption: Object }>`
+
+### claw.getOpenLoops(filters?)
+Get open loops with optional filters. Returns paginated results with stats.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| status | string | No | Filter by status: open, resolved, cancelled |
+| loop_type | string | No | Filter by loop type |
+| priority | string | No | Filter by priority |
+| limit | number | No | Max results (default: 50) |
+
+**Returns:** `Promise<{ loops: Object[], total: number, stats: Object }>`
+
+### claw.getDriftReport(filters?)
+Get drift report for assumptions with risk scoring. Shows which assumptions are stale, unvalidated, or contradicted by outcomes.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| action_id | string | No | Filter by action |
+| limit | number | No | Max results (default: 50) |
+
+**Returns:** `Promise<{ assumptions: Object[], drift_summary: Object }>`
+
+---
+
+## Signals
+
+Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns — no configuration required.
+
+### claw.getSignals()
+Get current risk signals across all agents. Returns 7 signal types: autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, and stale_running_action.
+
+**Returns:** `Promise<{ signals: Object[], counts: { red: number, amber: number, total: number } }>`
+
+### Signal Types
+- **autonomy_spike**: Agent taking too many actions without human checkpoints
+- **high_impact_low_oversight**: Critical actions without sufficient review
+- **repeated_failures**: Same action type failing multiple times
+- **stale_loop**: Open loops unresolved past their expected timeline
+- **assumption_drift**: Assumptions becoming stale or contradicted by outcomes
+- **stale_assumption**: Assumptions not validated within expected timeframe
+- **stale_running_action**: Actions stuck in running state for over 4 hours
+
+---
+
+## Behavior Guard
+
+Check org-level policies before executing risky actions. Returns allow, warn, block, or require_approval based on configured guard policies.
+
+### claw.guard(context, options?)
+Evaluate guard policies for a proposed action. Call this before risky operations to get a go/no-go decision. The agent_id is auto-attached from the SDK constructor.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| context.action_type | string | Yes | The type of action being proposed |
+| context.risk_score | number | No | Risk score 0-100 |
+| context.systems_touched | string[] | No | Systems this action will affect |
+| context.reversible | boolean | No | Whether the action can be undone |
+| context.declared_goal | string | No | What the action accomplishes |
+| options.includeSignals | boolean | No | Also check live risk signals (adds latency) |
+
+**Returns:** `Promise<{ decision: string, reasons: string[], warnings: string[], matched_policies: string[], evaluated_at: string }>`
+
+### claw.getGuardDecisions(filters?)
+Retrieve recent guard evaluation decisions for audit and review.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.decision | string | No | Filter by decision: allow, warn, block, require_approval |
+| filters.limit | number | No | Max results (default 20, max 100) |
+| filters.offset | number | No | Pagination offset |
+
+**Returns:** `Promise<{ decisions: Object[], total: number, stats: Object }>`
+
+---
+
+## Dashboard Data
+
+Push data from your agent directly to the DashClaw dashboard. All methods auto-attach the agent's agentId.
+
+### claw.recordDecision(entry)
+Record a decision for the learning database. Track what your agent decides and why.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| decision | string | Yes | What was decided |
+| context | string | No | Context around the decision |
+| reasoning | string | No | Why this decision was made |
+| outcome | string | No | "success", "failure", or "pending" |
+| confidence | number | No | Confidence level 0-100 |
+
+**Returns:** `Promise<{ decision: Object }>`
+
+### claw.createGoal(goal)
+Create a goal in the goals tracker.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| title | string | Yes | Goal title |
+| category | string | No | Goal category |
+| description | string | No | Detailed description |
+| target_date | string | No | Target completion date (ISO string) |
+| progress | number | No | Progress 0-100 |
+| status | string | No | "active", "completed", or "paused" |
+
+**Returns:** `Promise<{ goal: Object }>`
+
+### claw.recordContent(content)
+Record content creation (articles, posts, documents).
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| title | string | Yes | Content title |
+| platform | string | No | Platform (e.g., "linkedin", "twitter") |
+| status | string | No | "draft" or "published" |
+| url | string | No | Published URL |
+
+**Returns:** `Promise<{ content: Object }>`
+
+### claw.recordInteraction(interaction)
+Record a relationship interaction (message, meeting, email).
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| summary | string | Yes | What happened |
+| contact_name | string | No | Contact name (auto-resolves to contact_id) |
+| contact_id | string | No | Direct contact ID |
+| direction | string | No | "inbound" or "outbound" |
+| type | string | No | Interaction type (e.g., "message", "meeting", "email") |
+| platform | string | No | Platform used |
+
+**Returns:** `Promise<{ interaction: Object }>`
+
+### claw.reportConnections(connections)
+Report active connections/integrations for this agent.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| connections | Object[] | Yes | Array of connection objects |
+| connections[].provider | string | Yes | Service name (e.g., "anthropic", "github") |
+| connections[].authType | string | No | Auth method |
+| connections[].planName | string | No | Plan name |
+| connections[].status | string | No | Connection status |
+| connections[].metadata | Object|string | No | Optional metadata |
+
+**Returns:** `Promise<{ connections: Object[], created: number }>`
+
+---
+
+## Session Handoffs
+
+### claw.createHandoff(handoff)
+Create a session handoff document summarizing work done, decisions made, and next priorities.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| summary | string | Yes | Session summary |
+| session_date | string | No | Date string (defaults to today) |
+| key_decisions | string[] | No | Key decisions made this session |
+| open_tasks | string[] | No | Tasks still open |
+| mood_notes | string | No | User mood/energy observations |
+| next_priorities | string[] | No | What to focus on next |
+
+**Returns:** `Promise<{handoff: Object, handoff_id: string}>`
+
+### claw.getHandoffs(filters?)
+Get handoffs for this agent with optional date and limit filters.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| date | string | No | Filter by session_date |
+| limit | number | No | Max results |
+
+**Returns:** `Promise<{handoffs: Object[], total: number}>`
+
+---
+
+## Context Manager
+
+Capture key points and organize context into threads for long-running topics.
+
+### claw.captureKeyPoint(point)
+Capture a key point from the current session for later recall.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| content | string | Yes | The key point content |
+| category | string | No | decision, task, insight, question, general |
+| importance | number | No | Importance 1-10 (default 5) |
+| session_date | string | No | Date string (defaults to today) |
+
+**Returns:** `Promise<{point: Object, point_id: string}>`
+
+### claw.createThread(thread)
+Create a context thread for tracking a topic across multiple entries.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| name | string | Yes | Thread name (unique per agent per org) |
+| summary | string | No | Initial summary |
+
+**Returns:** `Promise<{thread: Object, thread_id: string}>`
+
+### claw.addThreadEntry(threadId, content, entryType?)
+Add an entry to an existing thread.
+
+---
+
+## Agent Messaging
+
+### claw.sendMessage(params)
+Send a message to another agent or broadcast.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| to | string | No | Target agent ID (null = broadcast) |
+| type | string | No | info, action, lesson, question, status |
+| subject | string | No | Subject line (max 200 chars) |
+| body | string | Yes | Message body (max 2000 chars) |
+| threadId | string | No | Thread ID to attach to |
+| urgent | boolean | No | Mark as urgent |
+| docRef | string | No | Reference to a shared doc ID |
+
+**Returns:** `Promise<{message: Object, message_id: string}>`
+
+### claw.saveSharedDoc(params)
+Create or update a shared workspace document. Upserts by name.
+
+---
+
+## Bulk Sync
+
+### claw.syncState(state)
+Push multiple data categories in a single request. Accepts connections, memory, goals, learning, content, inspiration, context_points, context_threads, handoffs, preferences, and snippets.
+
+**Returns:** `Promise<{results: Object, total_synced: number, total_errors: number, duration_ms: number}>`
+
+---
+
+## Error Handling
+
+All SDK methods throw on non-2xx responses. Errors include `status` (HTTP code) and `details` (when available).
+
+```javascript
+try {
+  await claw.createAction({ ... });
+} catch (err) {
+  if (err.status === 401) {
+    console.error('Invalid API key');
+  } else {
+    console.error(`Action failed: \${err.message}`);
+  }
+}
+```
