@@ -63,7 +63,7 @@ const TABS = [
 // Tab 1 — Overview (Digest)
 // ============================================================
 
-function OverviewTab({ agentId }) {
+function OverviewTab({ agentId, dense }) {
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -133,7 +133,7 @@ function OverviewTab({ agentId }) {
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
         {stats.map(s => (
           <Card key={s.label} hover={false}>
-            <CardContent className="pt-3 pb-3">
+            <CardContent className={dense ? "pt-2 pb-2" : "pt-3 pb-3"}>
               <StatCompact label={s.label} value={s.value} color={s.color} />
             </CardContent>
           </Card>
@@ -144,8 +144,8 @@ function OverviewTab({ agentId }) {
         {sections.filter(s => s.items?.length > 0).map(section => (
           <Card key={section.key} hover={false}>
             <CardHeader title={section.label} icon={section.icon} count={section.items.length} />
-            <CardContent>
-              <div className="space-y-2">
+            <CardContent className={dense ? "pt-2 pb-2" : ""}>
+              <div className={dense ? "space-y-1" : "space-y-2"}>
                 {section.items.slice(0, 10).map((item, idx) => (
                   <div key={item.id || idx} className="flex items-start gap-2 text-sm text-zinc-300">
                     <Badge variant={section.variant} size="xs">{section.key}</Badge>
@@ -181,7 +181,7 @@ function OverviewTab({ agentId }) {
 // Tab 2 — Context (Points + Threads)
 // ============================================================
 
-function ContextTab({ agentId }) {
+function ContextTab({ agentId, dense }) {
   const [points, setPoints] = useState([]);
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -305,7 +305,7 @@ function ContextTab({ agentId }) {
             <Plus size={12} /> Add
           </button>
         </CardHeader>
-        <CardContent>
+        <CardContent className={dense ? "pt-2 pb-2" : ""}>
           {showAddPoint && (
             <form onSubmit={handleAddPoint} className="mb-4 p-3 rounded-md bg-white/5 border border-border space-y-2">
               <textarea
@@ -349,9 +349,9 @@ function ContextTab({ agentId }) {
           {points.length === 0 ? (
             <EmptyState icon={Layers} title="No key points" description="Capture key points during sessions" />
           ) : (
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+            <div className={`space-y-${dense ? '1' : '2'} max-h-[500px] overflow-y-auto`}>
               {points.map(p => (
-                <div key={p.id} className="flex items-start gap-2 text-sm p-2 rounded-md hover:bg-white/5">
+                <div key={p.id} className={`flex items-start gap-2 text-sm ${dense ? 'p-1' : 'p-2'} rounded-md hover:bg-white/5`}>
                   <Badge variant={CATEGORY_VARIANTS[p.category] || 'default'} size="xs">
                     {p.category}
                   </Badge>
@@ -379,7 +379,7 @@ function ContextTab({ agentId }) {
             <Plus size={12} /> New
           </button>
         </CardHeader>
-        <CardContent>
+        <CardContent className={dense ? "pt-2 pb-2" : ""}>
           {showCreateThread && (
             <form onSubmit={handleCreateThread} className="mb-4 p-3 rounded-md bg-white/5 border border-border space-y-2">
               <input
@@ -408,19 +408,19 @@ function ContextTab({ agentId }) {
           {threads.length === 0 ? (
             <EmptyState icon={Layers} title="No threads" description="Create threads to track topics" />
           ) : (
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+            <div className={`space-y-${dense ? '1' : '2'} max-h-[500px] overflow-y-auto`}>
               {threads.map(t => (
                 <div key={t.id} className="rounded-md border border-border overflow-hidden">
                   <button
                     onClick={() => toggleThread(t.id)}
-                    className="w-full flex items-center gap-2 p-2.5 text-sm hover:bg-white/5 text-left transition-colors"
+                    className={`w-full flex items-center gap-2 ${dense ? 'p-1.5' : 'p-2.5'} text-sm hover:bg-white/5 text-left transition-colors`}
                   >
                     {expandedThread === t.id ? <ChevronUp size={14} className="text-zinc-500 shrink-0" /> : <ChevronDown size={14} className="text-zinc-500 shrink-0" />}
                     <span className="flex-1 text-zinc-200 truncate">{t.name}</span>
                     <Badge variant={t.status === 'active' ? 'success' : 'default'} size="xs">{t.status}</Badge>
                   </button>
                   {expandedThread === t.id && (
-                    <div className="border-t border-border p-2.5 bg-white/[0.02]">
+                    <div className={`border-t border-border ${dense ? 'p-1.5' : 'p-2.5'} bg-white/[0.02]`}>
                       {t.summary && <div className="text-xs text-zinc-400 mb-2">{t.summary}</div>}
                       {threadEntries[t.id] ? (
                         threadEntries[t.id].length === 0 ? (
@@ -453,7 +453,7 @@ function ContextTab({ agentId }) {
 // Tab 3 — Handoffs
 // ============================================================
 
-function HandoffsTab({ agentId }) {
+function HandoffsTab({ agentId, dense }) {
   const [handoffs, setHandoffs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -490,7 +490,7 @@ function HandoffsTab({ agentId }) {
   if (handoffs.length === 0) return <EmptyState icon={ArrowRightLeft} title="No handoffs" description="Session handoffs will appear here when agents create them" />;
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-${dense ? '2' : '4'}`}>
       {handoffs.map(h => {
         const decisions = safeParseJson(h.key_decisions);
         const tasks = safeParseJson(h.open_tasks);
@@ -506,7 +506,7 @@ function HandoffsTab({ agentId }) {
 
         return (
           <Card key={h.id} hover={false}>
-            <CardContent className="pt-4">
+            <CardContent className={dense ? "pt-3 pb-3" : "pt-4"}>
               <div className="flex items-center gap-2 mb-2">
                 <span className="font-mono text-xs text-zinc-500">{formatDate(h.session_date)}</span>
                 {h.agent_id && (
@@ -552,7 +552,7 @@ function HandoffsTab({ agentId }) {
 // Tab 4 — Snippets
 // ============================================================
 
-function SnippetsTab({ agentId }) {
+function SnippetsTab({ agentId, dense }) {
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -631,12 +631,12 @@ function SnippetsTab({ agentId }) {
       ) : snippets.length === 0 ? (
         <EmptyState icon={Code2} title="No snippets" description="Save reusable code snippets via the SDK" />
       ) : (
-        <div className="space-y-4">
+        <div className={`space-y-${dense ? '2' : '4'}`}>
           {snippets.map(s => {
             const tags = safeParseJson(s.tags);
             return (
               <Card key={s.id} hover={false}>
-                <CardContent className="pt-4">
+                <CardContent className={dense ? "pt-3" : "pt-4"}>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-medium text-zinc-200">{s.name}</span>
                     {s.language && <Badge variant="info" size="xs">{s.language}</Badge>}
@@ -649,7 +649,7 @@ function SnippetsTab({ agentId }) {
                     </div>
                   )}
                   <div className="relative">
-                    <pre className="font-mono text-xs text-zinc-300 bg-black/30 rounded-md p-3 overflow-x-auto max-h-[300px] overflow-y-auto border border-border">
+                    <pre className={`font-mono text-xs text-zinc-300 bg-black/30 rounded-md overflow-x-auto max-h-[300px] overflow-y-auto border border-border ${dense ? 'p-2' : 'p-3'}`}>
                       {s.code}
                     </pre>
                     <div className="absolute top-2 right-2 flex gap-1">
@@ -683,7 +683,7 @@ function SnippetsTab({ agentId }) {
 // Tab 5 — Preferences
 // ============================================================
 
-function PreferencesTab({ agentId }) {
+function PreferencesTab({ agentId, dense }) {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -743,10 +743,10 @@ function PreferencesTab({ agentId }) {
         {drilldownLoading ? <ListSkeleton rows={4} /> : drilldownData.length === 0 ? (
           <EmptyState icon={UserCog} title={`No ${drilldown}`} description={`No ${drilldown} recorded yet`} />
         ) : (
-          <div className="space-y-2">
+          <div className={dense ? "space-y-1" : "space-y-2"}>
             {drilldown === 'observations' && drilldownData.map((item, i) => (
               <Card key={item.id || i} hover={false}>
-                <CardContent className="pt-3 pb-3">
+                <CardContent className={dense ? "pt-2 pb-2" : "pt-3 pb-3"}>
                   <div className="flex items-start gap-2 text-sm">
                     {item.category && <Badge variant={CATEGORY_VARIANTS[item.category] || 'default'} size="xs">{item.category}</Badge>}
                     <span className="flex-1 text-zinc-300">{item.observation}</span>
@@ -760,7 +760,7 @@ function PreferencesTab({ agentId }) {
             ))}
             {drilldown === 'preferences' && drilldownData.map((item, i) => (
               <Card key={item.id || i} hover={false}>
-                <CardContent className="pt-3 pb-3">
+                <CardContent className={dense ? "pt-2 pb-2" : "pt-3 pb-3"}>
                   <div className="flex items-center gap-2 mb-1">
                     {item.category && <Badge variant="info" size="xs">{item.category}</Badge>}
                     <span className="text-sm text-zinc-300">{item.preference}</span>
@@ -775,7 +775,7 @@ function PreferencesTab({ agentId }) {
             ))}
             {drilldown === 'moods' && drilldownData.map((item, i) => (
               <Card key={item.id || i} hover={false}>
-                <CardContent className="pt-3 pb-3">
+                <CardContent className={dense ? "pt-2 pb-2" : "pt-3 pb-3"}>
                   <div className="text-sm text-zinc-200 font-medium">{item.mood}</div>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] text-zinc-500">Energy:</span>
@@ -792,7 +792,7 @@ function PreferencesTab({ agentId }) {
               const ratio = total > 0 ? Math.round((item.success_count / total) * 100) : 0;
               return (
                 <Card key={item.id || i} hover={false}>
-                  <CardContent className="pt-3 pb-3">
+                  <CardContent className={dense ? "pt-2 pb-2" : "pt-3 pb-3"}>
                     <div className="text-sm text-zinc-200">{item.approach}</div>
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className="text-xs text-green-400">{item.success_count || 0} success</span>
@@ -894,7 +894,7 @@ function PreferencesTab({ agentId }) {
 // Tab 6 — Memory
 // ============================================================
 
-function MemoryTab({ agentId }) {
+function MemoryTab({ agentId, dense }) {
   const [memory, setMemory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -957,7 +957,7 @@ function MemoryTab({ agentId }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {metrics.map(m => (
           <Card key={m.label} hover={false}>
-            <CardContent className="pt-3 pb-3">
+            <CardContent className={dense ? "pt-2 pb-2" : "pt-3 pb-3"}>
               <StatCompact
                 label={m.label}
                 value={m.value}
@@ -976,7 +976,7 @@ function MemoryTab({ agentId }) {
             {entities.length === 0 ? (
               <div className="text-xs text-zinc-500">No entities extracted</div>
             ) : (
-              <div className="space-y-1.5 max-h-[400px] overflow-y-auto">
+              <div className={`space-y-1.5 max-h-[400px] overflow-y-auto ${dense ? 'text-xs' : 'text-sm'}`}>
                 {entities.sort((a, b) => (b.mention_count || 0) - (a.mention_count || 0)).map((e, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
                     {e.type && <Badge variant="info" size="xs">{e.type}</Badge>}
@@ -1019,6 +1019,7 @@ export default function WorkspacePage() {
   const { agentId: filterAgentId } = useAgentFilter();
   const [tab, setTab] = useState('overview');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [dense, setDense] = useState(false);
 
   return (
     <PageLayout
@@ -1026,12 +1027,23 @@ export default function WorkspacePage() {
       subtitle="Agent tools and context"
       breadcrumbs={['Dashboard', 'Workspace']}
       actions={
-        <button
-          onClick={() => setRefreshKey(k => k + 1)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-surface-secondary border border-border text-zinc-300 hover:text-white hover:border-border-hover transition-colors"
-        >
-          <RefreshCw size={14} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDense(d => !d)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+              dense ? 'bg-brand/10 border-brand text-brand' : 'bg-surface-secondary border-border text-zinc-300 hover:text-white'
+            }`}
+            title="Toggle Dense View"
+          >
+            <Layers size={14} /> Dense
+          </button>
+          <button
+            onClick={() => setRefreshKey(k => k + 1)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-surface-secondary border border-border text-zinc-300 hover:text-white hover:border-border-hover transition-colors"
+          >
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
       }
     >
       {/* Tabs */}
@@ -1057,12 +1069,12 @@ export default function WorkspacePage() {
       </div>
 
       {/* Tab Content */}
-      {tab === 'overview' && <OverviewTab key={`overview-${refreshKey}`} agentId={filterAgentId} />}
-      {tab === 'context' && <ContextTab key={`context-${refreshKey}`} agentId={filterAgentId} />}
-      {tab === 'handoffs' && <HandoffsTab key={`handoffs-${refreshKey}`} agentId={filterAgentId} />}
-      {tab === 'snippets' && <SnippetsTab key={`snippets-${refreshKey}`} agentId={filterAgentId} />}
-      {tab === 'preferences' && <PreferencesTab key={`preferences-${refreshKey}`} agentId={filterAgentId} />}
-      {tab === 'memory' && <MemoryTab key={`memory-${refreshKey}`} agentId={filterAgentId} />}
+      {tab === 'overview' && <OverviewTab key={`overview-${refreshKey}`} agentId={filterAgentId} dense={dense} />}
+      {tab === 'context' && <ContextTab key={`context-${refreshKey}`} agentId={filterAgentId} dense={dense} />}
+      {tab === 'handoffs' && <HandoffsTab key={`handoffs-${refreshKey}`} agentId={filterAgentId} dense={dense} />}
+      {tab === 'snippets' && <SnippetsTab key={`snippets-${refreshKey}`} agentId={filterAgentId} dense={dense} />}
+      {tab === 'preferences' && <PreferencesTab key={`preferences-${refreshKey}`} agentId={filterAgentId} dense={dense} />}
+      {tab === 'memory' && <MemoryTab key={`memory-${refreshKey}`} agentId={filterAgentId} dense={dense} />}
     </PageLayout>
   );
 }
