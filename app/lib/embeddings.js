@@ -17,13 +17,22 @@ function getOpenAI() {
 }
 
 /**
+ * Check if Behavioral AI (embeddings) is enabled based on configuration.
+ */
+export function isEmbeddingsEnabled() {
+  return !!(process.env.OPENAI_API_KEY || process.env.GUARD_LLM_KEY);
+}
+
+/**
  * Generate an embedding for an agent action.
  * Concatenates action type, goal, and reasoning for context.
  */
 export async function generateActionEmbedding(action) {
+  if (!isEmbeddingsEnabled()) {
+    return null;
+  }
   const openai = getOpenAI();
   if (!openai) {
-    console.warn('[Embeddings] No API key configured for embeddings.');
     return null;
   }
 

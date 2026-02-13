@@ -9,7 +9,7 @@ import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { verifyAgentSignature } from '../../lib/identity.js';
 import { estimateCost } from '../../lib/billing.js';
 import { eventBus, EVENTS } from '../../lib/events.js';
-import { generateActionEmbedding } from '../../lib/embeddings.js';
+import { generateActionEmbedding, isEmbeddingsEnabled } from '../../lib/embeddings.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -237,6 +237,7 @@ export async function POST(request) {
     
     // Background indexing for behavioral anomaly detection
     const indexAction = async () => {
+      if (!isEmbeddingsEnabled()) return;
       try {
         const embedding = await generateActionEmbedding(data);
         if (embedding) {
