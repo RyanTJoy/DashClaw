@@ -66,6 +66,39 @@ handler = DashClawCallbackHandler(claw)
 agent.run("Hello world", callbacks=[handler])
 ```
 
+### CrewAI
+
+Instrument CrewAI tasks and agents to track research and decision-making.
+
+```python
+from dashclaw.integrations.crewai import DashClawCrewIntegration
+
+integration = DashClawCrewIntegration(claw)
+
+# Method A: Task callback
+task = Task(
+    description="Analyze market trends",
+    agent=analyst,
+    callback=integration.task_callback
+)
+
+# Method B: Instrument Agent (Step-by-step tracking)
+analyst = integration.instrument_agent(analyst)
+```
+
+### AutoGen
+
+Monitor multi-agent conversations and protocol exchanges.
+
+```python
+from dashclaw.integrations.autogen import DashClawAutoGenIntegration
+
+integration = DashClawAutoGenIntegration(claw)
+
+# Instrument an agent to log all received messages
+integration.instrument_agent(assistant)
+```
+
 ## API Parity
 
 This SDK provides parity with the [DashClaw Node.js SDK](https://github.com/ucsandman/DashClaw/tree/main/sdk).

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-02-13
+
+### Added
+- **CrewAI Integration**: New adapter for CrewAI agents and tasks to track multi-agent research.
+- **AutoGen Integration**: Hook-based integration for AutoGen to monitor conversational agent turns.
+- **Node SDK v1.3.1**: Synced version with platform.
+- **Python SDK v1.3.1**: New integrations and RSA signing support.
+
 ## [1.3.0] - 2026-02-13
 
 ### Added
