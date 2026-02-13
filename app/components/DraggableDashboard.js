@@ -28,7 +28,7 @@ const Responsive = RGL.Responsive || RGL.default?.Responsive || RGL;
 
 // Custom WidthProvider to avoid import issues
 const withWidth = (ComposedComponent) => {
-  return (props) => {
+  const WithWidth = (props) => {
     const [width, setWidth] = useState(1200);
     const elementRef = useRef(null);
 
@@ -52,6 +52,9 @@ const withWidth = (ComposedComponent) => {
       </div>
     );
   };
+
+  WithWidth.displayName = `WithWidth(${ComposedComponent.displayName || ComposedComponent.name || 'Component'})`;
+  return WithWidth;
 };
 
 const ResponsiveGridLayout = withWidth(Responsive);

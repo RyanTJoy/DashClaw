@@ -40,10 +40,6 @@ export const authOptions = {
         if (!process.env.DATABASE_URL) return true;
 
         const now = new Date().toISOString();
-        // If mock driver, skip logic
-        if (!process.env.DATABASE_URL) return true;
-
-        const now = new Date().toISOString();
 
         // Upsert user on every login
         const existing = await sql`
