@@ -12,8 +12,8 @@ import PublicNavbar from './components/PublicNavbar';
 const coreFeatures = [
   {
     icon: Zap,
-    title: 'Action Recording & Audit Trail',
-    description: 'Every agent action logged with type, goal, risk score, status, outcome, and systems touched. Full post-mortem with root-cause tracing.',
+    title: 'Real-Time Flight Recorder',
+    description: 'Watch your agents think and act live. Server-Sent Events (SSE) stream actions, signals, and costs directly to your mission control dashboard.',
   },
   {
     icon: ShieldAlert,
@@ -21,18 +21,19 @@ const coreFeatures = [
     description: 'Automatic detection of autonomy spikes, repeated failures, stale loops, assumption drift, and more. No configuration required.',
   },
   {
-    icon: FolderKanban,
-    title: 'Agent Workspace',
-    description: 'Session handoffs, context threads, key points, automation snippets, user preferences, and daily digests in one tabbed interface.',
+    icon: BarChart3,
+    title: 'Token & Cost Analytics',
+    description: 'Real-time financial tracking. See "Cost per Goal" and "Burn Rate" for every model (GPT-4o, Claude 3.5, etc.) instantly.',
   },
   {
     icon: Shield,
-    title: 'Behavior Guard',
-    description: 'Agents check in before risky actions. Set risk thresholds, require approvals, and block dangerous operations — without changing agent code.',
+    title: 'Semantic & Logic Guardrails',
+    description: 'Control agent behavior with logic rules (rate limits) or natural language policies ("Don\'t delete system files").',
   },
 ];
 
 const platformFeatures = [
+  { icon: Package, title: 'Node.js & Python SDKs', description: 'Zero-dependency clients for both ecosystems. Drop-in compatible with LangChain, CrewAI, and AutoGen.' },
   { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
   { icon: Brain, title: 'Context Manager', description: 'Capture key points and organize context into threads for long-running topics.' },
   { icon: CircleDot, title: 'Open Loop Tracking', description: 'Track unresolved dependencies, pending approvals, and blockers across agents.' },
@@ -40,7 +41,6 @@ const platformFeatures = [
   { icon: ScanSearch, title: 'Security Scanning', description: '18 regex patterns detect API keys, tokens, and PII before data leaves your system.' },
   { icon: HeartPulse, title: 'Memory Health', description: 'Track memory file counts, duplicates, stale facts, entities, and topics over time.' },
   { icon: Newspaper, title: 'Daily Digest', description: 'Aggregated daily summary from actions, decisions, lessons, content, and goals.' },
-  { icon: Package, title: '57-Method SDK', description: 'Zero-dependency npm package. ESM + CJS. Drop into any Node.js agent in minutes.' },
 ];
 
 const operationalFeatures = [
@@ -114,9 +114,9 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { step: '1', title: 'Install the SDK', code: 'npm install dashclaw', desc: 'Zero dependencies. Works with any Node.js agent.' },
+              { step: '1', title: 'Install the SDK', code: 'npm install dashclaw\n# or\npip install dashclaw', desc: 'Zero dependencies. Works with Node.js and Python agents.' },
               { step: '2', title: 'Initialize your agent', code: "const claw = new DashClaw({\n  apiKey: '...',\n  agentId: 'my-agent',\n})", desc: 'One constructor. Your API key scopes all data.' },
-              { step: '3', title: 'See it on the dashboard', code: "await claw.createAction({\n  action_type: 'deploy',\n  declared_goal: 'Ship auth',\n})", desc: 'Actions, signals, and loops appear instantly.' },
+              { step: '3', title: 'See it live', code: "with claw.track(action='deploy'):\n  # ... actions stream to\n  # dashboard in real-time", desc: 'Actions, signals, and costs appear instantly via SSE.' },
             ].map((item) => (
               <div key={item.step} className="p-5 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
                 <span className="w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center mb-3">{item.step}</span>
