@@ -33,6 +33,10 @@ app/
 ├── globals.css                # Design tokens (CSS custom properties) + Tailwind
 ├── dashboard/page.js          # Authenticated dashboard (fixed widget grid)
 ├── lib/validate.js            # Input validation helpers
+├── lib/db.js                  # Shared database connection utility (production-safe)
+├── lib/security.js            # DLP / Sensitive data scanning engine
+├── lib/embeddings.js          # Vector embedding generation (OpenAI)
+├── lib/maintenance.js         # Proactive memory health engine
 ├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole, getUserId)
 ├── lib/auth.js                # NextAuth config (GitHub + Google, JWT, user upsert)
 ├── lib/billing.js             # Plan limits, usage metering, quota checking
