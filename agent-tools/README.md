@@ -12,7 +12,7 @@ This repo's dashboard app can live anywhere. The tools bundle is what belongs in
 
 ## What's included (quick glance)
 
-- **Security**: outbound filter, secret rotation tracker, audit logger, skill safety checker
+- **Security**: outbound filter, secret rotation tracker, audit logger (with auto-redaction), skill safety checker
 - **Tokens**: token capture + dashboards, efficiency/budget helpers
 - **Memory**: memory search, memory health scanner, memory extractor
 - **Ops tracking**: learning database, relationship tracker, goal tracker, open loops

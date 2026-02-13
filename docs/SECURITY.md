@@ -13,11 +13,18 @@ DashClaw takes security seriously. This guide covers how we protect your data an
 
 ### API Security
 - All API endpoints validate required fields and enforce string length limits.
+- **Mandatory Signatures**: In production, all agent actions must be cryptographically signed via RSA-PSS to be accepted.
+- **Fail-Closed Auth**: The system strictly blocks API access if environment variables are misconfigured in production.
+- **Data Loss Prevention (DLP)**: Incoming messages, handoffs, and security scans are automatically filtered for sensitive patterns (OpenAI keys, AWS credentials, etc.) and redacted before storage.
 - **SSRF Protection**: Centralized URL validation blocks webhook/guard requests to localhost, private networks, and invalid domains (e.g., .local, .internal).
 - **Domain Allowlist**: Support for optional `WEBHOOK_ALLOWED_DOMAINS` environment variable to strictly limit external requests to trusted providers.
 - Database connections use SSL/TLS encryption.
 - CORS configured for your deployment domain only.
 - No sensitive data in URL parameters (API keys must be in headers).
+
+### Local Agent Security
+- **Audit Log Redaction**: The local Python audit tools include a redaction engine to ensure secrets are never stored in plaintext in local SQLite databases.
+- **State Isolation**: Agent state and credentials should be stored in the gitignored `secrets/` directory.
 
 ### What We DON'T Store
 - We don't store your actual data - just references and metadata

@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import { neon } from '@neondatabase/serverless';
 
 /**
  * Authentication middleware for DashClaw
@@ -53,7 +55,8 @@ const PUBLIC_ROUTES = [
   '/api/cron',
 ];
 
-// Simple in-memory rate limiting (resets on deploy)
+// SECURITY: In-memory rate limiting is local to the instance.
+// For production multi-region deployments, use Redis or Upstash.
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 100; // requests per window
@@ -117,7 +120,6 @@ async function resolveApiKey(keyHash) {
   }
 
   try {
-    const { neon } = require('@neondatabase/serverless');
     const sql = neon(process.env.DATABASE_URL);
     const rows = await sql`
       SELECT ak.org_id, ak.role, ak.revoked_at
@@ -165,7 +167,7 @@ function getCorsHeaders(request) {
   // In production, only allow the configured origin
   if (allowedOrigin && origin === allowedOrigin) {
     headers['Access-Control-Allow-Origin'] = allowedOrigin;
-  } else if (!allowedOrigin && process.env.NODE_ENV !== 'production') {
+  } else if (!allowedOrigin && process.env.NODE_ENV === 'development') {
     headers['Access-Control-Allow-Origin'] = origin || '*';
   }
   // In production with no match, no Access-Control-Allow-Origin header is set (blocks CORS)
@@ -178,7 +180,6 @@ export async function middleware(request) {
 
   // Page routes (non-API): check NextAuth session
   if (!pathname.startsWith('/api/')) {
-    const { getToken } = require('next-auth/jwt');
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
     // /login — redirect to dashboard if already logged in
@@ -239,8 +240,9 @@ export async function middleware(request) {
     // - dev/local: allow with org_default (convenience)
     // - production: block (prevents accidentally exposing your dashboard data)
     if (!expectedKey) {
-      if (process.env.NODE_ENV === 'production') {
-        console.warn(`[SECURITY] DASHCLAW_API_KEY not set in production - blocking access to: ${pathname}`);
+      // SECURITY: Fail closed if not strictly in development mode
+      if (process.env.NODE_ENV !== 'development') {
+        console.warn(`[SECURITY] DASHCLAW_API_KEY not set - blocking access to: ${pathname}`);
         return NextResponse.json(
           { error: 'Server misconfigured: set DASHCLAW_API_KEY to protect /api/* endpoints.' },
           { status: 503 }
@@ -253,6 +255,7 @@ export async function middleware(request) {
       response.headers.set('X-Content-Type-Options', 'nosniff');
       response.headers.set('X-Frame-Options', 'DENY');
       response.headers.set('X-XSS-Protection', '1; mode=block');
+      response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
       return response;
     }
@@ -266,7 +269,6 @@ export async function middleware(request) {
 
       if (isSameOrigin) {
         // Resolve org from NextAuth session token
-        const { getToken } = require('next-auth/jwt');
         const sessionToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
         
         if (!sessionToken) {

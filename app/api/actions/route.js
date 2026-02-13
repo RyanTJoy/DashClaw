@@ -11,82 +11,27 @@ import { estimateCost } from '../../lib/billing.js';
 import { eventBus, EVENTS } from '../../lib/events.js';
 import crypto from 'crypto';
 
-// In-memory store for local development without DB
-const MEMORY_STORE = {
-  actions: [],
-  meters: {}
-};
-
 let _sql;
 function getSql() {
   if (_sql) return _sql;
   if (!process.env.DATABASE_URL) {
-    console.warn('[API] DATABASE_URL not set. Using in-memory mock driver.');
-    
-    // Mock driver that mimics neon interface (callable + .query)
-    const mockSql = async (strings, ...values) => {
-      return mockSqlTag(strings, ...values);
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('DATABASE_URL is not set in production. Connection failed.');
+    }
+    console.warn('[API] DATABASE_URL not set. In-memory mock driver is NO LONGER SUPPORTED. Please set DATABASE_URL.');
+    // Return a dummy that fails gracefully
+    return {
+      query: async () => [],
+      execute: async () => []
     };
-    mockSql.query = async (text, params) => {
-      // Mock SELECT * FROM action_records
-      if (text.includes('SELECT * FROM action_records')) {
-        const limit = params[params.length - 2] || 50;
-        return MEMORY_STORE.actions.slice(0, limit);
-      }
-      // Mock COUNT(*)
-      if (text.includes('SELECT COUNT(*)')) {
-        return [{ total: MEMORY_STORE.actions.length }];
-      }
-      // Mock Stats
-      if (text.includes('SELECT') && text.includes('AVG(risk_score)')) {
-        return [{ total: MEMORY_STORE.actions.length, completed: 0, failed: 0, running: 0, high_risk: 0, avg_risk: 0, total_cost: 0 }];
-      }
-      return [];
-    };
-    return mockSql;
   }
-  const url = process.env.DATABASE_URL;
-  _sql = neon(url);
+  _sql = neon(process.env.DATABASE_URL);
   return _sql;
-}
-
-// Helper for SQL template tag emulation in mock driver
-async function mockSqlTag(strings, ...values) {
-  const query = strings[0].trim();
-  
-  // INSERT
-  if (query.startsWith('INSERT INTO action_records')) {
-    // Extract values from the parameter array based on known position
-    // Values order: orgId, action_id, agent_id, agent_name... (see POST handler)
-    const action = {
-      org_id: values[0],
-      action_id: values[1],
-      agent_id: values[2],
-      agent_name: values[3],
-      swarm_id: values[4],
-      parent_action_id: values[5],
-      action_type: values[6],
-      declared_goal: values[7],
-      reasoning: values[8],
-      // ... simplified mapping for dev visualization
-      status: values[13] || 'running',
-      risk_score: values[15] || 0,
-      timestamp_start: values[21] || new Date().toISOString(),
-      cost_estimate: values[24] || 0
-    };
-    MEMORY_STORE.actions.unshift(action); // Add to top
-    return [action];
-  }
-  
-  return [];
 }
 
 export async function GET(request) {
   try {
     const sql = getSql();
-    // If mocking, sql is an object, not a function. But real neon is a function.
-    // We need to handle both call signatures if we want to be pure.
-    // But for this specific GET, we only use sql.query(), so the mock object works.
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
 
@@ -126,7 +71,6 @@ export async function GET(request) {
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    // Use raw SQL string since neon tagged templates don't support dynamic WHERE
     const query = `SELECT * FROM action_records ${where} ORDER BY timestamp_start DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
     params.push(limit, offset);
 
@@ -216,14 +160,22 @@ export async function POST(request) {
     const action_id = data.action_id || `act_${crypto.randomUUID()}`;
     const timestamp_start = data.timestamp_start || new Date().toISOString();
 
-    // Identity Verification
+    // Identity Verification (MANDATORY in production)
     const signature = body._signature || null;
     let verified = false;
+
+    if (!signature && process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Signature required for action records in production' }, { status: 401 });
+    }
 
     if (signature && data.agent_id) {
       // verify against the exact payload received (minus signature)
       const { _signature: s, ...payload } = body;
       verified = await verifyAgentSignature(orgId, data.agent_id, payload, signature, sql);
+      
+      if (!verified && process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ error: 'Invalid agent signature' }, { status: 401 });
+      }
     }
 
     // Auto-calculate cost if tokens are provided

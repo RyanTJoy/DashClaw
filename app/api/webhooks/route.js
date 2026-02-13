@@ -1,21 +1,12 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 import { NextResponse } from 'next/server';
+import { getSql } from '../../lib/db.js';
 import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
 import { logActivity } from '../../lib/audit.js';
 import { isValidWebhookUrl } from '../../lib/validate.js';
 import crypto from 'crypto';
 
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 const VALID_SIGNAL_TYPES = [
   'all', 'autonomy_spike', 'high_impact_low_oversight', 'repeated_failures',

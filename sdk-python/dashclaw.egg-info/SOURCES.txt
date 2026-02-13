@@ -5,4 +5,7 @@ dashclaw/client.py
 dashclaw.egg-info/PKG-INFO
 dashclaw.egg-info/SOURCES.txt
 dashclaw.egg-info/dependency_links.txt
+dashclaw.egg-info/requires.txt
 dashclaw.egg-info/top_level.txt
+dashclaw/integrations/__init__.py
+dashclaw/integrations/langchain.py

@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../../lib/db.js';
 
 export const dynamic = 'force-dynamic';
 
 // Check if the dashboard is properly configured
 export async function GET() {
   try {
-    // Check if DATABASE_URL is set
-    if (!process.env.DATABASE_URL) {
-      return NextResponse.json({ 
-        configured: false, 
-        reason: 'no_database',
-        message: 'DATABASE_URL not set' 
-      });
-    }
-
-    // Try to connect to the database
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     
     // Check if settings table exists
     const tables = await sql`

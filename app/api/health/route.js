@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../lib/db.js';
 
 /**
  * Health check endpoint for DashClaw
@@ -9,22 +9,28 @@ export async function GET() {
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '1.2.0',
+    version: '1.3.0',
     checks: {}
   };
 
   // Check database connection
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     await sql`SELECT 1 as health_check`;
     health.checks.database = { status: 'healthy', latency: 'ok' };
   } catch (error) {
     health.status = 'degraded';
-    health.checks.database = { status: 'unhealthy', error: 'Connection failed' };
+    health.checks.database = { status: 'unhealthy', error: error.message };
   }
 
+  // Check runtime capabilities
+  health.checks.runtime = {
+    edge_compatible: typeof crypto !== 'undefined' && !!crypto.subtle,
+    node_env: process.env.NODE_ENV || 'development'
+  };
+
   // Check environment variables
-  const requiredEnvVars = ['DATABASE_URL'];
+  const requiredEnvVars = ['DATABASE_URL', 'NEXTAUTH_SECRET'];
   const missingVars = requiredEnvVars.filter(v => !process.env[v]);
 
   if (missingVars.length > 0) {

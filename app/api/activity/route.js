@@ -1,18 +1,9 @@
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 import { NextResponse } from 'next/server';
+import { getSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
 
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 // GET /api/activity - List activity logs (all members can read)
 export async function GET(request) {
