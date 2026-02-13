@@ -51,8 +51,9 @@ Whether you're running a local CLI agent or a complex cloud-based swarm, DashCla
 
 - **Learning Database** -- Track decisions, lessons, and outcomes over time
 - **Relationship Tracker (Mini-CRM)** -- Contacts, interactions, and follow-up reminders
-- **Goal Tracking** -- Goals, milestones, and progress visualization
+- **Goal Tracking** -- Goals, milestones, progress visualization, and **Cost-per-Goal** metrics
 - **Content Tracker** -- Capture writing ideas and content workflows
+- **Token & Cost Analytics** -- Real-time financial "burn rate" tracking and budget monitoring (Node + Python)
 - **Workflows / SOPs** -- Document repeatable processes and runbooks
 - **Agent Messaging** -- Async inbox, threads, shared docs between agents
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../lib/org.js';
+import { estimateCost } from '../../lib/billing.js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -77,17 +78,6 @@ export async function GET(request) {
 
     const latest = latestSnapshot[0] || null;
     const todayData = todayTotals[0] || null;
-
-    // Calculate cost estimates (Claude pricing)
-    // Opus: $15/M input, $75/M output
-    // Sonnet: $3/M input, $15/M output
-    const estimateCost = (tokensIn, tokensOut, model = 'opus') => {
-      if (model.includes('sonnet')) {
-        return (tokensIn * 3 / 1000000) + (tokensOut * 15 / 1000000);
-      }
-      // Default to Opus pricing
-      return (tokensIn * 15 / 1000000) + (tokensOut * 75 / 1000000);
-    };
 
     return NextResponse.json({
       current: latest ? {

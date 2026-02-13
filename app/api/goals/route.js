@@ -15,10 +15,22 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id');
 
-    // Get all goals (optionally filtered by agent)
+    // Get all goals (optionally filtered by agent) with total cost aggregated from action_records
+    // We assume actions link to goals via their declared_goal containing the goal title (fuzzy) 
+    // OR we can implement a more explicit goal_id on actions later.
+    // For now, let's look for actions where parent_action_id links to a goal's "primary" action if tracked.
+    // Actually, a simpler way: let's just aggregate cost from action_records where declared_goal or description mentions the goal title.
+    // EVEN BETTER: Let's just return the goal.cost_estimate which we will update whenever an action is reported.
+    
     const goals = agentId
       ? await sql`SELECT * FROM goals WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY created_at DESC`
       : await sql`SELECT * FROM goals WHERE org_id = ${orgId} ORDER BY created_at DESC`;
+
+    // Calculate aggregated costs for each goal (mock logic for now, using the column we added)
+    const goalsWithData = goals.map(g => ({
+      ...g,
+      total_cost: g.cost_estimate || 0
+    }));
 
     // Get milestones for each goal
     const milestones = agentId

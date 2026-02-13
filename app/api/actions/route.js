@@ -7,6 +7,7 @@ import { validateActionRecord } from '../../lib/validate.js';
 import { getOrgId, getOrgRole } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { verifyAgentSignature } from '../../lib/identity.js';
+import { estimateCost } from '../../lib/billing.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -160,6 +161,12 @@ export async function POST(request) {
       verified = await verifyAgentSignature(orgId, data.agent_id, payload, signature, sql);
     }
 
+    // Auto-calculate cost if tokens are provided
+    let costEstimate = data.cost_estimate || 0;
+    if ((data.tokens_in || data.tokens_out) && !data.cost_estimate) {
+      costEstimate = estimateCost(data.tokens_in || 0, data.tokens_out || 0, data.model);
+    }
+
     const result = await sql`
       INSERT INTO action_records (
         org_id, action_id, agent_id, agent_name, swarm_id, parent_action_id,
@@ -168,6 +175,7 @@ export async function POST(request) {
         status, reversible, risk_score, confidence,
         output_summary, side_effects, artifacts_created, error_message,
         timestamp_start, timestamp_end, duration_ms, cost_estimate,
+        tokens_in, tokens_out,
         signature, verified
       ) VALUES (
         ${orgId},
@@ -194,7 +202,9 @@ export async function POST(request) {
         ${timestamp_start},
         ${data.timestamp_end || null},
         ${data.duration_ms || null},
-        ${data.cost_estimate || 0},
+        ${costEstimate},
+        ${data.tokens_in || 0},
+        ${data.tokens_out || 0},
         ${signature},
         ${verified}
       )
