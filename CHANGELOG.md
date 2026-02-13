@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-02-13
+
+### Security
+- **SSRF Hardening**: Enhanced webhook URL validation with stricter blocked patterns and optional domain allowlist support.
+- **Dependency Updates**: Resolved vulnerabilities in `next` and `esbuild` through security patches.
+- **Scanner Integrity**: Updated internal security scanner to ensure comprehensive directory coverage.
+- **Cleanup**: Removed unverified third-party agent skills and scripts from the repository.
+
 ## [1.2.0] - 2026-02-12
 
 ### Added
