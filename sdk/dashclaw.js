@@ -1133,7 +1133,7 @@ class GuardBlockedError extends Error {
   }
 }
 
-// Backward compatibility alias
+// Backward compatibility alias (Legacy)
 const OpenClawAgent = DashClaw;
 
 export default DashClaw;

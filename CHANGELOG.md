@@ -1,4 +1,4 @@
-# OpenClaw Pro Changelog
+# DashClaw Changelog
 
 All notable changes to this project will be documented in this file.
 

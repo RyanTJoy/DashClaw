@@ -1,6 +1,6 @@
-# OpenClaw-Pro Project Details
+# DashClaw Project Details
 
-This file contains detailed technical information about the OpenClaw-Pro (DashClaw) project, moved from CLAUDE.md to keep it concise.
+This file contains detailed technical information about the DashClaw project, moved from CLAUDE.md to keep it concise.
 
 ## Operational Maturity
 
@@ -121,6 +121,14 @@ sdk/
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
 └── .npmignore                 # Publish exclusions
+
+sdk-python/
+├── dashclaw/
+│   ├── __init__.py            # Exports (DashClaw, OpenClawAgent)
+│   └── client.py              # Python SDK Core (urllib-based, zero deps)
+├── README.md                  # Python SDK docs
+├── setup.py                   # PyPI package config
+└── test_sdk.py                # Integration test suite
 
 scripts/
 ├── security-scan.js           # Pre-deploy security audit
@@ -682,6 +690,30 @@ The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-co
 
 ```bash
 npm install dashclaw
+```
+
+### DashClaw Python SDK (v1.0.0 — Zero Dependencies)
+
+A native Python implementation of the DashClaw toolkit. Supports both synchronous and context-manager based tracking.
+
+```bash
+# From the sdk-python directory
+pip install .
+```
+
+```python
+from dashclaw import DashClaw
+
+claw = DashClaw(
+    base_url='https://dash-claw.vercel.app',
+    api_key=os.environ['DASHCLAW_API_KEY'],
+    agent_id='my-python-agent'
+)
+
+# Use as a context manager for automatic action recording
+with claw.track(action_type='build', declared_goal='Initialize project'):
+    # Your agent logic here
+    print("Agent is working...")
 ```
 
 ```javascript

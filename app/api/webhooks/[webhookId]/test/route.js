@@ -47,7 +47,7 @@ export async function POST(request, { params }) {
       signals: [{
         type: 'test',
         severity: 'amber',
-        label: 'Test signal from OpenClaw',
+        label: 'Test signal from DashClaw',
         detail: 'This is a test webhook delivery to verify your endpoint is receiving events correctly.',
         help: 'No action required — this is a test.',
       }],

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * OpenClaw Dashboard Security Scanner
+ * DashClaw Dashboard Security Scanner
  * 
  * Scans your codebase for common security issues before deployment.
  * Run with: node scripts/security-scan.js
@@ -252,7 +252,7 @@ function checkDependencies() {
 // Main execution
 console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
-║           🔒 OpenClaw Dashboard Security Scanner 🔒            ║
+║           🔒 DashClaw Dashboard Security Scanner 🔒            ║
 ╚═══════════════════════════════════════════════════════════════╝
 `);
 
