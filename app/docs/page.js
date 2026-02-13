@@ -77,9 +77,9 @@ function MethodEntry({ id, signature, description, params, returns, example, chi
 
 function SectionNav({ items }) {
   return (
-    <nav className="hidden lg:block sticky top-20 w-52 shrink-0 self-start">
+    <nav className="hidden lg:block sticky top-24 w-52 shrink-0 self-start max-h-[calc(100vh-120px)] overflow-y-auto pr-4 scrollbar-hide hover:scrollbar-default transition-all">
       <div className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-3">On this page</div>
-      <ul className="space-y-1.5 text-sm">
+      <ul className="space-y-1.5 text-sm pb-8">
         {items.map((item) => (
           <li key={item.href}>
             <a href={item.href} className={`block text-zinc-400 hover:text-white transition-colors ${item.indent ? 'pl-3 text-xs' : ''}`}>
