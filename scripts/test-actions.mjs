@@ -396,9 +396,9 @@ async function testSDK() {
   console.log('\n━━━ Phase 6: SDK ━━━');
 
   // Dynamic import of the SDK
-  const { OpenClawAgent } = await import('../sdk/dashclaw.js');
+  const { DashClaw } = await import('../sdk/dashclaw.js');
 
-  const agent = new OpenClawAgent({
+  const agent = new DashClaw({
     baseUrl: BASE_URL,
     apiKey: API_KEY || 'dev-mode',
     agentId: 'sdk-test-agent',
@@ -408,7 +408,7 @@ async function testSDK() {
 
   // Constructor validation
   let constructorThrew = false;
-  try { new OpenClawAgent({}); } catch { constructorThrew = true; }
+  try { new DashClaw({}); } catch { constructorThrew = true; }
   assert(constructorThrew, 'Constructor throws without required params');
 
   // createAction
@@ -547,9 +547,9 @@ async function testRootCauseTrace(actionId) {
 async function testSDKExtended() {
   console.log('\n━━━ Phase 9: SDK Extended Methods ━━━');
 
-  const { OpenClawAgent } = await import('../sdk/dashclaw.js');
+  const { DashClaw } = await import('../sdk/dashclaw.js');
 
-  const agent = new OpenClawAgent({
+  const agent = new DashClaw({
     baseUrl: BASE_URL,
     apiKey: API_KEY || 'dev-mode',
     agentId: 'sdk-ext-test',

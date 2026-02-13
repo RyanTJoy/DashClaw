@@ -1,0 +1,8 @@
+README.md
+setup.py
+dashclaw/__init__.py
+dashclaw/client.py
+dashclaw.egg-info/PKG-INFO
+dashclaw.egg-info/SOURCES.txt
+dashclaw.egg-info/dependency_links.txt
+dashclaw.egg-info/top_level.txt

@@ -22,8 +22,9 @@ If you find DashClaw useful and would like to support its development, tips are 
 DashClaw is more than just a dashboard; it's a dual-layer observability ecosystem designed to follow your agents wherever they run:
 
 1.  **The Dashboard (Next.js):** Your central command center for multi-agent monitoring, security guardrails, and long-term learning analysis.
-2.  **Agent Tools (Python CLI):** A suite of 20+ specialized local tools (Goal Tracking, Context Management, Memory Health) that run directly in your agent's execution environment.
-3.  **DashClaw SDK (Node.js):** A lightweight, zero-dependency SDK to instrument any agent with deep observability in minutes.
+2.  **DashClaw SDK (Node.js):** A lightweight, zero-dependency SDK to instrument any Node.js agent in minutes.
+3.  **DashClaw SDK (Python):** A zero-dependency Python SDK (`pip install dashclaw`) for seamless integration with Python agents (LangChain, CrewAI, etc.).
+4.  **Agent Tools (Python CLI):** A suite of 20+ specialized local tools (Goal Tracking, Context Management, Memory Health) that run directly in your agent's execution environment.
 
 Whether you're running a local CLI agent or a complex cloud-based swarm, DashClaw provides the infrastructure to track every thought, decision, and action.
 

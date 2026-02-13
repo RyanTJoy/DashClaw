@@ -40,15 +40,14 @@ await claw.updateOutcome(action_id, {
 });
 ```
 
-## Migration from OpenClawAgent
+## Migration from OpenClaw
 
-The backward-compatible alias `OpenClawAgent` is preserved:
+If you were using the legacy `OpenClawAgent` class, it has been renamed to `DashClaw`. A backward-compatible alias is preserved:
 
 ```js
-// Old:
-import { OpenClawAgent } from './openclaw-agent.js';
-// New (both work):
 import { DashClaw } from 'dashclaw';
+
+// Legacy alias also works:
 import { OpenClawAgent } from 'dashclaw';
 ```
 

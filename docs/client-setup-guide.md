@@ -106,22 +106,38 @@ Run your agent. The onboarding checklist detects the action within 5 seconds and
 
 ## 2. Installing the SDK
 
-### npm (recommended)
+### Node.js (npm)
 
 ```bash
 npm install dashclaw
 ```
 
-### ESM Import
+### Python (pip)
+
+```bash
+# From the sdk-python directory (until published to PyPI)
+pip install sdk-python/
+```
+
+---
+
+## 3. SDK Integration
+
+### Node.js (ESM)
 
 ```javascript
 import { DashClaw } from 'dashclaw';
+
+const claw = new DashClaw({
+  baseUrl: 'https://dash-claw.vercel.app',
+  apiKey: process.env.DASHCLAW_API_KEY,
+  agentId: 'my-agent',
+});
 ```
 
-### CommonJS
+### Node.js (CommonJS)
 
 ```javascript
-// CJS requires async factory
 const { create } = require('dashclaw');
 const claw = await create({
   baseUrl: 'https://dash-claw.vercel.app',
@@ -130,80 +146,40 @@ const claw = await create({
 });
 ```
 
-### Constructor Parameters
+### Python
 
-```javascript
-const claw = new DashClaw({
-  baseUrl: 'https://dash-claw.vercel.app',  // Required — your dashboard URL
-  apiKey: process.env.DASHCLAW_API_KEY,          // Required — your API key
-  agentId: 'my-agent',                           // Required — unique agent identifier
-  agentName: 'My Agent',                         // Optional — display name
-  swarmId: 'team-alpha',                         // Optional — group agents together
-  guardMode: 'off',                              // Optional — 'off' | 'warn' | 'enforce'
-  guardCallback: (decision) => {},               // Optional — called on guard checks
-});
+```python
+from dashclaw import DashClaw
+
+claw = DashClaw(
+    base_url='https://dash-claw.vercel.app',
+    api_key='your-api-key',
+    agent_id='my-python-agent'
+)
 ```
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `baseUrl` | string | Yes | Your DashClaw dashboard URL |
-| `apiKey` | string | Yes | API key (determines org data access) |
-| `agentId` | string | Yes | Unique identifier for this agent |
-| `agentName` | string | No | Human-readable agent name |
-| `swarmId` | string | No | Group ID if part of multi-agent system |
-| `guardMode` | string | No | `'off'` (default), `'warn'`, or `'enforce'` — see [Behavior Guard](#7-behavior-guard-controlling-agent-actions) |
-| `guardCallback` | function | No | Receives guard decision object when `guardMode` is active |
 
 ---
 
-## 3. Recording Your First Action
+## 4. Recording Your First Action
 
-### Basic Action
-
-```javascript
-const { action_id } = await claw.createAction({
-  action_type: 'deploy',                    // required
-  declared_goal: 'Deploy API v2 to prod',   // required
-  risk_score: 75,                           // 0-100
-  systems_touched: ['api-gateway', 'auth'], // what's affected
-  reversible: false,                        // can this be undone?
-  confidence: 80,                           // 0-100
-  reasoning: 'Scheduled weekly release',    // why this action?
-  trigger: 'CI/CD pipeline',               // what triggered it
-});
-```
-
-### Update the Outcome
-
-```javascript
-await claw.updateOutcome(action_id, {
-  status: 'completed',               // 'completed' | 'failed' | 'cancelled'
-  output_summary: 'Deployed v2.1.0',
-  artifacts_created: ['api-v2.1.0.tar.gz'],
-  side_effects: ['Increased latency for 30s during rollout'],
-  duration_ms: 45000,
-  cost_estimate: 0.12,
-});
-```
-
-### Track (Automatic Wrapper)
-
-The `track()` method creates an action, runs your function, and auto-updates the outcome:
+### Node.js (track wrapper)
 
 ```javascript
 const result = await claw.track(
-  {
-    action_type: 'build',
-    declared_goal: 'Compile frontend assets',
-    risk_score: 20,
-  },
-  async ({ action_id }) => {
-    // Your agent's work goes here
-    await compileFrontend();
-    return 'Built successfully';
+  { action_type: 'build', declared_goal: 'Compile assets' },
+  async () => {
+    // ... work ...
+    return 'done';
   }
 );
-// Action automatically marked 'completed' or 'failed' based on whether fn throws
+```
+
+### Python (context manager)
+
+```python
+with claw.track(action_type='build', declared_goal='Compile assets'):
+    # ... work ...
+    print("Working...")
 ```
 
 ### Action Types

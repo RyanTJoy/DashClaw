@@ -135,7 +135,7 @@ const PKG_PROVIDER_MAP = {
   '@sendgrid/mail': { provider: 'sendgrid', auth_type: 'api_key' },
   'next-auth': { provider: 'next-auth', auth_type: 'pre_configured' },
   '@sentry/nextjs': { provider: 'sentry', auth_type: 'api_key' },
-  'dashclaw': { provider: 'openclaw', auth_type: 'api_key' },
+  'dashclaw': { provider: 'dashclaw', auth_type: 'api_key' },
 };
 
 // ─── Scanner Functions ──────────────────────────────────────

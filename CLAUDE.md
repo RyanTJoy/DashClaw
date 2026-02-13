@@ -1,4 +1,4 @@
-# DashClaw (OpenClaw-Pro)
+# DashClaw
 
 AI agent observability platform — a Next.js 14 app (JavaScript) providing a command center for AI agents and operators to track actions, learning, relationships, goals, and workflows.
 
