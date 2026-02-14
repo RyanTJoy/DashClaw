@@ -74,7 +74,7 @@ Status key: `met` | `partial` | `not-yet-verified`
 
 | Workstream | Verification Status | Notes |
 |---|---|---|
-| WS1 | partial | SQL drift prevention and repository contract tests are enforced, but p95 regression evidence has not yet been documented. |
+| WS1 | met | SQL drift prevention, repository contract tests, and WS1 p95 regression evidence checks are enforced (`docs/rfcs/platform-convergence-evidence.json`, `docs/rfcs/platform-convergence-ws1-latency-baseline.json`, `npm run convergence:ws1:check`). |
 | WS2 | met | OpenAPI generation/check + maturity inventory checks are active, and RFC-tag stable breaking-change exception flow is documented and enforced. |
 | WS3 | met | SSE delivery, duplicate tolerance, and replay-window evidence captured in `docs/rfcs/platform-convergence-evidence.json` (run on February 14, 2026). |
 | WS4 | met | Governance hierarchy, metadata coverage, and doc CI checks are active and passing. |
@@ -134,3 +134,4 @@ Status key: `met` | `partial` | `not-yet-verified`
 - February 14, 2026: WS2 acceptance criteria closeout landed. Added RFC-tag exception workflow documentation in `docs/openapi/README.md` and enforcement in `scripts/check-openapi-diff.mjs`.
 - February 14, 2026: WS5 milestone 4 completed. Added shared critical contract fixture, Node/Python integration harnesses, CI enforcement, and release note `docs/releases/2026-02-14-platform-convergence-closeout.md`.
 - February 14, 2026: WS3 replay reliability hotfix landed. Updated `app/api/stream/route.js` to avoid replay backpressure deadlock before response return; validated replay reconnect via `npm run convergence:evidence` with `recovered_unique_events: 5/5` and all WS3 SLO checks met in `docs/rfcs/platform-convergence-evidence.json`.
+- February 14, 2026: WS1 acceptance criteria closeout landed. Added WS1 p95 baseline artifact (`docs/rfcs/platform-convergence-ws1-latency-baseline.json`), automated regression check (`scripts/check-convergence-ws1-latency.mjs`), npm command (`npm run convergence:ws1:check`), CI enforcement, and updated WS1 verification status to `met`.

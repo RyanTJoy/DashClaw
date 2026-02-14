@@ -6,8 +6,8 @@ import { CheckCircle2, Clock3, ShieldCheck, Workflow, Radio } from 'lucide-react
 const STATUS_ITEMS = [
   {
     title: 'Data Access Convergence',
-    detail: 'Repository migration, contract tests, and route-level SQL CI guard are shipped; p95 regression evidence closeout remains.',
-    state: 'partial',
+    detail: 'Repository migration, contract tests, route-level SQL CI guard, and p95 regression evidence checks are complete.',
+    state: 'complete',
     href: '/actions',
   },
   {
@@ -99,7 +99,7 @@ export default function PlatformStatusCard() {
 
       <p className="mt-4 flex items-center gap-1.5 text-xs text-zinc-500">
         <Radio size={12} />
-        Execution tracking source: RFC platform convergence status (updated February 14, 2026; WS1 evidence closeout pending).
+        Execution tracking source: RFC platform convergence status (updated February 14, 2026).
       </p>
     </section>
   );

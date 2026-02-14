@@ -194,7 +194,7 @@ Status key: `met` | `partial` | `not-yet-verified`
 
 | Workstream | Acceptance Criteria Status | Evidence |
 |---|---|---|
-| WS1 | `partial` | SQL drift guard and repository contract tests are in CI (`scripts/check-route-sql-guard.mjs`, `__tests__/unit/repositories.contract.test.js`), but p95 regression target is not yet documented. |
+| WS1 | `met` | SQL drift guard and repository contract tests are in CI (`scripts/check-route-sql-guard.mjs`, `__tests__/unit/repositories.contract.test.js`), and WS1 p95 regression evidence is baselined/enforced (`docs/rfcs/platform-convergence-ws1-latency-baseline.json`, `scripts/check-convergence-ws1-latency.mjs`). |
 | WS2 | `met` | OpenAPI generation/check and route maturity inventory are active (`scripts/generate-openapi.mjs`, `scripts/check-openapi-diff.mjs`, `docs/api-inventory.md`), and stable breaking-change RFC-tag override workflow is codified in `docs/openapi/README.md`. |
 | WS3 | `met` | Broker/replay/cutover controls are shipped (`app/lib/events.js`, `docs/rfcs/2026-02-13-sse-cutover-runbook.md`) and realtime SLO evidence is captured in `docs/rfcs/platform-convergence-evidence.json` (delivery 100%, duplicate 0%, replay recovery 5/5). |
 | WS4 | `met` | Governance hierarchy, metadata headers, and CI doc checks are in place (`docs/documentation-governance.md`, `scripts/validate-docs.mjs`, `.github/workflows/ci.yml`). |
