@@ -61,6 +61,35 @@ Validation coverage:
 
 - `sdk-python/tests/test_ws5_m3_parity.py`
 
+## WS5 M4 Cross-SDK Integration Suite (February 14, 2026)
+
+Cross-SDK critical-domain contract coverage is now validated against a shared harness:
+
+- Shared fixture: `docs/sdk-critical-contract-harness.json`
+- Node harness runner: `scripts/check-sdk-cross-integration.mjs` (`npm run sdk:integration`)
+- Python harness test: `sdk-python/tests/test_ws5_m4_integration.py` (`npm run sdk:integration:python`)
+- CI workflow steps: `.github/workflows/ci.yml` (`Run cross-SDK integration suite`, `Run cross-SDK Python contract suite`)
+
+Current shared contract cases covered by the harness:
+
+- `create_action`
+- `update_outcome`
+- `get_actions`
+- `get_action`
+- `guard`
+- `get_guard_decisions`
+- `report_memory_health`
+- `close_thread`
+- `get_threads`
+- `mark_read`
+- `archive_messages`
+- `broadcast`
+- `create_message_thread`
+- `get_message_threads`
+- `resolve_message_thread`
+- `save_shared_doc`
+- `sync_state`
+
 ## Category Matrix
 
 | Category | Node | Python | Status |
@@ -108,5 +137,18 @@ Validation coverage:
 ## Notes
 
 - Python method naming uses `snake_case`; Node uses `camelCase`.
-- This matrix tracks method availability only; it does not yet validate payload or response parity.
-- WS5 M4 remains open for cross-SDK integration suite coverage and release documentation finalization.
+- Critical-domain payload/path contract parity is validated by the shared integration harness listed above.
+- Non-critical category gaps (snippets/preferences/digest/security scanning + selected dashboard-data methods) remain intentionally out-of-scope for WS5 M2-M4.
+
+## Version Compatibility Policy
+
+- Compatibility guarantee scope:
+  - Node `sdk/dashclaw.js` and Python `sdk-python/dashclaw/client.py` remain contract-compatible for the WS5 critical domains listed in the integration harness.
+- Breaking changes policy:
+  - Any critical-domain request-path or payload-shape breaking change requires:
+    - RFC entry in `docs/rfcs/`
+    - parity harness update
+    - release note entry in `docs/releases/`
+- Support floor:
+  - Node SDK requires Node 18+.
+  - Python SDK supports Python 3.7+.

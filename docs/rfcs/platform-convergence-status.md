@@ -19,7 +19,7 @@ doc-type: status
 | M1 Architecture and standards foundations complete | March 6, 2026 | done | WS2 M1, WS3 M1, WS4 M1-M4, and WS5 M1 completed. |
 | M2 Realtime cutover + API governance controls active | March 27, 2026 | done | WS3 M1-M4 and WS2 M1-M4 completed. |
 | M3 Data-layer convergence on critical paths complete | April 17, 2026 | done | WS1 milestones 1-4 completed, including CI SQL guard enforcement. |
-| M4 SDK parity release + closeout review | May 8, 2026 | in-progress | WS5 M2-M3 completed; WS5 M4 remains. |
+| M4 SDK parity release + closeout review | May 8, 2026 | done | WS5 M4 cross-SDK integration suite, CI gates, and release documentation completed. |
 
 ## Workstream Milestones
 
@@ -66,7 +66,7 @@ doc-type: status
 | Baseline parity matrix published | March 6, 2026 | done | Published at `docs/sdk-parity.md`. |
 | Python parity (`actions`, `approvals`, `guard`, `webhooks`) | March 27, 2026 | done | Python SDK now covers actions approvals, guard decision history, and webhook lifecycle APIs with tests/docs updates. |
 | Python parity (`context`, `memory`, `messages`) | April 17, 2026 | done | Python SDK now covers context, memory reporting payload modes, and full agent messaging lifecycle with tests/docs updates. |
-| Cross-SDK integration suite + release | May 8, 2026 | not-started |  |
+| Cross-SDK integration suite + release | May 8, 2026 | done | Added shared contract fixture, Node/Python harnesses, CI gates, and release-note closeout. |
 
 ## Acceptance Criteria Verification Snapshot
 
@@ -75,10 +75,10 @@ Status key: `met` | `partial` | `not-yet-verified`
 | Workstream | Verification Status | Notes |
 |---|---|---|
 | WS1 | partial | SQL drift prevention and repository contract tests are enforced, but p95 regression evidence has not yet been documented. |
-| WS2 | partial | OpenAPI and maturity inventory checks are active, but explicit RFC-tag exception flow for stable breaking changes is not yet documented. |
+| WS2 | met | OpenAPI generation/check + maturity inventory checks are active, and RFC-tag stable breaking-change exception flow is documented and enforced. |
 | WS3 | partial | Broker/replay/cutover implementation is complete, but load-test and duplicate-rate SLO evidence is not yet captured. |
 | WS4 | met | Governance hierarchy, metadata coverage, and doc CI checks are active and passing. |
-| WS5 | partial | M2/M3 parity delivered with tests; cross-SDK integration suite and release packaging remain. |
+| WS5 | met | Critical-domain parity matrix, shared Node/Python integration harness, compatibility policy, and release-note guidance are complete. |
 
 ## Change Log
 
@@ -131,3 +131,5 @@ Status key: `met` | `partial` | `not-yet-verified`
 - February 14, 2026: WS5 milestone 3 completed. Verified with `py -3 -m unittest discover -s tests -p "test_ws5*_parity.py"` (from `sdk-python`), `py -3 -m py_compile dashclaw/client.py` (from `sdk-python`), `npm run lint`, `npm run docs:check`, `npm run api:inventory:check`, `npm run openapi:check`, `npm run route-sql:check`, `npm run test -- --run`, and `npm run build`.
 - February 14, 2026: Reconciled RFC-vs-implementation status across sessions. Added acceptance criteria verification snapshot and aligned RFC execution state to current progress.
 - February 14, 2026: Updated customer and operator surfaces to reflect convergence execution status. Added dashboard `PlatformStatusCard`, docs `platform-overview` section, and expanded landing-page platform scope/status messaging.
+- February 14, 2026: WS2 acceptance criteria closeout landed. Added RFC-tag exception workflow documentation in `docs/openapi/README.md` and enforcement in `scripts/check-openapi-diff.mjs`.
+- February 14, 2026: WS5 milestone 4 completed. Added shared critical contract fixture, Node/Python integration harnesses, CI enforcement, and release note `docs/releases/2026-02-14-platform-convergence-closeout.md`.
