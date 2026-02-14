@@ -5,19 +5,22 @@ DashClaw takes security seriously. This guide covers how we protect your data an
 ## How We Protect Your Data
 
 ### Credentials Storage
-- All API keys and credentials are stored **encrypted** in your Neon database using AES-256-CBC.
-- **IMPORTANT**: You must set a 32-character `ENCRYPTION_KEY` environment variable for encryption to function.
+- All API keys and credentials are stored **encrypted** in your Postgres database using **AEAD** (AES-256-GCM).
+- **IMPORTANT**: You must set a 32-character `ENCRYPTION_KEY` environment variable for encryption to function (exactly 32 chars).
 - Credentials never touch client-side code in plaintext.
 - Environment variables used for all sensitive configuration.
 - No credentials are ever logged or exposed in error messages.
 
 ### API Security
 - All API endpoints validate required fields and enforce string length limits.
-- **Mandatory Signatures**: In production, all agent actions must be cryptographically signed via RSA-PSS to be accepted.
+- **Optional Signatures**: Agent actions can include a cryptographic signature; strict enforcement is controlled by `ENFORCE_AGENT_SIGNATURES=true`.
 - **Fail-Closed Auth**: The system strictly blocks API access if environment variables are misconfigured in production.
-- **Data Loss Prevention (DLP)**: Incoming messages, handoffs, and security scans are automatically filtered for sensitive patterns (OpenAI keys, AWS credentials, etc.) and redacted before storage.
-- **SSRF Protection**: Centralized URL validation blocks webhook/guard requests to localhost, private networks, and invalid domains (e.g., .local, .internal).
+- **Data Loss Prevention (DLP)**: Free-text ingestion endpoints are filtered for sensitive patterns (OpenAI keys, AWS credentials, etc.) and redacted before storage (including actions/loops/assumptions, shared docs/snippets/content, and bulk sync).
+- **Third-Party Exfil Minimization**: Sensitive patterns are redacted before sending content to external LLM APIs (embeddings + semantic guardrails).
+- **SSRF Protection**: Webhook/guard egress is hardened with HTTPS-only, DNS resolution, private-IP blocking, and redirect blocking.
 - **Domain Allowlist**: Support for optional `WEBHOOK_ALLOWED_DOMAINS` environment variable to strictly limit external requests to trusted providers.
+- **Guard Webhook Signing (Optional)**: If `GUARD_WEBHOOK_SECRET` is set, guard webhooks include `X-DashClaw-Timestamp` and `X-DashClaw-Signature` headers so receivers can verify authenticity.
+- **Rate Limiting**: All `/api/*` routes, including unauthenticated public endpoints, are rate limited in middleware (best-effort per instance).
 - Database connections use SSL/TLS encryption.
 - CORS configured for your deployment domain only.
 - No sensitive data in URL parameters (API keys must be in headers).
