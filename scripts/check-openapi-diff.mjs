@@ -2,7 +2,18 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { generateOpenApiSpec, getOpenApiOutputPath, serializeOpenApiSpec } from './generate-openapi.mjs';
+
+function getOpenApiOverrideTag() {
+  try {
+    const commitBody = execSync('git log -1 --pretty=%B', { encoding: 'utf8' });
+    const match = commitBody.match(/\[openapi-breaking-rfc:\s*(RFC-[^\]]+)\]/i);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
 
 async function main() {
   const rootDir = process.cwd();
@@ -20,8 +31,17 @@ async function main() {
   }
 
   if (actual !== expected) {
+    const overrideRfc = getOpenApiOverrideTag();
+    if (overrideRfc) {
+      console.warn(`OpenAPI artifact drift detected, but override tag found: ${overrideRfc}`);
+      console.warn('Bypassing drift failure per RFC-tag exception workflow.');
+      return;
+    }
+
     console.error(`OpenAPI artifact is out of date: ${path.relative(rootDir, outputPath)}`);
     console.error('Run: npm run openapi:generate and commit the updated file.');
+    console.error('If this PR intentionally introduces a stable breaking change, include commit tag:');
+    console.error('[openapi-breaking-rfc: RFC-<id>]');
     process.exitCode = 1;
     return;
   }
