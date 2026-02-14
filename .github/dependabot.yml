@@ -16,9 +16,24 @@ updates:
           - "patch"
           - "minor"
     # Major updates are often breaking (React, Tailwind, Next, etc.).
-    # Handle them intentionally as planned upgrades, not background noise.
+    # Ignore the biggest breaking upgrades; handle them intentionally as planned work.
     ignore:
-      - dependency-name: "*"
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "tailwindcss"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint-config-next"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "next"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "redis"
         update-types:
           - "version-update:semver-major"
 
