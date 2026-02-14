@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
 import { enforceFieldLimits } from '../../lib/validate.js';
 
@@ -10,7 +10,7 @@ import { enforceFieldLimits } from '../../lib/validate.js';
 
 export async function GET(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     // Get upcoming calendar events from Neon
     // Note: DB stores EST times as naive timestamps, so we adjust for timezone
@@ -49,7 +49,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const body = await request.json();
 

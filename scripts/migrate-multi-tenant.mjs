@@ -17,8 +17,8 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-import { neon } from '@neondatabase/serverless';
 import { createHash } from 'node:crypto';
+import { createSqlFromEnv } from './_db.mjs';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -26,7 +26,7 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const sql = neon(DATABASE_URL);
+const sql = createSqlFromEnv();
 
 function log(icon, msg) {
   console.log(`  ${icon} ${msg}`);

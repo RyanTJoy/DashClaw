@@ -1,27 +1,7 @@
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
-import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
-
-// Lazy-init Neon driver (same pattern as API routes)
-let _sql;
-function getSql() {
-  if (!_sql) {
-    if (!process.env.DATABASE_URL) {
-      if (process.env.NODE_ENV === 'production') {
-        throw new Error('DATABASE_URL is not set in production. Auth failed.');
-      }
-      console.warn('[AUTH] DATABASE_URL is not set. Using mock SQL driver.');
-      // Return a dummy driver that returns empty arrays or safely ignores writes
-      return async (strings, ...values) => {
-        console.warn('[AUTH] Mock SQL executed:', strings[0]);
-        return [];
-      };
-    }
-    _sql = neon(process.env.DATABASE_URL);
-  }
-  return _sql;
-}
+import { getSql } from './db.js';
 
 export const authOptions = {
   providers: [

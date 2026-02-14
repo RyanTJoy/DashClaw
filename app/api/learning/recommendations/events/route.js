@@ -2,20 +2,11 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../../../lib/db.js';
 import { getOrgId } from '../../../../lib/org.js';
 import { createLearningRecommendationEvents } from '../../../../lib/repositories/learningLoop.repository.js';
 
 const ALLOWED_EVENT_TYPES = new Set(['fetched', 'applied', 'overridden', 'outcome']);
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  _sql = neon(url);
-  return _sql;
-}
 
 function validateEvent(raw) {
   if (!raw || typeof raw !== 'object') return 'event must be an object';
@@ -79,4 +70,3 @@ export async function POST(request) {
     );
   }
 }
-

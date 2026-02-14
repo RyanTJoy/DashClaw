@@ -2,28 +2,23 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../../lib/db.js';
 import { getOrgId, getOrgRole } from '../../../lib/org.js';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) return null;
-  _sql = neon(url);
-  return _sql;
-}
 
 // GET /api/security/status - Get security health status (admin only)
 export async function GET(request) {
   try {
     const role = getOrgRole(request);
     if (role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden - admin role required' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'Forbidden - admin role required', score: 0, checks: [], timestamp: new Date().toISOString() },
+        { status: 403 }
+      );
     }
 
     const orgId = getOrgId(request);
     const sql = getSql();
+    const hasDbUrl = Boolean(process.env.DATABASE_URL);
 
     const report = {
       score: 100,
@@ -44,7 +39,7 @@ export async function GET(request) {
     }
 
     // 2. Check Database URL
-    if (!sql) {
+    if (!hasDbUrl) {
       report.checks.push({ id: 'db_url_missing', status: 'critical', label: 'Database URL Missing', detail: 'DATABASE_URL env var is not set.' });
       report.score -= 40;
     } else {
@@ -52,30 +47,35 @@ export async function GET(request) {
     }
 
     // 3. Check for unencrypted sensitive settings
-    if (sql) {
+    if (hasDbUrl) {
       const sensitiveKeys = ['%_KEY', '%_TOKEN', '%_SECRET', '%_URL', '%_URI', '%_DSN', '%_PASSWORD'];
-      const unencryptedCount = await sql`
-        SELECT COUNT(*) as count FROM settings 
-        WHERE org_id = ${orgId} 
-        AND encrypted = false 
-        AND value IS NOT NULL
-        AND (
-          key LIKE ANY (${sensitiveKeys})
-        )
-        AND key NOT IN ('TELEGRAM_CHAT_ID', 'DISCORD_CLIENT_ID', 'DISCORD_GUILD_ID', 'VERCEL_PROJECT_ID', 'CLOUDFLARE_ACCOUNT_ID', 'AIRTABLE_BASE_ID', 'ELEVENLABS_VOICE_ID', 'OPENAI_ORG_ID')
-      `;
-      
-      const count = parseInt(unencryptedCount[0]?.count || '0', 10);
-      if (count > 0) {
-        report.checks.push({ 
-          id: 'unencrypted_settings', 
-          status: 'warning', 
-          label: 'Unencrypted Sensitive Settings', 
-          detail: `Found ${count} sensitive settings stored in plaintext. Update them to enable encryption.` 
-        });
-        report.score -= (count * 5);
-      } else {
-        report.checks.push({ id: 'encryption_coverage_ok', status: 'ok', label: 'Settings Encryption Coverage OK' });
+      try {
+        const unencryptedCount = await sql`
+          SELECT COUNT(*) as count FROM settings 
+          WHERE org_id = ${orgId} 
+          AND encrypted = false 
+          AND value IS NOT NULL
+          AND (
+            key LIKE ANY (${sensitiveKeys})
+          )
+          AND key NOT IN ('TELEGRAM_CHAT_ID', 'DISCORD_CLIENT_ID', 'DISCORD_GUILD_ID', 'VERCEL_PROJECT_ID', 'CLOUDFLARE_ACCOUNT_ID', 'AIRTABLE_BASE_ID', 'ELEVENLABS_VOICE_ID', 'OPENAI_ORG_ID')
+        `;
+
+        const count = parseInt(unencryptedCount[0]?.count || '0', 10);
+        if (count > 0) {
+          report.checks.push({ 
+            id: 'unencrypted_settings', 
+            status: 'warning', 
+            label: 'Unencrypted Sensitive Settings', 
+            detail: `Found ${count} sensitive settings stored in plaintext. Update them to enable encryption.` 
+          });
+          report.score -= (count * 5);
+        } else {
+          report.checks.push({ id: 'encryption_coverage_ok', status: 'ok', label: 'Settings Encryption Coverage OK' });
+        }
+      } catch (err) {
+        report.checks.push({ id: 'db_query_failed', status: 'warning', label: 'Database Query Failed', detail: 'Could not query settings table to verify encryption coverage.' });
+        report.score -= 10;
       }
     }
 
@@ -102,6 +102,9 @@ export async function GET(request) {
     return NextResponse.json(report);
   } catch (error) {
     console.error('Security status GET error:', error);
-    return NextResponse.json({ error: 'Failed to generate security report' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to generate security report', score: 0, checks: [], timestamp: new Date().toISOString() },
+      { status: 500 }
+    );
   }
 }

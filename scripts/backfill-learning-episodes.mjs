@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { neon } from '@neondatabase/serverless';
 import { scoreAndStoreActionEpisode } from '../app/lib/learningLoop.service.js';
+import { createSqlFromEnv } from './_db.mjs';
 
 function parseArgInt(name, fallback, min, max) {
   const prefix = `--${name}=`;
@@ -22,7 +22,7 @@ async function run() {
   const lookbackDays = parseArgInt('lookback-days', 90, 1, 730);
   const perOrgLimit = parseArgInt('per-org-limit', 5000, 100, 50000);
 
-  const sql = neon(url);
+  const sql = createSqlFromEnv();
   const orgs = await sql`SELECT id FROM organizations ORDER BY id`;
   const summary = [];
 
@@ -59,4 +59,3 @@ run().catch((error) => {
   console.error(`Episode backfill failed: ${error.message}`);
   process.exit(1);
 });
-

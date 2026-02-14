@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../../lib/db.js';
 import { getOrgId } from '../../../lib/org.js';
 import { randomUUID } from 'node:crypto';
 
 export async function GET(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -53,7 +53,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const body = await request.json();
 
@@ -85,7 +85,7 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const body = await request.json();
 
