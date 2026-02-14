@@ -70,7 +70,7 @@ Track rotations with the included rotation reminder (coming soon).
 
 ## Reporting Security Issues
 
-Found a vulnerability? Please email security@practicalsystems.io (or open a private GitHub issue).
+Found a vulnerability? Please email practicalsystems@gmail.com (or open a private GitHub issue).
 
 We take all reports seriously and will respond within 48 hours.
 
