@@ -1,3 +1,10 @@
+---
+source-of-truth: true
+owner: Platform PM
+last-verified: 2026-02-13
+doc-type: decision
+---
+
 # ADR 0002: Stable Version Pinning for Infrastructure Dependencies
 
 ## Status

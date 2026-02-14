@@ -8,9 +8,15 @@ import { getOrgId, getOrgRole } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { verifyAgentSignature } from '../../lib/identity.js';
 import { estimateCost } from '../../lib/billing.js';
-import { eventBus, EVENTS } from '../../lib/events.js';
+import { EVENTS, publishOrgEvent } from '../../lib/events.js';
 import { generateActionEmbedding, isEmbeddingsEnabled } from '../../lib/embeddings.js';
 import { evaluateGuard } from '../../lib/guard.js';
+import {
+  createActionRecord,
+  hasAgentAction,
+  insertActionEmbedding,
+  listActions,
+} from '../../lib/repositories/actions.repository.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -37,71 +43,28 @@ export async function GET(request) {
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
 
-    const agent_id = searchParams.get('agent_id');
-    const swarm_id = searchParams.get('swarm_id');
-    const status = searchParams.get('status');
-    const action_type = searchParams.get('action_type');
-    const risk_min = searchParams.get('risk_min');
+    const agent_id = searchParams.get('agent_id') || undefined;
+    const swarm_id = searchParams.get('swarm_id') || undefined;
+    const status = searchParams.get('status') || undefined;
+    const action_type = searchParams.get('action_type') || undefined;
+    const risk_min = searchParams.get('risk_min') || undefined;
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 200);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    // Build filtered query
-    let paramIdx = 1;
-    const conditions = [`org_id = $${paramIdx++}`];
-    const params = [orgId];
-
-    if (agent_id) {
-      conditions.push(`agent_id = $${paramIdx++}`);
-      params.push(agent_id);
-    }
-    if (swarm_id) {
-      conditions.push(`swarm_id = $${paramIdx++}`);
-      params.push(swarm_id);
-    }
-    if (status) {
-      conditions.push(`status = $${paramIdx++}`);
-      params.push(status);
-    }
-    if (action_type) {
-      conditions.push(`action_type = $${paramIdx++}`);
-      params.push(action_type);
-    }
-    if (risk_min) {
-      conditions.push(`risk_score >= $${paramIdx++}`);
-      params.push(parseInt(risk_min, 10));
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const query = `SELECT * FROM action_records ${where} ORDER BY timestamp_start DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
-    params.push(limit, offset);
-
-    const countQuery = `SELECT COUNT(*) as total FROM action_records ${where}`;
-    const countParams = params.slice(0, -2);
-
-    const [actions, countResult] = await Promise.all([
-      sql.query(query, params),
-      sql.query(countQuery, countParams)
-    ]);
-
-    // Stats aggregation (uses same filters as list query)
-    const statsQuery = `
-      SELECT
-        COUNT(*) as total,
-        COUNT(*) FILTER (WHERE status = 'completed') as completed,
-        COUNT(*) FILTER (WHERE status = 'failed') as failed,
-        COUNT(*) FILTER (WHERE status = 'running') as running,
-        COUNT(*) FILTER (WHERE risk_score >= 70) as high_risk,
-        COALESCE(AVG(risk_score), 0) as avg_risk,
-        COALESCE(SUM(cost_estimate), 0) as total_cost
-      FROM action_records ${where}
-    `;
-    const stats = await sql.query(statsQuery, countParams);
+    const result = await listActions(sql, orgId, {
+      agent_id,
+      swarm_id,
+      status,
+      action_type,
+      risk_min,
+      limit,
+      offset,
+    });
 
     return NextResponse.json({
-      actions,
-      total: parseInt(countResult[0]?.total || '0', 10),
-      stats: stats[0] || {},
+      actions: result.actions,
+      total: result.total,
+      stats: result.stats,
       lastUpdated: new Date().toISOString()
     });
   } catch (error) {
@@ -139,22 +102,16 @@ export async function POST(request) {
     if (data.agent_id) {
       const agentsQuota = await checkQuotaFast(orgId, 'agents', plan, sql);
       if (!agentsQuota.allowed) {
-        // Check if this agent already exists (existing agents are allowed)
-        const existing = await sql`
-          SELECT 1 FROM action_records WHERE org_id = ${orgId} AND agent_id = ${data.agent_id} LIMIT 1
-        `;
-        if (existing.length === 0) {
+        const existing = await hasAgentAction(sql, orgId, data.agent_id);
+        if (!existing) {
           return NextResponse.json(
             { error: 'Agent limit reached. Upgrade your plan.', code: 'QUOTA_EXCEEDED', usage: agentsQuota.usage, limit: agentsQuota.limit },
             { status: 402 }
           );
         }
       } else {
-        // Check if this is a new agent for meter increment
-        const existing = await sql`
-          SELECT 1 FROM action_records WHERE org_id = ${orgId} AND agent_id = ${data.agent_id} LIMIT 1
-        `;
-        isNewAgent = existing.length === 0;
+        const existing = await hasAgentAction(sql, orgId, data.agent_id);
+        isNewAgent = !existing;
       }
     }
 
@@ -202,49 +159,16 @@ export async function POST(request) {
       costEstimate = estimateCost(data.tokens_in || 0, data.tokens_out || 0, data.model);
     }
 
-    const result = await sql`
-      INSERT INTO action_records (
-        org_id, action_id, agent_id, agent_name, swarm_id, parent_action_id,
-        action_type, declared_goal, reasoning, authorization_scope,
-        trigger, systems_touched, input_summary,
-        status, reversible, risk_score, confidence,
-        output_summary, side_effects, artifacts_created, error_message,
-        timestamp_start, timestamp_end, duration_ms, cost_estimate,
-        tokens_in, tokens_out,
-        signature, verified
-      ) VALUES (
-        ${orgId},
-        ${action_id},
-        ${data.agent_id},
-        ${data.agent_name || null},
-        ${data.swarm_id || null},
-        ${data.parent_action_id || null},
-        ${data.action_type},
-        ${data.declared_goal},
-        ${data.reasoning || null},
-        ${data.authorization_scope || null},
-        ${data.trigger || null},
-        ${JSON.stringify(data.systems_touched || [])},
-        ${data.input_summary || null},
-        ${actionStatus},
-        ${data.reversible !== undefined ? (data.reversible ? 1 : 0) : 1},
-        ${data.risk_score || 0},
-        ${data.confidence || 50},
-        ${data.output_summary || null},
-        ${JSON.stringify(data.side_effects || [])},
-        ${JSON.stringify(data.artifacts_created || [])},
-        ${data.error_message || null},
-        ${timestamp_start},
-        ${data.timestamp_end || null},
-        ${data.duration_ms || null},
-        ${costEstimate},
-        ${data.tokens_in || 0},
-        ${data.tokens_out || 0},
-        ${signature},
-        ${verified}
-      )
-      RETURNING *
-    `;
+    const createdAction = await createActionRecord(sql, {
+      orgId,
+      action_id,
+      data,
+      actionStatus,
+      costEstimate,
+      signature,
+      verified,
+      timestamp_start,
+    });
 
     // Fire-and-forget meter increments (don't block response)
     const meterUpdates = [incrementMeter(orgId, 'actions_per_month', sql)];
@@ -258,10 +182,12 @@ export async function POST(request) {
       try {
         const embedding = await generateActionEmbedding(data);
         if (embedding) {
-          await sql`
-            INSERT INTO action_embeddings (org_id, agent_id, action_id, embedding)
-            VALUES (${orgId}, ${data.agent_id}, ${action_id}, ${JSON.stringify(embedding)}::vector)
-          `;
+          await insertActionEmbedding(sql, {
+            orgId,
+            agentId: data.agent_id,
+            actionId: action_id,
+            embedding,
+          });
         }
       } catch (e) {
         console.warn('[API] Background indexing failed:', e.message);
@@ -271,15 +197,15 @@ export async function POST(request) {
     Promise.all([...meterUpdates, indexAction()]).catch(() => {});
 
     const response = NextResponse.json({ 
-      action: result[0], 
+      action: createdAction, 
       action_id,
       decision: guardDecision
     }, { status: isPendingApproval ? 202 : 201 });
     
     // Emit real-time event
-    eventBus.emit(EVENTS.ACTION_CREATED, { 
-      orgId, 
-      action: result[0] 
+    void publishOrgEvent(EVENTS.ACTION_CREATED, {
+      orgId,
+      action: createdAction,
     });
 
     if (actionsQuota.warning) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSql } from '../../lib/db.js';
 import { isEmbeddingsEnabled } from '../../lib/embeddings.js';
+import { getRealtimeHealth } from '../../lib/events.js';
 
 /**
  * Health check endpoint for DashClaw
@@ -35,6 +36,18 @@ export async function GET() {
     edge_compatible: typeof crypto !== 'undefined' && !!crypto.subtle,
     node_env: process.env.NODE_ENV || 'development'
   };
+
+  // Check realtime backend health and cutover readiness
+  try {
+    const realtime = await getRealtimeHealth();
+    health.checks.realtime = realtime;
+    if (realtime.status === 'unhealthy') {
+      health.status = 'degraded';
+    }
+  } catch (error) {
+    health.status = 'degraded';
+    health.checks.realtime = { status: 'unhealthy', error: error.message };
+  }
 
   // Check environment variables
   const requiredEnvVars = ['DATABASE_URL', 'NEXTAUTH_SECRET'];

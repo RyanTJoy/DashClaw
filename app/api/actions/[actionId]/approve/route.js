@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../../../lib/db.js';
 import { getOrgId, getOrgRole, getUserId } from '../../../../lib/org.js';
 import { logActivity } from '../../../../lib/audit.js';
-import { eventBus, EVENTS } from '../../../../lib/events.js';
+import { EVENTS, publishOrgEvent } from '../../../../lib/events.js';
 
 /**
  * POST /api/actions/[actionId]/approve
@@ -68,7 +68,7 @@ Reason: ' || ${reasoning} ELSE '' END
     }, sql);
 
     // Emit event for real-time updates
-    eventBus.emit(EVENTS.ACTION_UPDATED, { 
+    void publishOrgEvent(EVENTS.ACTION_UPDATED, {
       orgId, 
       action: result[0] 
     });

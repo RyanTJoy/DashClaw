@@ -120,6 +120,9 @@ npm install dashclaw
 pip install sdk-python/
 ```
 
+Current Python SDK parity coverage includes `actions`, `approvals`, `guard`, `webhooks`, `context`, `memory`, and `messages`.
+See `docs/sdk-parity.md` for the live gap matrix.
+
 ---
 
 ## 3. SDK Integration
@@ -249,9 +252,9 @@ Each workspace is fully isolated. API keys are scoped to an organization. Agents
 
 ## 5. SDK Method Reference
 
-The SDK has **57 active methods** across 13 categories. Every method returns a Promise.
+The SDK has **59 methods** across 13 categories. Every method returns a Promise.
 
-### Action Recording (6 methods)
+### Action Recording (7 methods)
 
 ```javascript
 // Create an action
@@ -295,6 +298,12 @@ const { action, open_loops, assumptions } = await claw.getAction('act_xxx');
 
 // Get root-cause trace
 const { trace } = await claw.getActionTrace('act_xxx');
+
+// Wait for human-in-the-loop approval when action enters pending state
+const approvalResult = await claw.waitForApproval(action_id, {
+  timeout: 300000, // optional, default 5 minutes
+  interval: 5000,  // optional poll interval
+});
 
 // Track: auto-wrap action creation + outcome
 const result = await claw.track(
@@ -355,9 +364,16 @@ const { signals, counts } = await claw.getSignals();
 // counts = { red: 2, amber: 5, total: 7 }
 ```
 
-### Dashboard Data (8 methods)
+### Dashboard Data (9 methods)
 
 ```javascript
+// Report token usage/cost snapshot
+await claw.reportTokenUsage({
+  tokens_in: 1200,
+  tokens_out: 800,
+  model: 'gpt-4o',
+});
+
 // Record a decision (learning database)
 await claw.recordDecision({
   decision: 'Use JWT for auth',           // required

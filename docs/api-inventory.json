@@ -1,0 +1,698 @@
+{
+  "schema_version": 1,
+  "generated_from": "app/api/**/route.js",
+  "maturity_rules": {
+    "stable": [
+      "/api/actions",
+      "/api/guard",
+      "/api/policies",
+      "/api/settings",
+      "/api/webhooks",
+      "/api/messages",
+      "/api/context",
+      "/api/handoffs",
+      "/api/snippets",
+      "/api/memory",
+      "/api/keys",
+      "/api/orgs",
+      "/api/team",
+      "/api/invite",
+      "/api/usage",
+      "/api/health"
+    ],
+    "beta": [
+      "/api/auth",
+      "/api/onboarding",
+      "/api/setup",
+      "/api/notifications",
+      "/api/activity",
+      "/api/cron",
+      "/api/docs",
+      "/api/security"
+    ],
+    "experimental": [
+      "/api/agents",
+      "/api/bounties",
+      "/api/calendar",
+      "/api/content",
+      "/api/identities",
+      "/api/inspiration",
+      "/api/learning",
+      "/api/relationships",
+      "/api/schedules",
+      "/api/swarm",
+      "/api/tokens",
+      "/api/workflows"
+    ]
+  },
+  "summary": {
+    "total_routes": 66,
+    "stable_routes": 37,
+    "beta_routes": 11,
+    "experimental_routes": 18
+  },
+  "routes": [
+    {
+      "path": "/api/actions",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/route.js"
+    },
+    {
+      "path": "/api/actions/{actionId}",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/[actionId]/route.js"
+    },
+    {
+      "path": "/api/actions/{actionId}/approve",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/[actionId]/approve/route.js"
+    },
+    {
+      "path": "/api/actions/{actionId}/trace",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/[actionId]/trace/route.js"
+    },
+    {
+      "path": "/api/actions/assumptions",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/assumptions/route.js"
+    },
+    {
+      "path": "/api/actions/assumptions/{assumptionId}",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/assumptions/[assumptionId]/route.js"
+    },
+    {
+      "path": "/api/actions/loops",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/loops/route.js"
+    },
+    {
+      "path": "/api/actions/loops/{loopId}",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/loops/[loopId]/route.js"
+    },
+    {
+      "path": "/api/actions/signals",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/signals/route.js"
+    },
+    {
+      "path": "/api/activity",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/activity",
+      "file": "app/api/activity/route.js"
+    },
+    {
+      "path": "/api/agents",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/agents",
+      "file": "app/api/agents/route.js"
+    },
+    {
+      "path": "/api/agents/connections",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/agents",
+      "file": "app/api/agents/connections/route.js"
+    },
+    {
+      "path": "/api/bounties",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/bounties",
+      "file": "app/api/bounties/route.js"
+    },
+    {
+      "path": "/api/calendar",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/calendar",
+      "file": "app/api/calendar/route.js"
+    },
+    {
+      "path": "/api/content",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/content",
+      "file": "app/api/content/route.js"
+    },
+    {
+      "path": "/api/context/points",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/context",
+      "file": "app/api/context/points/route.js"
+    },
+    {
+      "path": "/api/context/threads",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/context",
+      "file": "app/api/context/threads/route.js"
+    },
+    {
+      "path": "/api/context/threads/{threadId}",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/context",
+      "file": "app/api/context/threads/[threadId]/route.js"
+    },
+    {
+      "path": "/api/context/threads/{threadId}/entries",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/context",
+      "file": "app/api/context/threads/[threadId]/entries/route.js"
+    },
+    {
+      "path": "/api/cron/memory-maintenance",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/cron",
+      "file": "app/api/cron/memory-maintenance/route.js"
+    },
+    {
+      "path": "/api/cron/signals",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/cron",
+      "file": "app/api/cron/signals/route.js"
+    },
+    {
+      "path": "/api/digest",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/digest/route.js"
+    },
+    {
+      "path": "/api/docs/raw",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/docs",
+      "file": "app/api/docs/raw/route.js"
+    },
+    {
+      "path": "/api/goals",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/goals/route.js"
+    },
+    {
+      "path": "/api/guard",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/guard",
+      "file": "app/api/guard/route.js"
+    },
+    {
+      "path": "/api/handoffs",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/handoffs",
+      "file": "app/api/handoffs/route.js"
+    },
+    {
+      "path": "/api/health",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/health",
+      "file": "app/api/health/route.js"
+    },
+    {
+      "path": "/api/identities",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/identities",
+      "file": "app/api/identities/route.js"
+    },
+    {
+      "path": "/api/inspiration",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/inspiration",
+      "file": "app/api/inspiration/route.js"
+    },
+    {
+      "path": "/api/invite/{token}",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/invite",
+      "file": "app/api/invite/[token]/route.js"
+    },
+    {
+      "path": "/api/keys",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/keys",
+      "file": "app/api/keys/route.js"
+    },
+    {
+      "path": "/api/learning",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/learning",
+      "file": "app/api/learning/route.js"
+    },
+    {
+      "path": "/api/memory",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/memory",
+      "file": "app/api/memory/route.js"
+    },
+    {
+      "path": "/api/messages",
+      "methods": [
+        "GET",
+        "PATCH",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/messages",
+      "file": "app/api/messages/route.js"
+    },
+    {
+      "path": "/api/messages/docs",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/messages",
+      "file": "app/api/messages/docs/route.js"
+    },
+    {
+      "path": "/api/messages/threads",
+      "methods": [
+        "GET",
+        "PATCH",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/messages",
+      "file": "app/api/messages/threads/route.js"
+    },
+    {
+      "path": "/api/notifications",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/notifications",
+      "file": "app/api/notifications/route.js"
+    },
+    {
+      "path": "/api/onboarding/api-key",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/onboarding",
+      "file": "app/api/onboarding/api-key/route.js"
+    },
+    {
+      "path": "/api/onboarding/status",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/onboarding",
+      "file": "app/api/onboarding/status/route.js"
+    },
+    {
+      "path": "/api/onboarding/workspace",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/onboarding",
+      "file": "app/api/onboarding/workspace/route.js"
+    },
+    {
+      "path": "/api/orgs",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/orgs",
+      "file": "app/api/orgs/route.js"
+    },
+    {
+      "path": "/api/orgs/{orgId}",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/orgs",
+      "file": "app/api/orgs/[orgId]/route.js"
+    },
+    {
+      "path": "/api/orgs/{orgId}/keys",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/orgs",
+      "file": "app/api/orgs/[orgId]/keys/route.js"
+    },
+    {
+      "path": "/api/policies",
+      "methods": [
+        "DELETE",
+        "GET",
+        "PATCH",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/policies",
+      "file": "app/api/policies/route.js"
+    },
+    {
+      "path": "/api/preferences",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/preferences/route.js"
+    },
+    {
+      "path": "/api/relationships",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/relationships",
+      "file": "app/api/relationships/route.js"
+    },
+    {
+      "path": "/api/schedules",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/schedules",
+      "file": "app/api/schedules/route.js"
+    },
+    {
+      "path": "/api/security/scan",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/security",
+      "file": "app/api/security/scan/route.js"
+    },
+    {
+      "path": "/api/security/status",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/security",
+      "file": "app/api/security/status/route.js"
+    },
+    {
+      "path": "/api/settings",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/settings",
+      "file": "app/api/settings/route.js"
+    },
+    {
+      "path": "/api/settings/test",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/settings",
+      "file": "app/api/settings/test/route.js"
+    },
+    {
+      "path": "/api/setup/status",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/setup",
+      "file": "app/api/setup/status/route.js"
+    },
+    {
+      "path": "/api/snippets",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/snippets",
+      "file": "app/api/snippets/route.js"
+    },
+    {
+      "path": "/api/snippets/{snippetId}/use",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/snippets",
+      "file": "app/api/snippets/[snippetId]/use/route.js"
+    },
+    {
+      "path": "/api/stream",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/stream/route.js"
+    },
+    {
+      "path": "/api/swarm/graph",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/swarm",
+      "file": "app/api/swarm/graph/route.js"
+    },
+    {
+      "path": "/api/sync",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/sync/route.js"
+    },
+    {
+      "path": "/api/team",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/team",
+      "file": "app/api/team/route.js"
+    },
+    {
+      "path": "/api/team/{userId}",
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/team",
+      "file": "app/api/team/[userId]/route.js"
+    },
+    {
+      "path": "/api/team/invite",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/team",
+      "file": "app/api/team/invite/route.js"
+    },
+    {
+      "path": "/api/tokens",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/tokens",
+      "file": "app/api/tokens/route.js"
+    },
+    {
+      "path": "/api/usage",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/usage",
+      "file": "app/api/usage/route.js"
+    },
+    {
+      "path": "/api/webhooks",
+      "methods": [
+        "DELETE",
+        "GET",
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/webhooks",
+      "file": "app/api/webhooks/route.js"
+    },
+    {
+      "path": "/api/webhooks/{webhookId}/deliveries",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/webhooks",
+      "file": "app/api/webhooks/[webhookId]/deliveries/route.js"
+    },
+    {
+      "path": "/api/webhooks/{webhookId}/test",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/webhooks",
+      "file": "app/api/webhooks/[webhookId]/test/route.js"
+    },
+    {
+      "path": "/api/workflows",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/workflows",
+      "file": "app/api/workflows/route.js"
+    }
+  ]
+}

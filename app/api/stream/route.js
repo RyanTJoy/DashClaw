@@ -1,45 +1,103 @@
 import { getOrgId } from '../../lib/org.js';
-import { eventBus, EVENTS } from '../../lib/events.js';
+import {
+  EVENTS,
+  getRealtimeBackendName,
+  getRealtimeHealth,
+  replayOrgEvents,
+  subscribeOrgEvents,
+} from '../../lib/events.js';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {
     const orgId = getOrgId(request);
+    const realtimeHealth = await getRealtimeHealth();
+    if (realtimeHealth.status === 'unhealthy') {
+      return new Response('Realtime backend unavailable', { status: 503 });
+    }
+    const lastEventId =
+      request.headers.get('last-event-id') ||
+      request.nextUrl?.searchParams?.get('lastEventId') ||
+      null;
     
     // Create a TransformStream for the SSE response
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
     const encoder = new TextEncoder();
+    let isClosed = false;
 
     // Helper to send SSE messages
-    const send = async (event, data) => {
-      const message = `event: ${event}
+    const send = async (event, data, id = null) => {
+      if (isClosed) return;
+      const message = `${id ? `id: ${id}
+` : ''}event: ${event}
 data: ${JSON.stringify(data)}
 
 `;
-      await writer.write(encoder.encode(message));
+      try {
+        await writer.write(encoder.encode(message));
+      } catch {
+        isClosed = true;
+      }
     };
 
-    // Event listener
-    const onActionCreated = (payload) => {
-      if (payload.orgId === orgId) send(EVENTS.ACTION_CREATED, payload.action);
-    };
-    const onActionUpdated = (payload) => {
-      if (payload.orgId === orgId) send(EVENTS.ACTION_UPDATED, payload.action);
+    const seen = new Set();
+    let bufferingLiveEvents = true;
+    const liveQueue = [];
+
+    const toSseData = (envelope) => {
+      if (envelope.event === EVENTS.ACTION_CREATED || envelope.event === EVENTS.ACTION_UPDATED) {
+        return envelope.payload?.action || null;
+      }
+      return envelope.payload || null;
     };
 
-    // Subscribe
-    eventBus.on(EVENTS.ACTION_CREATED, onActionCreated);
-    eventBus.on(EVENTS.ACTION_UPDATED, onActionUpdated);
+    const emitEnvelope = async (envelope) => {
+      if (!envelope || !envelope.event) return;
+      const cursor = envelope.cursor || envelope.id || null;
+      if (cursor && seen.has(cursor)) return;
+      if (cursor) seen.add(cursor);
+      await send(envelope.event, toSseData(envelope), cursor);
+    };
+
+    const unsubscribe = await subscribeOrgEvents(orgId, (envelope) => {
+      if (bufferingLiveEvents) {
+        liveQueue.push(envelope);
+        return;
+      }
+      void emitEnvelope(envelope);
+    });
+
+    let replayed = 0;
+    if (lastEventId) {
+      const replay = await replayOrgEvents(orgId, { afterCursor: lastEventId, limit: 200 });
+      for (const envelope of replay) {
+        await emitEnvelope(envelope);
+        replayed += 1;
+      }
+    }
+
+    bufferingLiveEvents = false;
+    for (const envelope of liveQueue) {
+      await emitEnvelope(envelope);
+    }
+    liveQueue.length = 0;
 
     // Initial connection message
-    send('connected', { status: 'ok', orgId });
+    void send('connected', {
+      status: 'ok',
+      orgId,
+      backend: getRealtimeBackendName(),
+      realtimeStatus: realtimeHealth.status,
+      replayed,
+      lastEventId,
+    });
 
     // Clean up on close (when the request is aborted by client)
     request.signal.addEventListener('abort', () => {
-      eventBus.off(EVENTS.ACTION_CREATED, onActionCreated);
-      eventBus.off(EVENTS.ACTION_UPDATED, onActionUpdated);
+      isClosed = true;
+      void unsubscribe();
       writer.close().catch(() => {});
     });
 

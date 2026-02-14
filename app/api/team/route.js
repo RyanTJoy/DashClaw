@@ -3,16 +3,8 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getUserId } from '../../lib/org.js';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+import { getSql } from '../../lib/db.js';
+import { getTeamOrgAndMembers } from '../../lib/repositories/orgsTeam.repository.js';
 
 // GET /api/team - List members + org info for caller's org
 export async function GET(request) {
@@ -27,17 +19,7 @@ export async function GET(request) {
 
     const sql = getSql();
 
-    const [orgRows, members] = await Promise.all([
-      sql`SELECT id, name, slug, plan FROM organizations WHERE id = ${orgId}`,
-      sql`
-        SELECT id, email, name, image, role, created_at, last_login_at
-        FROM users
-        WHERE org_id = ${orgId}
-        ORDER BY created_at ASC
-      `,
-    ]);
-
-    const org = orgRows.length > 0 ? orgRows[0] : null;
+    const { org, members } = await getTeamOrgAndMembers(sql, orgId);
     if (!org) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }

@@ -25,6 +25,18 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+      - name: Validate docs
+        run: npm run docs:check
+
+      - name: Check OpenAPI contract drift
+        run: npm run openapi:check
+
+      - name: Check API inventory maturity drift
+        run: npm run api:inventory:check
+
+      - name: Check route-level SQL guardrail
+        run: npm run route-sql:check
+
       - name: Run tests
         run: npm run test -- --run
 
