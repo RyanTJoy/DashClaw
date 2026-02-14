@@ -1,3 +1,10 @@
+---
+source-of-truth: true
+owner: Platform PM
+last-verified: 2026-02-14
+doc-type: architecture
+---
+
 # DashClaw Project Details
 
 This file contains detailed technical information about the DashClaw project, moved from CLAUDE.md to keep it concise.
@@ -8,7 +15,7 @@ This file contains detailed technical information about the DashClaw project, mo
 - **Environment**: Vitest with `jsdom` and `@vitejs/plugin-react`.
 - **Config**: `vitest.config.js` with Next.js alias resolution (`@/*`).
 - **Location**: `__tests__/unit/` for unit tests.
-- **Command**: `npm run test` (runs in watch mode by default).
+- **Command**: `npm run test` (watch mode) or `npm run test -- --run` (CI/non-watch).
 
 ### Database Migrations (Drizzle ORM)
 - **Tooling**: `drizzle-orm` and `drizzle-kit`.
@@ -21,8 +28,18 @@ This file contains detailed technical information about the DashClaw project, mo
 - **Gates**: Every PR to `main` must pass:
   1. `npm ci` (clean install)
   2. `npm run lint` (ESLint)
-  3. `npm run test` (Vitest unit tests)
-  4. `npm run build` (Next.js production build)
+  3. `npm run docs:check` (documentation governance checks)
+  4. `npm run openapi:check` (stable API contract drift check)
+  5. `npm run api:inventory:check` (route maturity inventory drift check)
+  6. `npm run route-sql:check` (direct route-level SQL guardrail check)
+  7. `npm run test -- --run` (Vitest unit tests)
+  8. `npm run build` (Next.js production build)
+
+### Platform Convergence Controls
+- RFC execution source: `docs/rfcs/platform-convergence.md`
+- Live milestone/verification log: `docs/rfcs/platform-convergence-status.md`
+- SDK parity matrix: `docs/sdk-parity.md`
+- CI guard scripts: `scripts/check-openapi-diff.mjs`, `scripts/check-api-inventory-diff.mjs`, `scripts/check-route-sql-guard.mjs`
 
 ## Architecture
 
@@ -315,7 +332,7 @@ function getSql() {
   - `GET/POST /api/actions/loops` — list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` — single loop + resolve/cancel
   - `GET /api/actions/signals` — 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/dashclaw.js` — 57 methods (createAction, updateOutcome, registerOpenLoop, resolveOpenLoop, registerAssumption, getAssumption, validateAssumption, getActions, getAction, getSignals, getOpenLoops, getDriftReport, getActionTrace, reportTokenUsage, recordDecision, createGoal, recordContent, recordInteraction, reportConnections, track)
+- SDK: `sdk/dashclaw.js` — 59 methods across 13 categories (see `docs/client-setup-guide.md` for current method reference)
 - Tests: `scripts/test-actions.mjs` — ~95 assertions across 11 phases
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
@@ -691,7 +708,7 @@ const claw = new DashClaw({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### DashClaw SDK (npm package — 55 active methods)
+### DashClaw SDK (npm package — 59 methods)
 
 The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
 
@@ -735,13 +752,13 @@ const claw = new DashClaw({
 });
 ```
 
-**Action Recording (6)**: `createAction()`, `updateOutcome()`, `getActions()`, `getAction()`, `getActionTrace()`, `track()`
+**Action Recording (7)**: `createAction()`, `waitForApproval()`, `updateOutcome()`, `getActions()`, `getAction()`, `getActionTrace()`, `track()`
 
 **Loops & Assumptions (7)**: `registerOpenLoop()`, `resolveOpenLoop()`, `getOpenLoops()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getDriftReport()`
 
 **Signals (1)**: `getSignals()`
 
-**Dashboard Data (8)**: `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`, `createCalendarEvent()`, `recordIdea()`, `reportMemoryHealth()`
+**Dashboard Data (9)**: `reportTokenUsage()`, `recordDecision()`, `createGoal()`, `recordContent()`, `recordInteraction()`, `reportConnections()`, `createCalendarEvent()`, `recordIdea()`, `reportMemoryHealth()`
 
 **Session Handoffs (3)**: `createHandoff()`, `getHandoffs()`, `getLatestHandoff()`
 

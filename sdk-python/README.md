@@ -64,6 +64,46 @@ except ApprovalDeniedError:
     print("Human operator denied the action!")
 ```
 
+Manual approval API access is also available when building operator tooling:
+
+```python
+claw.approve_action("action_123", decision="allow", reasoning="Change window approved")
+pending = claw.get_pending_approvals(limit=25)
+```
+
+## Guard Audit + Webhooks
+
+Fetch recent guard decisions and manage webhook endpoints directly from the SDK:
+
+```python
+decisions = claw.get_guard_decisions(decision="block", limit=50)
+
+created = claw.create_webhook(
+    url="https://hooks.example.com/dashclaw",
+    events=["all"]
+)
+webhooks = claw.get_webhooks()
+deliveries = claw.get_webhook_deliveries(created["webhook"]["id"])
+claw.test_webhook(created["webhook"]["id"])
+```
+
+## Context + Messaging APIs
+
+Python SDK parity now includes context thread management, message lifecycle, and shared docs:
+
+```python
+thread = claw.create_thread("Release Planning")
+claw.add_thread_entry(thread["thread_id"], "Kickoff complete")
+claw.close_thread(thread["thread_id"], summary="Done for today")
+
+inbox = claw.get_inbox(unread=True)
+claw.mark_read([msg["id"] for msg in inbox["messages"][:2]])
+
+msg_thread = claw.create_message_thread("Ops Coordination")
+claw.broadcast(body="Maintenance window starts in 5 minutes", message_type="status")
+claw.save_shared_doc(name="Ops Runbook", content="Updated checklist")
+```
+
 ## Integrations
 
 ### LangChain

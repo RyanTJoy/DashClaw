@@ -3,6 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId, getUserId } from '../../lib/org.js';
+import { parseJsonWithSchema, notificationPreferenceUpsertSchema } from '../../lib/contracts/index.js';
 import crypto from 'crypto';
 
 let _sql;
@@ -14,11 +15,6 @@ function getSql() {
   _sql = neon(url);
   return _sql;
 }
-
-const VALID_SIGNAL_TYPES = [
-  'all', 'autonomy_spike', 'high_impact_low_oversight', 'repeated_failures',
-  'stale_loop', 'assumption_drift', 'stale_assumption', 'stale_running_action'
-];
 
 // GET /api/notifications - Get current user's preferences
 export async function GET(request) {
@@ -54,21 +50,11 @@ export async function POST(request) {
     }
 
     const sql = getSql();
-    const body = await request.json();
-    const { channel = 'email', enabled = true, signal_types = ['all'] } = body;
-
-    if (channel !== 'email') {
-      return NextResponse.json({ error: 'Only email channel is currently supported' }, { status: 400 });
+    const parsed = await parseJsonWithSchema(request, notificationPreferenceUpsertSchema);
+    if (!parsed.ok) {
+      return parsed.response;
     }
-
-    if (!Array.isArray(signal_types) || signal_types.length === 0) {
-      return NextResponse.json({ error: 'signal_types must be a non-empty array' }, { status: 400 });
-    }
-    for (const st of signal_types) {
-      if (!VALID_SIGNAL_TYPES.includes(st)) {
-        return NextResponse.json({ error: `Invalid signal type: ${st}` }, { status: 400 });
-      }
-    }
+    const { channel, enabled, signal_types } = parsed.data;
 
     const now = new Date().toISOString();
     const prefId = `np_${crypto.randomUUID()}`;

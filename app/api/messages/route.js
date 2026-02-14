@@ -2,9 +2,21 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../lib/org.js';
 import { enforceFieldLimits } from '../../lib/validate.js';
+import { getSql } from '../../lib/db.js';
+import { scanSensitiveData } from '../../lib/security.js';
+import {
+  archiveMessage,
+  createMessage,
+  getMessageForUpdate,
+  getMessageThread,
+  getUnreadMessageCount,
+  listMessages,
+  markMessageRead,
+  touchMessageThread,
+  updateMessageReadBy,
+} from '../../lib/repositories/messagesContext.repository.js';
 import { randomUUID } from 'node:crypto';
 
 const VALID_TYPES = ['action', 'info', 'lesson', 'question', 'status'];
@@ -22,70 +34,17 @@ export async function GET(request) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 1000);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    const conditions = ['org_id = $1'];
-    const params = [orgId];
-    let idx = 2;
+    const rows = await listMessages(sql, orgId, {
+      agentId,
+      direction,
+      type,
+      unread: unread === 'true',
+      threadId,
+      limit,
+      offset,
+    });
 
-    if (agentId) {
-      if (direction === 'sent') {
-        conditions.push(`from_agent_id = $${idx}`);
-        params.push(agentId);
-        idx++;
-      } else if (direction === 'inbox') {
-        conditions.push(`(to_agent_id = $${idx} OR to_agent_id IS NULL)`);
-        params.push(agentId);
-        idx++;
-        conditions.push(`from_agent_id != $${idx}`);
-        params.push(agentId);
-        idx++;
-      } else {
-        // all: messages involving this agent
-        conditions.push(`(from_agent_id = $${idx} OR to_agent_id = $${idx} OR to_agent_id IS NULL)`);
-        params.push(agentId);
-        idx++;
-      }
-    }
-
-    if (direction === 'inbox') {
-      conditions.push("status != 'archived'");
-    }
-
-    if (type) {
-      conditions.push(`message_type = $${idx}`);
-      params.push(type);
-      idx++;
-    }
-
-    if (unread === 'true') {
-      conditions.push("status = 'sent'");
-    }
-
-    if (threadId) {
-      conditions.push(`thread_id = $${idx}`);
-      params.push(threadId);
-      idx++;
-    }
-
-    const where = conditions.join(' AND ');
-    const rows = await sql.query(
-      `SELECT * FROM agent_messages WHERE ${where} ORDER BY created_at DESC LIMIT $${idx} OFFSET $${idx + 1}`,
-      [...params, limit, offset]
-    );
-
-    // Get unread count (for specific agent or all)
-    let unreadCount = 0;
-    if (agentId) {
-      const countResult = await sql.query(
-        `SELECT COUNT(*)::int as count FROM agent_messages WHERE org_id = $1 AND (to_agent_id = $2 OR to_agent_id IS NULL) AND from_agent_id != $2 AND status = 'sent'`,
-        [orgId, agentId]
-      );
-      unreadCount = countResult[0]?.count || 0;
-    } else {
-      const countResult = await sql`
-        SELECT COUNT(*)::int as count FROM agent_messages WHERE org_id = ${orgId} AND status = 'sent'
-      `;
-      unreadCount = countResult[0]?.count || 0;
-    }
+    const unreadCount = await getUnreadMessageCount(sql, orgId, agentId || null);
 
     return NextResponse.json({ messages: rows, total: rows.length, unread_count: unreadCount });
   } catch (error) {
@@ -111,25 +70,24 @@ export async function POST(request) {
       return NextResponse.json({ error: 'body is required' }, { status: 400 });
     }
 
-    // SECURITY: Scan for sensitive data (API keys, etc.)
-    const { redacted, clean, findings } = scanSensitiveData(msgBodyRaw);
+    const { redacted } = scanSensitiveData(msgBodyRaw);
     const msgBody = redacted;
 
     if (!from_agent_id) {
       return NextResponse.json({ error: 'from_agent_id is required' }, { status: 400 });
     }
+
     const msgType = message_type || 'info';
     if (!VALID_TYPES.includes(msgType)) {
       return NextResponse.json({ error: `message_type must be one of: ${VALID_TYPES.join(', ')}` }, { status: 400 });
     }
 
-    // If thread_id provided, verify thread exists, is open, and belongs to same org
     if (thread_id) {
-      const thread = await sql`SELECT id, status FROM message_threads WHERE id = ${thread_id} AND org_id = ${orgId}`;
-      if (thread.length === 0) {
+      const thread = await getMessageThread(sql, orgId, thread_id);
+      if (!thread) {
         return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
       }
-      if (thread[0].status !== 'open') {
+      if (thread.status !== 'open') {
         return NextResponse.json({ error: 'Thread is not open' }, { status: 400 });
       }
     }
@@ -137,22 +95,25 @@ export async function POST(request) {
     const id = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const now = new Date().toISOString();
 
-    const result = await sql`
-      INSERT INTO agent_messages (id, org_id, thread_id, from_agent_id, to_agent_id, message_type, subject, body, urgent, status, doc_ref, read_by, created_at)
-      VALUES (
-        ${id}, ${orgId}, ${thread_id || null}, ${from_agent_id}, ${to_agent_id || null},
-        ${msgType}, ${subject || null}, ${msgBody}, ${urgent || false}, 'sent',
-        ${doc_ref || null}, ${to_agent_id ? null : '[]'}, ${now}
-      )
-      RETURNING *
-    `;
+    const created = await createMessage(sql, {
+      id,
+      orgId,
+      thread_id,
+      from_agent_id,
+      to_agent_id,
+      message_type: msgType,
+      subject,
+      body: msgBody,
+      urgent,
+      doc_ref,
+      now,
+    });
 
-    // Update thread updated_at if in a thread
     if (thread_id) {
-      await sql`UPDATE message_threads SET updated_at = ${now} WHERE id = ${thread_id}`;
+      await touchMessageThread(sql, thread_id, now);
     }
 
-    return NextResponse.json({ message: result[0], message_id: id }, { status: 201 });
+    return NextResponse.json({ message: created, message_id: id }, { status: 201 });
   } catch (error) {
     console.error('Messages POST error:', error);
     return NextResponse.json({ error: 'An error occurred while sending message' }, { status: 500 });
@@ -173,44 +134,39 @@ export async function PATCH(request) {
     if (!action || !['read', 'archive'].includes(action)) {
       return NextResponse.json({ error: 'action must be "read" or "archive"' }, { status: 400 });
     }
+
     const now = new Date().toISOString();
     let updated = 0;
 
     if (action === 'read') {
       const readerId = agent_id || 'dashboard';
       for (const msgId of message_ids) {
-        // For direct messages: set read_at + status
-        // For broadcasts: append to read_by JSON array
-        const msg = await sql`SELECT id, to_agent_id, read_by FROM agent_messages WHERE id = ${msgId} AND org_id = ${orgId}`;
-        if (msg.length === 0) continue;
+        const msg = await getMessageForUpdate(sql, orgId, msgId);
+        if (!msg) continue;
 
-        if (msg[0].to_agent_id === null) {
-          // Broadcast — append to read_by
+        if (msg.to_agent_id === null) {
           let readBy = [];
           try {
-            const parsed = JSON.parse(msg[0].read_by || '[]');
+            const parsed = JSON.parse(msg.read_by || '[]');
             readBy = Array.isArray(parsed) ? parsed : [];
-          } catch { readBy = []; }
+          } catch {
+            readBy = [];
+          }
+
           if (!readBy.includes(readerId)) {
             readBy.push(readerId);
-            await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${msgId}`;
+            await updateMessageReadBy(sql, msgId, readBy);
             updated++;
           }
-        } else if (readerId === 'dashboard' || msg[0].to_agent_id === readerId) {
-          // Direct message — dashboard can mark any, agents only their own
-          await sql`UPDATE agent_messages SET status = 'read', read_at = ${now} WHERE id = ${msgId} AND status = 'sent'`;
+        } else if (readerId === 'dashboard' || msg.to_agent_id === readerId) {
+          await markMessageRead(sql, msgId, now);
           updated++;
         }
       }
     } else {
-      // Archive
       for (const msgId of message_ids) {
-        const result = await sql`
-          UPDATE agent_messages SET status = 'archived', archived_at = ${now}
-          WHERE id = ${msgId} AND org_id = ${orgId} AND status != 'archived'
-          RETURNING id
-        `;
-        if (result.length > 0) updated++;
+        const archived = await archiveMessage(sql, orgId, msgId, now);
+        if (archived) updated++;
       }
     }
 

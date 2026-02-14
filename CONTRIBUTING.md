@@ -36,7 +36,7 @@ To get started with the codebase:
 
 5.  **Run Tests**:
     ```bash
-    npm run test
+    npm run test -- --run
     ```
 
 6.  **Manage Database Schema**:
@@ -48,10 +48,20 @@ To get started with the codebase:
 
 ## Project Structure
 
--   `app/`: The Next.js 14 dashboard (App Router), API routes, and UI components.
+-   `app/`: The Next.js 15 dashboard (App Router), API routes, and UI components.
 -   `agent-tools/`: Specialized Python CLI tools for agent memory, goals, and context tracking.
 -   `sdk/`: The Node.js DashClaw SDK for instrumenting agents.
+-   `sdk-python/`: The Python DashClaw SDK and parity test suite.
 -   `scripts/`: Utility scripts for migrations, security scanning, and testing.
+
+## Documentation Update Protocol
+
+When changing architecture, behavior, or roadmap:
+
+1.  Update canonical docs according to `docs/documentation-governance.md`.
+2.  If behavior changed, update a decision record in `docs/decisions/`.
+3.  If roadmap milestones changed, update `docs/rfcs/platform-convergence-status.md`.
+4.  Include doc updates in the same PR as code changes.
 
 ## Pull Request Process
 
@@ -63,7 +73,14 @@ We welcome Pull Requests for bug fixes, features, and documentation improvements
     ```bash
     npm run lint
     ```
-4.  Submit your PR with a clear description of the changes and the problem they solve.
+4.  **Run CI parity checks locally** before opening a PR:
+    ```bash
+    npm run docs:check
+    npm run openapi:check
+    npm run api:inventory:check
+    npm run route-sql:check
+    ```
+5.  Submit your PR with a clear description of the changes and the problem they solve.
 
 ## Code Style
 

@@ -122,7 +122,7 @@ Try refreshing. If that doesn't work, check that your database URL is correct in
 
 ## Getting Help
 
-- **GitHub Issues:** [Report a bug](../../issues)
+- **GitHub Issues:** [Report a bug](https://github.com/ucsandman/DashClaw/issues)
 - **Documentation:** Check the `docs/` folder and `/docs` page on your deployment
 - **Client Setup Guide:** See `docs/client-setup-guide.md` for the full reference
 

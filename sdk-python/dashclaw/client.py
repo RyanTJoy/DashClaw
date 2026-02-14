@@ -1,5 +1,6 @@
 import json
 import time
+import urllib.parse
 import urllib.request
 import urllib.error
 import base64
@@ -198,6 +199,21 @@ class DashClaw:
     def get_action_trace(self, action_id):
         return self._request(f"/api/actions/{action_id}/trace")
 
+    # --- Category 12: Approvals ---
+
+    def approve_action(self, action_id, decision, reasoning=None):
+        if decision not in ["allow", "deny"]:
+            raise ValueError("decision must be either 'allow' or 'deny'")
+
+        payload = {"decision": decision}
+        if reasoning is not None:
+            payload["reasoning"] = reasoning
+
+        return self._request(f"/api/actions/{action_id}/approve", method="POST", body=payload)
+
+    def get_pending_approvals(self, limit=20, offset=0):
+        return self.get_actions(status="pending_approval", limit=limit, offset=offset)
+
     @contextmanager
     def track(self, action_type, declared_goal, **kwargs):
         start_time = time.time()
@@ -296,7 +312,10 @@ class DashClaw:
         return self._request("/api/agents/connections", method="POST", body=payload)
 
     def report_memory_health(self, health, entities=None, topics=None):
-        payload = {"health": health, "entities": entities, "topics": topics}
+        if isinstance(health, dict) and "health" in health and entities is None and topics is None:
+            payload = health
+        else:
+            payload = {"health": health, "entities": entities, "topics": topics}
         return self._request("/api/memory", method="POST", body=payload)
 
     # --- Category 5: Session Handoffs ---
@@ -332,6 +351,30 @@ class DashClaw:
         payload = {"content": content, "entry_type": entry_type}
         return self._request(f"/api/context/threads/{thread_id}/entries", method="POST", body=payload)
 
+    def close_thread(self, thread_id, summary=None):
+        payload = {"status": "closed"}
+        if summary:
+            payload["summary"] = summary
+        return self._request(f"/api/context/threads/{thread_id}", method="PATCH", body=payload)
+
+    def get_threads(self, status=None, limit=None):
+        params = {"agent_id": self.agent_id}
+        if status is not None:
+            params["status"] = status
+        if limit is not None:
+            params["limit"] = limit
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/context/threads?{query}")
+
+    def get_context_summary(self):
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        points_result = self.get_key_points(session_date=today)
+        threads_result = self.get_threads(status="active")
+        return {
+            "points": points_result.get("points", []),
+            "threads": threads_result.get("threads", []),
+        }
+
     # --- Category 11: Agent Messaging ---
 
     def send_message(self, body, to=None, message_type="info", **kwargs):
@@ -350,6 +393,59 @@ class DashClaw:
         query = urllib.parse.urlencode({k: v for k, v in filters.items() if v is not None})
         return self._request(f"/api/messages?{query}")
 
+    def mark_read(self, message_ids):
+        return self._request("/api/messages", method="PATCH", body={
+            "message_ids": message_ids,
+            "action": "read",
+            "agent_id": self.agent_id,
+        })
+
+    def archive_messages(self, message_ids):
+        return self._request("/api/messages", method="PATCH", body={
+            "message_ids": message_ids,
+            "action": "archive",
+            "agent_id": self.agent_id,
+        })
+
+    def broadcast(self, body, message_type="info", subject=None, thread_id=None):
+        return self.send_message(
+            body=body,
+            to=None,
+            message_type=message_type,
+            subject=subject,
+            thread_id=thread_id,
+        )
+
+    def create_message_thread(self, name, participants=None):
+        return self._request("/api/messages/threads", method="POST", body={
+            "name": name,
+            "participants": participants,
+            "created_by": self.agent_id,
+        })
+
+    def get_message_threads(self, status=None, limit=None):
+        params = {"agent_id": self.agent_id}
+        if status is not None:
+            params["status"] = status
+        if limit is not None:
+            params["limit"] = limit
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/messages/threads?{query}")
+
+    def resolve_message_thread(self, thread_id, summary=None):
+        return self._request("/api/messages/threads", method="PATCH", body={
+            "thread_id": thread_id,
+            "status": "resolved",
+            "summary": summary,
+        })
+
+    def save_shared_doc(self, name, content):
+        return self._request("/api/messages/docs", method="POST", body={
+            "name": name,
+            "content": content,
+            "agent_id": self.agent_id,
+        })
+
     # --- Category 13: Behavior Guard ---
 
     def guard(self, context, include_signals=False):
@@ -358,6 +454,38 @@ class DashClaw:
         path = f"/api/guard?{query}" if query else "/api/guard"
         body = {**context, "agent_id": context.get("agent_id", self.agent_id)}
         return self._request(path, method="POST", body=body)
+
+    def get_guard_decisions(self, decision=None, limit=20, offset=0, agent_id=None):
+        params = {
+            "agent_id": agent_id or self.agent_id,
+            "limit": limit,
+            "offset": offset,
+        }
+        if decision:
+            params["decision"] = decision
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+        return self._request(f"/api/guard?{query}")
+
+    # --- Category 14: Webhooks ---
+
+    def get_webhooks(self):
+        return self._request("/api/webhooks")
+
+    def create_webhook(self, url, events=None):
+        payload = {"url": url}
+        if events is not None:
+            payload["events"] = events
+        return self._request("/api/webhooks", method="POST", body=payload)
+
+    def delete_webhook(self, webhook_id):
+        webhook_id = urllib.parse.quote(str(webhook_id), safe="")
+        return self._request(f"/api/webhooks?id={webhook_id}", method="DELETE")
+
+    def test_webhook(self, webhook_id):
+        return self._request(f"/api/webhooks/{webhook_id}/test", method="POST")
+
+    def get_webhook_deliveries(self, webhook_id):
+        return self._request(f"/api/webhooks/{webhook_id}/deliveries")
 
     # --- Bulk Sync ---
 

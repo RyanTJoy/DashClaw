@@ -1,3 +1,10 @@
+---
+source-of-truth: true
+owner: Frontend Lead
+last-verified: 2026-02-13
+doc-type: decision
+---
+
 # Decision Record: Reverting Draggable Dashboard
 
 **Date:** 2026-02-13
