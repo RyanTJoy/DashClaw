@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `75`
+- Total routes: `77`
 - Stable routes: `37`
 - Beta routes: `13`
-- Experimental routes: `25`
+- Experimental routes: `27`
 
 ## Routes
 
@@ -76,6 +76,8 @@ doc-type: architecture
 | `/api/pairings/{pairingId}/approve` | `POST` | `experimental` | `(default)` | `app/api/pairings/[pairingId]/approve/route.js` |
 | `/api/policies` | `DELETE, GET, PATCH, POST` | `stable` | `/api/policies` | `app/api/policies/route.js` |
 | `/api/preferences` | `GET, POST` | `experimental` | `(default)` | `app/api/preferences/route.js` |
+| `/api/prompts/agent-connect/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/agent-connect/raw/route.js` |
+| `/api/prompts/server-setup/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/server-setup/raw/route.js` |
 | `/api/relationships` | `GET, POST` | `experimental` | `/api/relationships` | `app/api/relationships/route.js` |
 | `/api/schedules` | `GET` | `experimental` | `/api/schedules` | `app/api/schedules/route.js` |
 | `/api/security/scan` | `POST` | `beta` | `/api/security` | `app/api/security/scan/route.js` |
