@@ -4,8 +4,6 @@ import Link from 'next/link';
 import { Flame, Github } from 'lucide-react';
 
 export default function PublicNavbar() {
-  const isDemo = process.env.NEXT_PUBLIC_DASHCLAW_MODE === 'demo';
-
   return (
     <nav className="fixed top-0 w-full z-50 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]/80 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -36,11 +34,6 @@ export default function PublicNavbar() {
           <Link href="/self-host" className="hidden sm:inline-flex px-4 py-1.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors">
             Self-Host
           </Link>
-          {!isDemo && (
-            <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">
-              Login
-            </Link>
-          )}
         </div>
       </div>
     </nav>

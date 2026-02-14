@@ -62,6 +62,10 @@ function getDashclawMode() {
   return process.env.DASHCLAW_MODE || 'self_host';
 }
 
+function isDemoCookieSet(request) {
+  return request.cookies.get('dashclaw_demo')?.value === '1';
+}
+
 function addSecurityHeaders(response) {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
@@ -387,12 +391,28 @@ function getCorsHeaders(request) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const mode = getDashclawMode();
+  const demoCookie = isDemoCookieSet(request);
+
+  // /demo is always a public entrypoint: it sets a non-secret cookie and forwards into the dashboard.
+  // This makes the live demo work even if the deployment forgot to set DASHCLAW_MODE=demo.
+  if (pathname === '/demo') {
+    const response = NextResponse.redirect(new URL('/dashboard', request.url));
+    response.cookies.set('dashclaw_demo', '1', {
+      path: '/',
+      maxAge: 60 * 60 * 24, // 24h
+      sameSite: 'lax',
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+    });
+    addSecurityHeaders(response);
+    return response;
+  }
 
   // Demo sandbox mode:
   // - Serve the REAL dashboard UI.
   // - Back /api/* reads with deterministic fixtures.
   // - Block all writes (no secrets, no mutations).
-  if (mode === 'demo') {
+  if (mode === 'demo' || demoCookie) {
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
@@ -761,6 +781,7 @@ export async function middleware(request) {
 export const config = {
   matcher: [
     '/api/:path*',
+    '/demo',
     '/dashboard',
     '/dashboard/:path*',
     '/swarm',

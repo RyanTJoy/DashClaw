@@ -4,9 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import { LogOut, User } from 'lucide-react';
+import { isDemoMode } from '../lib/isDemoMode';
 
 export default function UserMenu() {
-  const isDemo = process.env.NEXT_PUBLIC_DASHCLAW_MODE === 'demo';
+  const isDemo = isDemoMode();
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);

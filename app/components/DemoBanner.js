@@ -2,10 +2,7 @@
 
 import Link from 'next/link';
 import { ShieldAlert } from 'lucide-react';
-
-function isDemoMode() {
-  return process.env.NEXT_PUBLIC_DASHCLAW_MODE === 'demo';
-}
+import { isDemoMode } from '../lib/isDemoMode';
 
 export default function DemoBanner() {
   if (!isDemoMode()) return null;
@@ -30,4 +27,3 @@ export default function DemoBanner() {
     </div>
   );
 }
-
