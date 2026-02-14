@@ -76,7 +76,7 @@ Status key: `met` | `partial` | `not-yet-verified`
 |---|---|---|
 | WS1 | partial | SQL drift prevention and repository contract tests are enforced, but p95 regression evidence has not yet been documented. |
 | WS2 | met | OpenAPI generation/check + maturity inventory checks are active, and RFC-tag stable breaking-change exception flow is documented and enforced. |
-| WS3 | partial | Broker/replay/cutover implementation is complete, but load-test and duplicate-rate SLO evidence is not yet captured. |
+| WS3 | met | SSE delivery, duplicate tolerance, and replay-window evidence captured in `docs/rfcs/platform-convergence-evidence.json` (run on February 14, 2026). |
 | WS4 | met | Governance hierarchy, metadata coverage, and doc CI checks are active and passing. |
 | WS5 | met | Critical-domain parity matrix, shared Node/Python integration harness, compatibility policy, and release-note guidance are complete. |
 
@@ -133,3 +133,4 @@ Status key: `met` | `partial` | `not-yet-verified`
 - February 14, 2026: Updated customer and operator surfaces to reflect convergence execution status. Added dashboard `PlatformStatusCard`, docs `platform-overview` section, and expanded landing-page platform scope/status messaging.
 - February 14, 2026: WS2 acceptance criteria closeout landed. Added RFC-tag exception workflow documentation in `docs/openapi/README.md` and enforcement in `scripts/check-openapi-diff.mjs`.
 - February 14, 2026: WS5 milestone 4 completed. Added shared critical contract fixture, Node/Python integration harnesses, CI enforcement, and release note `docs/releases/2026-02-14-platform-convergence-closeout.md`.
+- February 14, 2026: WS3 replay reliability hotfix landed. Updated `app/api/stream/route.js` to avoid replay backpressure deadlock before response return; validated replay reconnect via `npm run convergence:evidence` with `recovered_unique_events: 5/5` and all WS3 SLO checks met in `docs/rfcs/platform-convergence-evidence.json`.
