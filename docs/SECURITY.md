@@ -43,6 +43,20 @@ Fail-closed behavior:
 
 - In production (`NODE_ENV` not `development`), if `DASHCLAW_API_KEY` is not set, the API layer returns `503` and does not serve `/api/*`.
 
+### Cron Endpoints (External Scheduler)
+
+DashClaw exposes endpoints under `/api/cron/*` intended to be run on a schedule. These routes are allowlisted from browser/API-key auth, but they still require a shared secret:
+
+- Required header: `Authorization: Bearer $CRON_SECRET`
+
+This is compatible with any scheduler that can make HTTP requests (GitHub Actions, system cron, Windows Task Scheduler, Cloudflare, etc.).
+
+Example (bash):
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" "https://YOUR_HOST/api/cron/signals"
+```
+
 ### CORS
 
 - In production, CORS is restricted to configured/known origins.
