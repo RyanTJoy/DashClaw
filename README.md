@@ -211,8 +211,14 @@ Most tools support `--push` to sync data to DashClaw APIs.
 ## Adaptive Learning Loop (MVP)
 
 - Episode scoring is captured on action outcome updates (`PATCH /api/actions/{actionId}`).
-- Recommendations are served from `/api/learning/recommendations` (`GET`).
+- Recommendations are served from `/api/learning/recommendations` (`GET`) with optional telemetry tracking.
 - Recommendation rebuild (`POST /api/learning/recommendations`) is restricted to admin/service role.
+- Recommendation telemetry ingestion: `POST /api/learning/recommendations/events`.
+- Recommendation effectiveness metrics: `GET /api/learning/recommendations/metrics`.
+- Recommendation ops toggle: `PATCH /api/learning/recommendations/{recommendationId}`.
+- SDK safe auto-adapt modes:
+  - Node: `autoRecommend: 'off' | 'warn' | 'enforce'`
+  - Python: `auto_recommend='off' | 'warn' | 'enforce'`
 - Automated repair/rebuild cron routes:
   - `/api/cron/learning-episodes-backfill`
   - `/api/cron/learning-recommendations`

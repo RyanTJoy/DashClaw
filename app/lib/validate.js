@@ -35,6 +35,9 @@ const ACTION_RECORD_SCHEMA = {
   reversible:           { type: 'boolean' },
   risk_score:           { type: 'integer', min: 0, max: 100 },
   confidence:           { type: 'integer', min: 0, max: 100 },
+  recommendation_id:    { type: 'string', maxLength: 128 },
+  recommendation_applied: { type: 'boolean' },
+  recommendation_override_reason: { type: 'string', maxLength: 500 },
   // Outcome (typically set via PATCH)
   output_summary:       { type: 'string', maxLength: 4000 },
   side_effects:         { type: 'array', maxItems: 50 },

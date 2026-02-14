@@ -29,10 +29,26 @@ class DashClaw {
    * @param {string} [options.swarmId] - Swarm/group identifier if part of a multi-agent system
    * @param {string} [options.guardMode='off'] - Auto guard check before createAction: 'off' | 'warn' | 'enforce'
    * @param {Function} [options.guardCallback] - Called with guard decision object when guardMode is active
+   * @param {string} [options.autoRecommend='off'] - Recommendation mode: 'off' | 'warn' | 'enforce'
+   * @param {number} [options.recommendationConfidenceMin=70] - Minimum recommendation confidence to auto-apply in enforce mode
+   * @param {Function} [options.recommendationCallback] - Called with recommendation adaptation details when autoRecommend is active
    * @param {string} [options.hitlMode='off'] - How to handle pending approvals: 'off' (return immediately) | 'wait' (block and poll)
    * @param {CryptoKey} [options.privateKey] - Web Crypto API Private Key for signing actions
    */
-  constructor({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback, hitlMode, privateKey }) {
+  constructor({
+    baseUrl,
+    apiKey,
+    agentId,
+    agentName,
+    swarmId,
+    guardMode,
+    guardCallback,
+    autoRecommend,
+    recommendationConfidenceMin,
+    recommendationCallback,
+    hitlMode,
+    privateKey
+  }) {
     if (!baseUrl) throw new Error('baseUrl is required');
     if (!apiKey) throw new Error('apiKey is required');
     if (!agentId) throw new Error('agentId is required');
@@ -40,6 +56,9 @@ class DashClaw {
     const validModes = ['off', 'warn', 'enforce'];
     if (guardMode && !validModes.includes(guardMode)) {
       throw new Error(`guardMode must be one of: ${validModes.join(', ')}`);
+    }
+    if (autoRecommend && !validModes.includes(autoRecommend)) {
+      throw new Error(`autoRecommend must be one of: ${validModes.join(', ')}`);
     }
 
     this.baseUrl = baseUrl.replace(/\/$/, '');
@@ -49,6 +68,12 @@ class DashClaw {
     this.swarmId = swarmId || null;
     this.guardMode = guardMode || 'off';
     this.guardCallback = guardCallback || null;
+    this.autoRecommend = autoRecommend || 'off';
+    const parsedConfidenceMin = Number(recommendationConfidenceMin);
+    this.recommendationConfidenceMin = Number.isFinite(parsedConfidenceMin)
+      ? Math.max(0, Math.min(parsedConfidenceMin, 100))
+      : 70;
+    this.recommendationCallback = recommendationCallback || null;
     this.hitlMode = hitlMode || 'off';
     this.privateKey = privateKey || null;
     
@@ -143,6 +168,135 @@ class DashClaw {
     }
   }
 
+  _isRestrictiveDecision(decision) {
+    return decision?.decision === 'block' || decision?.decision === 'require_approval';
+  }
+
+  _buildGuardContext(actionDef) {
+    return {
+      action_type: actionDef.action_type,
+      risk_score: actionDef.risk_score,
+      systems_touched: actionDef.systems_touched,
+      reversible: actionDef.reversible,
+      declared_goal: actionDef.declared_goal,
+      agent_id: this.agentId,
+    };
+  }
+
+  async _reportRecommendationEvent(event) {
+    try {
+      await this._request('/api/learning/recommendations/events', 'POST', {
+        ...event,
+        agent_id: event.agent_id || this.agentId,
+      });
+    } catch {
+      // Telemetry should never break action execution
+    }
+  }
+
+  async _autoRecommend(actionDef) {
+    if (this.autoRecommend === 'off' || !actionDef?.action_type) {
+      return { action: actionDef, recommendation: null, adapted_fields: [] };
+    }
+
+    let result;
+    try {
+      result = await this.recommendAction(actionDef);
+    } catch (err) {
+      console.warn(`[DashClaw] Recommendation fetch failed (proceeding): ${err.message}`);
+      return { action: actionDef, recommendation: null, adapted_fields: [] };
+    }
+
+    if (this.recommendationCallback) {
+      try { this.recommendationCallback(result); } catch { /* ignore callback errors */ }
+    }
+
+    const recommendation = result.recommendation || null;
+    if (!recommendation) return result;
+
+    const confidence = Number(recommendation.confidence || 0);
+    if (confidence < this.recommendationConfidenceMin) {
+      const override_reason = `confidence_below_threshold:${confidence}<${this.recommendationConfidenceMin}`;
+      await this._reportRecommendationEvent({
+        recommendation_id: recommendation.id,
+        event_type: 'overridden',
+        details: { action_type: actionDef.action_type, reason: override_reason },
+      });
+      return {
+        ...result,
+        action: {
+          ...actionDef,
+          recommendation_id: recommendation.id,
+          recommendation_applied: false,
+          recommendation_override_reason: override_reason,
+        },
+      };
+    }
+
+    let guardDecision = null;
+    try {
+      guardDecision = await this.guard(this._buildGuardContext(result.action || actionDef));
+    } catch (err) {
+      console.warn(`[DashClaw] Recommendation guard probe failed: ${err.message}`);
+    }
+
+    if (this._isRestrictiveDecision(guardDecision)) {
+      const override_reason = `guard_restrictive:${guardDecision.decision}`;
+      await this._reportRecommendationEvent({
+        recommendation_id: recommendation.id,
+        event_type: 'overridden',
+        details: { action_type: actionDef.action_type, reason: override_reason },
+      });
+      return {
+        ...result,
+        action: {
+          ...actionDef,
+          recommendation_id: recommendation.id,
+          recommendation_applied: false,
+          recommendation_override_reason: override_reason,
+        },
+      };
+    }
+
+    if (this.autoRecommend === 'warn') {
+      const override_reason = 'warn_mode_no_autoadapt';
+      await this._reportRecommendationEvent({
+        recommendation_id: recommendation.id,
+        event_type: 'overridden',
+        details: { action_type: actionDef.action_type, reason: override_reason },
+      });
+      return {
+        ...result,
+        action: {
+          ...actionDef,
+          recommendation_id: recommendation.id,
+          recommendation_applied: false,
+          recommendation_override_reason: override_reason,
+        },
+      };
+    }
+
+    await this._reportRecommendationEvent({
+      recommendation_id: recommendation.id,
+      event_type: 'applied',
+      details: {
+        action_type: actionDef.action_type,
+        adapted_fields: result.adapted_fields || [],
+        confidence,
+      },
+    });
+
+    return {
+      ...result,
+      action: {
+        ...(result.action || actionDef),
+        recommendation_id: recommendation.id,
+        recommendation_applied: true,
+        recommendation_override_reason: null,
+      },
+    };
+  }
+
   // ══════════════════════════════════════════════
   // Category 1: Action Recording (6 methods)
   // ══════════════════════════════════════════════
@@ -165,14 +319,17 @@ class DashClaw {
    * @returns {Promise<{action: Object, action_id: string}>}
    */
   async createAction(action) {
-    await this._guardCheck(action);
+    const recommendationResult = await this._autoRecommend(action);
+    const finalAction = recommendationResult.action || action;
+
+    await this._guardCheck(finalAction);
     if (this._pendingKeyImport) await this._pendingKeyImport;
     
     const payload = {
       agent_id: this.agentId,
       agent_name: this.agentName,
       swarm_id: this.swarmId,
-      ...action
+      ...finalAction
     };
 
     let signature = null;
@@ -487,8 +644,12 @@ class DashClaw {
    * @param {Object} [filters]
    * @param {string} [filters.action_type] - Filter by action type
    * @param {string} [filters.agent_id] - Override agent_id (defaults to SDK agent)
+   * @param {boolean} [filters.include_inactive] - Include disabled recommendations (admin/service only)
+   * @param {boolean} [filters.track_events=true] - Record recommendation fetched telemetry
+   * @param {boolean} [filters.include_metrics] - Include computed metrics in the response payload
    * @param {number} [filters.limit=50] - Max recommendations to return
-   * @returns {Promise<{recommendations: Object[], total: number, lastUpdated: string}>}
+   * @param {number} [filters.lookback_days=30] - Lookback days used when include_metrics=true
+   * @returns {Promise<{recommendations: Object[], metrics?: Object, total: number, lastUpdated: string}>}
    */
   async getRecommendations(filters = {}) {
     const params = new URLSearchParams({
@@ -496,7 +657,54 @@ class DashClaw {
     });
     if (filters.action_type) params.set('action_type', filters.action_type);
     if (filters.limit) params.set('limit', String(filters.limit));
+    if (filters.include_inactive) params.set('include_inactive', 'true');
+    if (filters.track_events !== false) params.set('track_events', 'true');
+    if (filters.include_metrics) params.set('include_metrics', 'true');
+    if (filters.lookback_days) params.set('lookback_days', String(filters.lookback_days));
     return this._request(`/api/learning/recommendations?${params}`, 'GET');
+  }
+
+  /**
+   * Get recommendation effectiveness metrics and telemetry aggregates.
+   * @param {Object} [filters]
+   * @param {string} [filters.action_type] - Filter by action type
+   * @param {string} [filters.agent_id] - Override agent_id (defaults to SDK agent)
+   * @param {number} [filters.lookback_days=30] - Lookback window for episodes/events
+   * @param {number} [filters.limit=100] - Max recommendations considered
+   * @param {boolean} [filters.include_inactive] - Include inactive recommendations (admin/service only)
+   * @returns {Promise<{metrics: Object[], summary: Object, lookback_days: number, lastUpdated: string}>}
+   */
+  async getRecommendationMetrics(filters = {}) {
+    const params = new URLSearchParams({
+      agent_id: filters.agent_id || this.agentId,
+    });
+    if (filters.action_type) params.set('action_type', filters.action_type);
+    if (filters.lookback_days) params.set('lookback_days', String(filters.lookback_days));
+    if (filters.limit) params.set('limit', String(filters.limit));
+    if (filters.include_inactive) params.set('include_inactive', 'true');
+    return this._request(`/api/learning/recommendations/metrics?${params}`, 'GET');
+  }
+
+  /**
+   * Record recommendation telemetry events (single event or batch).
+   * @param {Object|Object[]} events
+   * @returns {Promise<{created: Object[], created_count: number}>}
+   */
+  async recordRecommendationEvents(events) {
+    if (Array.isArray(events)) {
+      return this._request('/api/learning/recommendations/events', 'POST', { events });
+    }
+    return this._request('/api/learning/recommendations/events', 'POST', events || {});
+  }
+
+  /**
+   * Enable or disable a recommendation.
+   * @param {string} recommendationId - Recommendation ID
+   * @param {boolean} active - Desired active state
+   * @returns {Promise<{recommendation: Object}>}
+   */
+  async setRecommendationActive(recommendationId, active) {
+    return this._request(`/api/learning/recommendations/${recommendationId}`, 'PATCH', { active: !!active });
   }
 
   /**

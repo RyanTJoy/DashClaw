@@ -1,8 +1,10 @@
 import { buildRecommendationsFromEpisodes, scoreActionEpisode } from './learning-loop.js';
 import {
   clearLearningRecommendations,
+  createLearningRecommendationEvents,
   getActionEpisodeSource,
   listLearningEpisodes,
+  listLearningRecommendationEvents,
   upsertLearningEpisode,
   upsertLearningRecommendations,
 } from './repositories/learningLoop.repository.js';
@@ -36,3 +38,145 @@ export async function rebuildLearningRecommendations(sql, orgId, options = {}) {
   };
 }
 
+export async function recordLearningRecommendationEvents(sql, orgId, events = []) {
+  if (!Array.isArray(events) || events.length === 0) return [];
+  return createLearningRecommendationEvents(sql, orgId, events);
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function average(values) {
+  if (!values.length) return 0;
+  return values.reduce((sum, n) => sum + n, 0) / values.length;
+}
+
+function rate(numerator, denominator) {
+  if (!denominator) return 0;
+  return numerator / denominator;
+}
+
+function summarizeOutcomes(episodes) {
+  const total = episodes.length;
+  const success = episodes.filter((e) => e.outcome_label === 'success').length;
+  const failure = episodes.filter((e) => e.outcome_label === 'failure').length;
+  return {
+    total,
+    success,
+    failure,
+    success_rate: rate(success, total),
+    failure_rate: rate(failure, total),
+    avg_duration_ms: average(episodes.map((e) => toNumber(e.duration_ms, 0))),
+    avg_cost_estimate: average(episodes.map((e) => toNumber(e.cost_estimate, 0))),
+    avg_score: average(episodes.map((e) => toNumber(e.score, 0))),
+  };
+}
+
+function isRecommendationApplied(value) {
+  return value === true || value === 1 || value === '1';
+}
+
+export async function getLearningRecommendationMetrics(sql, orgId, options = {}) {
+  const {
+    recommendations = [],
+    episodes = [],
+    agentId,
+    actionType,
+    lookbackDays = 30,
+  } = options;
+
+  const events = await listLearningRecommendationEvents(sql, orgId, {
+    agentId,
+    actionType,
+    lookbackDays,
+    recommendationIds: recommendations.map((r) => r.id),
+  });
+
+  const metrics = recommendations.map((rec) => {
+    const recEvents = events.filter((event) => event.recommendation_id === rec.id);
+    const fetchedCount = recEvents.filter((e) => e.event_type === 'fetched').length;
+    const appliedCount = recEvents.filter((e) => e.event_type === 'applied').length;
+    const overriddenCount = recEvents.filter((e) => e.event_type === 'overridden').length;
+    const outcomeEventsCount = recEvents.filter((e) => e.event_type === 'outcome').length;
+
+    const appliedEpisodes = episodes.filter(
+      (episode) =>
+        episode.recommendation_id === rec.id &&
+        isRecommendationApplied(episode.recommendation_applied)
+    );
+    const baselineEpisodes = episodes.filter(
+      (episode) =>
+        episode.agent_id === rec.agent_id &&
+        episode.action_type === rec.action_type &&
+        !isRecommendationApplied(episode.recommendation_applied)
+    );
+
+    const appliedSummary = summarizeOutcomes(appliedEpisodes);
+    const baselineSummary = summarizeOutcomes(baselineEpisodes);
+
+    const adoptionRate = fetchedCount > 0
+      ? rate(appliedCount, fetchedCount)
+      : rate(appliedCount, appliedCount + overriddenCount);
+
+    const successLift = appliedSummary.success_rate - baselineSummary.success_rate;
+    const failureReduction = baselineSummary.failure_rate - appliedSummary.failure_rate;
+    const latencyDeltaMs = appliedSummary.avg_duration_ms - baselineSummary.avg_duration_ms;
+    const costDeltaEstimate = appliedSummary.avg_cost_estimate - baselineSummary.avg_cost_estimate;
+
+    return {
+      recommendation_id: rec.id,
+      agent_id: rec.agent_id,
+      action_type: rec.action_type,
+      active: rec.active,
+      confidence: rec.confidence,
+      sample_size: rec.sample_size,
+      telemetry: {
+        fetched: fetchedCount,
+        applied: appliedCount,
+        overridden: overriddenCount,
+        outcomes: outcomeEventsCount,
+        adoption_rate: Number(adoptionRate.toFixed(4)),
+      },
+      outcomes: {
+        applied: {
+          total: appliedSummary.total,
+          success_rate: Number(appliedSummary.success_rate.toFixed(4)),
+          failure_rate: Number(appliedSummary.failure_rate.toFixed(4)),
+          avg_score: Number(appliedSummary.avg_score.toFixed(2)),
+          avg_duration_ms: Math.round(appliedSummary.avg_duration_ms),
+          avg_cost_estimate: Number(appliedSummary.avg_cost_estimate.toFixed(4)),
+        },
+        baseline: {
+          total: baselineSummary.total,
+          success_rate: Number(baselineSummary.success_rate.toFixed(4)),
+          failure_rate: Number(baselineSummary.failure_rate.toFixed(4)),
+          avg_score: Number(baselineSummary.avg_score.toFixed(2)),
+          avg_duration_ms: Math.round(baselineSummary.avg_duration_ms),
+          avg_cost_estimate: Number(baselineSummary.avg_cost_estimate.toFixed(4)),
+        },
+      },
+      deltas: {
+        success_lift: Number(successLift.toFixed(4)),
+        failure_reduction: Number(failureReduction.toFixed(4)),
+        latency_delta_ms: Math.round(latencyDeltaMs),
+        cost_delta_estimate: Number(costDeltaEstimate.toFixed(4)),
+      },
+    };
+  });
+
+  return {
+    metrics,
+    summary: {
+      total_recommendations: metrics.length,
+      active_recommendations: metrics.filter((m) => m.active).length,
+      avg_adoption_rate: Number(
+        average(metrics.map((m) => toNumber(m.telemetry.adoption_rate, 0))).toFixed(4)
+      ),
+      avg_success_lift: Number(
+        average(metrics.map((m) => toNumber(m.deltas.success_lift, 0))).toFixed(4)
+      ),
+    },
+  };
+}
