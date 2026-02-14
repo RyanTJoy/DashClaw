@@ -1,5 +1,5 @@
 # 🚧🚧[DashClaw:](https://www.dashclaw.io/) AI Agent Observability & Governance Platform🚧🚧
-# (not working right now don't try it yet)
+# (not working right now don't try it yet, but that demo though...)
 ![DashClaw](public/images/screenshots/dash1.png)
 
 ## It Combines
