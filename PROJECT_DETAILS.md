@@ -127,8 +127,8 @@ app/
     ├── activity/              # Activity log API (GET, paginated)
     ├── webhooks/              # Webhooks CRUD + test + deliveries
     ├── notifications/         # Notification preferences API
-    ├── cron/signals/          # Vercel Cron: signal detection + alerting (every 10 min)
-    ├── cron/memory-maintenance # Vercel Cron: memory health cleanup
+    ├── cron/signals/          # Cron endpoint: signal detection + alerting (schedule via external runner)
+    ├── cron/memory-maintenance # Cron endpoint: memory health cleanup (schedule via external runner)
     ├── workflows/             # Workflow definitions
     ├── handoffs/              # Session handoffs API (GET/POST)
     ├── context/               # Context manager: points, threads, entries
@@ -284,7 +284,7 @@ function getSql() {
 - `POST /api/webhooks/[webhookId]/test` - send test webhook payload (admin only)
 - `GET /api/webhooks/[webhookId]/deliveries` - recent delivery history (last 20)
 - `GET/POST /api/notifications` - notification preferences API
-- `GET /api/cron/signals` - Vercel Cron handler: detect new signals, fire webhooks, send email alerts
+- `GET /api/cron/signals` - cron endpoint: detect new signals, fire webhooks, send email alerts
 - `GET/POST /api/handoffs` - session handoffs (GET: `?agent_id`, `?date`, `?latest=true`; POST: required summary + agent_id)
 - `GET/POST /api/context/points` - key points (GET: `?agent_id`, `?category`, `?session_date`; POST: required content)
 - `GET/POST /api/context/threads` - threads (GET: `?agent_id`, `?status`; POST: required name, upserts on org+agent+name)
@@ -453,13 +453,13 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Library: `app/lib/signals.js` - `computeSignals()` extracted from signals API route (shared by API + cron)
 - Library: `app/lib/notifications.js` - `sendSignalAlertEmail()` via Resend SDK (no-op if `RESEND_API_KEY` not set)
 - API: `GET/POST /api/notifications` - user preference CRUD (email channel, signal type filters)
-- Cron: `GET /api/cron/signals` - Vercel Cron every 10 min:
-  1. Auth via `Authorization: Bearer CRON_SECRET` (skip in dev)
+- Cron endpoint: `GET /api/cron/signals` (run via any scheduler):
+  1. Auth via `Authorization: Bearer CRON_SECRET`
   2. For each org: compute signals -> hash -> compare to `signal_snapshots` -> find NEW signals
   3. Upsert all current signals into snapshots (update `last_seen_at`)
   4. For new signals: fire webhooks, send emails to opted-in users, log activities
 - Signal hashing: MD5 of `type:agent_id:action_id:loop_id:assumption_id`
-- Vercel Cron config: `vercel.json` with `*/10 * * * *` schedule
+- Scheduling: DashClaw does not ship a hosted scheduler in OSS. Configure any scheduler (GitHub Actions, system cron, Cloudflare, etc.) to call `/api/cron/*` with `Authorization: Bearer $CRON_SECRET`.
 - Sidebar: "Notifications" link with Bell icon in System group (after Webhooks)
 - Migration Step 23 in `migrate-multi-tenant.mjs`
 - Env vars: `RESEND_API_KEY`, `ALERT_FROM_EMAIL` (default: `alerts@dashclaw.dev`), `CRON_SECRET`
