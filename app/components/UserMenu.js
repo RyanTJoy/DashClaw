@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { LogOut, User } from 'lucide-react';
 
 export default function UserMenu() {
+  const isDemo = process.env.NEXT_PUBLIC_DASHCLAW_MODE === 'demo';
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -56,15 +57,22 @@ export default function UserMenu() {
             <p className="text-sm font-medium text-white truncate">{user.name || 'User'}</p>
             <p className="text-xs text-zinc-500 truncate">{user.email}</p>
           </div>
-          <div className="p-1.5">
-            <button
-              onClick={() => signOut({ callbackUrl: '/' })}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-[rgba(255,255,255,0.06)] rounded-md transition-colors"
-            >
-              <LogOut size={14} />
-              Sign Out
-            </button>
-          </div>
+          {!isDemo && (
+            <div className="p-1.5">
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-[rgba(255,255,255,0.06)] rounded-md transition-colors"
+              >
+                <LogOut size={14} />
+                Sign Out
+              </button>
+            </div>
+          )}
+          {isDemo && (
+            <div className="px-4 py-3 text-xs text-zinc-500">
+              Demo mode is read-only.
+            </div>
+          )}
         </div>
       )}
     </div>

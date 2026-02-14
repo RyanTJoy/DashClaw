@@ -50,9 +50,9 @@ We need a setup that is:
 Purpose: "Show me what this is" with no setup.
 
 Requirements:
-- No user DB.
 - No user secrets.
-- Read-only UI with a curated dataset representing 50+ agents.
+- **Same dashboard UI as self-host** (so users see exactly what they will get).
+- Read-only demo dataset representing 50+ agents.
 - Clear banners: "Demo data. Not your agents."
 
 Hard security requirement:
@@ -62,8 +62,8 @@ Hard security requirement:
 Implementation sketch:
 - Env: `DASHCLAW_MODE=demo`
 - Auth: no login required for demo pages.
-- API: GET endpoints return sample data; mutation endpoints return 403 or no-op.
-- Data: sample fixtures shipped with the app (JSON files).
+- API: fixture-backed GET endpoints for the dashboard UI; all mutations return 403.
+- Data: deterministic fixtures shipped with the app (no database required for the demo).
 
 ### Mode 2: Local Self-Host (user-owned)
 
@@ -188,18 +188,19 @@ Update:
 ### 2) Demo dataset and read-only API behavior
 
 Add:
-- `app/lib/demo/fixtures/*.json` (sample data)
-- `app/lib/demo/repositories/*` (read-only data access)
+- `app/lib/demo/*` fixture generator(s) (deterministic sample data)
 
 Update:
-- API routes to branch when `DASHCLAW_MODE=demo`:
-  - GET endpoints read from fixtures.
-  - POST/PATCH/DELETE endpoints return 403 (or no-op with warnings) and never write.
+- `middleware.js` in demo mode:
+  - serve `/dashboard` and dashboard pages publicly (no login)
+  - intercept key `/api/*` GET endpoints and return fixture-backed JSON
+  - block all non-GET `/api/*` mutations with 403
+  - disable any endpoints not needed for the demo (return 403)
 
 ### 3) Demo routes
 
 Add:
-- `app/demo/*` pages that show the product UI with demo data and banners.
+- `app/demo` route that redirects into the real dashboard UI (`/dashboard`) in demo mode.
 
 Update:
 - `app/page.js` (marketing) to link to `/demo` and `/self-host`.
