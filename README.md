@@ -1,6 +1,6 @@
-# DashClaw
+![DashClaw](public/images/screenshots/Website.png)
 
-DashClaw is a production-focused AI agent observability and governance platform.
+[DashClaw](https://www.dashclaw.io/) is a production-focused AI agent observability and governance platform.
 
 It combines:
 - A customer-facing website (`/`) and operator dashboard (`/dashboard`)
