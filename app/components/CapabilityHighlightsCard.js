@@ -14,9 +14,11 @@ import {
   Bot,
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
-
-const HIGHLIGHTS_VERSION = '2026-02-15-major-v2';
-const HIGHLIGHTS_DISMISS_KEY = 'dashclaw_capability_highlights_dismissed_version';
+import {
+  HIGHLIGHTS_VERSION,
+  dismissHighlights,
+  isHighlightsDismissed,
+} from '../lib/capabilityHighlightsState';
 
 const HIGHLIGHTS = [
   {
@@ -64,21 +66,11 @@ const HIGHLIGHTS = [
 ];
 
 export default function CapabilityHighlightsCard() {
-  const [dismissed, setDismissed] = useState(() => {
-    try {
-      return typeof window !== 'undefined' && localStorage.getItem(HIGHLIGHTS_DISMISS_KEY) === HIGHLIGHTS_VERSION;
-    } catch {
-      return false;
-    }
-  });
+  const [dismissed, setDismissed] = useState(() => isHighlightsDismissed());
 
   const handleDismiss = () => {
     setDismissed(true);
-    try {
-      localStorage.setItem(HIGHLIGHTS_DISMISS_KEY, HIGHLIGHTS_VERSION);
-    } catch {
-      // ignore storage errors
-    }
+    dismissHighlights();
   };
 
   if (dismissed) return null;

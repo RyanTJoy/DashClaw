@@ -1,6 +1,6 @@
 {
   "name": "dashclaw",
-  "version": "1.5.0",
+  "version": "1.6.2",
   "private": true,
   "license": "MIT",
   "scripts": {
@@ -17,6 +17,8 @@
     "route-sql:check": "node scripts/check-route-sql-guard.mjs",
     "sdk:integration": "node scripts/check-sdk-cross-integration.mjs",
     "sdk:integration:python": "node scripts/run-python-unittest.mjs",
+    "reliability:evidence": "node scripts/collect-platform-convergence-evidence.mjs",
+    "reliability:ws1:check": "node scripts/check-convergence-ws1-latency.mjs",
     "convergence:evidence": "node scripts/collect-platform-convergence-evidence.mjs",
     "convergence:ws1:check": "node scripts/check-convergence-ws1-latency.mjs",
     "test": "vitest",

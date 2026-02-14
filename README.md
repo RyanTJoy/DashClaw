@@ -127,8 +127,8 @@ npm run sdk:integration:python
 ### Archived Program Checks (Historical)
 
 ```bash
-npm run convergence:ws1:check
-npm run convergence:evidence -- http://localhost:3000 docs/rfcs/platform-convergence-evidence.json
+npm run reliability:ws1:check
+npm run reliability:evidence -- http://localhost:3000 docs/rfcs/platform-convergence-evidence.json
 ```
 
 ### Adaptive Learning Loop Ops

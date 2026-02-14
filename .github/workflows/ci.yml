@@ -43,7 +43,7 @@ jobs:
         run: npm run route-sql:check
 
       - name: Check WS1 latency regression evidence
-        run: npm run convergence:ws1:check
+        run: npm run reliability:ws1:check
 
       - name: Run tests
         run: npm run test -- --run
