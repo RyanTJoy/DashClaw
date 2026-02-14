@@ -71,6 +71,10 @@ When changing architecture, behavior, or roadmap:
 
 We welcome Pull Requests for bug fixes, features, and documentation improvements!
 
+What is a pull request (PR)?
+
+A PR is a proposed change to the repository. It lets CI run checks and lets maintainers review changes before merging them into `main`.
+
 1.  Create a new branch for your work.
 2.  Ensure your code follows the existing style and patterns.
 3.  **Run Linting**: Before submitting, ensure there are no linting errors:
@@ -86,6 +90,13 @@ We welcome Pull Requests for bug fixes, features, and documentation improvements
     npm run route-sql:check
     ```
 5.  Submit your PR with a clear description of the changes and the problem they solve.
+
+### Dependabot PRs
+
+This repository uses Dependabot to propose dependency updates. Treat them like normal PRs:
+
+- Patch/minor updates: merge when CI is green.
+- Major updates: treat as planned work (read release notes, test locally, and expect breaking changes).
 
 ## Code Style
 

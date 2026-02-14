@@ -1,148 +1,45 @@
 # Security Checklist
 
-Quick reference for secure development and deployment.
+Quick reference for secure development and deployment of DashClaw.
 
----
+## Repository Hygiene (Always)
 
-## 🚨 Before First Commit
+- [ ] `.env`, `.env.local`, `.env.*` are not git-tracked: `git ls-files .env*` should be empty.
+- [ ] `secrets/` is gitignored and never committed.
+- [ ] `node_modules/`, `.next/`, and other build artifacts are gitignored.
+- [ ] Local caches (example: `.npm-cache/`) are gitignored.
 
-### 1. Set Up .gitignore FIRST
+## Before Every Commit
 
-```bash
-# Create .gitignore BEFORE creating any files
-cat > .gitignore << 'EOF'
-# Environment files - NEVER commit
-.env
-.env.*
-.env.local
-*.env
+- [ ] Review what is staged: `git diff --cached --name-only`
+- [ ] Run the security scan: `node scripts/security-scan.js`
+- [ ] Run basic CI parity:
+  - [ ] `npm run lint`
+  - [ ] `npm run build`
 
-# Secrets folder
-secrets/
-*secret*
-*.key
-*.pem
+## Before Every Deploy (Production)
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
+- [ ] `DASHCLAW_API_KEY` is set (required to enable `/api/*` in production).
+- [ ] `NEXTAUTH_URL` + `NEXTAUTH_SECRET` are set.
+- [ ] `ENCRYPTION_KEY` is set and is exactly 32 characters.
+- [ ] `DATABASE_URL` is set via environment variables (not committed anywhere).
+- [ ] If behind a reverse proxy you control: set `TRUST_PROXY=true` (otherwise leave it unset).
+- [ ] If multi-instance: configure distributed rate limiting:
+  - [ ] `UPSTASH_REDIS_REST_URL`
+  - [ ] `UPSTASH_REDIS_REST_TOKEN`
+- [ ] If you use outbound webhooks:
+  - [ ] Consider setting `WEBHOOK_ALLOWED_DOMAINS`
+  - [ ] Consider setting `GUARD_WEBHOOK_SECRET` to sign guard webhooks
 
-# Dependencies
-node_modules/
-__pycache__/
-venv/
+## If Credentials Are Leaked
 
-# Build output
-.next/
-dist/
-build/
+1. Rotate first, investigate second.
+2. Treat DB credentials, OAuth client secrets, and API keys as compromised.
+3. After rotation, run `node scripts/security-scan.js` and review recent logs and webhook deliveries.
 
-# IDE/OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-EOF
-```
+## Dependency Maintenance (Recommended)
 
-### 2. Create Secrets Structure
+- [ ] Review and merge Dependabot PRs for patch/minor updates when CI is green.
+- [ ] Treat major version bumps as planned changes (test locally and stage behind a PR).
+- [ ] Run `npm audit --omit=dev` (runtime risk) and `npm audit` (dev + runtime) periodically.
 
-```bash
-mkdir -p secrets
-echo "# Sensitive files - NEVER COMMIT" > secrets/README.md
-```
-
----
-
-## 🔍 Before Every Commit
-
-```bash
-# 1. Check what's tracked (MOST IMPORTANT)
-git ls-files "*.env*" "*.db" "*secret*" "*password*"
-# Expected: Empty output!
-
-# 2. Check what's staged
-git diff --cached --name-only
-
-# 3. Scan for hardcoded secrets
-grep -r "sk-\|Bearer \|api_key=" --include="*.js" --exclude-dir=node_modules
-
-# 4. Verify .gitignore is working
-git status --ignored
-```
-
----
-
-## 🚀 Before Every Deploy
-
-- [ ] `ENCRYPTION_KEY` is set in environment (32 characters)
-- [ ] `DASHCLAW_API_KEY` is set in environment (prod only)
-- [ ] No hardcoded API keys in code
-- [ ] No hardcoded passwords/tokens
-- [ ] No personal info (emails, names, IDs)
-- [ ] No local file paths
-- [ ] No database connection strings in code
-- [ ] Environment variables used for all secrets
-- [ ] `.env` files are gitignored AND not tracked
-- [ ] Run `node scripts/security-scan.js`
-
----
-
-## 🔥 If Credentials Are Leaked
-
-**DON'T INVESTIGATE FIRST - ROTATE FIRST**
-
-1. **IMMEDIATELY**: Generate new credentials from the service
-2. **IMMEDIATELY**: Update environment variables
-3. Then: Check if old credentials were used maliciously
-4. Then: Document the incident
-5. Then: Add preventive measures
-
----
-
-## 📁 Where Secrets Go
-
-| Type | Location |
-|------|----------|
-| API Keys | Vercel Environment Variables |
-| Database URLs | Vercel Environment Variables |
-| OAuth Credentials | Vercel Environment Variables |
-| Local Dev | `.env.local` (gitignored) |
-
-**NEVER put secrets in:**
-- Source code files
-- README or documentation
-- Git commits (even private repos)
-- Chat messages or tickets
-
----
-
-## 🔄 Credential Rotation Schedule
-
-| Type | Frequency | Notes |
-|------|-----------|-------|
-| API Keys | 90 days | Set calendar reminder |
-| Database Passwords | 90 days | Update connection string |
-| OAuth Tokens | Per provider | Usually auto-refresh |
-| After Incident | Immediately | Don't wait |
-
----
-
-## ✅ Security Scan
-
-Run before every release:
-
-```bash
-node scripts/security-scan.js
-```
-
-This checks:
-- Hardcoded secrets in source files
-- Tracked sensitive files in git
-- Missing .gitignore entries
-- npm audit vulnerabilities
-
----
-
-*When in doubt, rotate it out.*
