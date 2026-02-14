@@ -4,17 +4,8 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getOrgId, getUserId } from '../../lib/org.js';
 import { parseJsonWithSchema, notificationPreferenceUpsertSchema } from '../../lib/contracts/index.js';
+import { getSql } from '../../lib/db.js';
 import crypto from 'crypto';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
 
 // GET /api/notifications - Get current user's preferences
 export async function GET(request) {

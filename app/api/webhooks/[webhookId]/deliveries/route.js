@@ -3,16 +3,7 @@ export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
 import { getOrgId } from '../../../../lib/org.js';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+import { getSql } from '../../../../lib/db.js';
 
 // GET /api/webhooks/[webhookId]/deliveries - Recent deliveries
 export async function GET(request, { params }) {

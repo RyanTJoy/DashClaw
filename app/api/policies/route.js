@@ -5,16 +5,7 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getOrgId, getOrgRole } from '../../lib/org';
 import { validatePolicy } from '../../lib/validate';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+import { getSql } from '../../lib/db.js';
 
 /**
  * GET /api/policies — List guard policies for the org.

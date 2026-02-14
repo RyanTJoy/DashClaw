@@ -5,16 +5,7 @@ import { NextResponse } from 'next/server';
 import { getOrgId } from '../../lib/org';
 import { validateGuardInput } from '../../lib/validate';
 import { evaluateGuard } from '../../lib/guard';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+import { getSql } from '../../lib/db.js';
 
 /**
  * POST /api/guard — Evaluate guard policies for a proposed action.

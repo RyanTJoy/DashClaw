@@ -5,16 +5,7 @@ import { NextResponse } from 'next/server';
 import { getUserId } from '../../../lib/org.js';
 import { incrementMeter } from '../../../lib/usage.js';
 import { logActivity } from '../../../lib/audit.js';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+import { getSql } from '../../../lib/db.js';
 
 // GET /api/invite/[token] - Get invite details (public-ish — for the accept page)
 export async function GET(request, { params }) {
