@@ -1,6 +1,5 @@
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import { neon } from '@neondatabase/serverless';
 import crypto from 'crypto';
 
@@ -24,80 +23,22 @@ function getSql() {
   return _sql;
 }
 
-function isLocalhostNextAuthUrl() {
-  const raw = String(process.env.NEXTAUTH_URL || '').trim();
-  if (!raw) return false;
-  try {
-    const u = new URL(raw);
-    return u.hostname === 'localhost' || u.hostname === '127.0.0.1';
-  } catch {
-    return false;
-  }
-}
-
-function canUseLocalDevLogin() {
-  // Local-only escape hatch so self-hosters can use the dashboard without setting up OAuth apps.
-  // Guardrails:
-  // - only enabled when NEXTAUTH_URL points at localhost/127.0.0.1
-  // - default enabled in dev; opt-in via DASHCLAW_LOCAL_LOGIN=true for production-mode localhost runs
-  const localLogin = String(process.env.DASHCLAW_LOCAL_LOGIN || '').toLowerCase() === 'true';
-  const devDefault = process.env.NODE_ENV === 'development';
-  return isLocalhostNextAuthUrl() && (devDefault || localLogin);
-}
-
-function buildProviders() {
-  const providers = [];
-
-  // Only register real OAuth providers when properly configured.
-  if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
-    providers.push(
-      GitHubProvider({
-        clientId: process.env.GITHUB_ID,
-        clientSecret: process.env.GITHUB_SECRET,
-      })
-    );
-  }
-
-  if (process.env.GOOGLE_ID && process.env.GOOGLE_SECRET) {
-    providers.push(
-      GoogleProvider({
-        clientId: process.env.GOOGLE_ID,
-        clientSecret: process.env.GOOGLE_SECRET,
-      })
-    );
-  }
-
-  if (canUseLocalDevLogin()) {
-    providers.push(
-      CredentialsProvider({
-        id: 'local-dev',
-        name: 'Local Dev',
-        credentials: {},
-        async authorize() {
-          // No password: this is intentionally a localhost-only convenience.
-          return {
-            id: 'usr_local_dev',
-            name: 'Local Dev Admin',
-            email: 'local-dev@dashclaw.local',
-          };
-        },
-      })
-    );
-  }
-
-  return providers;
-}
-
 export const authOptions = {
-  providers: buildProviders(),
+  providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID || 'mock_github_id',
+      clientSecret: process.env.GITHUB_SECRET || 'mock_github_secret',
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_ID || 'mock_google_id',
+      clientSecret: process.env.GOOGLE_SECRET || 'mock_google_secret',
+    }),
+  ],
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   callbacks: {
     async signIn({ user, account }) {
       try {
-        // Local dev login: no OAuth setup; treat as org_default admin.
-        if (account?.provider === 'local-dev') return true;
-
         const sql = getSql();
         // If mock driver, skip logic
         if (!process.env.DATABASE_URL) return true;
@@ -142,16 +83,6 @@ export const authOptions = {
       // On initial sign-in, attach org info from DB
       if (account) {
         try {
-          // Local dev login: mint a minimal trusted session without requiring OAuth apps.
-          if (account.provider === 'local-dev') {
-            token.userId = 'usr_local_dev';
-            token.orgId = 'org_default';
-            token.role = 'admin';
-            token.plan = 'pro';
-            token.orgRefreshedAt = Date.now();
-            return token;
-          }
-
           if (!process.env.DATABASE_URL) throw new Error('No DB');
           
           const sql = getSql();
