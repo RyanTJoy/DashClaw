@@ -35,11 +35,16 @@ if not exist ".env.local" (
     echo   DATABASE SETUP REQUIRED
     echo  ----------------------------------------
     echo.
-    echo You need a Neon database connection string.
+    echo You need a PostgreSQL connection string (DATABASE_URL).
     echo.
-    echo 1. Go to https://neon.tech and create a FREE account
-    echo 2. Create a new project
-    echo 3. Copy the connection string (starts with postgresql://)
+    echo Option A (recommended): Neon (free hosted Postgres)
+    echo   1. Go to https://neon.tech and create a FREE account
+    echo   2. Create a new project
+    echo   3. Copy the connection string (starts with postgresql://)
+    echo.
+    echo Option B: Local Postgres (requires Docker Desktop)
+    echo   1. Run: docker compose up -d db
+    echo   2. Use: postgresql://dashclaw:dashclaw@localhost:5432/dashclaw
     echo.
     
     echo.

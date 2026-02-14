@@ -314,6 +314,29 @@ function buildFixtures() {
   };
   tokensToday.totalTokens = tokensToday.tokensIn + tokensToday.tokensOut;
 
+  const usage = {
+    plan: 'open_source',
+    limits: {
+      actions_per_month: Infinity,
+      agents: Infinity,
+      members: Infinity,
+      api_keys: Infinity,
+    },
+    usage: {
+      actions_per_month: actions.length,
+      agents: agents.length,
+      members: 4,
+      api_keys: 3,
+    },
+    subscription: {
+      status: 'n/a',
+      current_period_end: null,
+      trial_ends_at: null,
+      has_stripe: false,
+    },
+    stripe_configured: false,
+  };
+
   const settings = [
     { key: 'OPENAI_API_KEY', hasValue: true },
     { key: 'ANTHROPIC_API_KEY', hasValue: true },
@@ -493,6 +516,7 @@ function buildFixtures() {
     tokenHistory,
     tokensCurrent,
     tokensToday,
+    usage,
     settings,
     connections,
     pairings,

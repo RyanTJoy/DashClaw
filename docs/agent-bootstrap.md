@@ -23,7 +23,7 @@ node scripts/bootstrap-agent.mjs \
   --api-key oc_live_xxx  # Push to production
 ```
 
-**Flags**: `--dir` (required), `--agent-id` (required), `--agent-name`, `--base-url`, `--api-key` (falls back to `DASHCLAW_API_KEY`/`DASHCLAW_API_KEY`), `--local`, `--dry-run`
+**Flags**: `--dir` (required), `--agent-id` (required), `--agent-name`, `--base-url` (falls back to `DASHCLAW_BASE_URL`), `--api-key` (falls back to `DASHCLAW_API_KEY`), `--local`, `--dry-run`
 
 **7 scanners**: connections (env keys + package.json deps), memory (.claude/ health + entities), goals (todo.md), learning (lessons.md), context points (CLAUDE.md sections), context threads (CLAUDE.md headings), snippets (fenced code blocks)
 

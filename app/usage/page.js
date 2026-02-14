@@ -56,7 +56,7 @@ function UsageContent() {
 
   const fetchUsage = useCallback(async () => {
     try {
-      const res = await fetch('/api/billing');
+      const res = await fetch('/api/usage');
       const data = await res.json();
 
       if (res.status === 403 && data.needsOnboarding) {
