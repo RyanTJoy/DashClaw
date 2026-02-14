@@ -2,11 +2,7 @@
 
 import { SessionProvider } from 'next-auth/react';
 import { AgentFilterProvider } from '../lib/AgentFilterContext';
-
-function isDemoMode() {
-  // Client-side env must be NEXT_PUBLIC_*.
-  return process.env.NEXT_PUBLIC_DASHCLAW_MODE === 'demo';
-}
+import { isDemoMode } from '../lib/isDemoMode';
 
 // Mock session provider for development to bypass login
 function DevSessionProvider({ children }) {
