@@ -214,14 +214,14 @@ export default function DocsPage() {
             <h2 className="text-2xl font-bold tracking-tight mb-2">Platform Overview</h2>
             <p className="text-sm text-zinc-400 mb-6">
               DashClaw includes the dashboard, API layer, realtime streaming, governance controls, and Node/Python SDKs.
-              As of February 14, 2026: M1-M3 are complete and M4 is in progress.
+              As of February 14, 2026: M1-M4 are shipped. WS2/WS3/WS4/WS5 acceptance criteria are met, and WS1 remains in p95 evidence closeout.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
               {[
                 {
                   title: 'WS1 Data Access Convergence',
-                  status: 'Done',
-                  detail: 'Repository contracts, migrated critical handlers, and route-level SQL CI guard.',
+                  status: 'Partial',
+                  detail: 'Repository contracts, migrated critical handlers, and route-level SQL CI guard are complete; p95 regression evidence closeout remains.',
                 },
                 {
                   title: 'WS2 API Contract Governance',
@@ -240,8 +240,8 @@ export default function DocsPage() {
                 },
                 {
                   title: 'WS5 SDK Core Parity',
-                  status: 'In Progress',
-                  detail: 'Python parity delivered for WS5 M2/M3; cross-SDK integration suite remains.',
+                  status: 'Done',
+                  detail: 'Critical-domain Node/Python parity and cross-SDK integration suite are complete with CI enforcement.',
                 },
               ].map((ws) => (
                 <div key={ws.title} className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111] p-4">
