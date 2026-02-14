@@ -46,10 +46,10 @@
     ]
   },
   "summary": {
-    "total_routes": 69,
+    "total_routes": 72,
     "stable_routes": 37,
     "beta_routes": 13,
-    "experimental_routes": 19
+    "experimental_routes": 22
   },
   "routes": [
     {
@@ -389,6 +389,33 @@
       "maturity": "experimental",
       "matched_prefix": "/api/learning",
       "file": "app/api/learning/recommendations/route.js"
+    },
+    {
+      "path": "/api/learning/recommendations/{recommendationId}",
+      "methods": [
+        "PATCH"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/learning",
+      "file": "app/api/learning/recommendations/[recommendationId]/route.js"
+    },
+    {
+      "path": "/api/learning/recommendations/events",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/learning",
+      "file": "app/api/learning/recommendations/events/route.js"
+    },
+    {
+      "path": "/api/learning/recommendations/metrics",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/learning",
+      "file": "app/api/learning/recommendations/metrics/route.js"
     },
     {
       "path": "/api/memory",

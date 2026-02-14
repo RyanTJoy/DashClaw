@@ -52,7 +52,19 @@ await claw.updateOutcome(action_id, {
 Create a DashClaw instance. Requires Node 18+ (native fetch).
 
 ```javascript
-const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardMode, guardCallback, hitlMode });
+const claw = new DashClaw({
+  baseUrl,
+  apiKey,
+  agentId,
+  agentName,
+  swarmId,
+  guardMode,
+  guardCallback,
+  autoRecommend,
+  recommendationConfidenceMin,
+  recommendationCallback,
+  hitlMode,
+});
 ```
 
 ### Parameters
@@ -65,10 +77,13 @@ const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardM
 | swarmId | string | No | Swarm/group identifier if part of a multi-agent system |
 | guardMode | string | No | Auto guard check before createAction/track: "off" (default), "warn" (log + proceed), "enforce" (throw on block) |
 | guardCallback | Function | No | Called with guard decision object when guardMode is active |
+| autoRecommend | string | No | Recommendation auto-adapt mode: "off" (default), "warn" (record override), "enforce" (apply safe hints) |
+| recommendationConfidenceMin | number | No | Min recommendation confidence required for auto-adapt in enforce mode (default 70) |
+| recommendationCallback | Function | No | Called with recommendation adaptation details when autoRecommend is active |
 | hitlMode | string | No | HITL behavior: "off" (default - return 202 immediately), "wait" (automatically block and poll until approved/denied) |
 
-### Guard Mode & HITL
-When `guardMode` is set, every call to `createAction()` and `track()` automatically checks guard policies before proceeding.
+### Guard Mode, Auto-Recommend, and HITL
+When enabled, every call to `createAction()` can run recommendation adaptation and guard checks before submission.
 
 ```javascript
 import { DashClaw, GuardBlockedError, ApprovalDeniedError } from 'dashclaw';
@@ -77,6 +92,8 @@ const claw = new DashClaw({
   baseUrl: 'https://your-app.vercel.app',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
+  autoRecommend: 'enforce', // apply safe recommendation hints
+  recommendationConfidenceMin: 80,
   guardMode: 'enforce', // throws GuardBlockedError on block
   hitlMode: 'wait',     // poll until approved or throw ApprovalDeniedError
 });
@@ -416,9 +433,37 @@ Get adaptive recommendations synthesized from scored historical episodes.
 |-----------|------|----------|-------------|
 | filters.action_type | string | No | Filter by action type |
 | filters.agent_id | string | No | Override agent scope (defaults to SDK agent) |
+| filters.include_inactive | boolean | No | Include disabled recommendations (admin/service only) |
+| filters.track_events | boolean | No | Record fetched telemetry (default true) |
+| filters.include_metrics | boolean | No | Include computed metrics in response |
+| filters.lookback_days | number | No | Lookback window for include_metrics |
 | filters.limit | number | No | Max results (default 50) |
 
-**Returns:** `Promise<{ recommendations: Object[], total: number }>`
+**Returns:** `Promise<{ recommendations: Object[], metrics?: Object, total: number }>`
+
+### claw.getRecommendationMetrics(filters?)
+Get recommendation telemetry and effectiveness deltas.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.action_type | string | No | Filter by action type |
+| filters.agent_id | string | No | Override agent scope (defaults to SDK agent) |
+| filters.lookback_days | number | No | Lookback window (default 30) |
+| filters.limit | number | No | Max recommendations to evaluate (default 100) |
+| filters.include_inactive | boolean | No | Include disabled recommendations (admin/service only) |
+
+**Returns:** `Promise<{ metrics: Object[], summary: Object, lookback_days: number }>`
+
+### claw.recordRecommendationEvents(events)
+Write recommendation telemetry events (single event or batch).
+
+**Returns:** `Promise<{ created: Object[], created_count: number }>`
+
+### claw.setRecommendationActive(recommendationId, active)
+Enable or disable one recommendation.
+
+**Returns:** `Promise<{ recommendation: Object }>`
 
 ### claw.rebuildRecommendations(options?)
 Recompute recommendations from recent learning episodes.

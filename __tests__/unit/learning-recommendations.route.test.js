@@ -4,14 +4,20 @@ const {
   mockSql,
   neonMock,
   listLearningRecommendationsMock,
+  listLearningEpisodesMock,
   rebuildLearningRecommendationsMock,
   scoreAndStoreActionEpisodeMock,
+  getLearningRecommendationMetricsMock,
+  recordLearningRecommendationEventsMock,
 } = vi.hoisted(() => ({
   mockSql: {},
   neonMock: vi.fn(() => ({})),
   listLearningRecommendationsMock: vi.fn(),
+  listLearningEpisodesMock: vi.fn(),
   rebuildLearningRecommendationsMock: vi.fn(),
   scoreAndStoreActionEpisodeMock: vi.fn(),
+  getLearningRecommendationMetricsMock: vi.fn(),
+  recordLearningRecommendationEventsMock: vi.fn(),
 }));
 
 neonMock.mockImplementation(() => mockSql);
@@ -22,11 +28,14 @@ vi.mock('@neondatabase/serverless', () => ({
 
 vi.mock('@/lib/repositories/learningLoop.repository.js', () => ({
   listLearningRecommendations: listLearningRecommendationsMock,
+  listLearningEpisodes: listLearningEpisodesMock,
 }));
 
 vi.mock('@/lib/learningLoop.service.js', () => ({
   rebuildLearningRecommendations: rebuildLearningRecommendationsMock,
   scoreAndStoreActionEpisode: scoreAndStoreActionEpisodeMock,
+  getLearningRecommendationMetrics: getLearningRecommendationMetricsMock,
+  recordLearningRecommendationEvents: recordLearningRecommendationEventsMock,
 }));
 
 import { GET, POST } from '@/api/learning/recommendations/route.js';
@@ -66,7 +75,44 @@ describe('/api/learning/recommendations route', () => {
       expect.objectContaining({
         agentId: 'agent_1',
         limit: 10,
+        includeInactive: false,
       })
+    );
+  });
+
+  it('GET includes telemetry metrics and records fetched events when requested', async () => {
+    listLearningRecommendationsMock.mockResolvedValue([
+      { id: 'r1', agent_id: 'agent_1', action_type: 'deploy', confidence: 83 },
+    ]);
+    listLearningEpisodesMock.mockResolvedValue([{ id: 'lep_1', action_type: 'deploy' }]);
+    getLearningRecommendationMetricsMock.mockResolvedValue({
+      metrics: [{ recommendation_id: 'r1', telemetry: { adoption_rate: 0.5 } }],
+      summary: { total_recommendations: 1 },
+    });
+    recordLearningRecommendationEventsMock.mockResolvedValue([{ id: 'evt_1' }]);
+
+    const res = await GET(
+      makeRequest(
+        'http://localhost/api/learning/recommendations?agent_id=agent_1&include_metrics=true&track_events=true&lookback_days=14',
+        { headers: { 'x-org-id': 'org_1' } }
+      )
+    );
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.metrics.summary.total_recommendations).toBe(1);
+    expect(data.lookback_days).toBe(14);
+    expect(recordLearningRecommendationEventsMock).toHaveBeenCalledWith(
+      mockSql,
+      'org_1',
+      expect.arrayContaining([
+        expect.objectContaining({ recommendation_id: 'r1', event_type: 'fetched', agent_id: 'agent_1' }),
+      ])
+    );
+    expect(getLearningRecommendationMetricsMock).toHaveBeenCalledWith(
+      mockSql,
+      'org_1',
+      expect.objectContaining({ lookbackDays: 14 })
     );
   });
 

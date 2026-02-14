@@ -18,6 +18,7 @@ claw = DashClaw(
     api_key="your-api-key",
     agent_id="my-python-agent",
     agent_name="My Python Agent",
+    auto_recommend="warn",  # Optional: off | warn | enforce
     hitl_mode="wait" # Optional: automatically wait for human approval
 )
 
@@ -93,7 +94,12 @@ Build and consume action recommendations based on prior outcomes:
 
 ```python
 claw.rebuild_recommendations(lookback_days=30, min_samples=5)
-recs = claw.get_recommendations(action_type="deploy", limit=5)
+recs = claw.get_recommendations(
+    action_type="deploy",
+    limit=5,
+    include_metrics=True,
+)
+metrics = claw.get_recommendation_metrics(action_type="deploy", lookback_days=30)
 
 candidate = {
     "action_type": "deploy",
@@ -102,6 +108,14 @@ candidate = {
 }
 adapted = claw.recommend_action(candidate)
 print(adapted["action"])
+
+# Admin/service controls
+claw.set_recommendation_active("lrec_123", active=False)
+claw.record_recommendation_events({
+    "recommendation_id": "lrec_123",
+    "event_type": "fetched",
+    "details": {"source": "python-sdk"},
+})
 ```
 
 ## Context + Messaging APIs

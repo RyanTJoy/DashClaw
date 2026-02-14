@@ -32,7 +32,21 @@ class ApprovalDeniedError(DashClawError):
         super().__init__(message, status=403)
 
 class DashClaw:
-    def __init__(self, base_url, api_key, agent_id, agent_name=None, swarm_id=None, guard_mode="off", guard_callback=None, hitl_mode="off", private_key=None):
+    def __init__(
+        self,
+        base_url,
+        api_key,
+        agent_id,
+        agent_name=None,
+        swarm_id=None,
+        guard_mode="off",
+        guard_callback=None,
+        hitl_mode="off",
+        private_key=None,
+        auto_recommend="off",
+        recommendation_confidence_min=70,
+        recommendation_callback=None,
+    ):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.agent_id = agent_id
@@ -42,9 +56,17 @@ class DashClaw:
         self.guard_callback = guard_callback
         self.hitl_mode = hitl_mode # "off" | "wait"
         self.private_key = private_key # cryptography.hazmat.primitives.asymmetric.rsa.RSAPrivateKey
+        self.auto_recommend = auto_recommend
+        try:
+            self.recommendation_confidence_min = max(0, min(float(recommendation_confidence_min), 100))
+        except Exception:
+            self.recommendation_confidence_min = 70
+        self.recommendation_callback = recommendation_callback
 
         if guard_mode not in ["off", "warn", "enforce"]:
             raise ValueError("guard_mode must be one of: off, warn, enforce")
+        if auto_recommend not in ["off", "warn", "enforce"]:
+            raise ValueError("auto_recommend must be one of: off, warn, enforce")
 
     def _request(self, path, method="GET", body=None):
         url = f"{self.base_url}{path}"
@@ -108,6 +130,141 @@ class DashClaw:
         if self.guard_mode == "enforce" and is_blocked:
             raise GuardBlockedError(decision)
 
+    def _is_restrictive_decision(self, decision):
+        return isinstance(decision, dict) and decision.get("decision") in ["block", "require_approval"]
+
+    def _build_guard_context(self, action_def):
+        return {
+            "action_type": action_def.get("action_type"),
+            "risk_score": action_def.get("risk_score"),
+            "systems_touched": action_def.get("systems_touched"),
+            "reversible": action_def.get("reversible"),
+            "declared_goal": action_def.get("declared_goal"),
+            "agent_id": self.agent_id,
+        }
+
+    def _report_recommendation_event(self, event):
+        try:
+            payload = dict(event or {})
+            if "agent_id" not in payload or payload.get("agent_id") is None:
+                payload["agent_id"] = self.agent_id
+            self._request("/api/learning/recommendations/events", method="POST", body=payload)
+        except Exception:
+            # Telemetry should not break action flow.
+            pass
+
+    def _auto_recommend(self, action_def):
+        if self.auto_recommend == "off" or not isinstance(action_def, dict) or not action_def.get("action_type"):
+            return {"action": action_def, "recommendation": None, "adapted_fields": []}
+
+        try:
+            result = self.recommend_action(action_def)
+        except Exception as e:
+            print(f"[DashClaw] Recommendation fetch failed (proceeding): {str(e)}")
+            return {"action": action_def, "recommendation": None, "adapted_fields": []}
+
+        if self.recommendation_callback:
+            try:
+                self.recommendation_callback(result)
+            except Exception:
+                pass
+
+        recommendation = result.get("recommendation")
+        if not isinstance(recommendation, dict):
+            return result
+
+        confidence = recommendation.get("confidence")
+        try:
+            confidence = float(confidence if confidence is not None else 0)
+        except Exception:
+            confidence = 0
+
+        if confidence < self.recommendation_confidence_min:
+            override_reason = f"confidence_below_threshold:{confidence}<{self.recommendation_confidence_min}"
+            self._report_recommendation_event({
+                "recommendation_id": recommendation.get("id"),
+                "event_type": "overridden",
+                "details": {
+                    "action_type": action_def.get("action_type"),
+                    "reason": override_reason,
+                },
+            })
+            return {
+                **result,
+                "action": {
+                    **action_def,
+                    "recommendation_id": recommendation.get("id"),
+                    "recommendation_applied": False,
+                    "recommendation_override_reason": override_reason,
+                },
+            }
+
+        guard_decision = None
+        try:
+            guard_decision = self.guard(self._build_guard_context(result.get("action") or action_def))
+        except Exception as e:
+            print(f"[DashClaw] Recommendation guard probe failed: {str(e)}")
+
+        if self._is_restrictive_decision(guard_decision):
+            override_reason = f"guard_restrictive:{guard_decision.get('decision')}"
+            self._report_recommendation_event({
+                "recommendation_id": recommendation.get("id"),
+                "event_type": "overridden",
+                "details": {
+                    "action_type": action_def.get("action_type"),
+                    "reason": override_reason,
+                },
+            })
+            return {
+                **result,
+                "action": {
+                    **action_def,
+                    "recommendation_id": recommendation.get("id"),
+                    "recommendation_applied": False,
+                    "recommendation_override_reason": override_reason,
+                },
+            }
+
+        if self.auto_recommend == "warn":
+            override_reason = "warn_mode_no_autoadapt"
+            self._report_recommendation_event({
+                "recommendation_id": recommendation.get("id"),
+                "event_type": "overridden",
+                "details": {
+                    "action_type": action_def.get("action_type"),
+                    "reason": override_reason,
+                },
+            })
+            return {
+                **result,
+                "action": {
+                    **action_def,
+                    "recommendation_id": recommendation.get("id"),
+                    "recommendation_applied": False,
+                    "recommendation_override_reason": override_reason,
+                },
+            }
+
+        self._report_recommendation_event({
+            "recommendation_id": recommendation.get("id"),
+            "event_type": "applied",
+            "details": {
+                "action_type": action_def.get("action_type"),
+                "adapted_fields": result.get("adapted_fields", []),
+                "confidence": confidence,
+            },
+        })
+
+        return {
+            **result,
+            "action": {
+                **(result.get("action") or action_def),
+                "recommendation_id": recommendation.get("id"),
+                "recommendation_applied": True,
+                "recommendation_override_reason": None,
+            },
+        }
+
     # --- Category 1: Action Recording ---
 
     def _sign_payload(self, payload):
@@ -139,13 +296,15 @@ class DashClaw:
             "declared_goal": declared_goal,
             **kwargs
         }
-        self._guard_check(action_def)
+        recommendation_result = self._auto_recommend(action_def)
+        final_action = recommendation_result.get("action") or action_def
+        self._guard_check(final_action)
         
         payload = {
             "agent_id": self.agent_id,
             "agent_name": self.agent_name,
             "swarm_id": self.swarm_id,
-            **action_def
+            **final_action
         }
 
         signature = self._sign_payload(payload)
@@ -285,12 +444,62 @@ class DashClaw:
         payload = {"decision": decision, "agent_id": self.agent_id, **kwargs}
         return self._request("/api/learning", method="POST", body=payload)
 
-    def get_recommendations(self, action_type=None, limit=50, agent_id=None):
+    def get_recommendations(
+        self,
+        action_type=None,
+        limit=50,
+        agent_id=None,
+        include_inactive=False,
+        track_events=True,
+        include_metrics=False,
+        lookback_days=None,
+    ):
         params = {"agent_id": agent_id or self.agent_id, "limit": limit}
         if action_type is not None:
             params["action_type"] = action_type
+        if include_inactive:
+            params["include_inactive"] = "true"
+        if track_events:
+            params["track_events"] = "true"
+        if include_metrics:
+            params["include_metrics"] = "true"
+        if lookback_days is not None:
+            params["lookback_days"] = lookback_days
         query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
         return self._request(f"/api/learning/recommendations?{query}")
+
+    def get_recommendation_metrics(
+        self,
+        action_type=None,
+        limit=100,
+        agent_id=None,
+        include_inactive=False,
+        lookback_days=30,
+    ):
+        params = {
+            "agent_id": agent_id or self.agent_id,
+            "limit": limit,
+            "lookback_days": lookback_days,
+        }
+        if action_type is not None:
+            params["action_type"] = action_type
+        if include_inactive:
+            params["include_inactive"] = "true"
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+        return self._request(f"/api/learning/recommendations/metrics?{query}")
+
+    def record_recommendation_events(self, events):
+        if isinstance(events, list):
+            return self._request("/api/learning/recommendations/events", method="POST", body={"events": events})
+        return self._request("/api/learning/recommendations/events", method="POST", body=events or {})
+
+    def set_recommendation_active(self, recommendation_id, active):
+        recommendation_id = urllib.parse.quote(str(recommendation_id), safe="")
+        return self._request(
+            f"/api/learning/recommendations/{recommendation_id}",
+            method="PATCH",
+            body={"active": bool(active)},
+        )
 
     def rebuild_recommendations(
         self,

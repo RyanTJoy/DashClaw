@@ -33,6 +33,21 @@ describe('validateActionRecord', () => {
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain('must be one of');
   });
+
+  it('should allow recommendation metadata fields', () => {
+    const validRecord = {
+      agent_id: 'agent-123',
+      action_type: 'build',
+      declared_goal: 'Build the project',
+      recommendation_id: 'lrec_123',
+      recommendation_applied: false,
+      recommendation_override_reason: 'warn_mode_no_autoadapt',
+    };
+    const result = validateActionRecord(validRecord);
+    expect(result.valid).toBe(true);
+    expect(result.data.recommendation_id).toBe('lrec_123');
+    expect(result.data.recommendation_applied).toBe(false);
+  });
 });
 
 describe('isValidWebhookUrl', () => {

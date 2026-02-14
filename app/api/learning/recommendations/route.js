@@ -5,10 +5,13 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId, getOrgRole } from '../../../lib/org.js';
 import {
+  listLearningEpisodes,
   listLearningRecommendations,
 } from '../../../lib/repositories/learningLoop.repository.js';
 import {
+  getLearningRecommendationMetrics,
   rebuildLearningRecommendations,
+  recordLearningRecommendationEvents,
   scoreAndStoreActionEpisode,
 } from '../../../lib/learningLoop.service.js';
 
@@ -33,6 +36,12 @@ function parseBoundedInt(value, fieldName, min, max, fallback, errors) {
     return fallback;
   }
   return parsed;
+}
+
+function parseBoundedIntSafe(value, min, max, fallback) {
+  const parsed = parseInt(String(value ?? ''), 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(parsed, max));
 }
 
 function validatePostBody(body) {
@@ -81,19 +90,57 @@ export async function GET(request) {
   try {
     const sql = getSql();
     const orgId = getOrgId(request);
+    const role = getOrgRole(request);
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id') || undefined;
     const actionType = searchParams.get('action_type') || undefined;
-    const limit = Math.max(1, Math.min(parseInt(searchParams.get('limit') || '50', 10), 200));
+    const includeInactive = searchParams.get('include_inactive') === 'true';
+    const includeMetrics = searchParams.get('include_metrics') === 'true';
+    const trackEvents = searchParams.get('track_events') === 'true';
+    const lookbackDays = parseBoundedIntSafe(searchParams.get('lookback_days'), 1, 365, 30);
+    const limit = parseBoundedIntSafe(searchParams.get('limit'), 1, 200, 50);
 
     const recommendations = await listLearningRecommendations(sql, orgId, {
       agentId,
       actionType,
       limit,
+      includeInactive: includeInactive && (role === 'admin' || role === 'service'),
     });
+
+    if (trackEvents && agentId && recommendations.length > 0) {
+      const events = recommendations.map((rec) => ({
+        recommendation_id: rec.id,
+        agent_id: agentId,
+        event_type: 'fetched',
+        details: {
+          action_type: rec.action_type,
+          confidence: rec.confidence,
+        },
+      }));
+      void recordLearningRecommendationEvents(sql, orgId, events).catch(() => {});
+    }
+
+    let metrics = undefined;
+    if (includeMetrics) {
+      const episodes = await listLearningEpisodes(sql, orgId, {
+        agentId,
+        actionType,
+        lookbackDays,
+        limit: 10000,
+      });
+      metrics = await getLearningRecommendationMetrics(sql, orgId, {
+        recommendations,
+        episodes,
+        agentId,
+        actionType,
+        lookbackDays,
+      });
+    }
 
     return NextResponse.json({
       recommendations,
+      metrics,
+      lookback_days: lookbackDays,
       total: recommendations.length,
       lastUpdated: new Date().toISOString(),
     });

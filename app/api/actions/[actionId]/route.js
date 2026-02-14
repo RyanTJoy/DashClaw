@@ -10,7 +10,14 @@ import {
   getActionWithRelations,
   updateActionOutcome,
 } from '../../../lib/repositories/actions.repository.js';
-import { scoreAndStoreActionEpisode } from '../../../lib/learningLoop.service.js';
+import {
+  recordLearningRecommendationEvents,
+  scoreAndStoreActionEpisode,
+} from '../../../lib/learningLoop.service.js';
+
+function isRecommendationApplied(value) {
+  return value === true || value === 1 || value === '1';
+}
 
 let _sql;
 function getSql() {
@@ -64,7 +71,26 @@ export async function PATCH(request, { params }) {
 
     // Best-effort: score this action as a learning episode for recommendation synthesis.
     try {
-      await scoreAndStoreActionEpisode(sql, orgId, actionId);
+      const scoredEpisode = await scoreAndStoreActionEpisode(sql, orgId, actionId);
+      if (updatedAction.recommendation_id && isRecommendationApplied(updatedAction.recommendation_applied)) {
+        await recordLearningRecommendationEvents(sql, orgId, [
+          {
+            recommendation_id: updatedAction.recommendation_id,
+            action_id: actionId,
+            agent_id: updatedAction.agent_id || null,
+            event_type: 'outcome',
+            event_key: `outcome:${actionId}`,
+            details: {
+              status: updatedAction.status,
+              outcome_label: scoredEpisode?.outcome_label || null,
+              score: scoredEpisode?.score ?? null,
+              duration_ms: updatedAction.duration_ms ?? null,
+              cost_estimate: updatedAction.cost_estimate ?? null,
+              action_type: updatedAction.action_type || null,
+            },
+          },
+        ]);
+      }
     } catch (learningError) {
       console.warn('[LEARNING] Failed to score action episode:', learningError.message);
     }
