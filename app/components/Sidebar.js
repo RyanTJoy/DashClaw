@@ -43,6 +43,7 @@ const navGroups = [
     label: 'System',
     items: [
       { href: '/integrations', icon: Plug, label: 'Integrations' },
+      { href: '/pairings', icon: CircleDot, label: 'Pairings' },
       { href: '/api-keys', icon: KeyRound, label: 'API Keys' },
       { href: '/team', icon: UsersRound, label: 'Team' },
       { href: '/usage', icon: BarChart3, label: 'Usage' },

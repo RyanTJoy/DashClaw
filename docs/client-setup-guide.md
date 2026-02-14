@@ -139,6 +139,25 @@ const claw = new DashClaw({
 });
 ```
 
+### One-Click Agent Pairing (Recommended)
+
+If you want **verified agents** (signed actions), pair each agent once and approve it in the dashboard.
+
+From the agent process, create a pairing request and print the link:
+
+```javascript
+// privateKeyJwk is the agent's private RSA key (JWK)
+const { pairing, pairing_url } = await claw.createPairingFromPrivateJwk(privateKeyJwk);
+console.log('Click to approve this agent:', pairing_url);
+
+// Optional: wait for approval before sending signed actions
+await claw.waitForPairing(pairing.id);
+```
+
+In the dashboard:
+- Click the link to approve, or
+- Approve many agents at once from `/pairings` (Pairings inbox)
+
 ### Node.js (CommonJS)
 
 ```javascript

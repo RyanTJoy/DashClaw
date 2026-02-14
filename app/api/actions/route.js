@@ -119,12 +119,16 @@ export async function POST(request) {
     const action_id = data.action_id || `act_${crypto.randomUUID()}`;
     const timestamp_start = data.timestamp_start || new Date().toISOString();
 
-    // Identity Verification (MANDATORY in production)
+    // Identity Verification
     const signature = body._signature || null;
     let verified = false;
+    const enforceSignatures = process.env.ENFORCE_AGENT_SIGNATURES === 'true';
 
-    if (!signature && process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ error: 'Signature required for action records in production' }, { status: 401 });
+    if (enforceSignatures && !signature) {
+      return NextResponse.json(
+        { error: 'Signature required', code: 'SIGNATURE_REQUIRED' },
+        { status: 401 }
+      );
     }
 
     if (signature && data.agent_id) {
@@ -132,8 +136,11 @@ export async function POST(request) {
       const { _signature: s, ...payload } = body;
       verified = await verifyAgentSignature(orgId, data.agent_id, payload, signature, sql);
       
-      if (!verified && process.env.NODE_ENV === 'production') {
-        return NextResponse.json({ error: 'Invalid agent signature' }, { status: 401 });
+      if (!verified && enforceSignatures) {
+        return NextResponse.json(
+          { error: 'Invalid agent signature', code: 'INVALID_AGENT_SIGNATURE' },
+          { status: 401 }
+        );
       }
     }
 

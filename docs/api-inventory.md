@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `72`
+- Total routes: `75`
 - Stable routes: `37`
 - Beta routes: `13`
-- Experimental routes: `22`
+- Experimental routes: `25`
 
 ## Routes
 
@@ -71,6 +71,9 @@ doc-type: architecture
 | `/api/orgs` | `GET, POST` | `stable` | `/api/orgs` | `app/api/orgs/route.js` |
 | `/api/orgs/{orgId}` | `GET, PATCH` | `stable` | `/api/orgs` | `app/api/orgs/[orgId]/route.js` |
 | `/api/orgs/{orgId}/keys` | `DELETE, GET, POST` | `stable` | `/api/orgs` | `app/api/orgs/[orgId]/keys/route.js` |
+| `/api/pairings` | `GET, POST` | `experimental` | `(default)` | `app/api/pairings/route.js` |
+| `/api/pairings/{pairingId}` | `GET` | `experimental` | `(default)` | `app/api/pairings/[pairingId]/route.js` |
+| `/api/pairings/{pairingId}/approve` | `POST` | `experimental` | `(default)` | `app/api/pairings/[pairingId]/approve/route.js` |
 | `/api/policies` | `DELETE, GET, PATCH, POST` | `stable` | `/api/policies` | `app/api/policies/route.js` |
 | `/api/preferences` | `GET, POST` | `experimental` | `(default)` | `app/api/preferences/route.js` |
 | `/api/relationships` | `GET, POST` | `experimental` | `/api/relationships` | `app/api/relationships/route.js` |

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { canonicalJsonStringify } from './canonical-json.js';
 
 /**
  * Verify a cryptographic signature from an agent.
@@ -23,11 +24,8 @@ export async function verifyAgentSignature(orgId, agentId, payload, signature, s
     
     const { public_key, algorithm } = rows[0];
     
-    // Reconstruct the string to verify.
-    // NOTE: reliable verification requires canonical JSON or signing raw body.
-    // For this implementation, we rely on the SDK and API using the same key order
-    // for the constructed payload object.
-    const stringToVerify = JSON.stringify(payload);
+    // Use canonical JSON so key order does not break verification.
+    const stringToVerify = canonicalJsonStringify(payload);
     
     // Map algorithm names if necessary. SDK uses RSASSA-PKCS1-v1_5.
     // We assume SHA-256 for the digest.
