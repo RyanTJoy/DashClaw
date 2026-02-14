@@ -109,6 +109,31 @@ npm run sdk:integration:python
 
 More: `docs/SECURITY.md`.
 
+## Scheduled Jobs (Optional)
+
+DashClaw exposes cron endpoints under `/api/cron/*` for maintenance and automation, but the OSS repo does not ship Vercel cron schedules (paid feature). You can still run scheduled behavior by using any scheduler (GitHub Actions, system cron, Cloudflare, etc.) to call these endpoints with:
+
+- Header: `Authorization: Bearer $CRON_SECRET`
+
+Endpoints:
+
+- `GET /api/cron/signals` (compute new signals, fire webhooks, send alert emails)
+- `GET /api/cron/memory-maintenance` (memory health maintenance)
+- `GET /api/cron/learning-recommendations` (rebuild learning recommendations)
+- `GET /api/cron/learning-episodes-backfill` (backfill learning episodes)
+
+Example (bash):
+
+```bash
+curl -fsS -H "Authorization: Bearer $CRON_SECRET" "https://YOUR_HOST/api/cron/signals"
+```
+
+Example (PowerShell):
+
+```powershell
+Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:CRON_SECRET" } -Method GET "http://localhost:3000/api/cron/signals"
+```
+
 ## Analytics (Optional)
 
 DashClaw includes Vercel Web Analytics (`@vercel/analytics`):
@@ -131,4 +156,3 @@ See `CONTRIBUTING.md`.
 ## License
 
 MIT (`LICENSE`).
-

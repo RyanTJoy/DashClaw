@@ -156,6 +156,28 @@ The onboarding checklist will guide you through:
 
 ---
 
+## Step 6 (Optional): Scheduled Jobs (Cron Endpoints)
+
+DashClaw includes endpoints under `/api/cron/*` for scheduled maintenance and automation. Even if you are not on a paid Vercel plan, you can still use them by running any scheduler (GitHub Actions, Windows Task Scheduler, system cron, etc.) that makes an HTTP request with:
+
+- Header: `Authorization: Bearer $CRON_SECRET`
+
+Endpoints:
+
+- `GET /api/cron/signals`
+- `GET /api/cron/memory-maintenance`
+- `GET /api/cron/learning-recommendations`
+- `GET /api/cron/learning-episodes-backfill`
+
+PowerShell example (run from any machine that can reach your DashClaw deployment):
+
+```powershell
+$env:CRON_SECRET="your-secret"
+Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:CRON_SECRET" } -Method GET "https://YOUR_HOST/api/cron/signals"
+```
+
+---
+
 ## Troubleshooting
 
 ### "node is not recognized"
