@@ -64,6 +64,15 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('Learning recommendation metrics GET error:', error);
+    if (String(error?.code || '').includes('42P01') || String(error?.message || '').includes('does not exist')) {
+      return NextResponse.json({
+        metrics: [],
+        summary: {},
+        lookback_days: 30,
+        schema_missing: true,
+        lastUpdated: new Date().toISOString(),
+      });
+    }
     return NextResponse.json(
       { error: 'An error occurred while fetching learning recommendation metrics' },
       { status: 500 }

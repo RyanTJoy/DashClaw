@@ -15,29 +15,36 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id');
 
-    // Get all decisions with their outcomes joined (optionally filtered by agent)
-    const decisions = agentId
-      ? await sql`
-          SELECT d.*,
-                 COALESCE(o.result, 'pending') as outcome,
-                 o.id as outcome_id
-          FROM decisions d
-          LEFT JOIN outcomes o ON o.decision_id = d.id
-          WHERE d.org_id = ${orgId} AND d.agent_id = ${agentId}
-          ORDER BY d.timestamp DESC LIMIT 20
-        `
-      : await sql`
-          SELECT d.*,
-                 COALESCE(o.result, 'pending') as outcome,
-                 o.id as outcome_id
-          FROM decisions d
-          LEFT JOIN outcomes o ON o.decision_id = d.id
-          WHERE d.org_id = ${orgId}
-          ORDER BY d.timestamp DESC LIMIT 20
-        `;
+    const isMissingTable = (err) =>
+      String(err?.code || '').includes('42P01') || String(err?.message || '').includes('does not exist');
 
-    // Get all lessons
-    const lessons = await sql`SELECT * FROM lessons WHERE org_id = ${orgId} ORDER BY confidence DESC`;
+    // Get decisions (optionally filtered by agent). We use decisions.outcome directly; the outcomes table is optional.
+    let decisions = [];
+    try {
+      decisions = agentId
+        ? await sql`
+            SELECT * FROM decisions
+            WHERE org_id = ${orgId} AND agent_id = ${agentId}
+            ORDER BY timestamp DESC LIMIT 20
+          `
+        : await sql`
+            SELECT * FROM decisions
+            WHERE org_id = ${orgId}
+            ORDER BY timestamp DESC LIMIT 20
+          `;
+    } catch (err) {
+      if (!isMissingTable(err)) throw err;
+      decisions = [];
+    }
+
+    // Get lessons (optional table in some installs)
+    let lessons = [];
+    try {
+      lessons = await sql`SELECT * FROM lessons WHERE org_id = ${orgId} ORDER BY confidence DESC`;
+    } catch (err) {
+      if (!isMissingTable(err)) throw err;
+      lessons = [];
+    }
 
     // Calculate stats
     const successCount = decisions.filter(d => d.outcome === 'success').length;

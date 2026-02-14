@@ -152,7 +152,7 @@ async function run() {
 
   // Step 4b: Bootstrap core data tables for fresh installs.
   // Many API routes assume these tables exist; creating them here makes a brand-new DB usable.
-  console.log('Step 4b: Bootstrapping core tables (actions/goals/loops)...');
+  console.log('Step 4b: Bootstrapping core tables (dashboard core)...');
   try {
     await sql`
       CREATE TABLE IF NOT EXISTS action_records (
@@ -290,6 +290,241 @@ async function run() {
     log('âœ…', 'assumptions table ready');
   } catch (err) {
     log('âš ï¸', `assumptions bootstrap: ${err.message}`);
+  }
+
+  // Learning core tables (decisions/lessons/outcomes) used by /api/learning and /api/digest.
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS decisions (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        decision TEXT NOT NULL,
+        context TEXT,
+        reasoning TEXT,
+        outcome TEXT DEFAULT 'pending',
+        confidence INTEGER DEFAULT 50,
+        timestamp TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_decisions_org_agent_ts ON decisions(org_id, agent_id, timestamp)`;
+    log('✅', 'decisions table ready');
+  } catch (err) {
+    log('⚠️', `decisions bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS lessons (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        lesson TEXT,
+        content TEXT,
+        confidence INTEGER DEFAULT 50,
+        timestamp TEXT,
+        tags TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_lessons_org_confidence ON lessons(org_id, confidence)`;
+    log('✅', 'lessons table ready');
+  } catch (err) {
+    log('⚠️', `lessons bootstrap: ${err.message}`);
+  }
+
+  // Optional legacy outcomes table (compatibility with older joins/tools).
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS outcomes (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        decision_id INTEGER,
+        result TEXT DEFAULT 'pending',
+        notes TEXT,
+        timestamp TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_outcomes_org_decision ON outcomes(org_id, decision_id)`;
+    log('✅', 'outcomes table ready');
+  } catch (err) {
+    log('⚠️', `outcomes bootstrap: ${err.message}`);
+  }
+
+  // Content + inspiration + relationships (used by /workspace digest and dashboards).
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS content (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        title TEXT NOT NULL,
+        platform TEXT,
+        status TEXT DEFAULT 'draft',
+        url TEXT,
+        body TEXT,
+        created_at TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_content_org_created ON content(org_id, created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_content_org_agent ON content(org_id, agent_id)`;
+    log('✅', 'content table ready');
+  } catch (err) {
+    log('⚠️', `content bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS ideas (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        title TEXT NOT NULL,
+        description TEXT,
+        category TEXT,
+        score INTEGER DEFAULT 50,
+        status TEXT DEFAULT 'pending',
+        source TEXT,
+        captured_at TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_ideas_org_captured ON ideas(org_id, captured_at)`;
+    log('✅', 'ideas table ready');
+  } catch (err) {
+    log('⚠️', `ideas bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS contacts (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        name TEXT NOT NULL,
+        platform TEXT,
+        temperature TEXT,
+        notes TEXT,
+        opportunity_type TEXT,
+        last_contact TEXT,
+        interaction_count INTEGER DEFAULT 0,
+        next_followup TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_contacts_org_agent_last ON contacts(org_id, agent_id, last_contact)`;
+    log('✅', 'contacts table ready');
+  } catch (err) {
+    log('⚠️', `contacts bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS interactions (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        contact_id INTEGER,
+        direction TEXT,
+        summary TEXT,
+        notes TEXT,
+        type TEXT,
+        platform TEXT,
+        date TEXT,
+        created_at TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_interactions_org_created ON interactions(org_id, created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_interactions_org_agent ON interactions(org_id, agent_id)`;
+    log('✅', 'interactions table ready');
+  } catch (err) {
+    log('⚠️', `interactions bootstrap: ${err.message}`);
+  }
+
+  // Learning loop (recommendations) tables to avoid /api/learning/recommendations 500s on fresh DBs.
+  try {
+    await sql`ALTER TABLE action_records ADD COLUMN IF NOT EXISTS recommendation_id TEXT`;
+    await sql`ALTER TABLE action_records ADD COLUMN IF NOT EXISTS recommendation_applied INTEGER DEFAULT 0`;
+    await sql`ALTER TABLE action_records ADD COLUMN IF NOT EXISTS recommendation_override_reason TEXT`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_action_records_recommendation_id ON action_records(org_id, recommendation_id)`;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS learning_episodes (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        action_id TEXT NOT NULL,
+        agent_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        status TEXT,
+        outcome_label TEXT NOT NULL DEFAULT 'pending',
+        risk_score INTEGER DEFAULT 0,
+        reversible INTEGER DEFAULT 1,
+        confidence INTEGER DEFAULT 50,
+        duration_ms INTEGER,
+        cost_estimate REAL DEFAULT 0,
+        invalidated_assumptions INTEGER DEFAULT 0,
+        open_loops INTEGER DEFAULT 0,
+        recommendation_id TEXT,
+        recommendation_applied INTEGER DEFAULT 0,
+        score INTEGER NOT NULL,
+        score_breakdown TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS learning_episodes_org_action_unique
+      ON learning_episodes (org_id, action_id)
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_learning_episodes_org_agent_action
+      ON learning_episodes (org_id, agent_id, action_type)
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS learning_recommendations (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT NOT NULL,
+        action_type TEXT NOT NULL,
+        confidence INTEGER NOT NULL DEFAULT 50,
+        sample_size INTEGER NOT NULL DEFAULT 0,
+        top_sample_size INTEGER NOT NULL DEFAULT 0,
+        success_rate REAL NOT NULL DEFAULT 0,
+        avg_score REAL NOT NULL DEFAULT 0,
+        hints TEXT NOT NULL,
+        guidance TEXT,
+        active INTEGER NOT NULL DEFAULT 1,
+        computed_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE UNIQUE INDEX IF NOT EXISTS learning_recommendations_org_agent_action_unique
+      ON learning_recommendations (org_id, agent_id, action_type)
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS learning_recommendation_events (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        recommendation_id TEXT,
+        agent_id TEXT,
+        action_id TEXT,
+        event_type TEXT NOT NULL,
+        event_key TEXT,
+        details TEXT,
+        created_at TEXT NOT NULL
+      )
+    `;
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_learning_recommendation_events_org_created
+      ON learning_recommendation_events (org_id, created_at)
+    `;
+
+    log('✅', 'learning-loop tables ready');
+  } catch (err) {
+    log('⚠️', `learning-loop bootstrap: ${err.message}`);
   }
 
   // Step 5: Add org_id column to all existing tables
