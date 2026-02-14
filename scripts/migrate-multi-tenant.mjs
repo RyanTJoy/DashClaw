@@ -150,6 +150,148 @@ async function run() {
     log('⚠️', 'Set DASHCLAW_API_KEY and re-run to seed admin key');
   }
 
+  // Step 4b: Bootstrap core data tables for fresh installs.
+  // Many API routes assume these tables exist; creating them here makes a brand-new DB usable.
+  console.log('Step 4b: Bootstrapping core tables (actions/goals/loops)...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS action_records (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        action_id TEXT UNIQUE,
+        agent_id TEXT NOT NULL,
+        agent_name TEXT,
+        swarm_id TEXT,
+        parent_action_id TEXT,
+        action_type TEXT NOT NULL,
+        declared_goal TEXT,
+        reasoning TEXT,
+        authorization_scope TEXT,
+        trigger TEXT,
+        systems_touched TEXT,
+        input_summary TEXT,
+        status TEXT,
+        reversible INTEGER DEFAULT 1,
+        risk_score INTEGER DEFAULT 0,
+        confidence INTEGER DEFAULT 50,
+        recommendation_id TEXT,
+        recommendation_applied INTEGER DEFAULT 0,
+        recommendation_override_reason TEXT,
+        output_summary TEXT,
+        side_effects TEXT,
+        artifacts_created TEXT,
+        error_message TEXT,
+        timestamp_start TEXT,
+        timestamp_end TEXT,
+        duration_ms INTEGER,
+        cost_estimate REAL DEFAULT 0,
+        tokens_in INTEGER DEFAULT 0,
+        tokens_out INTEGER DEFAULT 0,
+        signature TEXT,
+        verified BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_action_records_org_action_id ON action_records(org_id, action_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_action_records_org_agent_id ON action_records(org_id, agent_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_action_records_org_ts ON action_records(org_id, timestamp_start)`;
+    log('âœ…', 'action_records table ready');
+  } catch (err) {
+    log('âš ï¸', `action_records bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS goals (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        title TEXT NOT NULL,
+        category TEXT,
+        description TEXT,
+        target_date TEXT,
+        progress INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        cost_estimate REAL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_goals_org_agent_id ON goals(org_id, agent_id)`;
+    log('âœ…', 'goals table ready');
+  } catch (err) {
+    log('âš ï¸', `goals bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS milestones (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        agent_id TEXT,
+        goal_id INTEGER REFERENCES goals(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        status TEXT DEFAULT 'active',
+        progress INTEGER DEFAULT 0,
+        cost_estimate REAL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_milestones_org_goal_id ON milestones(org_id, goal_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_milestones_org_agent_id ON milestones(org_id, agent_id)`;
+    log('âœ…', 'milestones table ready');
+  } catch (err) {
+    log('âš ï¸', `milestones bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS open_loops (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        loop_id TEXT NOT NULL,
+        action_id TEXT NOT NULL,
+        loop_type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        priority TEXT NOT NULL DEFAULT 'medium',
+        owner TEXT,
+        resolution TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        resolved_at TIMESTAMP
+      )
+    `;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_open_loops_org_loop_id_unique ON open_loops(org_id, loop_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_open_loops_org_action_id ON open_loops(org_id, action_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_open_loops_org_status ON open_loops(org_id, status)`;
+    log('âœ…', 'open_loops table ready');
+  } catch (err) {
+    log('âš ï¸', `open_loops bootstrap: ${err.message}`);
+  }
+
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS assumptions (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default' REFERENCES organizations(id),
+        assumption_id TEXT NOT NULL,
+        action_id TEXT NOT NULL,
+        assumption TEXT NOT NULL,
+        basis TEXT,
+        validated INTEGER DEFAULT 0,
+        validated_at TIMESTAMP,
+        invalidated INTEGER DEFAULT 0,
+        invalidated_reason TEXT,
+        invalidated_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_assumptions_org_assumption_id_unique ON assumptions(org_id, assumption_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_assumptions_org_action_id ON assumptions(org_id, action_id)`;
+    log('âœ…', 'assumptions table ready');
+  } catch (err) {
+    log('âš ï¸', `assumptions bootstrap: ${err.message}`);
+  }
+
   // Step 5: Add org_id column to all existing tables
   console.log('Step 5: Adding org_id column to existing tables...');
   for (const table of TENANT_TABLES) {
