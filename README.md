@@ -1,4 +1,4 @@
-# [DashClaw:](https://www.dashclaw.io/) AI Agent Observability and Governance Platform
+# [DashClaw:](https://www.dashclaw.io/) AI Agent Observability & Governance Platform
 ![DashClaw](public/images/screenshots/dash1.png)
 
 ## It Combines
