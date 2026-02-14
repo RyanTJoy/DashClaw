@@ -6,7 +6,7 @@ import {
   Webhook, Clock, Compass, Building2, Terminal, BarChart3,
 } from 'lucide-react';
 import PublicNavbar from './components/PublicNavbar';
-import ClickToFullscreenImage from './components/ClickToFullscreenImage';
+import ImageCarousel from './components/ImageCarousel';
 
 /* ─── data ─── */
 
@@ -189,15 +189,28 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="lg:col-span-3">
-              <ClickToFullscreenImage
-                src="/images/screenshots/dash1.png"
-                alt="DashClaw dashboard screenshot"
+              <ImageCarousel
+                items={[
+                  { src: '/images/screenshots/dash1.png', title: 'Dashboard', description: 'Fleet-wide overview: live actions, risk, and governance.' },
+                  { src: '/images/screenshots/swarm-intelligence.png', title: 'Swarm Intelligence', description: 'Multi-agent communication map + agent context.' },
+                  { src: '/images/screenshots/approval.png', title: 'Approval Queue', description: 'Human-in-the-loop approvals for high-risk operations.' },
+                  { src: '/images/screenshots/policies.png', title: 'Policies', description: 'Behavior governance: allow, warn, block, or require approval.' },
+                  { src: '/images/screenshots/messages.png', title: 'Messages', description: 'Agent-to-agent messaging plus shared docs.' },
+                  { src: '/images/screenshots/workflows.png', title: 'Workflows', description: 'Automations, schedules, and execution history.' },
+                  { src: '/images/screenshots/learning.png', title: 'Learning', description: 'Lessons, recommendations, and effectiveness metrics.' },
+                ]}
+                autoRotateMs={4500}
                 aspectClassName="aspect-[16/10]"
                 sizes="(max-width: 1024px) 100vw, 60vw"
                 priority
                 imageClassName="object-cover"
                 className="shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_90px_rgba(0,0,0,0.55)]"
               />
+              <div className="mt-3 text-right">
+                <Link href="/gallery" className="text-xs text-zinc-500 hover:text-zinc-200 transition-colors">
+                  View full gallery →
+                </Link>
+              </div>
             </div>
           </div>
         </div>
