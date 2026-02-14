@@ -20,7 +20,7 @@ DashClaw takes security seriously. This guide covers how we protect your data an
 - **SSRF Protection**: Webhook/guard egress is hardened with HTTPS-only, DNS resolution, private-IP blocking, and redirect blocking.
 - **Domain Allowlist**: Support for optional `WEBHOOK_ALLOWED_DOMAINS` environment variable to strictly limit external requests to trusted providers.
 - **Guard Webhook Signing (Optional)**: If `GUARD_WEBHOOK_SECRET` is set, guard webhooks include `X-DashClaw-Timestamp` and `X-DashClaw-Signature` headers so receivers can verify authenticity.
-- **Rate Limiting**: All `/api/*` routes, including unauthenticated public endpoints, are rate limited in middleware (best-effort per instance).
+- **Rate Limiting**: All `/api/*` routes, including unauthenticated public endpoints, are rate limited in middleware (best-effort per instance). For multi-instance deployments, you can enable distributed rate limiting via Upstash REST env vars.
 - Database connections use SSL/TLS encryption.
 - CORS configured for your deployment domain only.
 - No sensitive data in URL parameters (API keys must be in headers).
