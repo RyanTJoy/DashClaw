@@ -5,16 +5,7 @@ import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../../../lib/org.js';
 import { deliverWebhook } from '../../../../lib/webhooks.js';
 import { logActivity } from '../../../../lib/audit.js';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
+import { getSql } from '../../../../lib/db.js';
 
 // POST /api/webhooks/[webhookId]/test - Send test payload (admin only)
 export async function POST(request, { params }) {

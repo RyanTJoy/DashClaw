@@ -71,6 +71,18 @@ Goal: support both:
   - [x] `app/api/orgs/[orgId]/route.js`
   - [x] `app/api/orgs/[orgId]/keys/route.js`
   - [ ] `app/api/settings/test/route.js` (intentionally Neon-only; keep SSRF allowlist strict)
+  - [x] Follow-up: converted remaining `require('@neondatabase/serverless')` usage in:
+    - `app/api/sync/route.js`
+    - `app/api/keys/route.js`
+    - `app/api/guard/route.js`
+    - `app/api/invite/[token]/route.js`
+    - `app/api/notifications/route.js`
+    - `app/api/policies/route.js`
+    - `app/api/team/invite/route.js`
+    - `app/api/team/[userId]/route.js`
+    - `app/api/webhooks/[webhookId]/test/route.js`
+    - `app/api/webhooks/[webhookId]/deliveries/route.js`
+    - `app/api/cron/signals/route.js`
 - [ ] Validate local DB end-to-end (Docker Postgres + migrations + `npm run dev`)
 - [x] Run CI parity checks locally (`npm run lint`, `npm run build`, `npm run route-sql:check`)
 - [x] Commit + push

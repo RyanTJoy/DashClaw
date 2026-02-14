@@ -6,17 +6,8 @@ import { computeSignals } from '../../../lib/signals.js';
 import { fireWebhooksForOrg } from '../../../lib/webhooks.js';
 import { sendSignalAlertEmail } from '../../../lib/notifications.js';
 import { logActivity } from '../../../lib/audit.js';
+import { getSql } from '../../../lib/db.js';
 import crypto from 'crypto';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
 
 /**
  * Hash a signal into a stable identifier for deduplication.

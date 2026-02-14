@@ -5,17 +5,8 @@ import { NextResponse } from 'next/server';
 import { getOrgId, getOrgRole, getUserId } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
 import { logActivity } from '../../lib/audit.js';
+import { getSql } from '../../lib/db.js';
 import crypto from 'crypto';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  const { neon } = require('@neondatabase/serverless');
-  _sql = neon(url);
-  return _sql;
-}
 
 function hashKey(key) {
   return crypto.createHash('sha256').update(key).digest('hex');

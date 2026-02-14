@@ -6,21 +6,13 @@
 
 import { NextResponse } from 'next/server';
 import { getOrgId } from '../../lib/org';
+import { getSql } from '../../lib/db.js';
 import crypto from 'crypto';
 import { syncSchema } from '../../lib/validators/sync';
 import { scanSensitiveData } from '../../lib/security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-let _sql;
-function getSql() {
-  if (!_sql) {
-    const { neon } = require('@neondatabase/serverless');
-    _sql = neon(process.env.DATABASE_URL);
-  }
-  return _sql;
-}
 
 function genId(prefix) {
   return `${prefix}${crypto.randomUUID().replace(/-/g, '').slice(0, 24)}`;
