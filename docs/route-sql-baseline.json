@@ -10,12 +10,12 @@
       "label": "sql.query call"
     }
   ],
-  "files_scanned": 67,
-  "files_with_direct_sql": 58,
+  "files_scanned": 76,
+  "files_with_direct_sql": 61,
   "totals": {
-    "tagged_template": 240,
+    "tagged_template": 248,
     "query_call": 21,
-    "total": 261
+    "total": 269
   },
   "files": [
     {
@@ -239,6 +239,24 @@
       "tagged_template": 3,
       "query_call": 0,
       "total": 3
+    },
+    {
+      "file": "app/api/pairings/[pairingId]/approve/route.js",
+      "tagged_template": 4,
+      "query_call": 0,
+      "total": 4
+    },
+    {
+      "file": "app/api/pairings/[pairingId]/route.js",
+      "tagged_template": 2,
+      "query_call": 0,
+      "total": 2
+    },
+    {
+      "file": "app/api/pairings/route.js",
+      "tagged_template": 2,
+      "query_call": 0,
+      "total": 2
     },
     {
       "file": "app/api/policies/route.js",

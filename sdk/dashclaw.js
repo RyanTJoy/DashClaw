@@ -126,6 +126,66 @@ class DashClaw {
   }
 
   /**
+   * Create an agent pairing request (returns a link the user can click to approve).
+   *
+   * @param {Object} options
+   * @param {string} options.publicKeyPem - PEM public key (SPKI) to register for this agent.
+   * @param {string} [options.algorithm='RSASSA-PKCS1-v1_5']
+   * @param {string} [options.agentName]
+   * @returns {Promise<{pairing: Object, pairing_url: string}>}
+   */
+  async createPairing({ publicKeyPem, algorithm = 'RSASSA-PKCS1-v1_5', agentName } = {}) {
+    if (!publicKeyPem) throw new Error('publicKeyPem is required');
+    return this._request('/api/pairings', 'POST', {
+      agent_id: this.agentId,
+      agent_name: agentName || this.agentName,
+      public_key: publicKeyPem,
+      algorithm,
+    });
+  }
+
+  async _derivePublicKeyPemFromPrivateJwk(privateJwk) {
+    // Node-only helper (works in the typical agent runtime).
+    const { createPrivateKey, createPublicKey } = await import('node:crypto');
+    const priv = createPrivateKey({ key: privateJwk, format: 'jwk' });
+    const pub = createPublicKey(priv);
+    return pub.export({ type: 'spki', format: 'pem' });
+  }
+
+  /**
+   * Convenience: derive public PEM from a private JWK and create a pairing request.
+   * @param {Object} privateJwk
+   * @param {Object} [options]
+   * @param {string} [options.agentName]
+   */
+  async createPairingFromPrivateJwk(privateJwk, { agentName } = {}) {
+    if (!privateJwk) throw new Error('privateJwk is required');
+    const publicKeyPem = await this._derivePublicKeyPemFromPrivateJwk(privateJwk);
+    return this.createPairing({ publicKeyPem, agentName });
+  }
+
+  /**
+   * Poll a pairing until it is approved/expired.
+   * @param {string} pairingId
+   * @param {Object} [options]
+   * @param {number} [options.timeout=300000] - Max wait time (5 min)
+   * @param {number} [options.interval=2000] - Poll interval
+   * @returns {Promise<Object>} pairing object
+   */
+  async waitForPairing(pairingId, { timeout = 300000, interval = 2000 } = {}) {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const res = await this._request(`/api/pairings/${encodeURIComponent(pairingId)}`, 'GET');
+      const pairing = res.pairing;
+      if (!pairing) throw new Error('Pairing response missing pairing');
+      if (pairing.status === 'approved') return pairing;
+      if (pairing.status === 'expired') throw new Error('Pairing expired');
+      await new Promise((r) => setTimeout(r, interval));
+    }
+    throw new Error('Timed out waiting for pairing approval');
+  }
+
+  /**
    * Internal: check guard policies before action creation.
    * Only active when guardMode is 'warn' or 'enforce'.
    * @param {Object} actionDef - Action definition from createAction()
@@ -166,6 +226,39 @@ class DashClaw {
     if (this.guardMode === 'enforce' && isBlocked) {
       throw new GuardBlockedError(decision);
     }
+  }
+
+  _canonicalJsonStringify(value) {
+    const canonicalize = (v) => {
+      if (v === null) return 'null';
+
+      const t = typeof v;
+      if (t === 'string' || t === 'number' || t === 'boolean') return JSON.stringify(v);
+
+      if (t === 'undefined') return 'null';
+
+      if (Array.isArray(v)) {
+        return `[${v.map((x) => (typeof x === 'undefined' ? 'null' : canonicalize(x))).join(',')}]`;
+      }
+
+      if (t === 'object') {
+        const keys = Object.keys(v)
+          .filter((k) => typeof v[k] !== 'undefined')
+          .sort();
+        return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize(v[k])}`).join(',')}}`;
+      }
+
+      return 'null';
+    };
+
+    return canonicalize(value);
+  }
+
+  _toBase64(bytes) {
+    if (typeof btoa === 'function') {
+      return btoa(String.fromCharCode(...bytes));
+    }
+    return Buffer.from(bytes).toString('base64');
   }
 
   _isRestrictiveDecision(decision) {
@@ -336,7 +429,7 @@ class DashClaw {
     if (this.privateKey) {
       try {
         const encoder = new TextEncoder();
-        const data = encoder.encode(JSON.stringify(payload));
+        const data = encoder.encode(this._canonicalJsonStringify(payload));
         // Use global crypto or fallback to node:crypto
         const cryptoSubtle = globalThis.crypto?.subtle || (await import('node:crypto')).webcrypto.subtle;
         
@@ -346,7 +439,7 @@ class DashClaw {
           data
         );
         // Base64 encode signature
-        signature = btoa(String.fromCharCode(...new Uint8Array(sigBuffer)));
+        signature = this._toBase64(new Uint8Array(sigBuffer));
       } catch (err) {
         throw new Error(`Failed to sign action: ${err.message}`);
       }
