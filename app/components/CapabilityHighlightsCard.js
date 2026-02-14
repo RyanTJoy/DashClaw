@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Brain,
@@ -8,15 +9,33 @@ import {
   Package,
   RefreshCw,
   ArrowRight,
+  X,
+  Gauge,
+  Bot,
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
+
+const HIGHLIGHTS_VERSION = '2026-02-15-major-v2';
+const HIGHLIGHTS_DISMISS_KEY = 'dashclaw_capability_highlights_dismissed_version';
 
 const HIGHLIGHTS = [
   {
     icon: Brain,
     title: 'Adaptive Learning Loop',
-    detail: 'Action scoring, recommendation synthesis, telemetry events, metrics, and recommendation enable/disable controls.',
+    detail: 'Action scoring, recommendation synthesis, recommendation telemetry events, and recommendation ops controls.',
     href: '/learning',
+  },
+  {
+    icon: Gauge,
+    title: 'Recommendation Metrics',
+    detail: 'Per-recommendation adoption, success lift, failure reduction, latency delta, and cost delta metrics.',
+    href: '/learning',
+  },
+  {
+    icon: Bot,
+    title: 'Safe SDK Auto-Adapt',
+    detail: 'Node and Python SDK modes: off, warn, enforce with confidence thresholds and override tracking.',
+    href: '/docs',
   },
   {
     icon: Shield,
@@ -45,11 +64,46 @@ const HIGHLIGHTS = [
 ];
 
 export default function CapabilityHighlightsCard() {
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return typeof window !== 'undefined' && localStorage.getItem(HIGHLIGHTS_DISMISS_KEY) === HIGHLIGHTS_VERSION;
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    try {
+      localStorage.setItem(HIGHLIGHTS_DISMISS_KEY, HIGHLIGHTS_VERSION);
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  if (dismissed) return null;
+
   return (
     <Card hover={false}>
-      <CardHeader title="Shipped Platform Capabilities" icon={FileCheck2} />
+      <CardHeader
+        title="Shipped Platform Capabilities"
+        icon={FileCheck2}
+        action={(
+          <button
+            onClick={handleDismiss}
+            className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+            title="Dismiss"
+            aria-label="Dismiss shipped platform capabilities"
+          >
+            <X size={14} />
+          </button>
+        )}
+      />
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+        <p className="text-xs text-zinc-500 mb-3">
+          Major release highlights ({HIGHLIGHTS_VERSION})
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
           {HIGHLIGHTS.map((item) => {
             const Icon = item.icon;
             return (
