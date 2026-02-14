@@ -2,7 +2,7 @@
 
 ## Goal
 
-Make onboarding non-technical users viable by eliminating manual PEM/JWK copy-paste and “which keypair did I upload” support loops.
+Make onboarding non-technical users viable by eliminating manual PEM/JWK copy-paste and "which keypair did I upload" support loops.
 
 ## Flow
 

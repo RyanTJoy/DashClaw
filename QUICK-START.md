@@ -69,6 +69,15 @@ Run the installer for your platform. It will:
 - generate `NEXTAUTH_SECRET`, `DASHCLAW_API_KEY`, and `ENCRYPTION_KEY`
 - write `.env.local`
 
+Note: to access the real dashboard UI at `/dashboard`, you must also configure at least one OAuth provider (GitHub and/or Google) and add its credentials to `.env.local`.
+
+OAuth callback URIs for local dev:
+
+- `http://localhost:3000/api/auth/callback/github`
+- `http://localhost:3000/api/auth/callback/google`
+
+If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
+
 ### Windows
 
 ```bash
@@ -126,14 +135,18 @@ Want it running 24/7 without leaving your computer on?
 5. Done! You get a free URL like `your-dashboard.vercel.app`
 
 **Security note:**
-- **Local development**: you can run without `DASHCLAW_API_KEY` (middleware allows a convenience default in `NODE_ENV=development`).
+- **Local development**: set `DASHCLAW_API_KEY` so agents/tools can authenticate consistently.
 - **Production/public deployment**: you must set `DASHCLAW_API_KEY` or the `/api/*` surface will be disabled (fail-closed with `503`).
 
 ---
 
 ## Step 5: Start the Dashboard
 
-After installation, open http://localhost:3000
+After installation, open:
+
+- Customer site: `http://localhost:3000/`
+- Dashboard (real data): `http://localhost:3000/dashboard`
+- Demo sandbox (fake data, no login): `http://localhost:3000/demo`
 
 The onboarding checklist will guide you through:
 1. Creating a workspace

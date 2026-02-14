@@ -1,106 +1,151 @@
-# 🎬 DashClaw Launch Day: The "Fresh Start" Setup Guide
+# DashClaw Launch Day: "Fresh Start" Setup Runbook
 
-This document is your step-by-step instructions for recording the DashClaw setup video. It is designed to be followed from a "blank slate" so your audience can see the entire onboarding and security flow.
+This is a step-by-step runbook for recording a DashClaw setup video from a blank slate (fresh database) while keeping your OAuth login working.
 
----
+Goal: your audience sees onboarding, API key generation, and the security dashboard react to real agent events.
 
-## 🛠 Phase 0: The "Clean Slate" (Pre-Recording)
-**Do these steps before you hit "Record" to ensure the app acts like it's brand new.**
+## Phase 0: Clean Slate (Pre-Recording)
 
-1.  **Open VS Code** to the `DashClaw` folder.
-2.  **Rename your config**: Right-click `.env.local` and rename it to `.env.backup`.
-3.  **Create a Demo Folder**: On your Desktop, create a new folder named `my-demo-agent`.
-4.  **Open two terminal windows**:
-    *   Terminal 1: Inside `DashClaw`
-    *   Terminal 2: Inside `my-demo-agent`
+Do this before you hit record.
 
----
+1) Confirm OAuth is already configured in `.env.local`
 
-## 🚀 Phase 1: Launching the Brain (The Dashboard)
-**Start Recording Now.**
+- `NEXTAUTH_URL=http://localhost:3000`
+- `NEXTAUTH_SECRET=...`
+- `GITHUB_ID=...` + `GITHUB_SECRET=...` (and/or Google)
 
-1.  **Start the Server** (Terminal 1):
-    ```bash
-    npm run dev
-    ```
-2.  **Open Browser**: Go to `http://localhost:3000`.
-3.  **Complete Onboarding**:
-    *   Name your workspace (e.g., "Main Ops Hub").
-    *   **🔑 THE ADMIN KEY**: When the key appears, copy it! Tell the audience: *"This is the master key our agents use to talk to DashClaw."*
+Local callback URIs:
 
----
+- `http://localhost:3000/api/auth/callback/github`
+- `http://localhost:3000/api/auth/callback/google`
 
-## 🛡️ Phase 2: The Security Flex
-**Show them the enterprise-grade safety features we built.**
+2) Create a fresh database
 
-1.  **Check Security Status**: Click "Security" in the sidebar. Show the "Security Score" starting low.
-2.  **Generate Encryption Key** (Terminal 1):
-    ```bash
-    node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
-    ```
-3.  **Configure `.env.local`**: 
-    *   Open the new (empty) `.env.local` file.
-    *   Paste your `DATABASE_URL` (copy it from `.env.backup`).
-    *   Add: `ENCRYPTION_KEY=your_generated_hex_here`
-4.  **The Result**: Refresh the dashboard. **Watch the score jump to 100.** Tell the audience: *"Now all agent credentials are automatically encrypted at rest."*
+- Create a new Neon Postgres database (recommended) and copy the connection string.
+- Update `DATABASE_URL` in `.env.local`.
 
----
+3) Run migrations (fresh DB bootstrap)
 
-## 🤖 Phase 3: Connecting an Agent (Live Coding)
-**Show how easy it is to integrate with any agent.**
+```bash
+node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
+node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
+node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
+```
 
-1.  **Initialize Agent Folder** (Terminal 2):
-    ```bash
-    npm init -y
-    # Important: Open package.json and add "type": "module" so imports work!
-    npm install dashclaw
-    ```
-2.  **Create `index.js`**: Create the file and paste this code:
+4) Prepare the demo agent folder
+
+- Create a new folder (example: `my-demo-agent`)
+- Open two terminal windows:
+  - Terminal 1: `DashClaw`
+  - Terminal 2: `my-demo-agent`
+
+## Phase 1: Launch The Dashboard (Start Recording)
+
+1) Start the server (Terminal 1)
+
+```bash
+npm run dev
+```
+
+2) Open the dashboard
+
+- Visit `http://localhost:3000/dashboard`
+- Sign in (GitHub or Google)
+
+3) Complete onboarding
+
+- Create a workspace (org)
+- Generate the admin API key when prompted
+- Tell the audience: "This API key is how agents authenticate to the control plane (x-api-key)."
+
+## Phase 2: Security Flex
+
+1) Open the security page
+
+- Click "Security" in the sidebar (`/security`)
+
+2) Ensure encryption is enabled
+
+If you want to demonstrate the jump from "unencrypted" to "encrypted", temporarily remove `ENCRYPTION_KEY` from `.env.local` before recording.
+
+Generate a 32-character key (16 bytes hex) and set it:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
+```
+
+Set:
+
+```
+ENCRYPTION_KEY=<32-hex-chars>
+```
+
+Refresh the dashboard and show the security status change.
+
+## Phase 3: Connect An Agent (Live Coding)
+
+1) Initialize agent folder (Terminal 2)
+
+```bash
+npm init -y
+npm install dashclaw
+```
+
+Edit `package.json` and add:
+
+```json
+{ "type": "module" }
+```
+
+2) Create `index.js`
 
 ```javascript
-import { DashClaw } from 'dashclaw';
+import { DashClaw } from "dashclaw";
 
-const agent = new DashClaw({
-  baseUrl: 'http://localhost:3000',
-  apiKey: 'PASTE_YOUR_KEY_HERE', // Use the key from Phase 1
-  agentId: 'video-demo-001',
-  agentName: 'Demo Assistant'
+const claw = new DashClaw({
+  baseUrl: "http://localhost:3000",
+  apiKey: process.env.DASHCLAW_API_KEY, // set this in the agent env
+  agentId: "video-demo-001",
+  agentName: "Demo Assistant",
 });
 
 async function run() {
-  console.log("🚀 Agent reporting for duty...");
+  console.log("Agent reporting for duty...");
 
-  // 1. Normal Tracking
-  await agent.track({
-    action_type: 'research',
-    declared_goal: 'Analyze market trends',
-    risk_score: 10
-  }, async () => {
-    return "Market analysis complete.";
-  });
+  // 1) Normal tracking
+  await claw.track(
+    { action_type: "research", declared_goal: "Analyze market trends", risk_score: 10 },
+    async () => "Market analysis complete."
+  );
 
-  // 2. High Risk Alert
-  await agent.createAction({
-    action_type: 'deploy',
-    declared_goal: 'Wiping the production server',
-    risk_score: 98, // This triggers the alarm
-    reversible: false
+  // 2) High-risk alert
+  await claw.createAction({
+    action_type: "deploy",
+    declared_goal: "Wiping the production server",
+    risk_score: 98,
+    reversible: false,
   });
 }
+
 run();
 ```
 
----
+3) Run the agent (Terminal 2)
 
-## 🎯 Phase 4: The Payload
-**Show the data flowing live.**
+Set `DASHCLAW_API_KEY` in your agent shell (paste the key generated in onboarding), then:
 
-1.  **Run it** (Terminal 2): `node index.js`
-2.  **Switch to Dashboard**:
-    *   Show the **Dashboard** tab updating with the "Research" action.
-    *   Show the **Security** tab lighting up with a **Red Alert** for the "Wiping the server" action.
-3.  **Conclusion**: *"And just like that, we have full oversight, security, and an audit trail for our AI."*
+```bash
+node index.js
+```
 
----
+## Phase 4: Payload (Show It Live)
 
-**You're ready. Good luck with the video! 🎬🚀**
+1) Switch back to the dashboard
+
+- Show the "Research" action appear in the dashboard
+- Show the security page light up with a high-risk signal for the "deploy" action
+
+2) Close with the thesis
+
+"DashClaw makes agent behavior observable, governable, and auditable with the same primitives we use for production systems."
+
