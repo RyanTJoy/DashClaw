@@ -29,6 +29,7 @@ const PROTECTED_ROUTES = [
   '/api/agents',
   '/api/onboarding',
   '/api/keys',
+  '/api/identities',
   '/api/team',
   '/api/invite',
   '/api/billing',

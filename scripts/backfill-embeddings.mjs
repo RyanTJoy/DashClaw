@@ -9,13 +9,13 @@ async function backfill() {
     process.exit(1);
   }
 
-  console.log('🔄 Starting Embedding Backfill...');
+  console.log('Starting embedding backfill...');
   const sql = neon(url);
 
   try {
     // 1. Get actions without embeddings
     const actions = await sql`
-      SELECT ar.* 
+      SELECT ar.*
       FROM action_records ar
       LEFT JOIN action_embeddings ae ON ar.action_id = ae.action_id
       WHERE ae.action_id IS NULL
@@ -23,7 +23,7 @@ async function backfill() {
     `;
 
     if (actions.length === 0) {
-      console.log('✨ All actions already have embeddings. Nothing to do!');
+      console.log('All actions already have embeddings. Nothing to do.');
       return;
     }
 
@@ -38,19 +38,18 @@ async function backfill() {
             INSERT INTO action_embeddings (org_id, agent_id, action_id, embedding)
             VALUES (${action.org_id}, ${action.agent_id}, ${action.action_id}, ${JSON.stringify(embedding)}::vector)
           `;
-          console.log('✅');
+          console.log('OK');
         } else {
-          console.log('⚠️ Skipped (no embedding)');
+          console.log('Skipped (no embedding)');
         }
       } catch (err) {
-        console.log(`❌ Error: ${err.message}`);
+        console.log(`Error: ${err.message}`);
       }
     }
 
-    console.log('
-✅ Backfill complete!');
+    console.log('\nBackfill complete!');
   } catch (err) {
-    console.error('❌ Backfill failed:', err.message);
+    console.error('Backfill failed:', err.message);
     process.exit(1);
   }
 }
