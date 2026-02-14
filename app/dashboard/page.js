@@ -18,7 +18,7 @@ export default function Dashboard() {
   return (
     <PageLayout
       title="Dashboard"
-      subtitle="AI Agent Operations Overview"
+      subtitle="AI Agent Operations, Adaptive Learning, and Reliability Controls"
       breadcrumbs={['Dashboard']}
     >
       <DraggableDashboard />

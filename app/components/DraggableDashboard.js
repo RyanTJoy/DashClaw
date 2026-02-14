@@ -15,6 +15,7 @@ import ContextCard from './ContextCard';
 import TokenBudgetCard from './TokenBudgetCard';
 import TokenChart from './TokenChart';
 import OnboardingChecklist from './OnboardingChecklist';
+import CapabilityHighlightsCard from './CapabilityHighlightsCard';
 
 // Reverted to static layout due to persistent issues with react-grid-layout rendering 1x1 columns.
 // See docs/decisions/2026-02-13-revert-draggable-dashboard.md for details.
@@ -23,6 +24,7 @@ export default function DraggableDashboard() {
     <div className="space-y-6">
       {/* Onboarding: full-width */}
       <OnboardingChecklist />
+      <CapabilityHighlightsCard />
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

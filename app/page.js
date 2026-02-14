@@ -94,6 +94,39 @@ const platformCoverage = [
   },
 ];
 
+const shippedHighlights = [
+  {
+    icon: Brain,
+    title: 'Adaptive Learning Loop',
+    description: 'Completed actions are scored into episodes, recommendations are synthesized per agent/action type, telemetry is captured, and effectiveness metrics are computed.',
+    href: '/learning',
+  },
+  {
+    icon: Shield,
+    title: 'Route SQL Guardrails',
+    description: 'Critical data-layer paths are protected by SQL drift checks and repository contract tests in CI.',
+    href: '/docs',
+  },
+  {
+    icon: MessageSquare,
+    title: 'API Contract Governance',
+    description: 'OpenAPI drift checks and API inventory maturity gates prevent silent contract regressions.',
+    href: '/docs',
+  },
+  {
+    icon: Package,
+    title: 'Cross-SDK Contract Harness',
+    description: 'Node and Python SDK critical paths are validated against shared contract fixtures.',
+    href: '/docs',
+  },
+  {
+    icon: Clock,
+    title: 'Learning Loop Automation',
+    description: 'Backfill and recommendation rebuild cron routes keep adaptive recommendation data fresh.',
+    href: '/learning',
+  },
+];
+
 /* ─── page ─── */
 
 export default function LandingPage() {
@@ -122,6 +155,7 @@ export default function LandingPage() {
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Behavior guardrails</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Adaptive recommendation metrics</span>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
@@ -226,6 +260,27 @@ export default function LandingPage() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111] p-5">
+            <h3 className="text-base font-semibold text-zinc-100 mb-3">Production hardening shipped</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+              {shippedHighlights.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.title} href={item.href} className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#0d0d0d] p-3 hover:border-[rgba(255,255,255,0.14)] transition-colors">
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <Icon size={14} className="text-brand" />
+                      <p className="text-sm font-medium text-zinc-200">{item.title}</p>
+                    </div>
+                    <p className="text-xs leading-relaxed text-zinc-400">{item.description}</p>
+                    <span className="mt-2 inline-flex items-center gap-1 text-[11px] text-brand">
+                      Explore <ArrowRight size={11} />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
         </div>
