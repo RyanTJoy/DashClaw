@@ -23,6 +23,9 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "migrate:behavioral": "node scripts/migrate-behavioral-ai.mjs",
+    "migrate:learning-loop": "node scripts/_run-with-env.mjs scripts/migrate-learning-loop-mvp.mjs",
+    "backfill:learning-episodes": "node scripts/_run-with-env.mjs scripts/backfill-learning-episodes.mjs",
+    "rebuild:learning-recommendations": "node scripts/_run-with-env.mjs scripts/rebuild-learning-recommendations.mjs",
     "backfill:embeddings": "node scripts/backfill-embeddings.mjs",
     "release:sdks": "node scripts/release-sdks.mjs"
   },

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Adaptive Learning Loop MVP**: Added episode scoring and recommendation synthesis for agent performance improvement over time.
+- **Learning Recommendations API**: New endpoint `/api/learning/recommendations` with role-gated rebuild support (`POST`) and recommendation retrieval (`GET`).
+- **Learning Loop Cron Jobs**: Added scheduled endpoints for automated learning maintenance:
+  - `/api/cron/learning-episodes-backfill`
+  - `/api/cron/learning-recommendations`
+- **SDK Recommendation Methods**:
+  - Node SDK: `getRecommendations()`, `rebuildRecommendations()`, `recommendAction()`
+  - Python SDK: `get_recommendations()`, `rebuild_recommendations()`, `recommend_action()`
+
+### Changed
+- **Action Outcome Pipeline**: `PATCH /api/actions/[actionId]` now best-effort scores learning episodes for adaptive recommendation generation.
+- **Operational Scripts**: Added learning-loop migration/backfill/rebuild scripts and npm commands for repeatable operations.
+
 ## [1.5.0] - 2026-02-13
 
 ### Added

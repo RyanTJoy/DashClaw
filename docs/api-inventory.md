@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `66`
+- Total routes: `69`
 - Stable routes: `37`
-- Beta routes: `11`
-- Experimental routes: `18`
+- Beta routes: `13`
+- Experimental routes: `19`
 
 ## Routes
 
@@ -41,6 +41,8 @@ doc-type: architecture
 | `/api/context/threads` | `GET, POST` | `stable` | `/api/context` | `app/api/context/threads/route.js` |
 | `/api/context/threads/{threadId}` | `GET, PATCH` | `stable` | `/api/context` | `app/api/context/threads/[threadId]/route.js` |
 | `/api/context/threads/{threadId}/entries` | `POST` | `stable` | `/api/context` | `app/api/context/threads/[threadId]/entries/route.js` |
+| `/api/cron/learning-episodes-backfill` | `GET` | `beta` | `/api/cron` | `app/api/cron/learning-episodes-backfill/route.js` |
+| `/api/cron/learning-recommendations` | `GET` | `beta` | `/api/cron` | `app/api/cron/learning-recommendations/route.js` |
 | `/api/cron/memory-maintenance` | `GET` | `beta` | `/api/cron` | `app/api/cron/memory-maintenance/route.js` |
 | `/api/cron/signals` | `GET` | `beta` | `/api/cron` | `app/api/cron/signals/route.js` |
 | `/api/digest` | `GET` | `experimental` | `(default)` | `app/api/digest/route.js` |
@@ -54,6 +56,7 @@ doc-type: architecture
 | `/api/invite/{token}` | `GET, POST` | `stable` | `/api/invite` | `app/api/invite/[token]/route.js` |
 | `/api/keys` | `DELETE, GET, POST` | `stable` | `/api/keys` | `app/api/keys/route.js` |
 | `/api/learning` | `GET, POST` | `experimental` | `/api/learning` | `app/api/learning/route.js` |
+| `/api/learning/recommendations` | `GET, POST` | `experimental` | `/api/learning` | `app/api/learning/recommendations/route.js` |
 | `/api/memory` | `GET, POST` | `stable` | `/api/memory` | `app/api/memory/route.js` |
 | `/api/messages` | `GET, PATCH, POST` | `stable` | `/api/messages` | `app/api/messages/route.js` |
 | `/api/messages/docs` | `GET, POST` | `stable` | `/api/messages` | `app/api/messages/docs/route.js` |
