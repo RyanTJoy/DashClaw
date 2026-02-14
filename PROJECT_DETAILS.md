@@ -35,11 +35,11 @@ This file contains detailed technical information about the DashClaw project, mo
   7. `npm run test -- --run` (Vitest unit tests)
   8. `npm run build` (Next.js production build)
 
-### Platform Convergence Controls
-- RFC execution source: `docs/rfcs/platform-convergence.md`
-- Live milestone/verification log: `docs/rfcs/platform-convergence-status.md`
+### Reliability And Governance Controls
+- Archived program RFC source: `docs/rfcs/platform-convergence.md`
+- Archived milestone/verification log: `docs/rfcs/platform-convergence-status.md`
 - SDK parity matrix: `docs/sdk-parity.md`
-- CI guard scripts: `scripts/check-openapi-diff.mjs`, `scripts/check-api-inventory-diff.mjs`, `scripts/check-route-sql-guard.mjs`
+- CI guard scripts: `scripts/check-openapi-diff.mjs`, `scripts/check-api-inventory-diff.mjs`, `scripts/check-route-sql-guard.mjs`, `scripts/check-convergence-ws1-latency.mjs` (legacy WS1 evidence gate)
 
 ## Architecture
 
