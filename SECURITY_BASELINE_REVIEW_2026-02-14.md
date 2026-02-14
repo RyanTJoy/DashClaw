@@ -25,7 +25,7 @@ Current reference docs:
 
 ## 1) SYSTEM OVERVIEW
 
-- Primary stack: Next.js 15 App Router (`app/`), NextAuth v4 (GitHub + Google OAuth), Postgres (Neon serverless driver), optional Redis realtime backend, Vercel cron.
+- Primary stack: Next.js 15 App Router (`app/`), NextAuth v4 (GitHub + Google OAuth), Postgres, optional Redis realtime backend, external scheduler for `/api/cron/*` (optional).
 - Core control points:
   - `middleware.js` (Edge): API-key auth (`x-api-key`) + NextAuth JWT session gating, org/role header injection (`x-org-id`, `x-org-role`, `x-user-id`), CORS, in-memory rate limiting, demo-mode routing.
   - `app/api/**/route.js`: multi-tenant API surface (78 endpoints) using `getOrgId()` / `getOrgRole()` (header-derived) and raw SQL via `@neondatabase/serverless`.
@@ -37,7 +37,7 @@ Current reference docs:
   - LLM: OpenAI API (embeddings + semantic guardrail) (`app/lib/embeddings.js`, `app/lib/llm.js`)
   - Email: Resend (`app/lib/notifications.js`)
   - Outbound webhooks (`app/lib/webhooks.js`, `app/api/webhooks/**`)
-  - Cron: `/api/cron/*` protected by `CRON_SECRET` (`app/api/cron/**`, `vercel.json`)
+- Cron: `/api/cron/*` protected by `CRON_SECRET` (`app/api/cron/**`)
 - Trust boundaries (high level):
   - Browser UI (NextAuth cookie/JWT) -> `middleware.js` -> API routes -> Postgres/Redis
   - Agent/SDK clients (API key in `x-api-key`) -> `middleware.js` -> API routes -> Postgres/Redis
