@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-import { neon } from '@neondatabase/serverless';
+import { createSqlFromEnv } from './_db.mjs';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -26,7 +26,7 @@ if (!DATABASE_URL) {
 }
 
 const dryRun = process.argv.includes('--dry-run');
-const sql = neon(DATABASE_URL);
+const sql = createSqlFromEnv();
 
 // All tables with org_id that should be cleared.
 // Ordered to respect foreign key constraints (children first).

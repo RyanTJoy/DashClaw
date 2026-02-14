@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../lib/db.js';
 import { getOrgId, getUserId } from '../../lib/org.js';
 import { enforceFieldLimits } from '../../lib/validate.js';
 import { randomUUID } from 'node:crypto';
@@ -11,7 +11,7 @@ const VALID_TYPES = ['observation', 'preference', 'mood', 'approach'];
 
 export async function GET(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const userId = getUserId(request);
     const { searchParams } = new URL(request.url);
@@ -83,7 +83,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const userId = getUserId(request);
     const body = await request.json();

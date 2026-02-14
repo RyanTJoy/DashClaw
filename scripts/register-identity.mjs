@@ -14,7 +14,7 @@
 
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
-import { neon } from '@neondatabase/serverless';
+import { createSqlFromEnv } from './_db.mjs';
 
 function getArg(flag) {
   const idx = process.argv.indexOf(flag);
@@ -44,7 +44,7 @@ if (!publicKey.includes('BEGIN PUBLIC KEY')) {
   process.exit(1);
 }
 
-const sql = neon(dbUrl);
+const sql = createSqlFromEnv();
 
 const rows = await sql`
   INSERT INTO agent_identities (org_id, agent_id, public_key, algorithm)

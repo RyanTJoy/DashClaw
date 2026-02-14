@@ -6,7 +6,7 @@
  */
 
 import './_load-env.mjs';
-import { neon } from '@neondatabase/serverless';
+import { createSqlFromEnv } from './_db.mjs';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL || DATABASE_URL.includes('<YOUR_NEON_DATABASE_URL>')) {
@@ -14,7 +14,7 @@ if (!DATABASE_URL || DATABASE_URL.includes('<YOUR_NEON_DATABASE_URL>')) {
   process.exit(1);
 }
 
-const sql = neon(DATABASE_URL);
+const sql = createSqlFromEnv();
 
 async function run() {
   console.log('\n=== Cost Analytics Migration ===\n');

@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql as getDbSql } from '../../../lib/db.js';
 import { validateAssumption } from '../../../lib/validate.js';
 import { getOrgId } from '../../../lib/org.js';
 import { scanSensitiveData } from '../../../lib/security.js';
@@ -26,9 +26,7 @@ function redactAny(value, findings) {
 let _sql;
 function getSql() {
   if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  _sql = neon(url);
+  _sql = getDbSql();
   return _sql;
 }
 

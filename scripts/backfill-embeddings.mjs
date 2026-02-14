@@ -1,6 +1,6 @@
-import { neon } from '@neondatabase/serverless';
 import { generateActionEmbedding } from '../app/lib/embeddings.js';
 import 'dotenv/config';
+import { createSqlFromEnv } from './_db.mjs';
 
 async function backfill() {
   const url = process.env.DATABASE_URL;
@@ -10,7 +10,7 @@ async function backfill() {
   }
 
   console.log('Starting embedding backfill...');
-  const sql = neon(url);
+  const sql = createSqlFromEnv();
 
   try {
     // 1. Get actions without embeddings

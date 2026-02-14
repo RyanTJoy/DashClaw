@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { neon } from '@neondatabase/serverless';
+import { createSqlFromEnv } from './_db.mjs';
 
 async function migrate() {
   const url = process.env.DATABASE_URL;
@@ -9,7 +9,7 @@ async function migrate() {
     process.exit(1);
   }
 
-  const sql = neon(url);
+  const sql = createSqlFromEnv();
   console.log('Starting learning-loop MVP migration...');
 
   try {

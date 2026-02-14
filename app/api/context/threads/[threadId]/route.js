@@ -2,12 +2,12 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../../../lib/db.js';
 import { getOrgId } from '../../../../lib/org.js';
 
 export async function GET(request, { params }) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const { threadId } = params;
 
@@ -32,7 +32,7 @@ export async function GET(request, { params }) {
 
 export async function PATCH(request, { params }) {
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = getSql();
     const orgId = getOrgId(request);
     const { threadId } = params;
     const body = await request.json();

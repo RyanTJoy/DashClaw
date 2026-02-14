@@ -2,22 +2,13 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../../../lib/db.js';
 import { getOrgId, getOrgRole } from '../../../../lib/org.js';
 import {
   listLearningEpisodes,
   listLearningRecommendations,
 } from '../../../../lib/repositories/learningLoop.repository.js';
 import { getLearningRecommendationMetrics } from '../../../../lib/learningLoop.service.js';
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
-  _sql = neon(url);
-  return _sql;
-}
 
 function parseBoundedIntSafe(value, min, max, fallback) {
   const parsed = parseInt(String(value ?? ''), 10);

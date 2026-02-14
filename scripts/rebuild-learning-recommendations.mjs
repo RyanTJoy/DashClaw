@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { neon } from '@neondatabase/serverless';
 import { rebuildLearningRecommendations } from '../app/lib/learningLoop.service.js';
+import { createSqlFromEnv } from './_db.mjs';
 
 function parseArgInt(name, fallback, min, max) {
   const prefix = `--${name}=`;
@@ -23,7 +23,7 @@ async function run() {
   const minSamples = parseArgInt('min-samples', 5, 2, 100);
   const episodeLimit = parseArgInt('episode-limit', 5000, 100, 10000);
 
-  const sql = neon(url);
+  const sql = createSqlFromEnv();
   const orgs = await sql`SELECT id FROM organizations ORDER BY id`;
 
   const summary = [];
@@ -47,4 +47,3 @@ run().catch((error) => {
   console.error(`Recommendation rebuild failed: ${error.message}`);
   process.exit(1);
 });
-

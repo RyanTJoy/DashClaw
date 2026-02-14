@@ -88,8 +88,8 @@ Options:
     process.exit(1);
   }
 
-  const { neon } = await import('@neondatabase/serverless');
-  const sql = neon(dbUrl);
+  const { createSqlFromEnv } = await import('./_db.mjs');
+  const sql = createSqlFromEnv();
 
   const cutoff = args.before;
 

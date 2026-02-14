@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../../lib/db.js';
 import { validateActionRecord } from '../../lib/validate.js';
 import { getOrgId, getOrgRole } from '../../lib/org.js';
 import { checkQuotaFast, getOrgPlan, incrementMeter } from '../../lib/usage.js';
@@ -35,24 +35,6 @@ function redactAny(value, findings) {
     return out;
   }
   return value;
-}
-
-let _sql;
-function getSql() {
-  if (_sql) return _sql;
-  if (!process.env.DATABASE_URL) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('DATABASE_URL is not set in production. Connection failed.');
-    }
-    console.warn('[API] DATABASE_URL not set. In-memory mock driver is NO LONGER SUPPORTED. Please set DATABASE_URL.');
-    // Return a dummy that fails gracefully
-    return {
-      query: async () => [],
-      execute: async () => []
-    };
-  }
-  _sql = neon(process.env.DATABASE_URL);
-  return _sql;
 }
 
 export async function GET(request) {

@@ -1,5 +1,5 @@
-import { neon } from '@neondatabase/serverless';
 import 'dotenv/config';
+import { createSqlFromEnv } from './_db.mjs';
 
 async function migrate() {
   const url = process.env.DATABASE_URL;
@@ -9,7 +9,7 @@ async function migrate() {
   }
 
   console.log('🚀 Starting Behavioral AI Migration...');
-  const sql = neon(url);
+  const sql = createSqlFromEnv();
 
   try {
     console.log('1. Enabling pgvector extension...');
