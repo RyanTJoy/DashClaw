@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
-from datetime import datetime
+import time
 
 try:
     from langchain_core.callbacks import BaseCallbackHandler
@@ -33,15 +33,26 @@ class DashClawCallbackHandler(BaseCallbackHandler):
         """
         self.client = client
         self.run_map = {}  # Map LangChain run_id -> DashClaw action_id
+        self.run_started_at = {}  # Map LangChain run_id -> monotonic start timestamp
 
     def _get_action_id(self, run_id: UUID) -> Optional[str]:
         return self.run_map.get(str(run_id))
+
+    def _mark_run_start(self, run_id: UUID) -> None:
+        self.run_started_at[str(run_id)] = time.monotonic()
+
+    def _consume_duration_ms(self, run_id: UUID) -> int:
+        started = self.run_started_at.pop(str(run_id), None)
+        if started is None:
+            return 0
+        return max(0, int((time.monotonic() - started) * 1000))
 
     def on_llm_start(
         self, serialized: Dict[str, Any], prompts: List[str], *, run_id: UUID, parent_run_id: Optional[UUID] = None, **kwargs: Any
     ) -> None:
         """Run when LLM starts running."""
         try:
+            self._mark_run_start(run_id)
             model = kwargs.get('invocation_params', {}).get('model_name') or 'unknown-llm'
             prompt_preview = (prompts[0][:100] + "...") if prompts else "LLM Generation"
             
@@ -64,9 +75,11 @@ class DashClawCallbackHandler(BaseCallbackHandler):
         """Run when LLM ends running."""
         action_id = self._get_action_id(run_id)
         if not action_id:
+            self.run_started_at.pop(str(run_id), None)
             return
 
         try:
+            duration_ms = self._consume_duration_ms(run_id)
             # Extract output
             output = response.generations[0][0].text
             
@@ -80,7 +93,7 @@ class DashClawCallbackHandler(BaseCallbackHandler):
             update_payload = {
                 "status": "completed",
                 "output_summary": output[:500] + "..." if len(output) > 500 else output,
-                "duration_ms": 0 # TODO: Track timing manually if needed, but actions API handles it if using start/end
+                "duration_ms": duration_ms
             }
 
             # Add token usage for Cost Analytics
@@ -102,12 +115,16 @@ class DashClawCallbackHandler(BaseCallbackHandler):
 
         except Exception as e:
             print(f"[DashClaw] Failed to log LLM end: {e}")
+        finally:
+            self.run_map.pop(str(run_id), None)
+            self.run_started_at.pop(str(run_id), None)
 
     def on_tool_start(
         self, serialized: Dict[str, Any], input_str: str, *, run_id: UUID, parent_run_id: Optional[UUID] = None, **kwargs: Any
     ) -> None:
         """Run when tool starts running."""
         try:
+            self._mark_run_start(run_id)
             tool_name = serialized.get("name", "tool")
             
             res = self.client.create_action(
@@ -128,28 +145,40 @@ class DashClawCallbackHandler(BaseCallbackHandler):
         """Run when tool ends running."""
         action_id = self._get_action_id(run_id)
         if not action_id:
+            self.run_started_at.pop(str(run_id), None)
             return
 
         try:
+            duration_ms = self._consume_duration_ms(run_id)
             self.client.update_outcome(
                 action_id,
                 status="completed",
-                output_summary=str(output)[:1000] # Truncate large tool outputs
+                output_summary=str(output)[:1000], # Truncate large tool outputs
+                duration_ms=duration_ms
             )
         except Exception as e:
             print(f"[DashClaw] Failed to log Tool end: {e}")
+        finally:
+            self.run_map.pop(str(run_id), None)
+            self.run_started_at.pop(str(run_id), None)
 
     def on_tool_error(self, error: Union[Exception, KeyboardInterrupt], *, run_id: UUID, parent_run_id: Optional[UUID] = None, **kwargs: Any) -> None:
         """Run when tool errors."""
         action_id = self._get_action_id(run_id)
         if not action_id:
+            self.run_started_at.pop(str(run_id), None)
             return
 
         try:
+            duration_ms = self._consume_duration_ms(run_id)
             self.client.update_outcome(
                 action_id,
                 status="failed",
-                error_message=str(error)
+                error_message=str(error),
+                duration_ms=duration_ms
             )
         except Exception as e:
             print(f"[DashClaw] Failed to log Tool error: {e}")
+        finally:
+            self.run_map.pop(str(run_id), None)
+            self.run_started_at.pop(str(run_id), None)
