@@ -121,6 +121,7 @@ Scope: full repository baseline review + prioritized security findings.
 4. Fix `app/api/handoffs/route.js` runtime errors.
 5. Reduce info leakage from `/api/health`.
 6. Redact sensitive patterns before sending content to third-party LLMs (embeddings + semantic guardrail).
+7. Redact sensitive patterns before storing agent-provided free text in actions/loops/assumptions (DLP on write).
 
 ## 7) SAFE HARDENING ROADMAP
 

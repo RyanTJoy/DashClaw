@@ -22,7 +22,10 @@ import crypto from 'crypto';
 export function logActivity({ orgId, actorId, actorType = 'user', action, resourceType, resourceId, details, request }, sql) {
   const id = `al_${crypto.randomUUID()}`;
   const now = new Date().toISOString();
-  const ip = request?.headers?.get?.('x-forwarded-for')?.split(',')[0]?.trim() || null;
+  // SECURITY: prefer middleware-derived trusted IP; fallback is best-effort only.
+  const ip = request?.headers?.get?.('x-client-ip') ||
+    request?.headers?.get?.('x-forwarded-for')?.split(',')[0]?.trim() ||
+    null;
   const detailsStr = details ? JSON.stringify(details) : null;
 
   // Fire and forget — never block the caller

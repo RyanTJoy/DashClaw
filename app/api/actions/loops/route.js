@@ -5,7 +5,23 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { validateOpenLoop } from '../../../lib/validate.js';
 import { getOrgId } from '../../../lib/org.js';
+import { scanSensitiveData } from '../../../lib/security.js';
 import crypto from 'crypto';
+
+function redactAny(value, findings) {
+  if (typeof value === 'string') {
+    const scan = scanSensitiveData(value);
+    if (!scan.clean) findings.push(...scan.findings);
+    return scan.redacted;
+  }
+  if (Array.isArray(value)) return value.map((v) => redactAny(v, findings));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = redactAny(v, findings);
+    return out;
+  }
+  return value;
+}
 
 let _sql;
 function getSql() {
@@ -112,6 +128,12 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 });
     }
 
+    // SECURITY: redact likely secrets before storing loop fields.
+    const dlpFindings = [];
+    for (const k of ['description', 'owner', 'resolution']) {
+      if (data[k] != null) data[k] = redactAny(data[k], dlpFindings);
+    }
+
     // Verify parent action exists
     const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id} AND org_id = ${orgId}`;
     if (action.length === 0) {
@@ -137,7 +159,16 @@ export async function POST(request) {
       RETURNING *
     `;
 
-    return NextResponse.json({ loop: result[0], loop_id }, { status: 201 });
+    return NextResponse.json({
+      loop: result[0],
+      loop_id,
+      security: {
+        clean: dlpFindings.length === 0,
+        findings_count: dlpFindings.length,
+        critical_count: dlpFindings.filter(f => f.severity === 'critical').length,
+        categories: [...new Set(dlpFindings.map(f => f.category))],
+      },
+    }, { status: 201 });
   } catch (error) {
     console.error('Open Loops API POST error:', error);
     if (error.message?.includes('unique') || error.message?.includes('duplicate')) {

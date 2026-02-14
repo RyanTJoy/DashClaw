@@ -1146,6 +1146,7 @@ export async function middleware(request) {
     h.delete('x-org-id');
     h.delete('x-org-role');
     h.delete('x-user-id');
+    h.delete('x-client-ip');
     return h;
   })();
 
@@ -1187,6 +1188,8 @@ export async function middleware(request) {
 
     // SECURITY: Start from stripped headers (prevent injection).
     const requestHeaders = new Headers(strippedApiRequestHeaders);
+    // SECURITY: Provide a trusted client IP header for audit logging (never trust inbound x-forwarded-for directly).
+    requestHeaders.set('x-client-ip', ip);
 
     // If no API key is configured:
     // - dev/local: allow with org_default (convenience)
