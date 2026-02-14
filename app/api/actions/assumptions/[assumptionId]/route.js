@@ -4,6 +4,22 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../../../lib/org.js';
+import { scanSensitiveData } from '../../../../lib/security.js';
+
+function redactAny(value, findings) {
+  if (typeof value === 'string') {
+    const scan = scanSensitiveData(value);
+    if (!scan.clean) findings.push(...scan.findings);
+    return scan.redacted;
+  }
+  if (Array.isArray(value)) return value.map((v) => redactAny(v, findings));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = redactAny(v, findings);
+    return out;
+  }
+  return value;
+}
 
 let _sql;
 function getSql() {
@@ -92,15 +108,26 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ assumption: result[0] });
     } else {
       // Invalidate the assumption
+      // SECURITY: redact likely secrets before storing invalidation reason.
+      const dlpFindings = [];
+      const safeReason = redactAny(invalidated_reason.trim(), dlpFindings);
       const result = await sql`
         UPDATE assumptions
         SET invalidated = 1,
-            invalidated_reason = ${invalidated_reason.trim()},
+            invalidated_reason = ${safeReason},
             invalidated_at = ${now}
         WHERE assumption_id = ${assumptionId} AND org_id = ${orgId}
         RETURNING *
       `;
-      return NextResponse.json({ assumption: result[0] });
+      return NextResponse.json({
+        assumption: result[0],
+        security: {
+          clean: dlpFindings.length === 0,
+          findings_count: dlpFindings.length,
+          critical_count: dlpFindings.filter(f => f.severity === 'critical').length,
+          categories: [...new Set(dlpFindings.map(f => f.category))],
+        },
+      });
     }
   } catch (error) {
     console.error('Assumption detail PATCH error:', error);

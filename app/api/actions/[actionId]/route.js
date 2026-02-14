@@ -6,6 +6,7 @@ import { neon } from '@neondatabase/serverless';
 import { validateActionOutcome } from '../../../lib/validate.js';
 import { getOrgId } from '../../../lib/org.js';
 import { EVENTS, publishOrgEvent } from '../../../lib/events.js';
+import { scanSensitiveData } from '../../../lib/security.js';
 import {
   getActionWithRelations,
   updateActionOutcome,
@@ -17,6 +18,21 @@ import {
 
 function isRecommendationApplied(value) {
   return value === true || value === 1 || value === '1';
+}
+
+function redactAny(value, findings) {
+  if (typeof value === 'string') {
+    const scan = scanSensitiveData(value);
+    if (!scan.clean) findings.push(...scan.findings);
+    return scan.redacted;
+  }
+  if (Array.isArray(value)) return value.map((v) => redactAny(v, findings));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = redactAny(v, findings);
+    return out;
+  }
+  return value;
 }
 
 let _sql;
@@ -58,6 +74,14 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Validation failed', details: errors }, { status: 400 });
     }
 
+    // SECURITY: redact likely secrets before storing the outcome fields.
+    const dlpFindings = [];
+    for (const k of ['output_summary', 'error_message']) {
+      if (data[k] != null) data[k] = redactAny(data[k], dlpFindings);
+    }
+    if (data.side_effects != null) data.side_effects = redactAny(data.side_effects, dlpFindings);
+    if (data.artifacts_created != null) data.artifacts_created = redactAny(data.artifacts_created, dlpFindings);
+
     const updatedAction = await updateActionOutcome(sql, orgId, actionId, data);
     if (!updatedAction) {
       return NextResponse.json({ error: 'Action not found' }, { status: 404 });
@@ -95,7 +119,15 @@ export async function PATCH(request, { params }) {
       console.warn('[LEARNING] Failed to score action episode:', learningError.message);
     }
 
-    return NextResponse.json({ action: updatedAction });
+    return NextResponse.json({
+      action: updatedAction,
+      security: {
+        clean: dlpFindings.length === 0,
+        findings_count: dlpFindings.length,
+        critical_count: dlpFindings.filter(f => f.severity === 'critical').length,
+        categories: [...new Set(dlpFindings.map(f => f.category))],
+      },
+    });
   } catch (error) {
     console.error('Action detail PATCH error:', error);
     return NextResponse.json({ error: 'An error occurred while updating the action' }, { status: 500 });

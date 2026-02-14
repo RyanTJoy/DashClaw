@@ -32,6 +32,7 @@ Status legend:
 
 - [x] Redact secrets before storing shared docs/snippets/content (DLP on write).
 - [x] Redact secrets in bulk sync ingestion (`/api/sync`) for free-text fields.
+- [x] Redact secrets before storing actions/loops/assumptions (DLP on write).
 
 ## Functional/Correctness
 

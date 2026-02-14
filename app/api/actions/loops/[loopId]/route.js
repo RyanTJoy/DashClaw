@@ -4,6 +4,22 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../../../lib/org.js';
+import { scanSensitiveData } from '../../../../lib/security.js';
+
+function redactAny(value, findings) {
+  if (typeof value === 'string') {
+    const scan = scanSensitiveData(value);
+    if (!scan.clean) findings.push(...scan.findings);
+    return scan.redacted;
+  }
+  if (Array.isArray(value)) return value.map((v) => redactAny(v, findings));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = redactAny(v, findings);
+    return out;
+  }
+  return value;
+}
 
 let _sql;
 function getSql() {
@@ -78,16 +94,28 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: 'Loop is already ' + existing[0].status }, { status: 409 });
     }
 
+    // SECURITY: redact likely secrets before storing loop resolution.
+    const dlpFindings = [];
+    const safeResolution = resolution != null ? redactAny(resolution, dlpFindings) : null;
+
     const result = await sql`
       UPDATE open_loops
       SET status = ${status},
-          resolution = ${resolution || null},
+          resolution = ${safeResolution || null},
           resolved_at = ${new Date().toISOString()}
       WHERE loop_id = ${loopId} AND org_id = ${orgId}
       RETURNING *
     `;
 
-    return NextResponse.json({ loop: result[0] });
+    return NextResponse.json({
+      loop: result[0],
+      security: {
+        clean: dlpFindings.length === 0,
+        findings_count: dlpFindings.length,
+        critical_count: dlpFindings.filter(f => f.severity === 'critical').length,
+        categories: [...new Set(dlpFindings.map(f => f.category))],
+      },
+    });
   } catch (error) {
     console.error('Loop detail PATCH error:', error);
     return NextResponse.json({ error: 'An error occurred while updating the loop' }, { status: 500 });
