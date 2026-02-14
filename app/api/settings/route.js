@@ -80,13 +80,17 @@ export async function GET(request) {
       }
     }
 
-    const isAgentRequest = !!request.headers.get('x-api-key');
+    const isApiKeyRequest = !!request.headers.get('x-api-key');
+    const role = getOrgRole(request);
+    const canDecrypt = isApiKeyRequest && role === 'admin';
 
-    // SECURITY: Decrypt values only for agents. Dashboard users see masked values.
+    // SECURITY:
+    // - Never return decrypted secrets to browser sessions (masked only).
+    // - Only return decrypted secrets to admin API keys (least privilege).
     const processed = settings.map(s => {
       let val = s.value;
       if (s.encrypted && val) {
-        if (isAgentRequest) {
+        if (canDecrypt) {
           try {
             val = decrypt(val);
           } catch (err) {

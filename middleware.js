@@ -11,51 +11,15 @@ import { getDemoFixtures } from './app/lib/demo/demoFixtures.js';
  * Set DASHCLAW_API_KEY environment variable in production.
  */
 
-// Routes that require authentication
-const PROTECTED_ROUTES = [
-  '/api/settings',
-  '/api/tokens',
-  '/api/relationships',
-  '/api/goals',
-  '/api/learning',
-  '/api/workflows',
-  '/api/inspiration',
-  '/api/bounties',
-  '/api/content',
-  '/api/schedules',
-  '/api/calendar',
-  '/api/memory',
-  '/api/actions',
-  '/api/orgs',
-  '/api/agents',
-  '/api/onboarding',
-  '/api/keys',
-  '/api/identities',
-  '/api/pairings',
-  '/api/team',
-  '/api/invite',
-  '/api/billing',
-  '/api/activity',
-  '/api/webhooks',
-  '/api/notifications',
-  '/api/handoffs',
-  '/api/context',
-  '/api/snippets',
-  '/api/preferences',
-  '/api/digest',
-  '/api/security',
-  '/api/messages',
-  '/api/sync',
-  '/api/guard',
-  '/api/policies',
-];
-
 // Routes that are always public (health checks, setup, auth)
 const PUBLIC_ROUTES = [
   '/api/health',
   '/api/setup/status',
   '/api/auth',
   '/api/cron',
+  // Public read-only content endpoints
+  '/api/docs/raw',
+  '/api/prompts',
 ];
 
 function getDashclawMode() {
@@ -696,6 +660,7 @@ function demoSwarmGraph(fixtures, url) {
 const rateLimitMap = new Map();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 100; // requests per window
+const RATE_LIMIT_MAX_ENTRIES = 50000;
 
 function checkRateLimit(ip) {
   const now = Date.now();
@@ -703,6 +668,15 @@ function checkRateLimit(ip) {
 
   if (!record || now - record.timestamp > RATE_LIMIT_WINDOW) {
     rateLimitMap.set(ip, { timestamp: now, count: 1 });
+    // Bound memory growth (best-effort).
+    if (rateLimitMap.size > RATE_LIMIT_MAX_ENTRIES) {
+      let toDelete = rateLimitMap.size - RATE_LIMIT_MAX_ENTRIES;
+      for (const key of rateLimitMap.keys()) {
+        rateLimitMap.delete(key);
+        toDelete--;
+        if (toDelete <= 0) break;
+      }
+    }
     return true;
   }
 
@@ -747,9 +721,32 @@ async function hashApiKey(key) {
 // In-memory cache for API key -> org resolution (5-min TTL)
 const apiKeyCache = new Map();
 const API_KEY_CACHE_TTL = 5 * 60 * 1000;
+const API_KEY_CACHE_MAX_ENTRIES = 10000;
+
+function pruneApiKeyCache(now) {
+  if (apiKeyCache.size <= API_KEY_CACHE_MAX_ENTRIES) return;
+
+  // Drop expired entries first.
+  for (const [k, v] of apiKeyCache.entries()) {
+    if (!v || now - v.timestamp >= API_KEY_CACHE_TTL) {
+      apiKeyCache.delete(k);
+    }
+  }
+
+  // If still too large, evict oldest entries (insertion order).
+  if (apiKeyCache.size > API_KEY_CACHE_MAX_ENTRIES) {
+    let toDelete = apiKeyCache.size - API_KEY_CACHE_MAX_ENTRIES;
+    for (const key of apiKeyCache.keys()) {
+      apiKeyCache.delete(key);
+      toDelete--;
+      if (toDelete <= 0) break;
+    }
+  }
+}
 
 async function resolveApiKey(keyHash) {
   const now = Date.now();
+  pruneApiKeyCache(now);
   const cached = apiKeyCache.get(keyHash);
   if (cached && now - cached.timestamp < API_KEY_CACHE_TTL) {
     return cached.result;
@@ -1142,18 +1139,33 @@ export async function middleware(request) {
     return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
   }
 
+  // SECURITY: Always strip externally-provided org context headers for API routes.
+  // Only middleware should inject these after authenticating the request.
+  const strippedApiRequestHeaders = (() => {
+    const h = new Headers(request.headers);
+    h.delete('x-org-id');
+    h.delete('x-org-role');
+    h.delete('x-user-id');
+    return h;
+  })();
+
   // Allow public routes without auth
   if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    const response = NextResponse.next();
+    const response = NextResponse.next({ request: { headers: strippedApiRequestHeaders } });
     for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
     return response;
   }
 
-  // Check if this is a protected API route
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+  // SECURITY: Default-deny for /api/* except explicit PUBLIC_ROUTES above.
+  // This prevents new endpoints from silently becoming unauthenticated.
+  const isProtectedRoute = true;
 
-  // Get client IP for rate limiting (Vercel sets x-forwarded-for from trusted proxy)
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+  // Get client IP for rate limiting.
+  // SECURITY: In self-host deployments, x-forwarded-for may be attacker-controlled unless you trust your proxy.
+  const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
+  const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const ip = (trustProxy ? forwardedIp : null) ||
+             request.ip ||
              request.headers.get('x-real-ip') ||
              'unknown';
 
@@ -1173,10 +1185,8 @@ export async function middleware(request) {
     // Get expected API key from environment
     const expectedKey = process.env.DASHCLAW_API_KEY;
 
-    // SECURITY: Strip any externally-provided org headers (prevent injection)
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.delete('x-org-id');
-    requestHeaders.delete('x-org-role');
+    // SECURITY: Start from stripped headers (prevent injection).
+    const requestHeaders = new Headers(strippedApiRequestHeaders);
 
     // If no API key is configured:
     // - dev/local: allow with org_default (convenience)
@@ -1255,6 +1265,12 @@ export async function middleware(request) {
     if (timingSafeEqual(apiKey, expectedKey)) {
       requestHeaders.set('x-org-id', 'org_default');
       requestHeaders.set('x-org-role', 'admin');
+
+      // SECURITY: Enforce readonly semantics for API keys.
+      if (request.method !== 'GET' && request.method !== 'HEAD' && requestHeaders.get('x-org-role') === 'readonly') {
+        return NextResponse.json({ error: 'Forbidden - readonly API key' }, { status: 403 });
+      }
+
       const response = NextResponse.next({ request: { headers: requestHeaders } });
       response.headers.set('X-Content-Type-Options', 'nosniff');
       response.headers.set('X-Frame-Options', 'DENY');
@@ -1277,6 +1293,12 @@ export async function middleware(request) {
 
     requestHeaders.set('x-org-id', resolved.orgId);
     requestHeaders.set('x-org-role', resolved.role);
+
+    // SECURITY: Enforce readonly semantics for API keys.
+    if (request.method !== 'GET' && request.method !== 'HEAD' && resolved.role === 'readonly') {
+      return NextResponse.json({ error: 'Forbidden - readonly API key' }, { status: 403 });
+    }
+
     const response = NextResponse.next({ request: { headers: requestHeaders } });
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('X-Frame-Options', 'DENY');
@@ -1286,7 +1308,7 @@ export async function middleware(request) {
   }
 
   // Non-protected API routes: add security headers + CORS
-  const response = NextResponse.next();
+  const response = NextResponse.next({ request: { headers: strippedApiRequestHeaders } });
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');

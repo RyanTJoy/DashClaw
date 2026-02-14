@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../lib/org.js';
 import { enforceFieldLimits } from '../../lib/validate.js';
+import { scanSensitiveData } from '../../lib/security.js';
 
 // sql initialized inside handler for serverless compatibility
 
@@ -60,11 +61,14 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
-    const { title, platform, status, url, body: contentBody, agent_id } = body;
+    const { title, platform, status, url, body: contentBodyRaw, agent_id } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
+
+    const bodyScan = contentBodyRaw ? scanSensitiveData(contentBodyRaw) : { clean: true, findings: [], redacted: contentBodyRaw };
+    const contentBody = bodyScan.redacted;
 
     const result = await sql`
       INSERT INTO content (org_id, title, platform, status, url, body, agent_id, created_at)
@@ -81,7 +85,15 @@ export async function POST(request) {
       RETURNING *
     `;
 
-    return NextResponse.json({ content: result[0] }, { status: 201 });
+    return NextResponse.json({
+      content: result[0],
+      security: {
+        clean: bodyScan.clean,
+        findings_count: bodyScan.findings.length,
+        critical_count: bodyScan.findings.filter(f => f.severity === 'critical').length,
+        categories: [...new Set(bodyScan.findings.map(f => f.category))],
+      },
+    }, { status: 201 });
   } catch (error) {
     console.error('Content API POST error:', error);
     return NextResponse.json({ error: 'An error occurred while creating content' }, { status: 500 });

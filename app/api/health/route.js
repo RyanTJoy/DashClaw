@@ -28,7 +28,8 @@ export async function GET() {
     health.checks.database = { status: 'healthy', latency: 'ok' };
   } catch (error) {
     health.status = 'degraded';
-    health.checks.database = { status: 'unhealthy', error: error.message };
+    // SECURITY: avoid leaking backend error details on a public endpoint.
+    health.checks.database = { status: 'unhealthy' };
   }
 
   // Check runtime capabilities
@@ -46,7 +47,8 @@ export async function GET() {
     }
   } catch (error) {
     health.status = 'degraded';
-    health.checks.realtime = { status: 'unhealthy', error: error.message };
+    // SECURITY: avoid leaking backend error details on a public endpoint.
+    health.checks.realtime = { status: 'unhealthy' };
   }
 
   // Check environment variables

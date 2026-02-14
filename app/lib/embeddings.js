@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { scanSensitiveData } from './security.js';
 
 /**
  * Embedding utility for Behavioral AI Guardrails.
@@ -43,10 +44,17 @@ export async function generateActionEmbedding(action) {
     Systems: ${(action.systems_touched || []).join(', ')}
   `.trim();
 
+  // SECURITY: Prevent accidental secret exfiltration to third-party LLMs.
+  const scanned = scanSensitiveData(text);
+  const safeText = scanned.redacted;
+  if (!scanned.clean) {
+    console.warn(`[Embeddings] Redacted ${scanned.findings.length} sensitive pattern(s) from embedding input.`);
+  }
+
   try {
     const response = await openai.embeddings.create({
       model: "text-embedding-3-small",
-      input: text,
+      input: safeText,
       encoding_format: "float",
     });
 

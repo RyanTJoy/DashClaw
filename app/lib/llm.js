@@ -30,6 +30,8 @@ Respond ONLY with valid JSON:
 }
 `;
 
+import { scanSensitiveData } from './security.js';
+
 export async function checkSemanticGuardrail(context, instruction, model = 'gpt-4o-mini') {
   const apiKey = process.env.GUARD_LLM_KEY || process.env.OPENAI_API_KEY;
   const baseUrl = process.env.GUARD_LLM_BASE_URL || 'https://api.openai.com/v1';
@@ -50,6 +52,13 @@ export async function checkSemanticGuardrail(context, instruction, model = 'gpt-
     .replace('{action_context}', actionContext)
     .replace('{policy_instruction}', instruction);
 
+  // SECURITY: Prevent accidental secret exfiltration to third-party LLMs.
+  const scanned = scanSensitiveData(prompt);
+  const safePrompt = scanned.redacted;
+  if (!scanned.clean) {
+    console.warn(`[Guard] Redacted ${scanned.findings.length} sensitive pattern(s) from semantic guardrail prompt.`);
+  }
+
   try {
     const res = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
@@ -61,7 +70,7 @@ export async function checkSemanticGuardrail(context, instruction, model = 'gpt-
         model: model,
         messages: [
           { role: 'system', content: 'You are a JSON-only security compliance bot.' },
-          { role: 'user', content: prompt }
+          { role: 'user', content: safePrompt }
         ],
         temperature: 0,
         max_tokens: 150,

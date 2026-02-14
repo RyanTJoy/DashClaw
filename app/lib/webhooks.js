@@ -4,6 +4,61 @@
  */
 
 import crypto from 'crypto';
+import dns from 'node:dns/promises';
+import net from 'node:net';
+
+function isPrivateIp(ip) {
+  if (!ip || typeof ip !== 'string') return true;
+
+  const v = net.isIP(ip);
+  if (v === 4) {
+    const parts = ip.split('.').map((p) => parseInt(p, 10));
+    if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n) || n < 0 || n > 255)) return true;
+
+    const [a, b] = parts;
+    if (a === 0) return true; // "this network"
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 169 && b === 254) return true; // link-local
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    return false;
+  }
+
+  if (v === 6) {
+    const lower = ip.toLowerCase();
+    if (lower === '::' || lower === '::1') return true;
+    if (lower.startsWith('fe80:')) return true; // link-local
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique local
+    return false;
+  }
+
+  // Not an IP literal (shouldn't happen here)
+  return true;
+}
+
+async function assertSafeWebhookUrl(url) {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'https:') throw new Error('Webhook URL must use https');
+  if (parsed.username || parsed.password) throw new Error('Webhook URL must not include credentials');
+
+  const host = parsed.hostname;
+  if (!host) throw new Error('Webhook URL hostname is required');
+
+  const ipKind = net.isIP(host);
+  if (ipKind) {
+    if (isPrivateIp(host)) throw new Error('Webhook URL cannot target private or loopback IPs');
+    return;
+  }
+
+  // Resolve DNS and block any private/loopback/link-local targets.
+  const addrs = await dns.lookup(host, { all: true, verbatim: true });
+  if (!Array.isArray(addrs) || addrs.length === 0) throw new Error('Webhook hostname did not resolve');
+  for (const a of addrs) {
+    const addr = a?.address;
+    if (isPrivateIp(addr)) throw new Error('Webhook hostname resolves to a private or loopback IP');
+  }
+}
 
 /**
  * Sign a payload with HMAC-SHA256.
@@ -29,11 +84,13 @@ export async function deliverWebhook({ webhookId, orgId, url, secret, eventType,
   let responseBody = null;
 
   try {
+    await assertSafeWebhookUrl(url);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     const res = await fetch(url, {
       method: 'POST',
+      redirect: 'manual', // SECURITY: prevent SSRF via redirects
       headers: {
         'Content-Type': 'application/json',
         'X-DashClaw-Signature': signature,
@@ -47,9 +104,15 @@ export async function deliverWebhook({ webhookId, orgId, url, secret, eventType,
 
     clearTimeout(timeout);
     responseStatus = res.status;
-    responseBody = await res.text().catch(() => '');
-    if (responseBody.length > 2000) responseBody = responseBody.substring(0, 2000);
-    status = res.ok ? 'success' : 'failed';
+
+    if (res.status >= 300 && res.status < 400) {
+      responseBody = 'Redirect blocked';
+      status = 'failed';
+    } else {
+      responseBody = await res.text().catch(() => '');
+      if (responseBody.length > 2000) responseBody = responseBody.substring(0, 2000);
+      status = res.ok ? 'success' : 'failed';
+    }
   } catch (err) {
     responseBody = err.message || 'Request failed';
     status = 'failed';
@@ -86,11 +149,13 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
   let parsedResponse = null;
 
   try {
+    await assertSafeWebhookUrl(url);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs || 5000);
 
     const res = await fetch(url, {
       method: 'POST',
+      redirect: 'manual', // SECURITY: prevent SSRF via redirects
       headers: {
         'Content-Type': 'application/json',
         'X-DashClaw-Event': 'guard.evaluation',
@@ -103,14 +168,19 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
 
     clearTimeout(timeout);
     responseStatus = res.status;
-    responseBody = await res.text().catch(() => '');
-    if (responseBody.length > 2000) responseBody = responseBody.substring(0, 2000);
-    status = res.ok ? 'success' : 'failed';
+    if (res.status >= 300 && res.status < 400) {
+      responseBody = 'Redirect blocked';
+      status = 'failed';
+    } else {
+      responseBody = await res.text().catch(() => '');
+      if (responseBody.length > 2000) responseBody = responseBody.substring(0, 2000);
+      status = res.ok ? 'success' : 'failed';
 
-    if (res.ok) {
-      try {
-        parsedResponse = JSON.parse(responseBody);
-      } catch { /* non-JSON response treated as no-op */ }
+      if (res.ok) {
+        try {
+          parsedResponse = JSON.parse(responseBody);
+        } catch { /* non-JSON response treated as no-op */ }
+      }
     }
   } catch (err) {
     responseBody = err.name === 'AbortError' ? 'Request timed out' : (err.message || 'Request failed');
