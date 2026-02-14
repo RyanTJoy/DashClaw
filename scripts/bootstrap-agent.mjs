@@ -72,6 +72,83 @@ function safeRead(filePath) {
   } catch { return null; }
 }
 
+function safeStat(filePath) {
+  try {
+    return statSync(filePath);
+  } catch {
+    return null;
+  }
+}
+
+function uniq(arr) {
+  return [...new Set((arr || []).filter(Boolean))];
+}
+
+function isWindowsPathLike(s) {
+  if (!s || typeof s !== 'string') return false;
+  return /^[a-zA-Z]:\\/.test(s) || s.includes('\\Users\\') || s.includes('\\AppData\\');
+}
+
+function isUnixPathLike(s) {
+  if (!s || typeof s !== 'string') return false;
+  return s.startsWith('/home/') || s.startsWith('/Users/') || s.startsWith('/var/') || s.startsWith('/etc/');
+}
+
+function isSecretLike(s) {
+  if (!s || typeof s !== 'string') return false;
+  const v = s.trim();
+  if (v.length < 12) return false;
+  if (v.includes('-----BEGIN') && v.includes('PRIVATE KEY')) return true;
+  if (/^oc_(live|test)_[a-zA-Z0-9]{12,}/.test(v)) return true;
+  if (/^sk_(live|test)_[a-zA-Z0-9]{12,}/.test(v)) return true;
+  if (/^ghp_[a-zA-Z0-9]{20,}/.test(v)) return true;
+  if (/^xox[baprs]-/.test(v)) return true;
+  if (/^AIza[0-9A-Za-z-_]{30,}/.test(v)) return true;
+  if (/^AKIA[0-9A-Z]{16}/.test(v)) return true;
+  if (/^eyJ[a-zA-Z0-9_-]{20,}\\.[a-zA-Z0-9_-]{10,}\\.[a-zA-Z0-9_-]{10,}$/.test(v)) return true; // JWT-ish
+  return false;
+}
+
+function isDailyMemoryLogPath(filePath) {
+  const base = basename(filePath);
+  // Matches: 2026-02-14.md, 2026-02-14-1937.md, etc.
+  return /^\d{4}-\d{2}-\d{2}(?:-[\w]+)?\.md$/i.test(base) && dirname(filePath).toLowerCase().endsWith('memory');
+}
+
+function gatherWorkspaceMarkdownSources(dir) {
+  // Prefer curated sources over "scan everything" to avoid noisy imports.
+  const sources = [];
+
+  // Root docs (common in OpenClaw-style workspaces)
+  for (const f of ['MEMORY.md', 'projects.md', 'insights.md', 'SECURITY.md', 'USER.md', 'IDENTITY.md', 'SOUL.md', 'CLAUDE.md']) {
+    const p = join(dir, f);
+    if (existsSync(p)) sources.push(p);
+  }
+
+  // ".claude" memory (Claude-style) if present
+  const claudeDir = join(dir, '.claude');
+  if (existsSync(claudeDir)) {
+    sources.push(...findFiles(claudeDir, /\.md$/i, 3));
+  }
+
+  // Hierarchical memory folder (OpenClaw-style): memory/**/*.md
+  const memDir = existsSync(join(dir, 'memory')) ? join(dir, 'memory') : (existsSync(join(dir, 'Memory')) ? join(dir, 'Memory') : null);
+  if (memDir) {
+    const all = findFiles(memDir, /\.md$/i, 6);
+    const daily = [];
+    const other = [];
+
+    for (const f of all) (isDailyMemoryLogPath(f) ? daily : other).push(f);
+
+    // Include all structured memory plus a slice of recent daily logs.
+    daily.sort((a, b) => (safeStat(b)?.mtimeMs || 0) - (safeStat(a)?.mtimeMs || 0));
+    sources.push(...other);
+    sources.push(...daily.slice(0, 30));
+  }
+
+  return uniq(sources).filter((p) => extname(p).toLowerCase() === '.md');
+}
+
 function findFiles(dir, pattern, maxDepth = 3, depth = 0) {
   if (depth > maxDepth) return [];
   const results = [];
@@ -192,29 +269,45 @@ function scanConnections(dir) {
 }
 
 function scanMemory(dir) {
-  const claudeDir = join(dir, '.claude');
-  if (!existsSync(claudeDir)) return null;
+  const mdFiles = gatherWorkspaceMarkdownSources(dir);
+  if (!mdFiles.length) return null;
 
-  const mdFiles = findFiles(claudeDir, /\.md$/i, 3);
   let totalLines = 0;
   let totalSize = 0;
   const entities = new Map();
   const topics = new Map();
 
+  // Daily memory stats (based on discovered daily logs).
+  const dailyStats = { oldest: null, newest: null, days: 0, avgLines: 0 };
+  const dailyFiles = mdFiles.filter(isDailyMemoryLogPath);
+  if (dailyFiles.length) {
+    const names = dailyFiles.map((p) => basename(p)).sort();
+    dailyStats.oldest = names[0].replace(/\.md$/i, '');
+    dailyStats.newest = names[names.length - 1].replace(/\.md$/i, '');
+    dailyStats.days = names.length;
+  }
+
   for (const f of mdFiles) {
     try {
-      const stat = statSync(f);
+      const stat = safeStat(f);
+      if (!stat || !stat.isFile()) continue;
       totalSize += stat.size;
       const content = readFileSync(f, 'utf8');
       const lines = content.split('\n');
       totalLines += lines.length;
 
-      // Extract topics from ## headings
+      // Extract topics from headings
       for (const line of lines) {
-        const headingMatch = line.match(/^##\s+(.+)/);
+        const headingMatch = line.match(/^#{1,3}\s+(.+)/);
         if (headingMatch) {
           const name = headingMatch[1].trim();
-          if (name.length > 2 && name.length < 100) {
+          if (
+            name.length > 2 &&
+            name.length < 100 &&
+            !isWindowsPathLike(name) &&
+            !isUnixPathLike(name) &&
+            !isSecretLike(name)
+          ) {
             topics.set(name, (topics.get(name) || 0) + 1);
           }
         }
@@ -224,44 +317,59 @@ function scanMemory(dir) {
       const boldMatches = content.matchAll(/\*\*([^*]+)\*\*/g);
       for (const m of boldMatches) {
         const name = m[1].trim();
-        if (name.length > 1 && name.length < 60) {
+        if (
+          name.length > 1 &&
+          name.length < 60 &&
+          !isWindowsPathLike(name) &&
+          !isUnixPathLike(name) &&
+          !isSecretLike(name)
+        ) {
           entities.set(name, { name, type: 'concept', count: (entities.get(name)?.count || 0) + 1 });
         }
       }
       const codeMatches = content.matchAll(/`([^`]+)`/g);
       for (const m of codeMatches) {
         const name = m[1].trim();
-        if (name.length > 1 && name.length < 60 && !name.includes(' ')) {
+        if (
+          name.length > 1 &&
+          name.length < 60 &&
+          !name.includes(' ') &&
+          !isWindowsPathLike(name) &&
+          !isUnixPathLike(name) &&
+          !isSecretLike(name)
+        ) {
           entities.set(name, { name, type: 'code', count: (entities.get(name)?.count || 0) + 1 });
         }
       }
     } catch { /* read error */ }
   }
 
-  // Also check project root CLAUDE.md
-  const claudeMd = safeRead(join(dir, 'CLAUDE.md'));
-  if (claudeMd) {
-    totalLines += claudeMd.split('\n').length;
-    totalSize += claudeMd.length;
-  }
-
   // Health score
   let score = 50;
-  const memoryMd = safeRead(join(claudeDir, 'MEMORY.md'));
-  if (memoryMd) score += 10;
+  const memoryIndex = safeRead(join(dir, 'MEMORY.md')) || safeRead(join(dir, '.claude', 'MEMORY.md'));
+  if (memoryIndex) score += 15;
   if (totalLines > 100) score += 10;
-  if (mdFiles.length > 3) score += 10;
-  if (claudeMd) score += 10;
+  if (mdFiles.length > 5) score += 10;
+  if (existsSync(join(dir, 'memory')) || existsSync(join(dir, 'Memory'))) score += 10;
   if (topics.size > 5) score += 5;
   score = Math.min(100, score);
+
+  if (dailyStats.days > 0) {
+    // Only compute avg if we actually included daily files in the scan set.
+    dailyStats.avgLines = Math.round(totalLines / Math.max(1, dailyStats.days));
+  }
 
   return {
     health: {
       score,
-      total_files: mdFiles.length + (claudeMd ? 1 : 0),
+      total_files: mdFiles.length,
       total_lines: totalLines,
       total_size_kb: Math.round(totalSize / 1024),
-      memory_md_lines: memoryMd ? memoryMd.split('\n').length : 0,
+      memory_md_lines: memoryIndex ? memoryIndex.split('\n').length : 0,
+      oldest_daily: dailyStats.oldest,
+      newest_daily: dailyStats.newest,
+      days_with_notes: dailyStats.days,
+      avg_lines_per_day: dailyStats.avgLines || 0,
     },
     entities: [...entities.values()]
       .sort((a, b) => b.count - a.count)
@@ -289,6 +397,79 @@ function scanGoals(dir) {
       const checked = line.match(/^[-*]\s+\[x\]\s+(.+)/i);
       if (checked) {
         goals.push({ title: checked[1].trim(), status: 'completed', progress: 100 });
+      }
+    }
+  }
+
+  // OpenClaw-style: projects.md (+ checkboxes)
+  const projectsMd = safeRead(join(dir, 'projects.md'));
+  if (projectsMd) {
+    const sections = extractSections(projectsMd);
+    for (const [heading, body] of sections) {
+      if (!heading || heading.toLowerCase() === 'projects') continue;
+
+      const statusLine = (body.match(/^\*\*Status:\*\*\s*(.+)$/m)?.[1] || '').trim();
+      const goalLine = (body.match(/^\*\*Goal:\*\*\s*(.+)$/m)?.[1] || '').trim();
+
+      const statusNorm = statusLine.toLowerCase();
+      const projectStatus =
+        statusNorm.includes('complete') ? 'completed' :
+        statusNorm.includes('paused') ? 'paused' :
+        'active';
+
+      if (goalLine && !goals.some(g => g.title === goalLine)) {
+        goals.push({
+          title: goalLine,
+          status: projectStatus,
+          category: 'project',
+          description: `Project: ${heading}${statusLine ? ` | Status: ${statusLine}` : ''}`,
+        });
+      }
+
+      const tasks = [];
+      for (const line of body.split('\n')) {
+        const unchecked = line.match(/^[-*]\s+\[\s\]\s+(.+)/);
+        if (unchecked) tasks.push({ title: unchecked[1].trim(), status: 'active' });
+        const checked = line.match(/^[-*]\s+\[x\]\s+(.+)/i);
+        if (checked) tasks.push({ title: checked[1].trim(), status: 'completed', progress: 100 });
+      }
+
+      const total = tasks.filter(t => t.title).length;
+      const done = tasks.filter(t => t.status === 'completed').length;
+      const pct = total ? Math.round((done / total) * 100) : null;
+
+      if (total >= 3 && !goals.some(g => g.title === `${heading} (progress)`)) {
+        goals.push({
+          title: `${heading} (progress)`,
+          status: projectStatus,
+          category: 'project_progress',
+          description: `Checkbox progress extracted from projects.md for ${heading}.`,
+          progress: pct ?? 0,
+        });
+      }
+
+      for (const t of tasks) {
+        if (!t.title) continue;
+        if (goals.some(g => g.title === t.title)) continue;
+        goals.push({
+          title: t.title,
+          status: t.status,
+          progress: t.progress ?? 0,
+          category: 'task',
+          description: `From projects.md (${heading})`,
+        });
+      }
+    }
+  }
+
+  // OpenClaw-style: memory/pending-tasks.md (Task blocks)
+  const pendingTasks = safeRead(join(dir, 'memory', 'pending-tasks.md')) || safeRead(join(dir, 'Memory', 'pending-tasks.md'));
+  if (pendingTasks) {
+    const taskMatches = pendingTasks.matchAll(/^\*\*Task:\*\*\s*(.+)$/gim);
+    for (const m of taskMatches) {
+      const title = (m[1] || '').trim();
+      if (title.length > 3 && !goals.some(g => g.title === title)) {
+        goals.push({ title, status: 'active', category: 'pending_task', description: 'From memory/pending-tasks.md' });
       }
     }
   }
@@ -327,7 +508,7 @@ function scanLearning(dir) {
       if (bullet) {
         const text = bullet[1].trim();
         if (text.length > 5) {
-          decisions.push({ decision: text, outcome: 'confirmed' });
+          decisions.push({ decision: text, outcome: 'success', confidence: 70 });
         }
       }
     }
@@ -345,9 +526,82 @@ function scanLearning(dir) {
           if (bullet) {
             const text = bullet[1].trim();
             if (text.length > 5 && !decisions.some(d => d.decision === text)) {
-              decisions.push({ decision: text, context: heading, outcome: 'confirmed' });
+              decisions.push({ decision: text, context: heading, outcome: 'success', confidence: 70 });
             }
           }
+        }
+      }
+    }
+  }
+
+  // OpenClaw-style: memory/decisions/*.md tables (Decision | Why | Outcome)
+  const memDecisionsDir = existsSync(join(dir, 'memory', 'decisions')) ? join(dir, 'memory', 'decisions') : (existsSync(join(dir, 'Memory', 'decisions')) ? join(dir, 'Memory', 'decisions') : null);
+  if (memDecisionsDir) {
+    const files = findFiles(memDecisionsDir, /\.md$/i, 2);
+    for (const filePath of files) {
+      const content = safeRead(filePath);
+      if (!content) continue;
+
+      let currentDate = null;
+      const lines = content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const h = lines[i].match(/^##\s+(\d{4}-\d{2}-\d{2})/);
+        if (h) {
+          currentDate = h[1];
+          continue;
+        }
+
+        // Look for table header then parse following rows.
+        if (lines[i].includes('| Decision') && lines[i + 1]?.includes('|---')) {
+          i += 2;
+          while (i < lines.length && lines[i].trim().startsWith('|')) {
+            const row = lines[i].trim();
+            const cols = row.split('|').map(c => c.trim()).filter(Boolean);
+            const [decisionText, whyText, outcomeText] = cols;
+            if (decisionText && decisionText.length > 3) {
+              const o = (outcomeText || '').toLowerCase();
+              const outcome =
+                o.includes('success') || o.includes('complete') || o.includes('working') ? 'success' :
+                o.includes('fail') ? 'failure' :
+                'pending';
+
+              const entry = {
+                decision: decisionText,
+                reasoning: whyText || null,
+                context: currentDate ? `Decisions ${currentDate}` : `Decisions (${basename(filePath)})`,
+                outcome,
+                confidence: outcome === 'success' ? 75 : 60,
+              };
+
+              if (!decisions.some(d => d.decision === entry.decision && d.context === entry.context)) {
+                decisions.push(entry);
+              }
+            }
+            i++;
+          }
+        }
+      }
+    }
+  }
+
+  // OpenClaw-style: memory/pending-tasks.md "Security Lessons Learned"
+  const pendingTasks = safeRead(join(dir, 'memory', 'pending-tasks.md')) || safeRead(join(dir, 'Memory', 'pending-tasks.md'));
+  if (pendingTasks) {
+    const lines = pendingTasks.split('\n');
+    let inLessons = false;
+    for (const line of lines) {
+      if (/^##\s+Security Lessons Learned/i.test(line)) {
+        inLessons = true;
+        continue;
+      }
+      if (inLessons && /^##\s+/.test(line)) break;
+      if (!inLessons) continue;
+
+      const item = line.match(/^\s*\d+\.\s+(.+)/);
+      if (item) {
+        const text = item[1].replace(/^[\s\u2713\u2705]+/g, '').trim();
+        if (text.length > 5 && !decisions.some(d => d.decision === text)) {
+          decisions.push({ decision: text, context: 'Security Lessons Learned', outcome: 'success', confidence: 80 });
         }
       }
     }
@@ -356,38 +610,81 @@ function scanLearning(dir) {
   return decisions;
 }
 
+function scanPreferences(dir) {
+  const prefs = [];
+
+  // OpenClaw-style: MEMORY.md "Active Preferences" list
+  const memIndex = safeRead(join(dir, 'MEMORY.md'));
+  if (memIndex) {
+    const lines = memIndex.split('\n');
+    let inPrefs = false;
+    for (const line of lines) {
+      if (/^##\s+.*Active Preferences/i.test(line)) {
+        inPrefs = true;
+        continue;
+      }
+      if (inPrefs && /^##\s+/.test(line)) break;
+      if (!inPrefs) continue;
+
+      const bullet = line.match(/^-\s+(.+)/);
+      if (!bullet) continue;
+      const text = bullet[1].trim();
+      if (text.length < 5) continue;
+      if (isWindowsPathLike(text) || isUnixPathLike(text) || isSecretLike(text)) continue;
+      prefs.push({ preference: text, category: 'agent', confidence: 80 });
+    }
+  }
+
+  if (!prefs.length) return null;
+  return { preferences: prefs };
+}
+
 function scanContextPoints(dir) {
   const points = [];
   const claudeMd = safeRead(join(dir, 'CLAUDE.md'));
-  if (!claudeMd) return points;
+  if (claudeMd) {
+    const sections = extractSections(claudeMd);
+    for (const [heading, body] of sections) {
+      const lower = heading.toLowerCase();
+      let category = 'general';
+      let importance = 5;
 
-  const sections = extractSections(claudeMd);
-  for (const [heading, body] of sections) {
-    const lower = heading.toLowerCase();
-    let category = 'general';
-    let importance = 5;
+      if (lower.includes('architecture') || lower.includes('tech stack')) {
+        category = 'insight';
+        importance = 8;
+      } else if (lower.includes('pattern') || lower.includes('convention')) {
+        category = 'insight';
+        importance = 7;
+      } else if (lower.includes('command') || lower.includes('deploy')) {
+        category = 'general';
+        importance = 6;
+      } else if (lower.includes('decision') || lower.includes('choice')) {
+        category = 'decision';
+        importance = 7;
+      }
 
-    if (lower.includes('architecture') || lower.includes('tech stack')) {
-      category = 'insight';
-      importance = 8;
-    } else if (lower.includes('pattern') || lower.includes('convention')) {
-      category = 'insight';
-      importance = 7;
-    } else if (lower.includes('command') || lower.includes('deploy')) {
-      category = 'general';
-      importance = 6;
-    } else if (lower.includes('decision') || lower.includes('choice')) {
-      category = 'decision';
-      importance = 7;
+      const trimmed = body.trim();
+      if (trimmed.length > 20 && trimmed.length < 5000) {
+        points.push({
+          content: `[${heading}] ${trimmed.slice(0, 2000)}`,
+          category,
+          importance,
+        });
+      }
     }
+  }
 
-    // Create a point per meaningful section
-    const trimmed = body.trim();
-    if (trimmed.length > 20 && trimmed.length < 5000) {
+  // OpenClaw-style: MEMORY.md index as lightweight context points (capped).
+  const memIndex = safeRead(join(dir, 'MEMORY.md'));
+  if (memIndex) {
+    const sections = extractSections(memIndex);
+    for (const [heading, body] of sections.slice(0, 25)) {
+      const trimmed = body.trim();
+      if (trimmed.length < 40) continue;
       points.push({
-        content: `[${heading}] ${trimmed.slice(0, 2000)}`,
-        category,
-        importance,
+        content: `[MEMORY.md:${heading}] ${trimmed.slice(0, 1500)}`,
+        category: heading.toLowerCase().includes('decision') ? 'decision' : 'insight',
+        importance: 7,
       });
     }
   }
@@ -416,10 +713,20 @@ function scanContextThreads(dir) {
 
 function scanSnippets(dir) {
   const snippets = [];
-  const files = [
+  const files = uniq([
     join(dir, 'CLAUDE.md'),
+    join(dir, 'TOOLS.md'),
+    join(dir, 'TOOLS.crypto.md'),
+    join(dir, 'TOOLS.local.md'),
+    join(dir, 'TOOLS.references.md'),
+    join(dir, 'projects.md'),
+    join(dir, 'MEMORY.md'),
+    join(dir, 'memory', 'pending-tasks.md'),
+    join(dir, 'memory', 'security-policy.md'),
+    join(dir, 'memory', 'projects', 'dashclaw.md'),
     ...findFiles(join(dir, '.claude'), /\.md$/i, 2),
-  ];
+    ...findFiles(join(dir, 'memory', 'decisions'), /\.md$/i, 2),
+  ]).filter((p) => existsSync(p) && extname(p).toLowerCase() === '.md');
 
   for (const filePath of files) {
     const content = safeRead(filePath);
@@ -462,6 +769,8 @@ function scanSnippets(dir) {
           language,
         });
       }
+
+      if (snippets.length >= 200) return snippets; // hard cap to avoid noisy imports
     }
   }
 
@@ -573,7 +882,7 @@ async function main() {
       summary['  topics'] = memory.topics.length;
       console.log(`  Memory: score=${memory.health.score}, ${memory.entities.length} entities, ${memory.topics.length} topics`);
     } else {
-      console.log('  Memory: no .claude/ directory found');
+      console.log('  Memory: no workspace markdown sources found');
     }
   } catch (e) {
     console.error(`  Memory: ERROR - ${e.message}`);
@@ -647,6 +956,20 @@ async function main() {
     }
   } catch (e) {
     console.error(`  Snippets: ERROR - ${e.message}`);
+  }
+
+  // Preferences
+  try {
+    const preferences = scanPreferences(dir);
+    if (preferences) {
+      payload.preferences = preferences;
+      summary.preferences = preferences.preferences?.length || 0;
+      console.log(`  Preferences: ${preferences.preferences?.length || 0} detected`);
+    } else {
+      console.log('  Preferences: none found');
+    }
+  } catch (e) {
+    console.error(`  Preferences: ERROR - ${e.message}`);
   }
 
   console.log();
