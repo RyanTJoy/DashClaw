@@ -268,6 +268,77 @@ function demoTokens(fixtures) {
   };
 }
 
+function demoSwarmGraph(fixtures, url) {
+  // Demo goal: a readable, "alive-looking" graph that sells the concept.
+  // We intentionally show the most active subset of agents to keep the map uncluttered.
+  const swarmId = url.searchParams.get('swarm_id') || 'all';
+
+  // Aggregate from fixture actions.
+  const byAgent = new Map();
+  for (const a of fixtures.actions) {
+    const id = a.agent_id;
+    if (!id) continue;
+    const prev = byAgent.get(id) || { id, name: a.agent_name || id, actions: 0, riskSum: 0, riskN: 0, costSum: 0 };
+    prev.actions += 1;
+    const r = parseFloat(a.risk_score || 0);
+    if (Number.isFinite(r)) {
+      prev.riskSum += r;
+      prev.riskN += 1;
+    }
+    const c = parseFloat(a.cost_estimate || 0);
+    if (Number.isFinite(c)) prev.costSum += c;
+    byAgent.set(id, prev);
+  }
+
+  const agents = Array.from(byAgent.values())
+    .sort((a, b) => (b.actions - a.actions) || String(a.id).localeCompare(String(b.id)));
+
+  const MAX_NODES = 18;
+  const chosen = agents.slice(0, MAX_NODES);
+
+  const nodes = chosen.map((a) => ({
+    id: a.id,
+    name: a.name,
+    actions: a.actions,
+    risk: a.riskN ? (a.riskSum / a.riskN) : 0,
+    cost: Math.round(a.costSum * 100) / 100,
+    val: Math.log10((a.actions || 1) + 1) * 10,
+  }));
+
+  const ids = nodes.map(n => n.id);
+  const idSet = new Set(ids);
+
+  // Deterministic, clustered links for "swarm" feel.
+  const links = [];
+  const clusterSize = 6;
+  for (let i = 0; i < ids.length; i++) {
+    const src = ids[i];
+    const ringTgt = ids[(i + 1) % ids.length];
+    links.push({ source: src, target: ringTgt, weight: 4 + (i % 7) });
+
+    const c0 = Math.floor(i / clusterSize) * clusterSize;
+    const p1 = ids[c0 + ((i + 2) % clusterSize)] || null;
+    const p2 = ids[c0 + ((i + 4) % clusterSize)] || null;
+    if (p1 && idSet.has(p1)) links.push({ source: src, target: p1, weight: 8 + (i % 9) });
+    if (p2 && idSet.has(p2)) links.push({ source: src, target: p2, weight: 6 + (i % 5) });
+  }
+
+  // Add a few cross-cluster edges to avoid looking partitioned.
+  if (ids.length >= 12) {
+    links.push({ source: ids[1], target: ids[9], weight: 7 });
+    links.push({ source: ids[3], target: ids[12], weight: 5 });
+    links.push({ source: ids[8], target: ids[14], weight: 6 });
+  }
+
+  return {
+    nodes,
+    links,
+    swarm_id: swarmId,
+    total_agents: nodes.length,
+    total_links: links.length,
+  };
+}
+
 // SECURITY: In-memory rate limiting is local to the instance.
 // For production multi-region deployments, use Redis or Upstash.
 const rateLimitMap = new Map();
@@ -580,6 +651,10 @@ export async function middleware(request) {
 
       if (pathname === '/api/usage') {
         return demoJson(request, fixtures.usage);
+      }
+
+      if (pathname === '/api/swarm/graph') {
+        return demoJson(request, demoSwarmGraph(fixtures, url));
       }
 
       if (pathname === '/api/security/status') {
