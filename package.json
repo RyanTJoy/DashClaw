@@ -18,6 +18,7 @@
     "sdk:integration": "node scripts/check-sdk-cross-integration.mjs",
     "sdk:integration:python": "node scripts/run-python-unittest.mjs",
     "convergence:evidence": "node scripts/collect-platform-convergence-evidence.mjs",
+    "convergence:ws1:check": "node scripts/check-convergence-ws1-latency.mjs",
     "test": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
