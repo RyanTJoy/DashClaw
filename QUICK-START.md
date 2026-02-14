@@ -44,6 +44,27 @@ Your dashboard needs somewhere to store data. Neon gives you a free database:
 
 ## Step 3: Download & Install
 
+### Fastest path (recommended)
+
+Run the installer for your platform. It will:
+- ask for your `DATABASE_URL` (from Neon)
+- generate `NEXTAUTH_SECRET`, `DASHCLAW_API_KEY`, and `ENCRYPTION_KEY`
+- write `.env.local`
+
+### Windows
+
+```bash
+./install-windows.bat
+```
+
+### Mac / Linux
+
+```bash
+bash ./install-mac.sh
+```
+
+---
+
 ### Option A: Clone with Git
 
 ```bash

@@ -53,10 +53,22 @@ if not exist ".env.local" (
         pause
         exit /b 1
     )
+)
 
-    powershell -NoProfile -Command "Set-Content -Path '.env.local' -Value ('DATABASE_URL=' + $env:DATABASE_URL)"
+echo.
+echo [STEP 0/3] Initializing .env.local (secrets + API key)...
+echo.
+if "%DATABASE_URL%"=="" (
+    call node scripts/init-self-host-env.mjs
+) else (
+    call node scripts/init-self-host-env.mjs --database-url "%DATABASE_URL%"
+)
+
+if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [OK] Created .env.local with your database URL
+    echo [ERROR] Failed to initialize .env.local
+    pause
+    exit /b 1
 )
 
 echo.

@@ -14,7 +14,7 @@ Baseline parity for critical SDK capabilities, derived from:
 
 ## Snapshot Summary
 
-- Node public methods: `59`
+- Node public methods: `60+`
 - Python public methods: `50`
 - Current parity (method-level, normalized by Node surface): `85%`
 

@@ -57,6 +57,10 @@ const PUBLIC_ROUTES = [
   '/api/cron',
 ];
 
+function getDashclawMode() {
+  return process.env.DASHCLAW_MODE || 'self_host';
+}
+
 // SECURITY: In-memory rate limiting is local to the instance.
 // For production multi-region deployments, use Redis or Upstash.
 const rateLimitMap = new Map();
@@ -179,6 +183,42 @@ function getCorsHeaders(request) {
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const mode = getDashclawMode();
+
+  // Demo sandbox mode: never allow writes and avoid exposing real APIs.
+  // Demo pages are served from static/fixture data under /demo and do not require /api/*.
+  if (mode === 'demo' && pathname.startsWith('/api/')) {
+    // Handle CORS preflight for blocked endpoints so the browser gets a clean response.
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
+    }
+
+    const method = request.method.toUpperCase();
+    const isRead = method === 'GET' || method === 'HEAD';
+
+    // Minimal allowlist for demo deploys (health/docs only).
+    const DEMO_ALLOWED_GET_PREFIXES = ['/api/health', '/api/docs/raw'];
+    const allowed = isRead && DEMO_ALLOWED_GET_PREFIXES.some(p => pathname.startsWith(p));
+
+    if (!allowed) {
+      const response = NextResponse.json(
+        { error: 'Demo mode: API is disabled. Self-host to connect real agents.' },
+        { status: 403 }
+      );
+      for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+      return response;
+    }
+
+    const response = NextResponse.next();
+    for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+    response.headers.set('X-Content-Type-Options', 'nosniff');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-XSS-Protection', '1; mode=block');
+    return response;
+  }
 
   // Page routes (non-API): check NextAuth session
   if (!pathname.startsWith('/api/')) {

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: dashclaw
-Version: 1.5.0
+Version: 1.7.0
 Summary: Python SDK for the DashClaw AI agent observability platform
 Home-page: https://github.com/ucsandman/DashClaw
 Author: Wes Sander
@@ -40,6 +40,7 @@ claw = DashClaw(
     api_key="your-api-key",
     agent_id="my-python-agent",
     agent_name="My Python Agent",
+    auto_recommend="warn",  # Optional: off | warn | enforce
     hitl_mode="wait" # Optional: automatically wait for human approval
 )
 
@@ -51,7 +52,7 @@ with claw.track(action_type="research", declared_goal="Explore Python SDK capabi
 
 ## Identity Binding (Security)
 
-DashClaw v1.3.0+ enforces cryptographic signatures for actions in production. To enable this in your Python agent:
+DashClaw can enforce cryptographic signatures for actions (recommended for verified agents). To enable signing in your Python agent:
 
 1. Install the `cryptography` library: `pip install cryptography`
 2. Generate an RSA keypair using `node scripts/generate-agent-keys.mjs <agent-id>` from the DashClaw repo.
@@ -84,6 +85,76 @@ try:
     # Agent automatically pauses here until approved in the dashboard
 except ApprovalDeniedError:
     print("Human operator denied the action!")
+```
+
+Manual approval API access is also available when building operator tooling:
+
+```python
+claw.approve_action("action_123", decision="allow", reasoning="Change window approved")
+pending = claw.get_pending_approvals(limit=25)
+```
+
+## Guard Audit + Webhooks
+
+Fetch recent guard decisions and manage webhook endpoints directly from the SDK:
+
+```python
+decisions = claw.get_guard_decisions(decision="block", limit=50)
+
+created = claw.create_webhook(
+    url="https://hooks.example.com/dashclaw",
+    events=["all"]
+)
+webhooks = claw.get_webhooks()
+deliveries = claw.get_webhook_deliveries(created["webhook"]["id"])
+claw.test_webhook(created["webhook"]["id"])
+```
+
+## Adaptive Recommendations
+
+Build and consume action recommendations based on prior outcomes:
+
+```python
+claw.rebuild_recommendations(lookback_days=30, min_samples=5)
+recs = claw.get_recommendations(
+    action_type="deploy",
+    limit=5,
+    include_metrics=True,
+)
+metrics = claw.get_recommendation_metrics(action_type="deploy", lookback_days=30)
+
+candidate = {
+    "action_type": "deploy",
+    "declared_goal": "Ship v1.6",
+    "risk_score": 85
+}
+adapted = claw.recommend_action(candidate)
+print(adapted["action"])
+
+# Admin/service controls
+claw.set_recommendation_active("lrec_123", active=False)
+claw.record_recommendation_events({
+    "recommendation_id": "lrec_123",
+    "event_type": "fetched",
+    "details": {"source": "python-sdk"},
+})
+```
+
+## Context + Messaging APIs
+
+Python SDK parity now includes context thread management, message lifecycle, and shared docs:
+
+```python
+thread = claw.create_thread("Release Planning")
+claw.add_thread_entry(thread["thread_id"], "Kickoff complete")
+claw.close_thread(thread["thread_id"], summary="Done for today")
+
+inbox = claw.get_inbox(unread=True)
+claw.mark_read([msg["id"] for msg in inbox["messages"][:2]])
+
+msg_thread = claw.create_message_thread("Ops Coordination")
+claw.broadcast(body="Maintenance window starts in 5 minutes", message_type="status")
+claw.save_shared_doc(name="Ops Runbook", content="Updated checklist")
 ```
 
 ## Integrations

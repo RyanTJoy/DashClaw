@@ -9,7 +9,7 @@ import PublicNavbar from '../components/PublicNavbar';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
-  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 59 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 60+ methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.',
 };
 
 /* ─── helpers ─── */
@@ -196,7 +196,7 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK. 59 methods across 13 categories to instrument your AI agents with
+            Full reference for the DashClaw SDK. 60+ methods across 13 categories to instrument your AI agents with
             action recording, governance, context management, session handoffs, security scanning, and more.
           </p>
           <CopyDocsButton />
@@ -1291,7 +1291,7 @@ python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context
             <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
             <Link href="/toolkit" className="hover:text-zinc-300">Toolkit</Link>
             <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/dashboard" className="hover:text-zinc-300">Dashboard</Link>
+            <Link href="/self-host" className="hover:text-zinc-300">Self-Host</Link>
           </div>
         </div>
       </footer>

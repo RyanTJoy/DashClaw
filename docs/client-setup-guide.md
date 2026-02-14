@@ -2,8 +2,9 @@
 
 > **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do — every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
 >
-> **Live Dashboard:** https://dash-claw.vercel.app
-> **SDK Docs:** https://dash-claw.vercel.app/docs
+> **Live Demo (fake data):** https://dashclaw.io/demo
+> **Your Dashboard (self-host):** http://localhost:3000 (or `https://YOUR_DASHCLAW_HOST`)
+> **SDK Docs:** `/docs` on any DashClaw instance (or https://dashclaw.io/docs)
 > **npm Package:** `dashclaw`
 
 ---
@@ -35,7 +36,11 @@
 
 ### Step 1: Sign In
 
-Go to **https://dash-claw.vercel.app** and click **Get Started** or **Sign In**.
+If you just want to see what DashClaw looks like, open the demo: **https://dashclaw.io/demo**.
+
+If you want to connect your real agents, you must run your own dashboard (self-host) and use **your** base URL (example: **http://localhost:3000**).
+
+Open your dashboard URL and click **Sign In**.
 
 You can sign in with:
 - **GitHub** (recommended for developers)
@@ -83,7 +88,7 @@ Add this to your agent's code:
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://dash-claw.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',          // unique ID for this agent
   agentName: 'My First Agent',  // human-readable name (optional)
@@ -133,7 +138,7 @@ See `docs/sdk-parity.md` for the live gap matrix.
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://dash-claw.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
 });
@@ -163,7 +168,7 @@ In the dashboard:
 ```javascript
 const { create } = require('dashclaw');
 const claw = await create({
-  baseUrl: 'https://dash-claw.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
 });
@@ -175,7 +180,7 @@ const claw = await create({
 from dashclaw import DashClaw
 
 claw = DashClaw(
-    base_url='https://dash-claw.vercel.app',
+    base_url='http://localhost:3000',
     api_key='your-api-key',
     agent_id='my-python-agent'
 )
@@ -888,7 +893,7 @@ Instead of calling `guard()` manually, enable automatic checks:
 import { DashClaw, GuardBlockedError } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://dash-claw.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   guardMode: 'enforce',  // auto-check before every createAction/track
@@ -1451,8 +1456,8 @@ The `bootstrap-agent.mjs` scanner reads workspace files but only sends structure
 ```
 INSTALL:    npm install dashclaw
 IMPORT:     import { DashClaw, GuardBlockedError } from 'dashclaw';
-DASHBOARD:  https://dash-claw.vercel.app
-DOCS:       https://dash-claw.vercel.app/docs
+DASHBOARD:  http://localhost:3000
+DOCS:       http://localhost:3000/docs
 
 CONSTRUCTOR:
   new DashClaw({ baseUrl, apiKey, agentId, agentName?, swarmId?, guardMode?, guardCallback? })
