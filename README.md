@@ -1,4 +1,4 @@
-![DashClaw](public/images/screenshots/Website.png)
+![DashClaw](public/images/screenshots/dash1.png)
 
 [DashClaw](https://www.dashclaw.io/) is a production-focused AI agent observability and governance platform.
 
