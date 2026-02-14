@@ -141,7 +141,7 @@ app/
     └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (59 methods, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (60+ methods, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -712,7 +712,7 @@ const claw = new DashClaw({
 ```
 Agents do NOT need `DATABASE_URL` — the API handles the database connection server-side.
 
-### DashClaw SDK (npm package — 59 methods)
+### DashClaw SDK (npm package — 60+ methods)
 
 The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
 

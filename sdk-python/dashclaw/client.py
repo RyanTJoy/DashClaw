@@ -268,7 +268,7 @@ class DashClaw:
     # --- Category 1: Action Recording ---
 
     def _sign_payload(self, payload):
-        """Sign payload using RSA-PSS SHA-256."""
+        """Sign payload using RSASSA-PKCS1-v1_5 (PKCS#1 v1.5) + SHA-256."""
         if not self.private_key:
             return None
         
@@ -276,7 +276,8 @@ class DashClaw:
             from cryptography.hazmat.primitives import hashes
             from cryptography.hazmat.primitives.asymmetric import padding
             
-            data = json.dumps(payload, sort_keys=True).encode("utf-8")
+            # Canonical JSON: stable bytes (no whitespace, sorted keys) so server verification is deterministic.
+            data = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
             signature = self.private_key.sign(
                 data,
                 padding.PKCS1v15(), # Matches RSASSA-PKCS1-v1_5 used in JS SDK
