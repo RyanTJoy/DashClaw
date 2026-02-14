@@ -1150,17 +1150,6 @@ export async function middleware(request) {
     return h;
   })();
 
-  // Allow public routes without auth
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    const response = NextResponse.next({ request: { headers: strippedApiRequestHeaders } });
-    for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
-    return response;
-  }
-
-  // SECURITY: Default-deny for /api/* except explicit PUBLIC_ROUTES above.
-  // This prevents new endpoints from silently becoming unauthenticated.
-  const isProtectedRoute = true;
-
   // Get client IP for rate limiting.
   // SECURITY: In self-host deployments, x-forwarded-for may be attacker-controlled unless you trust your proxy.
   const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
@@ -1170,7 +1159,8 @@ export async function middleware(request) {
              request.headers.get('x-real-ip') ||
              'unknown';
 
-  // Apply rate limiting to all API routes
+  // SECURITY: Apply rate limiting to all API routes, including PUBLIC_ROUTES.
+  // PUBLIC_ROUTES are unauthenticated but still should not be abusable for DoS/brute force.
   if (!checkRateLimit(ip)) {
     console.warn(`[SECURITY] Rate limit exceeded for ${ip}: ${pathname}`);
     return NextResponse.json(
@@ -1178,6 +1168,19 @@ export async function middleware(request) {
       { status: 429, headers: { 'Retry-After': '60' } }
     );
   }
+
+  // Allow public routes without auth
+  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+    const publicHeaders = new Headers(strippedApiRequestHeaders);
+    publicHeaders.set('x-client-ip', ip);
+    const response = NextResponse.next({ request: { headers: publicHeaders } });
+    for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+    return response;
+  }
+
+  // SECURITY: Default-deny for /api/* except explicit PUBLIC_ROUTES above.
+  // This prevents new endpoints from silently becoming unauthenticated.
+  const isProtectedRoute = true;
 
   if (isProtectedRoute) {
     // SECURITY: Only accept API key via header (not query params - those leak in logs/URLs)

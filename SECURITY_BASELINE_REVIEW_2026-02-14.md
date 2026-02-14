@@ -122,6 +122,9 @@ Scope: full repository baseline review + prioritized security findings.
 5. Reduce info leakage from `/api/health`.
 6. Redact sensitive patterns before sending content to third-party LLMs (embeddings + semantic guardrail).
 7. Redact sensitive patterns before storing agent-provided free text in actions/loops/assumptions (DLP on write).
+8. Apply rate limiting even to unauthenticated public endpoints (`PUBLIC_ROUTES`) to reduce DoS pressure.
+9. Strengthen CSP directives (keep current allowances until nonces/hashes are implemented).
+10. Add optional HMAC signing for guard webhooks (env secret) and redact webhook delivery logs at rest.
 
 ## 7) SAFE HARDENING ROADMAP
 
