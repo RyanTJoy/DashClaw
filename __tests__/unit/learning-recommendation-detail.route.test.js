@@ -2,18 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockSql,
-  neonMock,
   updateLearningRecommendationActiveMock,
 } = vi.hoisted(() => ({
-  mockSql: {},
-  neonMock: vi.fn(() => ({})),
+  mockSql: Object.assign(vi.fn(async () => []), { query: vi.fn(async () => []) }),
   updateLearningRecommendationActiveMock: vi.fn(),
 }));
 
-neonMock.mockImplementation(() => mockSql);
-
-vi.mock('@neondatabase/serverless', () => ({
-  neon: neonMock,
+vi.mock('@/lib/db.js', () => ({
+  getSql: () => mockSql,
 }));
 
 vi.mock('@/lib/repositories/learningLoop.repository.js', () => ({
