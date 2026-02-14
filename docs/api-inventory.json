@@ -46,10 +46,10 @@
     ]
   },
   "summary": {
-    "total_routes": 66,
+    "total_routes": 69,
     "stable_routes": 37,
-    "beta_routes": 11,
-    "experimental_routes": 18
+    "beta_routes": 13,
+    "experimental_routes": 19
   },
   "routes": [
     {
@@ -237,6 +237,24 @@
       "file": "app/api/context/threads/[threadId]/entries/route.js"
     },
     {
+      "path": "/api/cron/learning-episodes-backfill",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/cron",
+      "file": "app/api/cron/learning-episodes-backfill/route.js"
+    },
+    {
+      "path": "/api/cron/learning-recommendations",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/cron",
+      "file": "app/api/cron/learning-recommendations/route.js"
+    },
+    {
       "path": "/api/cron/memory-maintenance",
       "methods": [
         "GET"
@@ -361,6 +379,16 @@
       "maturity": "experimental",
       "matched_prefix": "/api/learning",
       "file": "app/api/learning/route.js"
+    },
+    {
+      "path": "/api/learning/recommendations",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/learning",
+      "file": "app/api/learning/recommendations/route.js"
     },
     {
       "path": "/api/memory",

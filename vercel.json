@@ -1,1 +1,12 @@
-{}
+{
+  "crons": [
+    {
+      "path": "/api/cron/learning-episodes-backfill",
+      "schedule": "17 */6 * * *"
+    },
+    {
+      "path": "/api/cron/learning-recommendations",
+      "schedule": "47 * * * *"
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import {
   getActionWithRelations,
   updateActionOutcome,
 } from '../../../lib/repositories/actions.repository.js';
+import { scoreAndStoreActionEpisode } from '../../../lib/learningLoop.service.js';
 
 let _sql;
 function getSql() {
@@ -60,6 +61,13 @@ export async function PATCH(request, { params }) {
       orgId,
       action: updatedAction,
     });
+
+    // Best-effort: score this action as a learning episode for recommendation synthesis.
+    try {
+      await scoreAndStoreActionEpisode(sql, orgId, actionId);
+    } catch (learningError) {
+      console.warn('[LEARNING] Failed to score action episode:', learningError.message);
+    }
 
     return NextResponse.json({ action: updatedAction });
   } catch (error) {

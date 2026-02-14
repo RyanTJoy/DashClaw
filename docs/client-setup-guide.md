@@ -364,7 +364,7 @@ const { signals, counts } = await claw.getSignals();
 // counts = { red: 2, amber: 5, total: 7 }
 ```
 
-### Dashboard Data (9 methods)
+### Dashboard Data (12 methods)
 
 ```javascript
 // Report token usage/cost snapshot
@@ -381,6 +381,25 @@ await claw.recordDecision({
   reasoning: 'Edge-compatible, no DB',     // optional
   outcome: 'success',                      // optional: success|failure|pending
   confidence: 90,                          // optional, 0-100
+});
+
+// Get adaptive recommendations from scored episodes
+const { recommendations } = await claw.getRecommendations({
+  action_type: 'deploy', // optional
+  limit: 10,             // optional
+});
+
+// Rebuild recommendation set (admin/service role required by API)
+await claw.rebuildRecommendations({
+  lookback_days: 30,
+  min_samples: 5,
+});
+
+// Apply top recommendation hints to an action payload
+const { action: adaptedAction, adapted_fields } = await claw.recommendAction({
+  action_type: 'deploy',
+  declared_goal: 'Ship v1.6',
+  risk_score: 85,
 });
 
 // Create a goal
@@ -747,7 +766,8 @@ Mini-CRM: contacts and interaction history.
 
 ### Learning (`/learning`)
 
-Decisions and lessons learned database.
+Decisions, lessons learned, and adaptive recommendations.
+`POST /api/learning/recommendations` (rebuild) requires admin/service role.
 
 ### Goals (`/goals`)
 
@@ -1064,6 +1084,7 @@ Paste the contents of `scripts/bootstrap-prompt.md` directly to your agent. The 
 | Remove members | Yes | No |
 | Configure integrations | Yes | No |
 | Manage webhooks | Yes | No |
+| Rebuild learning recommendations | Yes | No |
 | Upgrade plan | Yes | No |
 
 ### Leaving a Workspace
@@ -1403,6 +1424,9 @@ MOST USED METHODS:
   claw.guard({ action_type, risk_score, ... })
   claw.getSignals()
   claw.recordDecision({ decision, reasoning })
+  claw.getRecommendations({ action_type? })
+  claw.rebuildRecommendations({ lookback_days?, min_samples? })
+  claw.recommendAction({ action_type, declared_goal, ... })
   claw.createHandoff({ summary, key_decisions, open_tasks })
   claw.syncState({ connections, memory, goals, learning, ... })
 

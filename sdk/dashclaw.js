@@ -483,6 +483,93 @@ class DashClaw {
   }
 
   /**
+   * Get adaptive learning recommendations derived from prior episodes.
+   * @param {Object} [filters]
+   * @param {string} [filters.action_type] - Filter by action type
+   * @param {string} [filters.agent_id] - Override agent_id (defaults to SDK agent)
+   * @param {number} [filters.limit=50] - Max recommendations to return
+   * @returns {Promise<{recommendations: Object[], total: number, lastUpdated: string}>}
+   */
+  async getRecommendations(filters = {}) {
+    const params = new URLSearchParams({
+      agent_id: filters.agent_id || this.agentId,
+    });
+    if (filters.action_type) params.set('action_type', filters.action_type);
+    if (filters.limit) params.set('limit', String(filters.limit));
+    return this._request(`/api/learning/recommendations?${params}`, 'GET');
+  }
+
+  /**
+   * Rebuild recommendations from scored learning episodes.
+   * @param {Object} [options]
+   * @param {string} [options.action_type] - Scope rebuild to one action type
+   * @param {string} [options.agent_id] - Override agent_id (defaults to SDK agent)
+   * @param {number} [options.lookback_days=30] - Days of episode history to analyze
+   * @param {number} [options.min_samples=5] - Minimum episodes required per recommendation
+   * @param {number} [options.episode_limit=5000] - Episode scan cap
+   * @param {string} [options.action_id] - Optionally score this action before rebuild
+   * @returns {Promise<{recommendations: Object[], total: number, episodes_scanned: number}>}
+   */
+  async rebuildRecommendations(options = {}) {
+    return this._request('/api/learning/recommendations', 'POST', {
+      agent_id: options.agent_id || this.agentId,
+      action_type: options.action_type,
+      lookback_days: options.lookback_days,
+      min_samples: options.min_samples,
+      episode_limit: options.episode_limit,
+      action_id: options.action_id,
+    });
+  }
+
+  /**
+   * Apply top recommendation hints to an action definition (non-destructive).
+   * @param {Object} action - Action payload compatible with createAction()
+   * @returns {Promise<{action: Object, recommendation: Object|null, adapted_fields: string[]}>}
+   */
+  async recommendAction(action) {
+    if (!action?.action_type) {
+      return { action, recommendation: null, adapted_fields: [] };
+    }
+
+    const response = await this.getRecommendations({ action_type: action.action_type, limit: 1 });
+    const recommendation = response.recommendations?.[0] || null;
+    if (!recommendation) {
+      return { action, recommendation: null, adapted_fields: [] };
+    }
+
+    const adapted = { ...action };
+    const adaptedFields = [];
+    const hints = recommendation.hints || {};
+
+    if (
+      typeof hints.preferred_risk_cap === 'number' &&
+      (adapted.risk_score === undefined || adapted.risk_score > hints.preferred_risk_cap)
+    ) {
+      adapted.risk_score = hints.preferred_risk_cap;
+      adaptedFields.push('risk_score');
+    }
+
+    if (hints.prefer_reversible === true && adapted.reversible === undefined) {
+      adapted.reversible = true;
+      adaptedFields.push('reversible');
+    }
+
+    if (
+      typeof hints.confidence_floor === 'number' &&
+      (adapted.confidence === undefined || adapted.confidence < hints.confidence_floor)
+    ) {
+      adapted.confidence = hints.confidence_floor;
+      adaptedFields.push('confidence');
+    }
+
+    return {
+      action: adapted,
+      recommendation,
+      adapted_fields: adaptedFields,
+    };
+  }
+
+  /**
    * Create a goal.
    * @param {Object} goal
    * @param {string} goal.title - Goal title

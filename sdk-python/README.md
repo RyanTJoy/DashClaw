@@ -87,6 +87,23 @@ deliveries = claw.get_webhook_deliveries(created["webhook"]["id"])
 claw.test_webhook(created["webhook"]["id"])
 ```
 
+## Adaptive Recommendations
+
+Build and consume action recommendations based on prior outcomes:
+
+```python
+claw.rebuild_recommendations(lookback_days=30, min_samples=5)
+recs = claw.get_recommendations(action_type="deploy", limit=5)
+
+candidate = {
+    "action_type": "deploy",
+    "declared_goal": "Ship v1.6",
+    "risk_score": 85
+}
+adapted = claw.recommend_action(candidate)
+print(adapted["action"])
+```
+
 ## Context + Messaging APIs
 
 Python SDK parity now includes context thread management, message lifecycle, and shared docs:

@@ -285,6 +285,70 @@ class DashClaw:
         payload = {"decision": decision, "agent_id": self.agent_id, **kwargs}
         return self._request("/api/learning", method="POST", body=payload)
 
+    def get_recommendations(self, action_type=None, limit=50, agent_id=None):
+        params = {"agent_id": agent_id or self.agent_id, "limit": limit}
+        if action_type is not None:
+            params["action_type"] = action_type
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+        return self._request(f"/api/learning/recommendations?{query}")
+
+    def rebuild_recommendations(
+        self,
+        action_type=None,
+        lookback_days=30,
+        min_samples=5,
+        episode_limit=5000,
+        action_id=None,
+        agent_id=None,
+    ):
+        payload = {
+            "agent_id": agent_id or self.agent_id,
+            "action_type": action_type,
+            "lookback_days": lookback_days,
+            "min_samples": min_samples,
+            "episode_limit": episode_limit,
+            "action_id": action_id,
+        }
+        return self._request("/api/learning/recommendations", method="POST", body=payload)
+
+    def recommend_action(self, action):
+        if not isinstance(action, dict) or not action.get("action_type"):
+            return {"action": action, "recommendation": None, "adapted_fields": []}
+
+        response = self.get_recommendations(action_type=action.get("action_type"), limit=1)
+        recommendations = response.get("recommendations", [])
+        recommendation = recommendations[0] if recommendations else None
+        if not recommendation:
+            return {"action": action, "recommendation": None, "adapted_fields": []}
+
+        adapted = dict(action)
+        adapted_fields = []
+        hints = recommendation.get("hints", {}) if isinstance(recommendation, dict) else {}
+
+        risk_cap = hints.get("preferred_risk_cap")
+        if isinstance(risk_cap, (int, float)):
+            current = adapted.get("risk_score")
+            if current is None or current > risk_cap:
+                adapted["risk_score"] = risk_cap
+                adapted_fields.append("risk_score")
+
+        if hints.get("prefer_reversible") is True and adapted.get("reversible") is None:
+            adapted["reversible"] = True
+            adapted_fields.append("reversible")
+
+        confidence_floor = hints.get("confidence_floor")
+        if isinstance(confidence_floor, (int, float)):
+            current = adapted.get("confidence")
+            if current is None or current < confidence_floor:
+                adapted["confidence"] = confidence_floor
+                adapted_fields.append("confidence")
+
+        return {
+            "action": adapted,
+            "recommendation": recommendation,
+            "adapted_fields": adapted_fields,
+        }
+
     def create_goal(self, title, **kwargs):
         payload = {"title": title, "agent_id": self.agent_id, **kwargs}
         return self._request("/api/goals", method="POST", body=payload)

@@ -408,6 +408,37 @@ Record a decision for the learning database. Track what your agent decides and w
 
 **Returns:** `Promise<{ decision: Object }>`
 
+### claw.getRecommendations(filters?)
+Get adaptive recommendations synthesized from scored historical episodes.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.action_type | string | No | Filter by action type |
+| filters.agent_id | string | No | Override agent scope (defaults to SDK agent) |
+| filters.limit | number | No | Max results (default 50) |
+
+**Returns:** `Promise<{ recommendations: Object[], total: number }>`
+
+### claw.rebuildRecommendations(options?)
+Recompute recommendations from recent learning episodes.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| options.action_type | string | No | Restrict rebuild to one action type |
+| options.lookback_days | number | No | Episode history window (default 30) |
+| options.min_samples | number | No | Minimum samples per recommendation (default 5) |
+| options.episode_limit | number | No | Episode scan cap (default 5000) |
+| options.action_id | string | No | Score this action before rebuilding |
+
+**Returns:** `Promise<{ recommendations: Object[], total: number, episodes_scanned: number }>`
+
+### claw.recommendAction(action)
+Apply top recommendation hints to an action payload without mutating the original object.
+
+**Returns:** `Promise<{ action: Object, recommendation: Object|null, adapted_fields: string[] }>`
+
 ### claw.createGoal(goal)
 Create a goal in the goals tracker.
 

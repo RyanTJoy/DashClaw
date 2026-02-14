@@ -104,6 +104,7 @@ Optional:
 
 ```bash
 node scripts/_run-with-env.mjs scripts/migrate-behavioral-ai.mjs
+node scripts/_run-with-env.mjs scripts/migrate-learning-loop-mvp.mjs
 ```
 
 ### 4) Start app
@@ -136,6 +137,14 @@ npm run convergence:ws1:check
 npm run test -- --run
 npm run sdk:integration
 npm run sdk:integration:python
+```
+
+### Adaptive Learning Loop Ops
+
+```bash
+npm run migrate:learning-loop
+npm run backfill:learning-episodes
+npm run rebuild:learning-recommendations
 ```
 
 ### Convergence Evidence
@@ -198,6 +207,18 @@ claw = DashClaw(
 - snippet automation and bulk sync
 
 Most tools support `--push` to sync data to DashClaw APIs.
+
+## Adaptive Learning Loop (MVP)
+
+- Episode scoring is captured on action outcome updates (`PATCH /api/actions/{actionId}`).
+- Recommendations are served from `/api/learning/recommendations` (`GET`).
+- Recommendation rebuild (`POST /api/learning/recommendations`) is restricted to admin/service role.
+- Automated repair/rebuild cron routes:
+  - `/api/cron/learning-episodes-backfill`
+  - `/api/cron/learning-recommendations`
+
+Reference RFC:
+- `docs/rfcs/2026-02-14-adaptive-learning-loop-mvp.md`
 
 ## Security Model
 
