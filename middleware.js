@@ -424,8 +424,8 @@ export async function middleware(request) {
         return demoJson(request, { error: 'Demo mode: write APIs are disabled.' }, 403);
       }
 
-      // Allow NextAuth internals and raw docs passthrough (these do not write data).
-      if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/docs/raw')) {
+      // Allow NextAuth internals and raw markdown passthrough (these do not write data).
+      if (pathname.startsWith('/api/auth') || pathname.startsWith('/api/docs/raw') || pathname.startsWith('/api/prompts/')) {
         const response = NextResponse.next();
         addSecurityHeaders(response);
         withCors(request, response);
