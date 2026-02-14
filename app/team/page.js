@@ -11,8 +11,10 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
+import { isDemoMode } from '../lib/isDemoMode';
 
 export default function TeamPage() {
+  const isDemo = isDemoMode();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -211,6 +213,7 @@ export default function TeamPage() {
   // Determine if current user is admin
   const currentUser = data?.members?.find((m) => m.is_self);
   const isAdmin = currentUser?.role === 'admin';
+  const canEdit = isAdmin && !isDemo;
   const adminCount = data?.members?.filter((m) => m.role === 'admin').length || 0;
   const isLastAdmin = isAdmin && adminCount <= 1;
 
@@ -252,7 +255,7 @@ export default function TeamPage() {
       subtitle={data?.org ? `${data.org.name} workspace` : 'Manage workspace members'}
       breadcrumbs={['Dashboard', 'Team']}
       actions={
-        isAdmin ? (
+        isAdmin && !isDemo ? (
           <button
             onClick={() => { setShowInviteForm(true); setNewInvite(null); }}
             className="flex items-center gap-1.5 px-3 py-2 bg-brand hover:bg-brand/90 text-white text-sm font-medium rounded-lg transition-colors"
@@ -263,6 +266,11 @@ export default function TeamPage() {
         ) : null
       }
     >
+      {isDemo && (
+        <div className="mb-4 p-3 rounded-lg bg-zinc-500/10 border border-zinc-500/20 text-zinc-300 text-sm">
+          Demo mode: team management is read-only.
+        </div>
+      )}
       {/* Error banner */}
       {error && (
         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400 flex items-center justify-between">
@@ -327,7 +335,7 @@ export default function TeamPage() {
       </div>
 
       {/* Invite form (inline, admin only) */}
-      {showInviteForm && isAdmin && (
+      {showInviteForm && canEdit && (
         <Card hover={false} className="mb-6">
           <CardContent className="pt-5">
             <div className="text-sm font-medium text-zinc-200 mb-3">Create Invite Link</div>
@@ -366,7 +374,7 @@ export default function TeamPage() {
       )}
 
       {/* Pending invites (admin only) */}
-      {isAdmin && invites.length > 0 && (
+      {invites.length > 0 && (
         <Card hover={false} className="mb-6">
           <div className="px-5 py-3 border-b border-[rgba(255,255,255,0.04)]">
             <div className="text-sm font-medium text-zinc-200">Pending Invites</div>
@@ -394,30 +402,34 @@ export default function TeamPage() {
                   </div>
                 </div>
                 <div className="flex-shrink-0">
-                  {revokingId === inv.id ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-zinc-400">Revoke?</span>
+                  {canEdit ? (
+                    revokingId === inv.id ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-400">Revoke?</span>
+                        <button
+                          onClick={() => handleRevokeInvite(inv.id)}
+                          className="px-2.5 py-1 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setRevokingId(null)}
+                          className="px-2.5 py-1 text-xs text-zinc-400 hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={() => handleRevokeInvite(inv.id)}
-                        className="px-2.5 py-1 text-xs font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 transition-colors"
+                        onClick={() => setRevokingId(inv.id)}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs text-zinc-500 hover:text-red-400 transition-colors"
                       >
-                        Confirm
+                        <Ban size={12} />
+                        Revoke
                       </button>
-                      <button
-                        onClick={() => setRevokingId(null)}
-                        className="px-2.5 py-1 text-xs text-zinc-400 hover:text-white transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    )
                   ) : (
-                    <button
-                      onClick={() => setRevokingId(inv.id)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-xs text-zinc-500 hover:text-red-400 transition-colors"
-                    >
-                      <Ban size={12} />
-                      Revoke
-                    </button>
+                    <span className="text-xs text-zinc-600">Read-only</span>
                   )}
                 </div>
               </div>
@@ -476,7 +488,7 @@ export default function TeamPage() {
                 </div>
 
                 {/* Admin actions */}
-                {isAdmin && !member.is_self && (
+                {canEdit && !member.is_self && (
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {/* Role toggle */}
                     {changingRole === member.id ? (

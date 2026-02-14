@@ -12,6 +12,7 @@ import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import { getAgentColor } from '../lib/colors';
+import { isDemoMode } from '../lib/isDemoMode';
 
 const TABS = [
   { key: 'inbox', label: 'Inbox', icon: Inbox },
@@ -42,6 +43,7 @@ function timeAgo(dateStr) {
 
 export default function MessagesPage() {
   const { agentId: filterAgentId } = useAgentFilter();
+  const isDemo = isDemoMode();
   const [tab, setTab] = useState('inbox');
   const [messages, setMessages] = useState([]);
   const [threads, setThreads] = useState([]);
@@ -230,12 +232,18 @@ export default function MessagesPage() {
       actions={
         <button
           onClick={() => setShowCompose(true)}
+          disabled={isDemo}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-brand text-white hover:bg-brand/90 transition-colors"
         >
           <Plus size={14} /> Compose
         </button>
       }
     >
+      {isDemo && (
+        <div className="mb-4 p-3 rounded-lg bg-zinc-500/10 border border-zinc-500/20 text-zinc-300 text-sm">
+          Demo mode: messaging is read-only.
+        </div>
+      )}
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Card hover={false}>
@@ -644,6 +652,7 @@ function DocList({ docs, onSelect, selectedId }) {
 }
 
 function MessageDetail({ message, onMarkRead, onArchive, agentId }) {
+  const isDemo = isDemoMode();
   const agentColor = getAgentColor(message.from_agent_id);
   return (
     <div>
@@ -682,12 +691,14 @@ function MessageDetail({ message, onMarkRead, onArchive, agentId }) {
         <div className="flex gap-2">
           <button
             onClick={() => onMarkRead(message.id)}
+            disabled={isDemo}
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-300 hover:bg-[rgba(255,255,255,0.1)] transition-colors"
           >
             <Eye size={12} /> Mark Read
           </button>
           <button
             onClick={() => onArchive(message.id)}
+            disabled={isDemo}
             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-300 hover:bg-[rgba(255,255,255,0.1)] transition-colors"
           >
             <Archive size={12} /> Archive
