@@ -5,12 +5,14 @@ import NotificationCenter from './NotificationCenter';
 import AgentFilterDropdown from './AgentFilterDropdown';
 import UserMenu from './UserMenu';
 import RealtimeIndicator from './RealtimeIndicator';
+import DemoBanner from './DemoBanner';
 
 export default function PageLayout({ title, subtitle, breadcrumbs, actions, children }) {
   return (
     <div className="flex h-screen">
       <Sidebar />
       <main className="flex-1 overflow-auto">
+        <DemoBanner />
         {/* Page header */}
         <header className="sticky top-0 z-10 bg-surface-primary/80 backdrop-blur-sm border-b border-[rgba(255,255,255,0.06)]">
           <div className="flex items-center justify-between px-6 py-4">

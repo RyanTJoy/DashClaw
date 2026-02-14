@@ -37,10 +37,43 @@ function DevSessionProvider({ children }) {
   );
 }
 
+function DemoSessionProvider({ children }) {
+  const mockSession = {
+    data: {
+      user: {
+        id: 'demo_user',
+        name: 'Demo Viewer',
+        email: 'demo@dashclaw.io',
+        image: null,
+        orgId: 'org_demo',
+        role: 'admin',
+        plan: 'pro',
+      },
+      expires: '9999-12-31T23:59:59.999Z',
+    },
+    status: 'authenticated',
+    update: () => Promise.resolve(),
+  };
+
+  return (
+    <SessionProvider
+      session={mockSession.data}
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
+    >
+      {children}
+    </SessionProvider>
+  );
+}
+
 export default function SessionWrapper({ children }) {
   // Demo mode is a public, read-only sandbox. Avoid NextAuth session fetches entirely.
   if (isDemoMode()) {
-    return <AgentFilterProvider>{children}</AgentFilterProvider>;
+    return (
+      <DemoSessionProvider>
+        <AgentFilterProvider>{children}</AgentFilterProvider>
+      </DemoSessionProvider>
+    );
   }
 
   if (process.env.NODE_ENV === 'development') {
