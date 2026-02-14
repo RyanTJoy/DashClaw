@@ -94,14 +94,6 @@ const platformCoverage = [
   },
 ];
 
-const convergenceStatus = [
-  { id: 'WS1', name: 'Data Access Convergence', status: 'Done' },
-  { id: 'WS2', name: 'API Contract Governance', status: 'Done' },
-  { id: 'WS3', name: 'Realtime Reliability', status: 'Done' },
-  { id: 'WS4', name: 'Documentation Governance', status: 'Done' },
-  { id: 'WS5', name: 'SDK Core Parity', status: 'Done' },
-];
-
 /* ─── page ─── */
 
 export default function LandingPage() {
@@ -126,11 +118,10 @@ export default function LandingPage() {
             Guard what they do before they do it.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">M1-M4 shipped</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">WS1 acceptance met</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">WS2/WS3/WS4/WS5 acceptance met</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">59 SDK methods</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python parity track</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Behavior guardrails</span>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
@@ -237,25 +228,6 @@ export default function LandingPage() {
             })}
           </div>
 
-          <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111] p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-base font-semibold text-zinc-100">Platform convergence status (February 14, 2026)</h3>
-              <Link href="/docs#platform-overview" className="inline-flex items-center gap-1 text-sm text-brand hover:text-brand-hover">
-                Full status details <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {convergenceStatus.map((ws) => (
-                <div key={ws.id} className="rounded-lg border border-[rgba(255,255,255,0.06)] bg-[#0d0d0d] p-3">
-                  <p className="text-[11px] font-mono text-zinc-500">{ws.id}</p>
-                  <p className="mt-1 text-sm font-medium text-zinc-200">{ws.name}</p>
-                  <p className={`mt-2 text-xs ${ws.status === 'Done' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {ws.status}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 

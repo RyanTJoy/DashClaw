@@ -95,7 +95,6 @@ function SectionNav({ items }) {
 /* ─── nav items for sidebar ─── */
 
 const navItems = [
-  { href: '#platform-overview', label: 'Platform Overview' },
   { href: '#quick-start', label: 'Quick Start' },
   { href: '#constructor', label: 'Constructor' },
   { href: '#action-recording', label: 'Action Recording' },
@@ -209,56 +208,6 @@ export default function DocsPage() {
         <SectionNav items={navItems} />
 
         <div className="min-w-0 flex-1">
-
-          <section id="platform-overview" className="scroll-mt-20 pb-12 border-b border-[rgba(255,255,255,0.06)]">
-            <h2 className="text-2xl font-bold tracking-tight mb-2">Platform Overview</h2>
-            <p className="text-sm text-zinc-400 mb-6">
-              DashClaw includes the dashboard, API layer, realtime streaming, governance controls, and Node/Python SDKs.
-              As of February 14, 2026: M1-M4 are shipped and WS1-WS5 acceptance criteria are met.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-              {[
-                {
-                  title: 'WS1 Data Access Convergence',
-                  status: 'Done',
-                  detail: 'Repository contracts, migrated critical handlers, route-level SQL CI guard, and p95 regression evidence checks are complete.',
-                },
-                {
-                  title: 'WS2 API Contract Governance',
-                  status: 'Done',
-                  detail: 'OpenAPI generation/checks, maturity inventory, and CI enforcement for stable APIs.',
-                },
-                {
-                  title: 'WS3 Realtime Reliability',
-                  status: 'Done',
-                  detail: 'Broker-backed SSE with replay support and production cutover runbook.',
-                },
-                {
-                  title: 'WS4 Documentation Governance',
-                  status: 'Done',
-                  detail: 'Canonical docs hierarchy, metadata headers, and docs validation in CI.',
-                },
-                {
-                  title: 'WS5 SDK Core Parity',
-                  status: 'Done',
-                  detail: 'Critical-domain Node/Python parity and cross-SDK integration suite are complete with CI enforcement.',
-                },
-              ].map((ws) => (
-                <div key={ws.title} className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111] p-4">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-semibold text-zinc-100">{ws.title}</h3>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${ws.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
-                      {ws.status}
-                    </span>
-                  </div>
-                  <p className="text-xs leading-relaxed text-zinc-400">{ws.detail}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-zinc-500">
-              Source of truth: <code className="font-mono text-zinc-400">docs/rfcs/platform-convergence.md</code> and <code className="font-mono text-zinc-400">docs/rfcs/platform-convergence-status.md</code>.
-            </p>
-          </section>
 
           {/* ── Quick Start ── */}
           <section id="quick-start" className="scroll-mt-20 pb-12 border-b border-[rgba(255,255,255,0.06)]">
