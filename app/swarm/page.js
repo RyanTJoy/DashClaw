@@ -12,7 +12,7 @@ import { Badge } from '../components/ui/Badge';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
-import isDemoMode from '../lib/isDemoMode';
+import { isDemoMode } from '../lib/isDemoMode';
 
 export default function SwarmIntelligencePage() {
   const router = useRouter();
