@@ -30,8 +30,9 @@ export default function NotificationsPage() {
     async function loadPreferences() {
       try {
         const res = await fetch('/api/notifications');
+        const data = await res.json().catch(() => ({}));
+
         if (res.ok) {
-          const data = await res.json();
           const emailPref = data.preferences?.find(p => p.channel === 'email');
 
           if (emailPref) {
@@ -44,11 +45,9 @@ export default function NotificationsPage() {
             setOriginalPrefs({ enabled: false, types: [] });
           }
         }
-        // Check if RESEND_API_KEY is configured (API will return this info)
-        if (res.status === 200) {
-          const data = await res.json();
-          setResendConfigured(data.resend_configured !== false);
-        }
+
+        // Check if RESEND_API_KEY is configured (API includes this info).
+        if (res.ok) setResendConfigured(data.resend_configured !== false);
       } catch (err) {
         console.error('Failed to load notification preferences:', err);
       } finally {

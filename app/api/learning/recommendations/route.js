@@ -146,6 +146,17 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error('Learning recommendations GET error:', error);
+    // If the learning-loop schema hasn't been migrated yet, treat as "feature disabled" instead of hard-failing the UI.
+    if (String(error?.code || '').includes('42P01') || String(error?.message || '').includes('does not exist')) {
+      return NextResponse.json({
+        recommendations: [],
+        metrics: null,
+        lookback_days: 30,
+        total: 0,
+        schema_missing: true,
+        lastUpdated: new Date().toISOString(),
+      });
+    }
     return NextResponse.json(
       { error: 'An error occurred while fetching learning recommendations', recommendations: [], total: 0 },
       { status: 500 }

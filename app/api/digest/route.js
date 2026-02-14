@@ -17,22 +17,34 @@ export async function GET(request) {
     const dayStart = `${date}T00:00:00.000Z`;
     const dayEnd = `${date}T23:59:59.999Z`;
 
+    const isMissingTable = (err) =>
+      String(err?.code || '').includes('42P01') || String(err?.message || '').includes('does not exist');
+
+    const safe = async (promise) => {
+      try {
+        return await promise;
+      } catch (err) {
+        if (isMissingTable(err)) return [];
+        throw err;
+      }
+    };
+
     const queries = agentId ? [
-      sql`SELECT * FROM action_records WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp_start >= ${dayStart} AND timestamp_start <= ${dayEnd} ORDER BY timestamp_start DESC`,
-      sql`SELECT * FROM decisions WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`,
-      sql`SELECT * FROM lessons WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`,
-      sql`SELECT * FROM content WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`,
-      sql`SELECT * FROM ideas WHERE org_id = ${orgId} AND captured_at >= ${dayStart} AND captured_at <= ${dayEnd} ORDER BY captured_at DESC`,
-      sql`SELECT * FROM interactions WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`,
-      sql`SELECT * FROM goals WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`,
+      safe(sql`SELECT * FROM action_records WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp_start >= ${dayStart} AND timestamp_start <= ${dayEnd} ORDER BY timestamp_start DESC`),
+      safe(sql`SELECT * FROM decisions WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
+      safe(sql`SELECT * FROM lessons WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
+      safe(sql`SELECT * FROM content WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
+      safe(sql`SELECT * FROM ideas WHERE org_id = ${orgId} AND captured_at >= ${dayStart} AND captured_at <= ${dayEnd} ORDER BY captured_at DESC`),
+      safe(sql`SELECT * FROM interactions WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
+      safe(sql`SELECT * FROM goals WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
     ] : [
-      sql`SELECT * FROM action_records WHERE org_id = ${orgId} AND timestamp_start >= ${dayStart} AND timestamp_start <= ${dayEnd} ORDER BY timestamp_start DESC`,
-      sql`SELECT * FROM decisions WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`,
-      sql`SELECT * FROM lessons WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`,
-      sql`SELECT * FROM content WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`,
-      sql`SELECT * FROM ideas WHERE org_id = ${orgId} AND captured_at >= ${dayStart} AND captured_at <= ${dayEnd} ORDER BY captured_at DESC`,
-      sql`SELECT * FROM interactions WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`,
-      sql`SELECT * FROM goals WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`,
+      safe(sql`SELECT * FROM action_records WHERE org_id = ${orgId} AND timestamp_start >= ${dayStart} AND timestamp_start <= ${dayEnd} ORDER BY timestamp_start DESC`),
+      safe(sql`SELECT * FROM decisions WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
+      safe(sql`SELECT * FROM lessons WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
+      safe(sql`SELECT * FROM content WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
+      safe(sql`SELECT * FROM ideas WHERE org_id = ${orgId} AND captured_at >= ${dayStart} AND captured_at <= ${dayEnd} ORDER BY captured_at DESC`),
+      safe(sql`SELECT * FROM interactions WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
+      safe(sql`SELECT * FROM goals WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
     ];
 
     const [actions, decisions, lessons, content, ideas, interactions, goals] = await Promise.all(queries);
