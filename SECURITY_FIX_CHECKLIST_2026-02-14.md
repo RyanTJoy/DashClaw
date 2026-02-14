@@ -27,6 +27,10 @@ Status legend:
 - [x] Reduce `/api/health` info leakage (no raw backend error messages in response).
 - [x] Bound in-memory caches in `middleware.js` (rateLimitMap + apiKeyCache) and reduce spoofable-IP impact for self-host.
 - [x] Redact sensitive patterns before sending content to third-party LLMs (OpenAI embeddings + semantic guardrail).
+- [x] Rate limit public `/api/*` endpoints (including `PUBLIC_ROUTES`) to reduce DoS and brute-force pressure.
+- [x] Strengthen CSP directives (without removing Next.js-required allowances).
+- [x] Optional guard webhook authentication (HMAC via `GUARD_WEBHOOK_SECRET`).
+- [x] DLP-redact webhook delivery logs before persisting (payload/response_body).
 
 ## Data Handling (At-Rest DLP)
 

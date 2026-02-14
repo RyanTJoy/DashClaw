@@ -6,6 +6,7 @@
 import crypto from 'crypto';
 import dns from 'node:dns/promises';
 import net from 'node:net';
+import { scanSensitiveData } from './security.js';
 
 function isPrivateIp(ip) {
   if (!ip || typeof ip !== 'string') return true;
@@ -67,6 +68,16 @@ export function signPayload(payload, secret) {
   return crypto.createHmac('sha256', secret).update(payload).digest('hex');
 }
 
+function redactForStorage(value) {
+  if (typeof value !== 'string' || value.length === 0) return value;
+  return scanSensitiveData(value).redacted;
+}
+
+function signGuardWebhookPayload({ timestamp, payload, secret }) {
+  const msg = `${timestamp}.${payload}`;
+  return crypto.createHmac('sha256', secret).update(msg).digest('hex');
+}
+
 /**
  * Deliver a webhook: POST payload to url, log result to webhook_deliveries.
  *
@@ -121,9 +132,11 @@ export async function deliverWebhook({ webhookId, orgId, url, secret, eventType,
   const durationMs = Date.now() - start;
 
   // Log delivery
+  const storedPayload = redactForStorage(payloadStr);
+  const storedResponseBody = redactForStorage(responseBody);
   sql`
     INSERT INTO webhook_deliveries (id, webhook_id, org_id, event_type, payload, status, response_status, response_body, attempted_at, duration_ms)
-    VALUES (${deliveryId}, ${webhookId}, ${orgId}, ${eventType}, ${payloadStr}, ${status}, ${responseStatus}, ${responseBody}, ${now}, ${durationMs})
+    VALUES (${deliveryId}, ${webhookId}, ${orgId}, ${eventType}, ${storedPayload}, ${status}, ${responseStatus}, ${storedResponseBody}, ${now}, ${durationMs})
   `.catch((err) => {
     console.error('[WEBHOOK] Failed to log delivery:', err.message);
   });
@@ -153,6 +166,13 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs || 5000);
 
+    // Optional signing for guard webhooks (global secret).
+    const guardSecret = process.env.GUARD_WEBHOOK_SECRET || '';
+    const guardTs = String(Date.now());
+    const guardSig = guardSecret
+      ? signGuardWebhookPayload({ timestamp: guardTs, payload: payloadStr, secret: guardSecret })
+      : null;
+
     const res = await fetch(url, {
       method: 'POST',
       redirect: 'manual', // SECURITY: prevent SSRF via redirects
@@ -160,6 +180,7 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
         'Content-Type': 'application/json',
         'X-DashClaw-Event': 'guard.evaluation',
         'X-DashClaw-Delivery': deliveryId,
+        ...(guardSig ? { 'X-DashClaw-Timestamp': guardTs, 'X-DashClaw-Signature': `v1=${guardSig}` } : {}),
         'User-Agent': 'DashClaw-Guard/1.0',
       },
       body: payloadStr,
@@ -190,9 +211,11 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
   const durationMs = Date.now() - start;
 
   // Log delivery (use policyId as webhook_id for guard webhooks)
+  const storedPayload = redactForStorage(payloadStr);
+  const storedResponseBody = redactForStorage(responseBody);
   sql`
     INSERT INTO webhook_deliveries (id, webhook_id, org_id, event_type, payload, status, response_status, response_body, attempted_at, duration_ms)
-    VALUES (${deliveryId}, ${policyId}, ${orgId}, ${'guard.evaluation'}, ${payloadStr}, ${status}, ${responseStatus}, ${responseBody}, ${now}, ${durationMs})
+    VALUES (${deliveryId}, ${policyId}, ${orgId}, ${'guard.evaluation'}, ${storedPayload}, ${status}, ${responseStatus}, ${storedResponseBody}, ${now}, ${durationMs})
   `.catch((err) => {
     console.error('[GUARD WEBHOOK] Failed to log delivery:', err.message);
   });

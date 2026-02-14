@@ -13,10 +13,18 @@ const nextConfig = {
       "default-src 'self'",
       // In dev mode, Next.js needs 'unsafe-eval' for hot reloading
       `script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ''}`,
+      // Disallow inline event handlers like onclick="..."
+      "script-src-attr 'none'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com",
       "font-src 'self' data:",
       "connect-src 'self' https://*.neon.tech https://github.com https://accounts.google.com https://checkout.stripe.com https://billing.stripe.com",
+      "base-uri 'none'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      'upgrade-insecure-requests',
+      'block-all-mixed-content',
     ].join('; ');
 
     return [
