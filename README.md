@@ -1,8 +1,8 @@
+# [DashClaw:](https://www.dashclaw.io/) AI Agent Observability and Governance Platform
 ![DashClaw](public/images/screenshots/dash1.png)
 
-[DashClaw](https://www.dashclaw.io/) is a production-focused AI agent observability and governance platform.
+## It Combines
 
-It combines:
 - A customer-facing website (`/`) and operations dashboard (`/dashboard`)
 - A live demo sandbox (`/demo`) that shows the real dashboard UI with fake data (read-only, no login)
 - A Next.js API control plane (`app/api/*`)
@@ -54,6 +54,8 @@ It combines:
 4. Critical events publish through realtime backend for SSE subscribers.
 5. Dashboard/UI consumes API data + realtime updates.
 6. CI gates enforce contracts, SQL guardrails, docs consistency, SDK parity, and latency regression checks.
+
+## ![DashClaw](public/images/screenshots/security.png)
 
 ## Quick Start (Local)
 
@@ -220,8 +222,11 @@ Most tools support `--push` to sync data to DashClaw APIs.
   - `/api/cron/learning-episodes-backfill`
   - `/api/cron/learning-recommendations`
 
-Reference RFC:
-- `docs/rfcs/2026-02-14-adaptive-learning-loop-mvp.md`
+## Swarm Intelligence
+![DashClaw](public/images/screenshots/swarm-intelligence.png)
+- Swarm Intelligence (multi-agent map): See how your agents coordinate in real time, with communication edges and per-agent context so you can spot bottlenecks, risky hubs, and “who depends on who” at a glance.
+- Click-to-drill: Select any agent node to pull up its recent actions, messages, guard decisions, workflows, and pending approvals.
+- Operational clarity: Makes emergent behavior visible so you can catch runaway loops, fragile dependencies, and high-risk clusters before they become incidents.
 
 ## Security Model
 
@@ -260,6 +265,8 @@ For production, configure:
 - SDK parity matrix: `docs/sdk-parity.md`
 - SSE cutover runbook: `docs/rfcs/2026-02-13-sse-cutover-runbook.md`
 - Contribution guide: `CONTRIBUTING.md`
+
+# **More screenshots in /public/images/screenshots**
 
 ## Contributing
 
