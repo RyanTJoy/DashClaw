@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import isDemoMode from '../lib/isDemoMode';
+import { isDemoMode } from '../lib/isDemoMode';
 
 // Shared EventSource per browser tab. Multiple components can subscribe without
 // opening multiple /api/stream connections (which triggers backend listener warnings).
