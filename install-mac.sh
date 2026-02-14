@@ -37,6 +37,8 @@ fi
 echo -e "${GREEN}[OK]${NC} Node.js found: $(node --version)"
 echo ""
 
+DATABASE_URL=""
+
 # Check for .env.local
 if [ ! -f ".env.local" ]; then
     echo ""
@@ -50,17 +52,28 @@ if [ ! -f ".env.local" ]; then
     echo "2. Create a new project"
     echo "3. Copy the connection string (starts with postgresql://)"
     echo ""
-    
+
     read -p "Paste your DATABASE_URL here: " DATABASE_URL
-    
+
     if [ -z "$DATABASE_URL" ]; then
         echo -e "${RED}[ERROR] No DATABASE_URL provided. Exiting.${NC}"
         exit 1
     fi
-    
-    echo "DATABASE_URL=$DATABASE_URL" > .env.local
+fi
+
+echo ""
+echo "[STEP 0/3] Initializing .env.local (secrets + API key)..."
+echo ""
+if [ -z "$DATABASE_URL" ]; then
+    node scripts/init-self-host-env.mjs
+else
+    node scripts/init-self-host-env.mjs --database-url "$DATABASE_URL"
+fi
+
+if [ $? -ne 0 ]; then
     echo ""
-    echo -e "${GREEN}[OK]${NC} Created .env.local with your database URL"
+    echo -e "${RED}[ERROR] Failed to initialize .env.local${NC}"
+    exit 1
 fi
 
 echo ""

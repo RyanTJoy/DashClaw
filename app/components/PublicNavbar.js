@@ -12,6 +12,8 @@ export default function PublicNavbar() {
           <span className="text-lg font-semibold text-white">DashClaw</span>
         </Link>
         <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
+          <Link href="/demo" className="hover:text-white transition-colors">Live Demo</Link>
+          <Link href="/self-host" className="hover:text-white transition-colors">Self-Host</Link>
           <Link href="/toolkit" className="hover:text-white transition-colors">Toolkit</Link>
           <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
           <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
@@ -26,8 +28,14 @@ export default function PublicNavbar() {
           <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
-            Dashboard
+          <Link href="/demo" className="px-4 py-1.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
+            Live Demo
+          </Link>
+          <Link href="/self-host" className="hidden sm:inline-flex px-4 py-1.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors">
+            Self-Host
+          </Link>
+          <Link href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">
+            Login
           </Link>
         </div>
       </div>

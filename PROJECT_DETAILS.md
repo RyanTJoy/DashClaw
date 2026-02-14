@@ -333,7 +333,7 @@ function getSql() {
   - `GET/POST /api/actions/loops` — list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` — single loop + resolve/cancel
   - `GET /api/actions/signals` — 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/dashclaw.js` — 59 methods across 13 categories (see `docs/client-setup-guide.md` for current method reference)
+- SDK: `sdk/dashclaw.js` — 60+ methods across 13 categories (see `docs/client-setup-guide.md` for current method reference)
 - Tests: `scripts/test-actions.mjs` — ~95 assertions across 11 phases
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
@@ -674,7 +674,7 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 ## Deployment
 
 ### Vercel (Production)
-- **URL**: https://dash-claw.vercel.app
+- **URL**: http://localhost:3000
 - **Project**: `ucsandmans-projects/dash-claw`
 - **GitHub**: Connected — auto-deploys on push to `main`
 - **Region**: Washington, D.C. (iad1)
@@ -704,7 +704,7 @@ git push origin main         # Auto-deploy via GitHub integration
 Agents connect to the deployed API — they only need the base URL and an API key:
 ```js
 const claw = new DashClaw({
-  baseUrl: 'https://dash-claw.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
@@ -733,7 +733,7 @@ pip install .
 from dashclaw import DashClaw
 
 claw = DashClaw(
-    base_url='https://dash-claw.vercel.app',
+    base_url='http://localhost:3000',
     api_key=os.environ['DASHCLAW_API_KEY'],
     agent_id='my-python-agent'
 )
@@ -749,7 +749,7 @@ import { DashClaw } from 'dashclaw';
 // or: import { OpenClawAgent } from 'dashclaw';  // backward compat
 
 const claw = new DashClaw({
-  baseUrl: 'https://dash-claw.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',

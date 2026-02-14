@@ -11,7 +11,7 @@
  *   --dir          Agent workspace directory (required)
  *   --agent-id     Agent identifier (required)
  *   --agent-name   Human-readable agent name
- *   --base-url     API base URL (default: https://dash-claw.vercel.app)
+ *   --base-url     API base URL (default: http://localhost:3000)
  *   --api-key      API key (falls back to DASHCLAW_API_KEY / DASHCLAW_API_KEY env)
  *   --local        Shorthand for --base-url http://localhost:3000
  *   --dry-run      Print discovered data without pushing
@@ -676,7 +676,7 @@ async function main() {
   // Live mode — push via SDK
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : (args.baseUrl || 'https://dash-claw.vercel.app');
+    : (args.baseUrl || 'http://localhost:3000');
   const apiKey = args.apiKey || process.env.DASHCLAW_API_KEY;
 
   if (!apiKey) {

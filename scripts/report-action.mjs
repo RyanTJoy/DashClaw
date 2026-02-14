@@ -285,7 +285,7 @@ async function main() {
 
   const baseUrl = args.local
     ? 'http://localhost:3000'
-    : 'https://dash-claw.vercel.app';
+    : 'http://localhost:3000';
   const apiKey = process.env.DASHCLAW_API_KEY;
 
   if (!apiKey && !args.local) {

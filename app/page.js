@@ -35,7 +35,7 @@ const coreFeatures = [
 const platformFeatures = [
   { icon: Package, title: 'Node.js & Python SDKs', description: 'Zero-dependency clients for both ecosystems. Native adapters for CrewAI, AutoGen, and LangChain.' },
   { icon: ShieldAlert, title: 'HITL Governance', description: 'Real-time Approval Queue. Agents pause and wait for human sign-off on sensitive operations.' },
-  { icon: Shield, title: 'Identity Binding', description: 'RSA-PSS cryptographic verification ensures every action is signed by your agent\'s private key.' },
+  { icon: Shield, title: 'Identity Binding', description: 'Optional RSA signature verification binds actions to an approved agent identity.' },
   { icon: Brain, title: 'Memory Health', description: 'Proactive maintenance engine identifies stale facts and sends corrective messages to agents.' },
   { icon: ScanSearch, title: 'DLP & Redaction', description: 'Automatic secret redaction (OpenAI, AWS, GitHub) in messages and handoffs before data is stored.' },
   { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
@@ -151,18 +151,21 @@ export default function LandingPage() {
             Guard what they do before they do it.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">59 SDK methods</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">60+ SDK methods</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Behavior guardrails</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Adaptive recommendation metrics</span>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
-              Go to Dashboard <ArrowRight size={16} />
+            <Link href="/demo" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
+              Live Demo <ArrowRight size={16} />
             </Link>
-            <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
-              <BookOpen size={16} /> Read the Docs
+            <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
+              <Terminal size={16} /> Self-Host
+            </Link>
+            <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.06)] text-zinc-300 text-sm font-medium hover:bg-[#181818] hover:text-white transition-colors inline-flex items-center gap-2">
+              <BookOpen size={16} /> Docs
             </Link>
           </div>
         </div>
@@ -292,7 +295,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
                 <Package size={12} />
-                59 methods across 13 categories
+                60+ methods across 13 categories
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">
@@ -482,11 +485,11 @@ export default function LandingPage() {
             Install the SDK, send your first action, and see signals on the dashboard. Open-source and self-hosted.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
-              Go to Dashboard <ArrowRight size={16} />
+            <Link href="/demo" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
+              Live Demo <ArrowRight size={16} />
             </Link>
-            <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
-              <BookOpen size={16} /> Read the Docs
+            <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
+              <Terminal size={16} /> Self-Host
             </Link>
           </div>
         </div>
@@ -516,9 +519,9 @@ export default function LandingPage() {
               <Terminal size={14} />
               Toolkit
             </Link>
-            <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+            <Link href="/demo" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />
-              Dashboard
+              Live Demo
             </Link>
           </div>
         </div>

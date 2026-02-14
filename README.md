@@ -4,6 +4,7 @@
 
 It combines:
 - A customer-facing website (`/`) and operator dashboard (`/dashboard`)
+- A live demo sandbox (`/demo`) for “show me what this is” (read-only)
 - A Next.js API control plane (`app/api/*`)
 - Realtime SSE streaming with replay (`/api/stream`)
 - Node and Python SDKs for agent instrumentation
@@ -22,7 +23,9 @@ It combines:
 ## Product Surfaces
 
 - `http://localhost:3000/`: public/customer-facing site
-- `http://localhost:3000/dashboard`: authenticated operations dashboard
+- `http://localhost:3000/demo`: live demo (read-only sample data)
+- `http://localhost:3000/self-host`: self-host instructions
+- `http://localhost:3000/dashboard`: authenticated operations dashboard (your real data; self-hosted)
 - `http://localhost:3000/docs`: SDK and platform documentation
 - `http://localhost:3000/toolkit`: agent tools overview
 

@@ -3,6 +3,11 @@
 import { SessionProvider } from 'next-auth/react';
 import { AgentFilterProvider } from '../lib/AgentFilterContext';
 
+function isDemoMode() {
+  // Client-side env must be NEXT_PUBLIC_*.
+  return process.env.NEXT_PUBLIC_DASHCLAW_MODE === 'demo';
+}
+
 // Mock session provider for development to bypass login
 function DevSessionProvider({ children }) {
   // Hardcoded "session" that mimics NextAuth structure
@@ -33,6 +38,11 @@ function DevSessionProvider({ children }) {
 }
 
 export default function SessionWrapper({ children }) {
+  // Demo mode is a public, read-only sandbox. Avoid NextAuth session fetches entirely.
+  if (isDemoMode()) {
+    return <AgentFilterProvider>{children}</AgentFilterProvider>;
+  }
+
   if (process.env.NODE_ENV === 'development') {
     return (
       <DevSessionProvider>

@@ -146,7 +146,7 @@ export default function GalleryPage() {
             <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
             <Link href="/toolkit" className="hover:text-zinc-300">Toolkit</Link>
             <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/dashboard" className="hover:text-zinc-300">Dashboard</Link>
+            <Link href="/self-host" className="hover:text-zinc-300">Self-Host</Link>
           </div>
         </div>
       </footer>
