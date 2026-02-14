@@ -34,7 +34,7 @@ Goal: support both:
   - [x] `scripts/rebuild-learning-recommendations.mjs`
   - [x] `scripts/backfill-embeddings.mjs`
 - [x] Add TCP Postgres dependency: `postgres` (in `package.json` / `package-lock.json`)
-- [ ] Convert remaining API routes off direct `neon(...)` to `getSql()`:
+- [x] Convert remaining API routes off direct `neon(...)` to `getSql()`:
   - [x] `app/api/digest/route.js`
   - [x] `app/api/goals/route.js`
   - [x] `app/api/content/route.js`
@@ -72,8 +72,8 @@ Goal: support both:
   - [x] `app/api/orgs/[orgId]/keys/route.js`
   - [ ] `app/api/settings/test/route.js` (intentionally Neon-only; keep SSRF allowlist strict)
 - [ ] Validate local DB end-to-end (Docker Postgres + migrations + `npm run dev`)
-- [ ] Run CI parity checks locally (`npm run lint`, `npm run build`, `npm run route-sql:check`)
-- [ ] Commit + push
+- [x] Run CI parity checks locally (`npm run lint`, `npm run build`, `npm run route-sql:check`)
+- [x] Commit + push
 
 ## Current Status (Where We Are)
 
