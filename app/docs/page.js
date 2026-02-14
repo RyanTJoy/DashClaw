@@ -9,7 +9,7 @@ import PublicNavbar from '../components/PublicNavbar';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
-  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 57 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 59 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.',
 };
 
 /* ─── helpers ─── */
@@ -95,10 +95,12 @@ function SectionNav({ items }) {
 /* ─── nav items for sidebar ─── */
 
 const navItems = [
+  { href: '#platform-overview', label: 'Platform Overview' },
   { href: '#quick-start', label: 'Quick Start' },
   { href: '#constructor', label: 'Constructor' },
   { href: '#action-recording', label: 'Action Recording' },
   { href: '#createAction', label: 'createAction', indent: true },
+  { href: '#waitForApproval', label: 'waitForApproval', indent: true },
   { href: '#updateOutcome', label: 'updateOutcome', indent: true },
   { href: '#track', label: 'track', indent: true },
   { href: '#getActions', label: 'getActions', indent: true },
@@ -118,6 +120,7 @@ const navItems = [
   { href: '#guard', label: 'guard', indent: true },
   { href: '#getGuardDecisions', label: 'getGuardDecisions', indent: true },
   { href: '#dashboard-data', label: 'Dashboard Data' },
+  { href: '#reportTokenUsage', label: 'reportTokenUsage', indent: true },
   { href: '#recordDecision', label: 'recordDecision', indent: true },
   { href: '#createGoal', label: 'createGoal', indent: true },
   { href: '#recordContent', label: 'recordContent', indent: true },
@@ -194,8 +197,8 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK. 57 methods to instrument your AI agents with
-            action recording, context management, session handoffs, security scanning, and more.
+            Full reference for the DashClaw SDK. 59 methods across 13 categories to instrument your AI agents with
+            action recording, governance, context management, session handoffs, security scanning, and more.
           </p>
           <CopyDocsButton />
         </div>
@@ -206,6 +209,56 @@ export default function DocsPage() {
         <SectionNav items={navItems} />
 
         <div className="min-w-0 flex-1">
+
+          <section id="platform-overview" className="scroll-mt-20 pb-12 border-b border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-2xl font-bold tracking-tight mb-2">Platform Overview</h2>
+            <p className="text-sm text-zinc-400 mb-6">
+              DashClaw includes the dashboard, API layer, realtime streaming, governance controls, and Node/Python SDKs.
+              As of February 14, 2026: M1-M3 are complete and M4 is in progress.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              {[
+                {
+                  title: 'WS1 Data Access Convergence',
+                  status: 'Done',
+                  detail: 'Repository contracts, migrated critical handlers, and route-level SQL CI guard.',
+                },
+                {
+                  title: 'WS2 API Contract Governance',
+                  status: 'Done',
+                  detail: 'OpenAPI generation/checks, maturity inventory, and CI enforcement for stable APIs.',
+                },
+                {
+                  title: 'WS3 Realtime Reliability',
+                  status: 'Done',
+                  detail: 'Broker-backed SSE with replay support and production cutover runbook.',
+                },
+                {
+                  title: 'WS4 Documentation Governance',
+                  status: 'Done',
+                  detail: 'Canonical docs hierarchy, metadata headers, and docs validation in CI.',
+                },
+                {
+                  title: 'WS5 SDK Core Parity',
+                  status: 'In Progress',
+                  detail: 'Python parity delivered for WS5 M2/M3; cross-SDK integration suite remains.',
+                },
+              ].map((ws) => (
+                <div key={ws.title} className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111] p-4">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-semibold text-zinc-100">{ws.title}</h3>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${ws.status === 'Done' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                      {ws.status}
+                    </span>
+                  </div>
+                  <p className="text-xs leading-relaxed text-zinc-400">{ws.detail}</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-zinc-500">
+              Source of truth: <code className="font-mono text-zinc-400">docs/rfcs/platform-convergence.md</code> and <code className="font-mono text-zinc-400">docs/rfcs/platform-convergence-status.md</code>.
+            </p>
+          </section>
 
           {/* ── Quick Start ── */}
           <section id="quick-start" className="scroll-mt-20 pb-12 border-b border-[rgba(255,255,255,0.06)]">
@@ -354,6 +407,29 @@ try {
   systems_touched: ['kubernetes', 'auth-service'],
   reasoning: 'Scheduled release after QA approval',
 });`}
+            />
+
+            <MethodEntry
+              id="waitForApproval"
+              signature="claw.waitForApproval(actionId, options?)"
+              description="Poll for human approval when an action enters pending_approval status. Useful with hitlMode='off' when you want explicit control over blocking behavior."
+              params={[
+                { name: 'actionId', type: 'string', required: true, desc: 'The pending action_id to poll' },
+                { name: 'options.timeout', type: 'number', required: false, desc: 'Maximum wait in ms (default: 300000)' },
+                { name: 'options.interval', type: 'number', required: false, desc: 'Polling interval in ms (default: 5000)' },
+              ]}
+              returns="Promise<{ action: Object, action_id: string }>"
+              example={`const { action_id } = await claw.createAction({
+  action_type: 'deploy',
+  declared_goal: 'Ship release candidate',
+});
+
+const approval = await claw.waitForApproval(action_id, {
+  timeout: 180000,
+  interval: 3000,
+});
+
+console.log('Approved status:', approval.action.status);`}
             />
 
             <MethodEntry
@@ -707,6 +783,27 @@ console.log(\`\${stats.blocks_24h} blocks in last 24h\`);`}
               <h2 className="text-2xl font-bold tracking-tight">Dashboard Data</h2>
             </div>
             <p className="text-sm text-zinc-400 mb-4">Push data from your agent directly to the DashClaw dashboard. All methods auto-attach the agent&apos;s agentId.</p>
+
+            <MethodEntry
+              id="reportTokenUsage"
+              signature="claw.reportTokenUsage(usage)"
+              description="Report token and model-usage snapshots for cost/burn-rate analytics. API remains available even when token widgets are disabled in certain dashboard modes."
+              params={[
+                { name: 'tokens_in', type: 'number', required: true, desc: 'Input tokens consumed' },
+                { name: 'tokens_out', type: 'number', required: true, desc: 'Output tokens generated' },
+                { name: 'context_used', type: 'number', required: false, desc: 'Context window tokens used' },
+                { name: 'context_max', type: 'number', required: false, desc: 'Maximum context window size' },
+                { name: 'model', type: 'string', required: false, desc: 'Model identifier (e.g., gpt-4o-mini)' },
+              ]}
+              returns="Promise<{ snapshot: Object }>"
+              example={`await claw.reportTokenUsage({
+  tokens_in: 1234,
+  tokens_out: 980,
+  context_used: 2214,
+  context_max: 128000,
+  model: 'gpt-4o',
+});`}
+            />
 
             <MethodEntry
               id="recordDecision"
