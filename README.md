@@ -1,6 +1,6 @@
-# DashClaw
+![DashClaw](public/images/screenshots/Website.png)
 
-DashClaw is a production-focused AI agent observability and governance platform.
+[DashClaw](https://www.dashclaw.io/) is a production-focused AI agent observability and governance platform.
 
 It combines:
 - A customer-facing website (`/`) and operator dashboard (`/dashboard`)
@@ -8,20 +8,6 @@ It combines:
 - Realtime SSE streaming with replay (`/api/stream`)
 - Node and Python SDKs for agent instrumentation
 - A local Python agent-tool suite for workflow, memory, and security operations
-
-As of **February 14, 2026**, the Platform Convergence program is complete and archived in:
-- `docs/rfcs/platform-convergence.md`
-- `docs/rfcs/platform-convergence-status.md`
-
-## Archived Program Status (Platform Convergence, February 14, 2026)
-
-| Workstream | Status |
-|---|---|
-| WS1 Data Access Convergence | met |
-| WS2 API Contract Governance | met |
-| WS3 Realtime Reliability | met |
-| WS4 Documentation Governance | met |
-| WS5 SDK Core Parity | met |
 
 ## What This Repository Contains
 
@@ -271,3 +257,12 @@ See `CONTRIBUTING.md`.
 ## License
 
 MIT (`LICENSE`).
+
+## Tips (I'm broke)
+
+Coffee: [Buy me a coffee](https://buymeacoffee.com/wes_sander)
+
+Venmo: [@Wes_Sander](https://account.venmo.com/u/Wes_Sander)
+
+![Venmo: @Wes_Sander](public/images/venmo.png)
+
