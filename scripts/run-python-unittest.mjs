@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import fs from 'node:fs';
+import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const testArgs = ['-m', 'unittest', 'discover', '-s', 'sdk-python/tests', '-p', 'test_ws5_m4_integration.py'];
+const testArgs = ['-m', 'unittest', 'discover', '-s', 'sdk-python/tests', '-p', 'test_ws5_*.py'];
 
 function isWindows() {
   return process.platform === 'win32';
@@ -32,9 +33,18 @@ function getCandidates() {
 }
 
 function tryRun(cmd, args) {
+  const pythonPathEntries = [path.join(process.cwd(), 'sdk-python')];
+  if (process.env.PYTHONPATH) {
+    pythonPathEntries.push(process.env.PYTHONPATH);
+  }
+
   const result = spawnSync(cmd, [...args, ...testArgs], {
     stdio: 'inherit',
     shell: false,
+    env: {
+      ...process.env,
+      PYTHONPATH: pythonPathEntries.join(path.delimiter),
+    },
   });
 
   if (typeof result.status === 'number') {

@@ -4,7 +4,7 @@ import urllib.parse
 import urllib.request
 import urllib.error
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from contextlib import contextmanager
 
 class DashClawError(Exception):
@@ -344,7 +344,7 @@ class DashClaw:
             **kwargs
         }
         if "timestamp_end" not in payload:
-            payload["timestamp_end"] = datetime.utcnow().isoformat() + "Z"
+            payload["timestamp_end"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         return self._request(f"/api/actions/{action_id}", method="PATCH", body=payload)
 
     def get_actions(self, **filters):
@@ -640,7 +640,7 @@ class DashClaw:
         return self._request(f"/api/context/threads?{query}")
 
     def get_context_summary(self):
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         points_result = self.get_key_points(session_date=today)
         threads_result = self.get_threads(status="active")
         return {

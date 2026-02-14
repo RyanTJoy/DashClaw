@@ -45,7 +45,7 @@ class WS5M3ParityTests(unittest.TestCase):
         try:
             class FixedDatetime:
                 @staticmethod
-                def utcnow():
+                def now(_tz=None):
                     class _Now:
                         @staticmethod
                         def strftime(fmt):
