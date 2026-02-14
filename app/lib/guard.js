@@ -7,8 +7,24 @@ import { randomUUID } from 'node:crypto';
 import { deliverGuardWebhook } from './webhooks.js';
 import { checkSemanticGuardrail } from './llm.js';
 import { generateActionEmbedding, isEmbeddingsEnabled } from './embeddings.js';
+import { scanSensitiveData } from './security.js';
 
 const DECISION_SEVERITY = { allow: 0, warn: 1, require_approval: 2, block: 3 };
+
+function redactAny(value, findings) {
+  if (typeof value === 'string') {
+    const scan = scanSensitiveData(value);
+    if (!scan.clean) findings.push(...scan.findings);
+    return scan.redacted;
+  }
+  if (Array.isArray(value)) return value.map((v) => redactAny(v, findings));
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = redactAny(v, findings);
+    return out;
+  }
+  return value;
+}
 
 /**
  * Evaluate guard policies for an incoming agent action.
@@ -90,6 +106,15 @@ export async function evaluateGuard(orgId, context, sql, options = {}) {
 
   // Log decision fire-and-forget
   const decisionId = `gd_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+
+  // SECURITY: do not store raw secrets in guard decision context.
+  // This keeps the evaluation logic unchanged; only the logged context is redacted.
+  const dlpFindings = [];
+  const safeContextForLog = redactAny(context, dlpFindings);
+  if (dlpFindings.length > 0) {
+    console.warn(`[Guard] Redacted ${dlpFindings.length} sensitive pattern(s) from guard_decisions.context before storing.`);
+  }
+
   sql`
     INSERT INTO guard_decisions (id, org_id, agent_id, decision, reason, matched_policies, context, risk_score, action_type, created_at)
     VALUES (
@@ -99,7 +124,7 @@ export async function evaluateGuard(orgId, context, sql, options = {}) {
       ${highestDecision},
       ${reasons.join('; ') || null},
       ${JSON.stringify(matchedPolicies)},
-      ${JSON.stringify(context)},
+      ${JSON.stringify(safeContextForLog)},
       ${context.risk_score != null ? context.risk_score : null},
       ${context.action_type || null},
       ${evaluated_at}
