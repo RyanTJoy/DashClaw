@@ -6,6 +6,7 @@ import {
   Webhook, Clock, Compass, Building2, Terminal, BarChart3,
 } from 'lucide-react';
 import PublicNavbar from './components/PublicNavbar';
+import ClickToFullscreenImage from './components/ClickToFullscreenImage';
 
 /* ─── data ─── */
 
@@ -167,6 +168,37 @@ export default function LandingPage() {
             <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.06)] text-zinc-300 text-sm font-medium hover:bg-[#181818] hover:text-white transition-colors inline-flex items-center gap-2">
               <BookOpen size={16} /> Docs
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 2.5 Dashboard Preview ── */}
+      <section className="pb-20 px-6 border-t border-[rgba(255,255,255,0.06)]">
+        <div className="max-w-6xl mx-auto pt-16">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-center">
+            <div className="lg:col-span-2">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">A dashboard you will actually use</h2>
+              <p className="mt-3 text-zinc-400 leading-relaxed">
+                One screen for actions, risk, approvals, messages, and fleet context. Click the screenshot to view fullscreen.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Realtime</span>
+                <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">HITL approvals</span>
+                <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Guard policies</span>
+                <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Swarm map</span>
+              </div>
+            </div>
+            <div className="lg:col-span-3">
+              <ClickToFullscreenImage
+                src="/images/screenshots/dash1.png"
+                alt="DashClaw dashboard screenshot"
+                aspectClassName="aspect-[16/10]"
+                sizes="(max-width: 1024px) 100vw, 60vw"
+                priority
+                imageClassName="object-cover"
+                className="shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_90px_rgba(0,0,0,0.55)]"
+              />
+            </div>
           </div>
         </div>
       </section>
