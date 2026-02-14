@@ -662,7 +662,7 @@ const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 100; // requests per window
 const RATE_LIMIT_MAX_ENTRIES = 50000;
 
-function checkRateLimit(ip) {
+function checkRateLimitLocal(ip) {
   const now = Date.now();
   const record = rateLimitMap.get(ip);
 
@@ -686,6 +686,43 @@ function checkRateLimit(ip) {
 
   record.count++;
   return true;
+}
+
+async function checkRateLimitDistributed(ip) {
+  const baseUrl = process.env.UPSTASH_REDIS_REST_URL || '';
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+  if (!baseUrl || !token) return null;
+
+  const key = `dashclaw:rl:${ip}`;
+  const urlBase = baseUrl.replace(/\/+$/, '');
+
+  const call = async (path) => {
+    const res = await fetch(`${urlBase}/${path}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`upstash ${res.status}`);
+    const data = await res.json().catch(() => ({}));
+    return data?.result;
+  };
+
+  // Atomic-ish limiter: INCR then PEXPIRE on first hit.
+  const n = await call(`INCR/${encodeURIComponent(key)}`);
+  if (n === 1) {
+    await call(`PEXPIRE/${encodeURIComponent(key)}/${RATE_LIMIT_WINDOW}`);
+  }
+  return typeof n === 'number' ? (n <= RATE_LIMIT_MAX) : null;
+}
+
+async function checkRateLimit(ip) {
+  try {
+    const distributed = await checkRateLimitDistributed(ip);
+    if (distributed !== null) return distributed;
+  } catch (e) {
+    // Fail open to local limiter if Upstash is misconfigured/unreachable.
+    console.warn('[SECURITY] Distributed rate limit unavailable; falling back to local limiter.');
+  }
+  return checkRateLimitLocal(ip);
 }
 
 // SECURITY: Timing-safe string comparison to prevent timing attacks
@@ -836,6 +873,17 @@ export async function middleware(request) {
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
+      }
+
+      // SECURITY: Even demo mode should be rate limited.
+      const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
+      const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+      const ip = (trustProxy ? forwardedIp : null) ||
+                 request.ip ||
+                 request.headers.get('x-real-ip') ||
+                 'unknown';
+      if (!(await checkRateLimit(ip))) {
+        return demoJson(request, { error: 'Rate limit exceeded. Please slow down.' }, 429);
       }
 
       const method = request.method.toUpperCase();
@@ -1161,7 +1209,7 @@ export async function middleware(request) {
 
   // SECURITY: Apply rate limiting to all API routes, including PUBLIC_ROUTES.
   // PUBLIC_ROUTES are unauthenticated but still should not be abusable for DoS/brute force.
-  if (!checkRateLimit(ip)) {
+  if (!(await checkRateLimit(ip))) {
     console.warn(`[SECURITY] Rate limit exceeded for ${ip}: ${pathname}`);
     return NextResponse.json(
       { error: 'Rate limit exceeded. Please slow down.' },
