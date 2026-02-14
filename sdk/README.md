@@ -2,7 +2,7 @@
 
 Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
 
-Install, configure, and instrument your AI agents with 59 methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
+Install, configure, and instrument your AI agents with 60+ methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
 
 ---
 

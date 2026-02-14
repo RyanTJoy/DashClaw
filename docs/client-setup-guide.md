@@ -271,7 +271,7 @@ Each workspace is fully isolated. API keys are scoped to an organization. Agents
 
 ## 5. SDK Method Reference
 
-The SDK has **59 methods** across 13 categories. Every method returns a Promise.
+The SDK has **60+ methods** across 13+ categories. Every method returns a Promise.
 
 ### Action Recording (7 methods)
 
