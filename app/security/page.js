@@ -23,6 +23,8 @@ export default function SecurityDashboard() {
   const [securityStatus, setSecurityStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState('');
+  const securityScore = typeof securityStatus?.score === 'number' ? securityStatus.score : 0;
+  const securityChecks = Array.isArray(securityStatus?.checks) ? securityStatus.checks : [];
 
   // Signal dismissal state
   const [dismissedSignals, setDismissedSignals] = useState(() => {
@@ -201,10 +203,10 @@ export default function SecurityDashboard() {
                     cy="40"
                   />
                   <circle
-                    className={securityStatus.score >= 90 ? 'text-emerald-500' : securityStatus.score >= 70 ? 'text-yellow-500' : 'text-red-500'}
+                    className={securityScore >= 90 ? 'text-emerald-500' : securityScore >= 70 ? 'text-yellow-500' : 'text-red-500'}
                     strokeWidth="6"
                     strokeDasharray={2 * Math.PI * 34}
-                    strokeDashoffset={2 * Math.PI * 34 * (1 - securityStatus.score / 100)}
+                    strokeDashoffset={2 * Math.PI * 34 * (1 - securityScore / 100)}
                     strokeLinecap="round"
                     stroke="currentColor"
                     fill="transparent"
@@ -214,7 +216,7 @@ export default function SecurityDashboard() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">
-                  {securityStatus.score}
+                  {securityScore}
                 </div>
               </div>
               <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-2 font-medium">Security Score</div>
@@ -222,7 +224,7 @@ export default function SecurityDashboard() {
 
             <div className="flex-1 min-w-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {securityStatus.checks.map((check) => {
+                {securityChecks.map((check) => {
                   const Icon = getStatusIcon(check.status);
                   return (
                     <div key={check.id} className="flex items-start gap-2.5 bg-white/[0.02] p-2.5 rounded-lg border border-white/[0.04]">

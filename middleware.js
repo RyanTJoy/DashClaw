@@ -658,8 +658,18 @@ function demoSwarmGraph(fixtures, url) {
 // SECURITY: In-memory rate limiting is local to the instance.
 // For production multi-region deployments, use Redis or Upstash.
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 100; // requests per window
+const RATE_LIMIT_DISABLED = ['1', 'true', 'yes', 'on'].includes(
+  String(process.env.DASHCLAW_DISABLE_RATE_LIMIT || '').toLowerCase()
+);
+const RATE_LIMIT_WINDOW = (() => {
+  const v = parseInt(String(process.env.DASHCLAW_RATE_LIMIT_WINDOW_MS || ''), 10);
+  return Number.isFinite(v) && v > 0 ? v : (60 * 1000); // 1 minute
+})();
+const RATE_LIMIT_MAX = (() => {
+  const def = process.env.NODE_ENV === 'development' ? 1000 : 100;
+  const v = parseInt(String(process.env.DASHCLAW_RATE_LIMIT_MAX || ''), 10);
+  return Number.isFinite(v) && v > 0 ? v : def;
+})(); // requests per window
 const RATE_LIMIT_MAX_ENTRIES = 50000;
 
 function checkRateLimitLocal(ip) {
@@ -715,6 +725,7 @@ async function checkRateLimitDistributed(ip) {
 }
 
 async function checkRateLimit(ip) {
+  if (RATE_LIMIT_DISABLED) return true;
   try {
     const distributed = await checkRateLimitDistributed(ip);
     if (distributed !== null) return distributed;
@@ -878,10 +889,13 @@ export async function middleware(request) {
       // SECURITY: Even demo mode should be rate limited.
       const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
       const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-      const ip = (trustProxy ? forwardedIp : null) ||
-                 request.ip ||
-                 request.headers.get('x-real-ip') ||
-                 'unknown';
+      let ip = (trustProxy ? forwardedIp : null) ||
+               request.ip ||
+               request.headers.get('x-real-ip') ||
+               'unknown';
+      if (ip === 'unknown' && process.env.NODE_ENV === 'development') {
+        ip = forwardedIp || '127.0.0.1';
+      }
       if (!(await checkRateLimit(ip))) {
         return demoJson(request, { error: 'Rate limit exceeded. Please slow down.' }, 429);
       }
@@ -1202,10 +1216,13 @@ export async function middleware(request) {
   // SECURITY: In self-host deployments, x-forwarded-for may be attacker-controlled unless you trust your proxy.
   const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
   const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  const ip = (trustProxy ? forwardedIp : null) ||
-             request.ip ||
-             request.headers.get('x-real-ip') ||
-             'unknown';
+  let ip = (trustProxy ? forwardedIp : null) ||
+           request.ip ||
+           request.headers.get('x-real-ip') ||
+           'unknown';
+  if (ip === 'unknown' && process.env.NODE_ENV === 'development') {
+    ip = forwardedIp || '127.0.0.1';
+  }
 
   // SECURITY: Apply rate limiting to all API routes, including PUBLIC_ROUTES.
   // PUBLIC_ROUTES are unauthenticated but still should not be abusable for DoS/brute force.
