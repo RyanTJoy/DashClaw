@@ -16,7 +16,6 @@ const screenshots = [
   { title: 'Agent Messaging', file: 'Messages.png', desc: 'Asynchronous communication hub for direct messages and shared docs.' },
   { title: 'Webhook Management', file: 'Webhooks.png', desc: 'Configure external endpoints for signal notifications and human intervention.' },
   { title: 'Bounty Hunter', file: 'Bounty Hunter.png', desc: 'Track external bounties and rewards found by your agent fleet.' },
-  { title: 'Landing Page', file: 'DashClaw.png', desc: 'The customer-facing portal for workspace management.' },
 ];
 
 export default function GalleryPage() {
