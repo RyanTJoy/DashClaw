@@ -53,7 +53,9 @@
     "zod": "^4.3.6"
   },
   "overrides": {
-    "esbuild": "^0.25.0"
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.0"
+    }
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",
