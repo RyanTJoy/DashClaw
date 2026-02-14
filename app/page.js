@@ -95,11 +95,11 @@ const platformCoverage = [
 ];
 
 const convergenceStatus = [
-  { id: 'WS1', name: 'Data Access Convergence', status: 'Done' },
+  { id: 'WS1', name: 'Data Access Convergence', status: 'Partial' },
   { id: 'WS2', name: 'API Contract Governance', status: 'Done' },
   { id: 'WS3', name: 'Realtime Reliability', status: 'Done' },
   { id: 'WS4', name: 'Documentation Governance', status: 'Done' },
-  { id: 'WS5', name: 'SDK Core Parity', status: 'In Progress' },
+  { id: 'WS5', name: 'SDK Core Parity', status: 'Done' },
 ];
 
 /* ─── page ─── */
@@ -126,8 +126,9 @@ export default function LandingPage() {
             Guard what they do before they do it.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">M1-M3 complete</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">WS5 M4 in progress</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">M1-M4 shipped</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">WS2/WS3/WS4/WS5 acceptance met</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">WS1 p95 evidence closeout pending</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">59 SDK methods</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python parity track</span>
           </div>

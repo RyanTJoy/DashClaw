@@ -6,8 +6,8 @@ import { CheckCircle2, Clock3, ShieldCheck, Workflow, Radio } from 'lucide-react
 const STATUS_ITEMS = [
   {
     title: 'Data Access Convergence',
-    detail: 'Repository migration + contract tests + route-level SQL CI guard',
-    state: 'complete',
+    detail: 'Repository migration, contract tests, and route-level SQL CI guard are shipped; p95 regression evidence closeout remains.',
+    state: 'partial',
     href: '/actions',
   },
   {
@@ -18,7 +18,7 @@ const STATUS_ITEMS = [
   },
   {
     title: 'Realtime Reliability',
-    detail: 'Broker-backed SSE with replay support and cutover health checks',
+    detail: 'Broker-backed SSE with replay support, replay reliability hotfix, and cutover health checks.',
     state: 'complete',
     href: '/security',
   },
@@ -30,19 +30,26 @@ const STATUS_ITEMS = [
   },
   {
     title: 'SDK Core Parity',
-    detail: 'Node + Python parity delivered for actions/guard/webhooks/context/messages',
-    state: 'in-progress',
+    detail: 'Node + Python parity complete for critical domains, including cross-SDK integration suite and CI gates.',
+    state: 'complete',
     href: '/docs',
   },
 ];
 
 function StateBadge({ state }) {
-  const isComplete = state === 'complete';
-  if (isComplete) {
+  if (state === 'complete') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-400">
         <CheckCircle2 size={12} />
         Complete
+      </span>
+    );
+  }
+  if (state === 'partial') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-400">
+        <Clock3 size={12} />
+        Partial
       </span>
     );
   }
@@ -92,7 +99,7 @@ export default function PlatformStatusCard() {
 
       <p className="mt-4 flex items-center gap-1.5 text-xs text-zinc-500">
         <Radio size={12} />
-        Execution tracking source: RFC platform convergence status (updated February 14, 2026).
+        Execution tracking source: RFC platform convergence status (updated February 14, 2026; WS1 evidence closeout pending).
       </p>
     </section>
   );
