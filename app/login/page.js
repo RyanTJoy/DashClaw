@@ -8,17 +8,6 @@ import { Flame, Github } from 'lucide-react';
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const canUseLocalDevLogin = useRef(false);
-
-  useEffect(() => {
-    // Local-only convenience: mirrors server-side guard (NEXTAUTH_URL must be localhost/127.0.0.1).
-    try {
-      const h = window.location.hostname;
-      canUseLocalDevLogin.current = (h === 'localhost' || h === '127.0.0.1');
-    } catch {
-      canUseLocalDevLogin.current = false;
-    }
-  }, []);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -61,15 +50,6 @@ export default function LoginPage() {
             <GoogleIcon />
             Continue with Google
           </button>
-
-          {process.env.NODE_ENV === 'development' && canUseLocalDevLogin.current ? (
-            <button
-              onClick={() => signIn('local-dev', { callbackUrl: '/dashboard' })}
-              className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-[#0f172a] border border-[rgba(255,255,255,0.12)] text-white text-sm font-medium hover:bg-[#162044] transition-colors"
-            >
-              Continue locally (dev)
-            </button>
-          ) : null}
         </div>
 
         <p className="text-xs text-zinc-600 text-center mt-6">
