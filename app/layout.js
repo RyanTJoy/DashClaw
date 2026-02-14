@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
 import SessionWrapper from './components/SessionWrapper'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -25,6 +26,12 @@ export const viewport = {
 }
 
 export default function RootLayout({ children }) {
+  const enableAnalytics =
+    // Vercel sets this in deployments; keeps self-host/non-Vercel installs from emitting analytics by default.
+    process.env.VERCEL === '1' ||
+    // Explicit opt-in for non-Vercel hosts.
+    process.env.NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS === 'true'
+
   return (
     <html lang="en" className={inter.variable}>
       <head>
@@ -33,6 +40,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-sans antialiased">
         <SessionWrapper>{children}</SessionWrapper>
+        {enableAnalytics ? <Analytics /> : null}
       </body>
     </html>
   )
