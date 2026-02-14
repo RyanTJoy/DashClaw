@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
 
@@ -67,10 +68,12 @@ export default function GalleryPage() {
               onClick={() => setSelectedIndex(index)}
             >
               <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-[rgba(255,255,255,0.06)] bg-[#111]">
-                <img 
-                  src={`/images/screenshots/${s.file}`} 
+                <Image
+                  src={`/images/screenshots/${s.file}`}
                   alt={s.title}
-                  className="object-cover w-full h-full transform group-hover:scale-[1.02] transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transform group-hover:scale-[1.02] transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <div className="bg-white/10 backdrop-blur-md p-3 rounded-full border border-white/20">
@@ -112,10 +115,12 @@ export default function GalleryPage() {
           </button>
 
           <div className="relative w-full max-w-5xl aspect-[16/10] flex items-center justify-center">
-            <img 
-              src={`/images/screenshots/${screenshots[selectedIndex].file}`} 
+            <Image
+              src={`/images/screenshots/${screenshots[selectedIndex].file}`}
               alt={screenshots[selectedIndex].title}
-              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+              fill
+              sizes="100vw"
+              className="object-contain rounded-lg shadow-2xl"
             />
           </div>
 

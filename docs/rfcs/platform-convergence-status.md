@@ -10,6 +10,7 @@ doc-type: status
 - Program: `RFC-2026-02-13-platform-convergence`
 - Last Updated: February 14, 2026
 - Status Key: `not-started` | `in-progress` | `blocked` | `done`
+- Archive Note: This is a historical execution log. Prior UI references (for example `PlatformStatusCard` and docs `platform-overview`) were retired from current product surfaces after closeout.
 
 ## Program Milestones
 

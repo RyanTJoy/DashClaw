@@ -9,11 +9,11 @@ It combines:
 - Node and Python SDKs for agent instrumentation
 - A local Python agent-tool suite for workflow, memory, and security operations
 
-As of **February 14, 2026**, platform convergence workstreams are closed and tracked in:
+As of **February 14, 2026**, the Platform Convergence program is complete and archived in:
 - `docs/rfcs/platform-convergence.md`
 - `docs/rfcs/platform-convergence-status.md`
 
-## Platform Status (February 14, 2026)
+## Archived Program Status (Platform Convergence, February 14, 2026)
 
 | Workstream | Status |
 |---|---|
@@ -29,7 +29,7 @@ As of **February 14, 2026**, platform convergence workstreams are closed and tra
 - `sdk/`: Node.js SDK (`dashclaw`)
 - `sdk-python/`: Python SDK (`dashclaw`)
 - `agent-tools/`: Local Python CLI tool suite with optional dashboard sync
-- `scripts/`: migrations, CI guards, API contract checks, convergence evidence tooling
+- `scripts/`: migrations, CI guards, API contract checks, and reliability evidence tooling
 - `docs/`: RFCs, runbooks, parity matrix, governance docs
 - `PROJECT_DETAILS.md`: deep architecture and behavior reference
 
@@ -62,7 +62,7 @@ As of **February 14, 2026**, platform convergence workstreams are closed and tra
 3. Route handler validates input and executes domain/repository logic.
 4. Critical events publish through realtime backend for SSE subscribers.
 5. Dashboard/UI consumes API data + realtime updates.
-6. CI gates enforce contracts, SQL guardrails, docs consistency, SDK parity, and WS1 latency checks.
+6. CI gates enforce contracts, SQL guardrails, docs consistency, SDK parity, and latency regression checks.
 
 ## Quick Start (Local)
 
@@ -133,10 +133,16 @@ npm run docs:check
 npm run openapi:check
 npm run api:inventory:check
 npm run route-sql:check
-npm run convergence:ws1:check
 npm run test -- --run
 npm run sdk:integration
 npm run sdk:integration:python
+```
+
+### Archived Program Checks (Historical)
+
+```bash
+npm run convergence:ws1:check
+npm run convergence:evidence -- http://localhost:3000 docs/rfcs/platform-convergence-evidence.json
 ```
 
 ### Adaptive Learning Loop Ops
@@ -145,12 +151,6 @@ npm run sdk:integration:python
 npm run migrate:learning-loop
 npm run backfill:learning-episodes
 npm run rebuild:learning-recommendations
-```
-
-### Convergence Evidence
-
-```bash
-npm run convergence:evidence -- http://localhost:3000 docs/rfcs/platform-convergence-evidence.json
 ```
 
 ## SDKs
@@ -257,9 +257,9 @@ For production, configure:
 - Architecture and behavior: `PROJECT_DETAILS.md`
 - Quick non-coding setup: `QUICK-START.md`
 - Documentation governance: `docs/documentation-governance.md`
-- Platform convergence RFC: `docs/rfcs/platform-convergence.md`
-- Platform convergence status log: `docs/rfcs/platform-convergence-status.md`
-- Convergence evidence artifact: `docs/rfcs/platform-convergence-evidence.json`
+- Archived platform convergence RFC: `docs/rfcs/platform-convergence.md`
+- Archived platform convergence status log: `docs/rfcs/platform-convergence-status.md`
+- Archived convergence evidence artifact: `docs/rfcs/platform-convergence-evidence.json`
 - SDK parity matrix: `docs/sdk-parity.md`
 - SSE cutover runbook: `docs/rfcs/2026-02-13-sse-cutover-runbook.md`
 - Contribution guide: `CONTRIBUTING.md`
