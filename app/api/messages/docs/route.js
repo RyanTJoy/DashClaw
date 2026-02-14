@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getOrgId } from '../../../lib/org.js';
 import { enforceFieldLimits } from '../../../lib/validate.js';
+import { scanSensitiveData } from '../../../lib/security.js';
 import { randomUUID } from 'node:crypto';
 
 export async function GET(request) {
@@ -51,17 +52,21 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
-    const { name, content, agent_id } = body;
+    const { name, content: contentRaw, agent_id } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
-    if (!content) {
+    if (!contentRaw) {
       return NextResponse.json({ error: 'content is required' }, { status: 400 });
     }
     if (!agent_id) {
       return NextResponse.json({ error: 'agent_id is required' }, { status: 400 });
     }
+
+    // SECURITY: prevent storing raw secrets in shared docs (redact on write).
+    const scan = scanSensitiveData(contentRaw);
+    const content = scan.redacted;
 
     const id = `sd_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const now = new Date().toISOString();
@@ -75,7 +80,16 @@ export async function POST(request) {
       RETURNING *
     `;
 
-    return NextResponse.json({ doc: result[0], doc_id: result[0].id }, { status: 201 });
+    return NextResponse.json({
+      doc: result[0],
+      doc_id: result[0].id,
+      security: {
+        clean: scan.clean,
+        findings_count: scan.findings.length,
+        critical_count: scan.findings.filter(f => f.severity === 'critical').length,
+        categories: [...new Set(scan.findings.map(f => f.category))],
+      },
+    }, { status: 201 });
   } catch (error) {
     console.error('Shared docs POST error:', error);
     return NextResponse.json({ error: 'An error occurred while saving document' }, { status: 500 });

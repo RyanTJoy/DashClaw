@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { getOrgId } from '../../lib/org';
 import crypto from 'crypto';
 import { syncSchema } from '../../lib/validators/sync';
+import { scanSensitiveData } from '../../lib/security';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -23,6 +24,11 @@ function getSql() {
 
 function genId(prefix) {
   return `${prefix}${crypto.randomUUID().replace(/-/g, '').slice(0, 24)}`;
+}
+
+function redactText(value) {
+  if (typeof value !== 'string' || value.length === 0) return value;
+  return scanSensitiveData(value).redacted;
 }
 
 // Category limits
@@ -141,7 +147,7 @@ async function syncGoals(sql, orgId, agentId, goals) {
       await sql`
         INSERT INTO goals (org_id, title, category, description, target_date, progress, status, agent_id, created_at)
         VALUES (
-          ${orgId}, ${g.title}, ${g.category || null}, ${g.description || null},
+          ${orgId}, ${redactText(g.title)}, ${g.category || null}, ${redactText(g.description || null)},
           ${g.target_date || null}, ${g.progress || 0}, ${g.status || 'active'},
           ${agentId}, ${now}
         )
@@ -164,7 +170,7 @@ async function syncLearning(sql, orgId, agentId, learning) {
       await sql`
         INSERT INTO decisions (org_id, decision, context, reasoning, outcome, confidence, timestamp, agent_id)
         VALUES (
-          ${orgId}, ${l.decision}, ${l.context || null}, ${l.reasoning || null},
+          ${orgId}, ${redactText(l.decision)}, ${redactText(l.context || null)}, ${redactText(l.reasoning || null)},
           ${l.outcome || 'pending'}, ${l.confidence || 50}, ${now}, ${agentId}
         )
       `;
@@ -186,8 +192,8 @@ async function syncContent(sql, orgId, agentId, content) {
       await sql`
         INSERT INTO content (org_id, title, platform, status, url, body, agent_id, created_at)
         VALUES (
-          ${orgId}, ${c.title}, ${c.platform || null}, ${c.status || 'draft'},
-          ${c.url || null}, ${c.body || null}, ${agentId}, ${now}
+          ${orgId}, ${redactText(c.title)}, ${c.platform || null}, ${c.status || 'draft'},
+          ${c.url || null}, ${redactText(c.body || null)}, ${agentId}, ${now}
         )
       `;
       synced++;
@@ -208,7 +214,7 @@ async function syncInspiration(sql, orgId, inspiration) {
       await sql`
         INSERT INTO ideas (org_id, title, description, category, score, status, source, captured_at)
         VALUES (
-          ${orgId}, ${i.title}, ${i.description || null}, ${i.category || null},
+          ${orgId}, ${redactText(i.title)}, ${redactText(i.description || null)}, ${i.category || null},
           ${i.score || 50}, ${i.status || 'pending'}, ${i.source || null}, ${now}
         )
       `;
@@ -234,7 +240,7 @@ async function syncContextPoints(sql, orgId, agentId, points) {
       const imp = Math.max(1, Math.min(10, p.importance || 5));
       await sql`
         INSERT INTO context_points (id, org_id, agent_id, content, category, importance, session_date, created_at)
-        VALUES (${id}, ${orgId}, ${agentId}, ${p.content}, ${cat}, ${imp}, ${p.session_date || dateStr}, ${now})
+        VALUES (${id}, ${orgId}, ${agentId}, ${redactText(p.content)}, ${cat}, ${imp}, ${p.session_date || dateStr}, ${now})
       `;
       synced++;
     } catch (e) {
@@ -254,7 +260,7 @@ async function syncContextThreads(sql, orgId, agentId, threads) {
       const id = genId('ct_');
       await sql`
         INSERT INTO context_threads (id, org_id, agent_id, name, summary, status, created_at, updated_at)
-        VALUES (${id}, ${orgId}, ${agentId}, ${t.name}, ${t.summary || null}, 'active', ${now}, ${now})
+        VALUES (${id}, ${orgId}, ${agentId}, ${redactText(t.name)}, ${redactText(t.summary || null)}, 'active', ${now}, ${now})
         ON CONFLICT (org_id, COALESCE(agent_id, ''), name)
         DO UPDATE SET summary = COALESCE(EXCLUDED.summary, context_threads.summary), status = 'active', updated_at = ${now}
       `;
@@ -278,10 +284,10 @@ async function syncHandoffs(sql, orgId, agentId, handoffs) {
       await sql`
         INSERT INTO handoffs (id, org_id, agent_id, session_date, summary, key_decisions, open_tasks, mood_notes, next_priorities, created_at)
         VALUES (
-          ${id}, ${orgId}, ${agentId}, ${h.session_date || dateStr}, ${h.summary},
+          ${id}, ${orgId}, ${agentId}, ${h.session_date || dateStr}, ${redactText(h.summary)},
           ${h.key_decisions ? JSON.stringify(h.key_decisions) : null},
           ${h.open_tasks ? JSON.stringify(h.open_tasks) : null},
-          ${h.mood_notes || null},
+          ${redactText(h.mood_notes || null)},
           ${h.next_priorities ? JSON.stringify(h.next_priorities) : null},
           ${now}
         )
@@ -306,7 +312,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         const id = genId('uo_');
         await sql`
           INSERT INTO user_observations (id, org_id, user_id, agent_id, observation, category, importance, created_at)
-          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${o.observation}, ${o.category || null}, ${o.importance || 5}, ${now})
+          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${redactText(o.observation)}, ${o.category || null}, ${o.importance || 5}, ${now})
         `;
         synced++;
       } catch (e) {
@@ -322,7 +328,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         const id = genId('up_');
         await sql`
           INSERT INTO user_preferences (id, org_id, user_id, agent_id, preference, category, confidence, created_at)
-          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${p.preference}, ${p.category || null}, ${p.confidence || 50}, ${now})
+          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${redactText(p.preference)}, ${p.category || null}, ${p.confidence || 50}, ${now})
         `;
         synced++;
       } catch (e) {
@@ -338,7 +344,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         const id = genId('um_');
         await sql`
           INSERT INTO user_moods (id, org_id, user_id, agent_id, mood, energy, notes, created_at)
-          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${m.mood}, ${m.energy || null}, ${m.notes || null}, ${now})
+          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${redactText(m.mood)}, ${m.energy || null}, ${redactText(m.notes || null)}, ${now})
         `;
         synced++;
       } catch (e) {
@@ -356,7 +362,7 @@ async function syncPreferences(sql, orgId, agentId, preferences) {
         const failInc = a.success === false ? 1 : 0;
         await sql`
           INSERT INTO user_approaches (id, org_id, user_id, agent_id, approach, context, success_count, fail_count, created_at, updated_at)
-          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${a.approach}, ${a.context || null}, ${successInc}, ${failInc}, ${now}, ${now})
+          VALUES (${id}, ${orgId}, ${null}, ${agentId}, ${redactText(a.approach)}, ${redactText(a.context || null)}, ${successInc}, ${failInc}, ${now}, ${now})
           ON CONFLICT (org_id, COALESCE(agent_id, ''), approach)
           DO UPDATE SET
             success_count = user_approaches.success_count + ${successInc},
@@ -385,7 +391,7 @@ async function syncSnippets(sql, orgId, agentId, snippets) {
       const tagsJson = s.tags ? JSON.stringify(s.tags) : null;
       await sql`
         INSERT INTO snippets (id, org_id, agent_id, name, description, code, language, tags, created_at)
-        VALUES (${id}, ${orgId}, ${agentId}, ${s.name}, ${s.description || null}, ${s.code}, ${s.language || null}, ${tagsJson}, ${now})
+        VALUES (${id}, ${orgId}, ${agentId}, ${redactText(s.name)}, ${redactText(s.description || null)}, ${redactText(s.code)}, ${s.language || null}, ${tagsJson}, ${now})
         ON CONFLICT (org_id, name)
         DO UPDATE SET code = EXCLUDED.code, description = COALESCE(EXCLUDED.description, snippets.description),
           language = COALESCE(EXCLUDED.language, snippets.language), tags = COALESCE(EXCLUDED.tags, snippets.tags),

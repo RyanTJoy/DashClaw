@@ -60,10 +60,12 @@ export async function POST(request) {
     }
 
     // SECURITY: Check API key quota (same as POST /api/keys)
-    const { checkQuotaFast } = require('../../../lib/usage');
-    const quotaCheck = await checkQuotaFast(orgId, 'api_keys', sql);
-    if (quotaCheck?.blocked) {
-      return NextResponse.json({ error: quotaCheck.message || 'API key quota exceeded' }, { status: 402 });
+    // OSS edition defaults to Infinity, but keep correct call signature for future enforcement.
+    const { getOrgPlan, checkQuotaFast } = require('../../../lib/usage');
+    const plan = await getOrgPlan(orgId, sql);
+    const quotaCheck = await checkQuotaFast(orgId, 'api_keys', plan, sql);
+    if (!quotaCheck.allowed) {
+      return NextResponse.json({ error: 'API key quota exceeded', code: 'QUOTA_EXCEEDED', usage: quotaCheck.usage, limit: quotaCheck.limit }, { status: 402 });
     }
 
     const rawKey = generateApiKey();
