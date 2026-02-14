@@ -18,10 +18,19 @@ const enforceRedisCutover = ['1', 'true', 'yes', 'on'].includes(
 const replayWindowSeconds = Math.max(60, parseInt(process.env.REALTIME_REPLAY_WINDOW_SECONDS || '600', 10) || 600);
 const replayWindowMs = replayWindowSeconds * 1000;
 const replayBufferMax = Math.max(200, parseInt(process.env.REALTIME_REPLAY_MAX_EVENTS || '1000', 10) || 1000);
+const memoryMaxListeners = (() => {
+  const raw = process.env.REALTIME_MEMORY_MAX_LISTENERS || process.env.REALTIME_MAX_LISTENERS || '1000';
+  const n = parseInt(raw, 10);
+  // 0 means unlimited in Node's EventEmitter.
+  if (Number.isFinite(n) && n >= 0) return n;
+  return 1000;
+})();
 
 class MemoryRealtimeBackend {
   constructor() {
     this.emitter = new EventEmitter();
+    // Many concurrent SSE connections are normal. Raise the default limit to avoid false-positive warnings.
+    this.emitter.setMaxListeners(memoryMaxListeners);
     this.replayByOrg = new Map();
     this.cursorByOrg = new Map();
   }

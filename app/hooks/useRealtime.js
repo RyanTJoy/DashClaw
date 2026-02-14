@@ -1,49 +1,102 @@
 import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import isDemoMode from '../lib/isDemoMode';
+
+// Shared EventSource per browser tab. Multiple components can subscribe without
+// opening multiple /api/stream connections (which triggers backend listener warnings).
+let sharedEs = null;
+let sharedReconnectTimer = null;
+const subscribers = new Set();
+
+function broadcast(event, payload) {
+  for (const cb of subscribers) {
+    try {
+      cb(event, payload);
+    } catch (e) {
+      // Don't let a single subscriber break realtime for everyone.
+      console.warn('[realtime] subscriber error:', e?.message || e);
+    }
+  }
+}
+
+function attachListeners(es) {
+  es.addEventListener('action.created', (e) => {
+    try {
+      broadcast('action.created', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('action.updated', (e) => {
+    try {
+      broadcast('action.updated', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+}
+
+function ensureEventSource() {
+  if (typeof window === 'undefined') return null;
+  if (sharedEs) return sharedEs;
+  if (isDemoMode()) return null; // Demo is simulated; avoid SSE load/noise.
+
+  const es = new EventSource('/api/stream');
+  sharedEs = es;
+
+  es.onopen = () => {
+    // Connected
+  };
+
+  es.onerror = () => {
+    try { es.close(); } catch {}
+    sharedEs = null;
+
+    // Lightweight reconnect if there are still active subscribers.
+    if (subscribers.size > 0 && !sharedReconnectTimer) {
+      sharedReconnectTimer = setTimeout(() => {
+        sharedReconnectTimer = null;
+        ensureEventSource();
+      }, 1500);
+    }
+  };
+
+  attachListeners(es);
+  return es;
+}
+
+function maybeCloseEventSource() {
+  if (subscribers.size > 0) return;
+  if (sharedReconnectTimer) {
+    clearTimeout(sharedReconnectTimer);
+    sharedReconnectTimer = null;
+  }
+  if (sharedEs) {
+    try { sharedEs.close(); } catch {}
+    sharedEs = null;
+  }
+}
 
 export function useRealtime(onEvent) {
   const { data: session } = useSession();
-  const eventSourceRef = useRef(null);
+  const onEventRef = useRef(onEvent);
+  const sessionUserId = session?.user?.id || null;
 
   useEffect(() => {
-    if (!session) return;
+    onEventRef.current = onEvent;
+  }, [onEvent]);
 
-    // Use NextAuth session cookie implicitly, or pass x-api-key if we were using a custom fetcher.
-    // Standard EventSource only supports GET and cookies, not custom headers.
-    // Fortunately, our middleware accepts session cookies for same-origin requests.
-    
-    const es = new EventSource('/api/stream');
-    eventSourceRef.current = es;
+  useEffect(() => {
+    if (!sessionUserId) return;
 
-    es.onopen = () => {
-      // console.log('SSE Connected');
-    };
-
-    es.onerror = (err) => {
-      // console.error('SSE Error:', err);
-      es.close();
-    };
-
-    es.addEventListener('action.created', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        onEvent('action.created', data);
-      } catch (err) {
-        console.error('SSE Parse Error:', err);
-      }
-    });
-
-    es.addEventListener('action.updated', (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        onEvent('action.updated', data);
-      } catch (err) {
-        console.error('SSE Parse Error:', err);
-      }
-    });
+    const handler = (event, payload) => onEventRef.current?.(event, payload);
+    subscribers.add(handler);
+    ensureEventSource();
 
     return () => {
-      es.close();
+      subscribers.delete(handler);
+      maybeCloseEventSource();
     };
-  }, [session, onEvent]);
+  }, [sessionUserId]);
 }
