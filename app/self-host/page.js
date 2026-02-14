@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
+import CopyMarkdownButton from '../components/CopyMarkdownButton';
 
 export const metadata = {
   title: 'Self-Host DashClaw',
@@ -85,6 +86,13 @@ export default function SelfHostPage() {
             desc="The installer generates secrets, writes .env.local, installs dependencies, and prints the API key your agents should use."
             icon={Server}
           >
+            <div className="mb-4">
+              <CopyMarkdownButton
+                href="/api/prompts/server-setup/raw"
+                label="Copy Server Setup Prompt"
+                rawLabel="View prompt"
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <CodeBlock title="Windows (PowerShell)">{`./install-windows.bat`}</CodeBlock>
               <CodeBlock title="Mac / Linux (bash)">{`bash ./install-mac.sh`}</CodeBlock>
@@ -100,6 +108,13 @@ export default function SelfHostPage() {
             desc="Agents do not need your database URL. They only need a base URL + API key. Paste these into your agent machine."
             icon={KeyRound}
           >
+            <div className="mb-4">
+              <CopyMarkdownButton
+                href="/api/prompts/agent-connect/raw"
+                label="Copy Agent Connect Prompt"
+                rawLabel="View prompt"
+              />
+            </div>
             <CodeBlock title="Agent environment (example)">{`DASHCLAW_BASE_URL=http://localhost:3000
 DASHCLAW_API_KEY=oc_live_...
 DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
