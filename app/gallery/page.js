@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
-import ClickToFullscreenImage from '../components/ClickToFullscreenImage';
+import ImageLightbox from '../components/ImageLightbox';
+import Image from 'next/image';
+import { useMemo, useState } from 'react';
 
 const screenshots = [
   { title: 'Dashboard', file: 'dash1.png', desc: 'Fleet-wide overview: live actions, risk, and governance.' },
@@ -37,6 +39,16 @@ const screenshots = [
 ];
 
 export default function GalleryPage() {
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const items = useMemo(() => {
+    return screenshots.map((s) => ({
+      src: `/images/screenshots/${encodeURIComponent(s.file)}`,
+      alt: s.title,
+      title: s.title,
+      description: s.desc,
+    }));
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <PublicNavbar />
@@ -48,28 +60,46 @@ export default function GalleryPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Product Gallery</h1>
-            <p className="text-zinc-400 mt-1">Click any image to view it fullscreen. Click again to close.</p>
+            <p className="text-zinc-400 mt-1">Click any image to view fullscreen. Use ← → keys or the arrows to browse. Click anywhere to close.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {screenshots.map((s) => {
+          {screenshots.map((s, idx) => {
             const encoded = encodeURIComponent(s.file);
             return (
-              <div key={s.file} className="flex flex-col gap-3">
-                <ClickToFullscreenImage
-                  src={`/images/screenshots/${encoded}`}
-                  alt={s.title}
-                  title={s.title}
-                  description={s.desc}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  imageClassName="object-cover"
-                />
-              </div>
+              <button
+                key={s.file}
+                className="group flex flex-col gap-3 text-left cursor-zoom-in"
+                onClick={() => setSelectedIndex(idx)}
+              >
+                <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#111]">
+                  <Image
+                    src={`/images/screenshots/${encoded}`}
+                    alt={s.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover transform group-hover:scale-[1.01] transition-transform duration-500"
+                  />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{s.title}</h3>
+                  <p className="text-sm text-zinc-400 mt-1">{s.desc}</p>
+                </div>
+              </button>
             );
           })}
         </div>
       </main>
+
+      {selectedIndex !== null && (
+        <ImageLightbox
+          items={items}
+          index={selectedIndex}
+          onChangeIndex={setSelectedIndex}
+          onClose={() => setSelectedIndex(null)}
+        />
+      )}
 
       <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
