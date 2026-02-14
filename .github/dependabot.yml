@@ -4,14 +4,44 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+    # Reduce PR spam: group patch/minor updates into a single weekly PR.
+    groups:
+      npm-weekly:
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
+    # Major updates are often breaking (React, Tailwind, Next, etc.).
+    # Handle them intentionally as planned upgrades, not background noise.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+    groups:
+      github-actions-weekly:
+        patterns:
+          - "*"
 
   - package-ecosystem: "pip"
     directory: "/sdk-python"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
+    labels:
+      - "dependencies"
+    groups:
+      pip-weekly:
+        patterns:
+          - "*"
