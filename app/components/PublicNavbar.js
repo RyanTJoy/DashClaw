@@ -12,8 +12,6 @@ export default function PublicNavbar() {
           <span className="text-lg font-semibold text-white">DashClaw</span>
         </Link>
         <div className="hidden sm:flex items-center gap-6 text-sm text-zinc-400">
-          <Link href="/demo" className="hover:text-white transition-colors">Live Demo</Link>
-          <Link href="/self-host" className="hover:text-white transition-colors">Self-Host</Link>
           <Link href="/toolkit" className="hover:text-white transition-colors">Toolkit</Link>
           <Link href="/gallery" className="hover:text-white transition-colors">Gallery</Link>
           <Link href="/#features" className="hover:text-white transition-colors">Features</Link>
