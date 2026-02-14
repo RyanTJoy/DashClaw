@@ -271,3 +271,12 @@ See `CONTRIBUTING.md`.
 ## License
 
 MIT (`LICENSE`).
+
+## Tips (I'm broke)
+
+Coffee: [Buy me a coffee](https://buymeacoffee.com/wes_sander)
+
+Venmo: [@Wes_Sander](https://account.venmo.com/u/Wes_Sander)
+
+![Venmo: @Wes_Sander](public/images/venmo.png)
+
