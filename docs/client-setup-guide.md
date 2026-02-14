@@ -1322,6 +1322,29 @@ Set up guard policies to enforce boundaries:
 
 ## 17. FAQ & Troubleshooting
 
+### "My signed actions are not verified / how do I register an agent public key?"
+
+If your agent is signing actions (you configured a private key), you must register the matching public key PEM in DashClaw:
+
+1. Generate a keypair (see `node scripts/generate-agent-keys.mjs <agent-id>`).
+2. Configure your agent with the private key (so it can sign).
+3. Register the public key:
+   - `POST /api/identities`
+   - Headers:
+     - `x-api-key: <your admin DashClaw API key>`
+     - `Content-Type: application/json`
+   - Body:
+     ```json
+     {
+       "agent_id": "cinder",
+       "algorithm": "RSASSA-PKCS1-v1_5",
+       "public_key": "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+     }
+     ```
+4. Confirm it worked with `GET /api/identities`.
+
+If you get `403 Admin access required`, you are using a non-admin API key, or the server is not treating `/api/identities` as a protected route (see `docs/lessons/2026-02-14-identity-registration.md`).
+
 ### "My action isn't showing up"
 
 - Check that your API key is valid and not revoked

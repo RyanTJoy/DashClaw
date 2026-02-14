@@ -75,6 +75,7 @@ We welcome Pull Requests for bug fixes, features, and documentation improvements
     ```
 4.  **Run CI parity checks locally** before opening a PR:
     ```bash
+    npm run scripts:check-syntax
     npm run docs:check
     npm run openapi:check
     npm run api:inventory:check

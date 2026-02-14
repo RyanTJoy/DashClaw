@@ -28,12 +28,13 @@ This file contains detailed technical information about the DashClaw project, mo
 - **Gates**: Every PR to `main` must pass:
   1. `npm ci` (clean install)
   2. `npm run lint` (ESLint)
-  3. `npm run docs:check` (documentation governance checks)
-  4. `npm run openapi:check` (stable API contract drift check)
-  5. `npm run api:inventory:check` (route maturity inventory drift check)
-  6. `npm run route-sql:check` (direct route-level SQL guardrail check)
-  7. `npm run test -- --run` (Vitest unit tests)
-  8. `npm run build` (Next.js production build)
+  3. `npm run scripts:check-syntax` (fast syntax parse for `scripts/*.js|*.mjs`)
+  4. `npm run docs:check` (documentation governance checks)
+  5. `npm run openapi:check` (stable API contract drift check)
+  6. `npm run api:inventory:check` (route maturity inventory drift check)
+  7. `npm run route-sql:check` (direct route-level SQL guardrail check)
+  8. `npm run test -- --run` (Vitest unit tests)
+  9. `npm run build` (Next.js production build)
 
 ### Reliability And Governance Controls
 - Archived program RFC source: `docs/rfcs/platform-convergence.md`
@@ -647,11 +648,14 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
   - Sends `_signature` field in POST body.
 - **API**:
   - `POST /api/actions`: verifies signature against registered public key.
-  - `POST /api/identities`: register/rotate public keys (admin only).
-  - `GET /api/identities`: list registered identities.
+  - `POST /api/identities`: register/rotate public keys (admin only; requires `x-api-key` resolving to role `admin`).
+  - `GET /api/identities`: list registered identities (same auth as other protected APIs; do not rely on caller-supplied `x-org-*` headers).
 - **UI**:
   - `RecentActionsCard`: displays green ShieldCheck icon for verified actions.
 - **Migration**: `scripts/migrate-identity-binding.mjs`
+ - **Utilities**:
+   - `scripts/generate-agent-keys.mjs <agent-id>`: prints a public PEM + private JWK you can wire into an agent.
+   - `scripts/register-identity.mjs --agent-id ... --public-key-file ...`: DB upsert helper (requires `DATABASE_URL`).
 
 ## Agent Workspace Page (Implemented)
 - Route: `/workspace` — single tabbed interface for agent operational state
