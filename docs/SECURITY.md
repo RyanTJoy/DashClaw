@@ -1,99 +1,118 @@
 # Security Guide
 
-DashClaw takes security seriously. This guide covers how we protect your data and how you can run your own security audits.
+This is the operator-facing security guide for DashClaw (self-host and cloud). It documents the security model, key controls, and how to run audits.
 
-## How We Protect Your Data
+## Architecture and Trust Boundaries (High Level)
 
-### Credentials Storage
-- All API keys and credentials are stored **encrypted** in your Postgres database using **AEAD** (AES-256-GCM).
-- **IMPORTANT**: You must set a 32-character `ENCRYPTION_KEY` environment variable for encryption to function (exactly 32 chars).
-- Credentials never touch client-side code in plaintext.
-- Environment variables used for all sensitive configuration.
-- No credentials are ever logged or exposed in error messages.
+DashClaw has two primary inbound trust boundaries:
 
-### API Security
-- All API endpoints validate required fields and enforce string length limits.
-- **Optional Signatures**: Agent actions can include a cryptographic signature; strict enforcement is controlled by `ENFORCE_AGENT_SIGNATURES=true`.
-- **Fail-Closed Auth**: The system strictly blocks API access if environment variables are misconfigured in production.
-- **Data Loss Prevention (DLP)**: Free-text ingestion endpoints are filtered for sensitive patterns (OpenAI keys, AWS credentials, etc.) and redacted before storage (including actions/loops/assumptions, shared docs/snippets/content, and bulk sync).
-- **Third-Party Exfil Minimization**: Sensitive patterns are redacted before sending content to external LLM APIs (embeddings + semantic guardrails).
-- **SSRF Protection**: Webhook/guard egress is hardened with HTTPS-only, DNS resolution, private-IP blocking, and redirect blocking.
-- **Domain Allowlist**: Support for optional `WEBHOOK_ALLOWED_DOMAINS` environment variable to strictly limit external requests to trusted providers.
-- **Guard Webhook Signing (Optional)**: If `GUARD_WEBHOOK_SECRET` is set, guard webhooks include `X-DashClaw-Timestamp` and `X-DashClaw-Signature` headers so receivers can verify authenticity.
-- **Rate Limiting**: All `/api/*` routes, including unauthenticated public endpoints, are rate limited in middleware (best-effort per instance). For multi-instance deployments, you can enable distributed rate limiting via Upstash REST env vars.
-- Database connections use SSL/TLS encryption.
-- CORS configured for your deployment domain only.
-- No sensitive data in URL parameters (API keys must be in headers).
+- Browser/operator: NextAuth session token (dashboard UI -> `/api/*`)
+- Agent/SDK: API key in `x-api-key` (agent tooling/SDK -> `/api/*`)
 
-### Local Agent Security
-- **Audit Log Redaction**: The local Python audit tools include a redaction engine to ensure secrets are never stored in plaintext in local SQLite databases.
-- **State Isolation**: Agent state and credentials should be stored in the gitignored `secrets/` directory.
+Outbound trust boundaries:
 
-### What We DON'T Store
-- We don't store your actual data - just references and metadata
-- Token counts, not token content
-- Relationship names, not conversation history
-- Goal titles, not private details
+- LLM provider calls (e.g., OpenAI) for embeddings/guard evaluation
+- Webhook deliveries to operator-configured HTTPS endpoints
 
-## Security Checklist for Deployment
+## Data Handling (What We Store)
 
-Before deploying, verify:
+DashClaw stores the data you send to it, including (depending on which features you use):
 
-- [ ] `.env.local` is in `.gitignore` (it is by default)
-- [ ] `DATABASE_URL` is set in Vercel environment variables, not in code
-- [ ] No API keys hardcoded anywhere
-- [ ] HTTPS enabled (automatic on Vercel)
-- [ ] Access restricted to authorized users (consider Vercel password protection)
+- Actions, events, messages, docs/snippets/content, webhooks, guard decisions, and related metadata
+- Encrypted integration credentials (at rest), when configured via Settings/Integrations
 
-## Running a Security Audit
+DashClaw includes Data Loss Prevention (DLP) redaction to reduce the chance of secrets being stored or exfiltrated, but DLP is a best-effort control. Do not rely on it as your only defense.
 
-Use our included security scanner to check your deployment:
+## Core Controls
 
-```bash
-# From the project root
-node scripts/security-scan.js
-```
+### Encryption at Rest (Integration Secrets)
 
-This checks for:
-- Hardcoded secrets in source files
-- Tracked sensitive files in git
-- Missing .gitignore entries
-- Exposed environment variables
+- Integration credentials are encrypted in the database using AEAD (AES-256-GCM).
+- Required: `ENCRYPTION_KEY` must be set and must be exactly 32 characters (32 ASCII characters recommended).
+- Backward compatibility: legacy ciphertext formats are still decryptable so upgrades do not break existing installs.
 
-## Credential Rotation
+### API Access Control (Default Deny)
 
-We recommend rotating credentials every 90 days:
+- All `/api/*` routes are protected by default in `middleware.js`.
+- Only a small allowlist of `PUBLIC_ROUTES` is unauthenticated (e.g., `/api/health`, `/api/setup/status`, `/api/auth/*`, `/api/cron/*`, `/api/docs/raw`, `/api/prompts/*`).
+- Tenant context headers (`x-org-id`, `x-org-role`, `x-user-id`) are stripped from all inbound API requests to prevent spoofing; middleware injects trusted values only after authentication.
+- Readonly API keys are enforced centrally: API-key requests with role `readonly` are blocked from non-GET/HEAD methods.
+- Decrypted integration secrets are only returned to admin API-key callers; non-admin API keys receive encrypted payloads only.
 
-1. Generate new credentials from the service provider
-2. Update in Dashboard → Integrations → [Service] → Edit
-3. Click "Test Connection" to verify
-4. Save Settings
+Fail-closed behavior:
 
-Track rotations with the included rotation reminder (coming soon).
+- In production (`NODE_ENV` not `development`), if `DASHCLAW_API_KEY` is not set, the API layer returns `503` and does not serve `/api/*`.
+
+### CORS
+
+- In production, CORS is restricted to configured/known origins.
+- In development, CORS may be permissive to support local workflows.
+
+### Rate Limiting and Client IP Trust
+
+- All `/api/*` routes (including `PUBLIC_ROUTES`) are rate limited in middleware.
+- By default this is best-effort per-instance. For multi-instance deployments, distributed rate limiting is supported via Upstash REST:
+  - `UPSTASH_REDIS_REST_URL`
+  - `UPSTASH_REDIS_REST_TOKEN`
+- Self-hosting behind a proxy: set `TRUST_PROXY=true` if (and only if) you control your proxy and it sets `X-Forwarded-For` correctly. Otherwise, do not trust forwarded IPs for rate limiting/audit attribution.
+
+### DLP Redaction (On Write + Before External Calls)
+
+DashClaw scans and redacts common secret patterns (examples: OpenAI keys, AWS access keys, common API token shapes) in two places:
+
+- Before storing user/agent free-text in high-risk ingestion endpoints (docs/snippets/content/sync/actions/loops/assumptions/approvals).
+- Before sending content to external LLM APIs (embeddings + semantic guardrails), to reduce third-party exfil risk.
+
+Limitations:
+
+- DLP is pattern-based and can miss secrets (false negatives) or redact benign strings (false positives).
+- Treat it as defense-in-depth; you should still keep secrets out of free text whenever possible.
+
+### Webhook Security (SSRF + Optional Signing)
+
+Outbound webhook delivery is hardened to reduce SSRF risk:
+
+- HTTPS-only
+- DNS resolution + private-IP blocking
+- Redirects disabled
+- Optional domain allowlist via `WEBHOOK_ALLOWED_DOMAINS`
+
+Optional authenticity:
+
+- If `GUARD_WEBHOOK_SECRET` is set, guard webhooks include:
+  - `X-DashClaw-Timestamp`
+  - `X-DashClaw-Signature: v1=<hmac>`
+
+### Log Hygiene
+
+- Webhook delivery logs redact payload and response bodies before persistence.
+- Guard decision logs redact sensitive patterns before persistence.
+
+### Analytics (Optional)
+
+DashClaw supports Vercel Web Analytics (`@vercel/analytics`), but it is intentionally not enabled by default for self-hosts:
+
+- Enabled automatically on Vercel deployments (`VERCEL=1`)
+- Opt-in for non-Vercel hosts via `NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS=true`
+
+## Deployment Checklist
+
+- [ ] Confirm `.env`, `.env.local`, and any secrets are not git-tracked (`git ls-files .env*` should be empty).
+- [ ] Set required production env vars:
+  - [ ] `DATABASE_URL`
+  - [ ] `NEXTAUTH_URL`
+  - [ ] `NEXTAUTH_SECRET`
+  - [ ] `DASHCLAW_API_KEY` (required to enable `/api/*` in production)
+  - [ ] `ENCRYPTION_KEY` (32 characters)
+- [ ] Set optional security env vars as needed:
+  - [ ] `TRUST_PROXY=true` (only if you control a reverse proxy)
+  - [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (distributed rate limiting)
+  - [ ] `WEBHOOK_ALLOWED_DOMAINS` (restrict outbound webhook targets)
+  - [ ] `GUARD_WEBHOOK_SECRET` (sign guard webhooks)
+  - [ ] `NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS=true` (non-Vercel opt-in)
+- [ ] Run the security scan: `node scripts/security-scan.js`
 
 ## Reporting Security Issues
 
-Found a vulnerability? Please email practicalsystems@gmail.com (or open a private GitHub issue).
+Please do not open a public issue for security vulnerabilities. Email `practicalsystems@gmail.com` or open a private GitHub security advisory.
 
-We take all reports seriously and will respond within 48 hours.
-
-## Security Architecture
-
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Browser       │────▶│   Vercel Edge   │────▶│   Neon DB       │
-│   (Client)      │     │   (API Routes)  │     │   (Encrypted)   │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-        │                       │                       │
-        │ HTTPS only            │ SSL/TLS               │ Encrypted
-        │ No secrets            │ Env vars only         │ at rest
-        └───────────────────────┴───────────────────────┘
-```
-
-## Best Practices
-
-1. **Use environment variables** - Never hardcode secrets
-2. **Rotate regularly** - 90 days for API keys, immediately if exposed
-3. **Audit before deploy** - Run the security scanner
-4. **Monitor access** - Check Vercel/Neon logs periodically
-5. **Keep dependencies updated** - `npm audit` regularly

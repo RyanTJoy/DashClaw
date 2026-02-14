@@ -43,3 +43,13 @@ Status legend:
 
 - [x] Fix `app/api/handoffs/route.js` runtime errors (missing `getSql` and missing `scanSensitiveData` import).
 - [x] Fix quota-check call signature mismatch in `app/api/onboarding/api-key/route.js` (currently latent because OSS quotas are infinite).
+
+## Docs and Maintenance
+
+- [x] Update security docs to capture the full remediation set and self-host configuration knobs:
+  - `docs/SECURITY.md`
+  - `docs/SECURITY-CHECKLIST.md`
+  - `SECURITY_BASELINE_REVIEW_2026-02-14.md`
+- [x] Optional Vercel Web Analytics (enabled on Vercel; opt-in for self-host via `NEXT_PUBLIC_ENABLE_VERCEL_ANALYTICS=true`).
+- [x] Mitigate dev-only `npm audit` advisory for nested `esbuild` via targeted `overrides` (without forcing unrelated packages to downgrade).
+- [x] Ignore local npm cache directory (`.npm-cache/`) to prevent accidental commits.

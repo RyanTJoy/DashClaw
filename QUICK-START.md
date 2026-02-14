@@ -126,8 +126,8 @@ Want it running 24/7 without leaving your computer on?
 5. Done! You get a free URL like `your-dashboard.vercel.app`
 
 **Security note:**
-- **Local-only**: you can run without `DASHCLAW_API_KEY`
-- **Public deployment**: set `DASHCLAW_API_KEY` or your `/api/*` data may be readable by anyone
+- **Local development**: you can run without `DASHCLAW_API_KEY` (middleware allows a convenience default in `NODE_ENV=development`).
+- **Production/public deployment**: you must set `DASHCLAW_API_KEY` or the `/api/*` surface will be disabled (fail-closed with `503`).
 
 ---
 

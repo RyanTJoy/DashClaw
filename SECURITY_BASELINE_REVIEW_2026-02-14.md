@@ -2,6 +2,27 @@
 
 Scope: full repository baseline review + prioritized security findings.
 
+## Status Update (2026-02-14)
+
+This baseline review is retained as a historical record of what was found. As of 2026-02-14, the Critical/High/Medium items in this report have been remediated and documented.
+
+Primary remediation commits (chronological):
+
+- `6420c44` Security hardening baseline fixes (default-deny `/api/*`, header stripping, readonly enforcement, settings decryption gating, AEAD encryption migration, webhook SSRF hardening, DLP on write/exfil minimization).
+- `c49e9be` Harden DLP for actions and trusted client IP.
+- `a66ee67` Redact secrets in guard decision logs.
+- `3b44ad6` Defense-in-depth: rate limit public endpoints, CSP tightening, webhook delivery log redaction.
+- `3f8ab5a` Security hygiene: patch Next.js, add CodeQL/Dependabot, improve security scanner/docs.
+- `4655aa6` Optional distributed rate limiting (Upstash REST).
+- `9dfbffa` Optional Vercel Analytics (opt-in for self-host, automatic on Vercel).
+- `4b181dd` + `3f1eca9` Dev dependency audit mitigation for nested `esbuild` advisory; ignore `.npm-cache/`.
+
+Current reference docs:
+
+- `docs/SECURITY.md`
+- `docs/SECURITY-CHECKLIST.md`
+- `SECURITY_FIX_CHECKLIST_2026-02-14.md`
+
 ## 1) SYSTEM OVERVIEW
 
 - Primary stack: Next.js 15 App Router (`app/`), NextAuth v4 (GitHub + Google OAuth), Postgres (Neon serverless driver), optional Redis realtime backend, Vercel cron.
@@ -25,7 +46,7 @@ Scope: full repository baseline review + prioritized security findings.
 
 ## 2) CRITICAL SECURITY RISKS
 
-### Critical: Unauthenticated org header injection on “unclassified” API routes (data exfil + tenant breakout)
+### Critical: Unauthenticated org header injection on "unclassified" API routes (data exfil + tenant breakout)
 
 - Locations:
   - `middleware.js` (auth only applied when `pathname` matches `PROTECTED_ROUTES`; non-protected routes do not strip attacker-supplied `x-org-*` headers)
@@ -35,17 +56,17 @@ Scope: full repository baseline review + prioritized security findings.
 - Why risky:
   - `/api/stream`, `/api/swarm/graph`, `/api/usage` were not protected by middleware allowlist and still trusted `x-org-id` if attacker supplied it.
 - Exploit scenario:
-  - An unauthenticated internet client calls these endpoints with `x-org-id: org_victim` to read cross-tenant data; `/api/stream` enables realtime subscription to another org’s action events.
+  - An unauthenticated internet client calls these endpoints with `x-org-id: org_victim` to read cross-tenant data; `/api/stream` enables realtime subscription to another org's action events.
 
-### High: “readonly” API key role is mintable but not enforced anywhere (authorization model mismatch)
+### High: "readonly" API key role is mintable but not enforced anywhere (authorization model mismatch)
 
 - Locations:
   - `app/api/orgs/[orgId]/keys/route.js` (allows creating keys with role `readonly`)
-  - Repo-wide: role checks only gate “admin-only” management endpoints; no enforcement exists for “readonly” keys.
+  - Repo-wide: role checks only gate "admin-only" management endpoints; no enforcement exists for "readonly" keys.
 - Why risky:
-  - Operators may issue “readonly” keys expecting they cannot mutate state; any route without explicit role enforcement will accept writes.
+  - Operators may issue "readonly" keys expecting they cannot mutate state; any route without explicit role enforcement will accept writes.
 - Exploit scenario:
-  - Third-party “readonly” key is used to POST messages/sync/actions and poison org data.
+  - Third-party "readonly" key is used to POST messages/sync/actions and poison org data.
 
 ### High: API-key requests can retrieve decrypted integration secrets (over-broad secret access)
 
@@ -101,7 +122,7 @@ Scope: full repository baseline review + prioritized security findings.
 - Broken API route implementation (runtime errors)
   - `app/api/handoffs/route.js` references `getSql()` and `scanSensitiveData()` but neither is defined/imported in the module.
 - Invite API comment/intent mismatch vs middleware enforcement (suspected)
-  - `app/api/invite/[token]/route.js` described as “public-ish” but middleware routes require session; likely intended but comment is misleading.
+  - `app/api/invite/[token]/route.js` described as "public-ish" but middleware routes require session; likely intended but comment is misleading.
 - Quota enforcement signature mismatch (latent)
   - `app/api/onboarding/api-key/route.js` calls `checkQuotaFast` with wrong parameter order vs `app/lib/usage.js`.
 
@@ -109,7 +130,7 @@ Scope: full repository baseline review + prioritized security findings.
 
 - Make authZ default-deny for `/api/*` and explicitly allowlist public endpoints.
 - Implement and enforce real RBAC/permissions (including `readonly`).
-- Stop relying on request headers as the “source of truth” for tenant context inside handlers.
+- Stop relying on request headers as the "source of truth" for tenant context inside handlers.
 - Replace AES-CBC with AEAD (AES-GCM) and support migration.
 - Harden outbound webhook SSRF (DNS resolution, private-range blocking, redirect blocking, allowlist mode).
 
