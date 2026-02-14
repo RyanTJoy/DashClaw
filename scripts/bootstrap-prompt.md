@@ -12,7 +12,7 @@ You are going to introspect your own workspace and report your current state to 
 **Important security rules:**
 - NEVER transmit secrets, API keys, passwords, or tokens as values
 - Only report key NAMES from .env files, never their values
-- Only transmit structured metadata, not raw file contents
+- When syncing snippets/context/goals/learning, transmit only reviewed extracts (use `--dry-run` if using the CLI scanner). Do not include secrets.
 
 ## Setup
 
@@ -125,8 +125,8 @@ await claw.reportMemoryHealth({
 ## Step 3: Report Goals
 
 Look for goals in `tasks/todo.md`, `TODO.md`, or project documentation. Checkboxes indicate status:
-- `- [ ] Task` → status: `'active'`
-- `- [x] Task` → status: `'completed'`, progress: 100
+- `- [ ] Task` -> status: `'active'`
+- `- [x] Task` -> status: `'completed'`, progress: 100
 
 **Bulk sync:**
 ```javascript
@@ -165,15 +165,15 @@ await claw.recordDecision({
 ## Step 5: Capture Context Points
 
 Extract key insights from your CLAUDE.md and memory files. Categorize each:
-- `insight` — architectural understanding, patterns (importance: 7-8)
-- `decision` — choices made and why (importance: 7)
-- `task` — pending work items (importance: 5-6)
-- `general` — other useful context (importance: 5)
+- `insight` - architectural understanding, patterns (importance: 7-8)
+- `decision` - choices made and why (importance: 7)
+- `task` - pending work items (importance: 5-6)
+- `general` - other useful context (importance: 5)
 
 **Bulk sync:**
 ```javascript
 state.context_points = [
-  { content: 'Next.js 14 App Router with JavaScript only', category: 'insight', importance: 8 },
+  { content: 'Next.js 15 App Router with JavaScript only', category: 'insight', importance: 8 },
   { content: 'Dark-only theme, flat surfaces', category: 'insight', importance: 6 },
 ];
 ```
@@ -181,7 +181,7 @@ state.context_points = [
 **Individual method:**
 ```javascript
 await claw.captureKeyPoint({
-  content: 'Next.js 14 App Router with JavaScript only',
+  content: 'Next.js 15 App Router with JavaScript only',
   category: 'insight',
   importance: 8,
 });
@@ -317,14 +317,14 @@ console.log(digest);
 ```
 
 You can also check the DashClaw dashboard:
-- `/workspace` — Overview tab shows today's digest
-- `/workspace` — Context tab shows points and threads
-- `/dashboard` — Widgets show goals, learning, integrations
+- `/workspace` - Overview tab shows today's digest
+- `/workspace` - Context tab shows points and threads
+- `/dashboard` - Widgets show goals, learning, integrations
 
 ## Notes
 
-- **Idempotent**: Connections, threads, snippets, and approaches all use upsert logic — safe to re-run
+- **Idempotent**: Connections, threads, snippets, and approaches all use upsert logic - safe to re-run
 - **Security**: Never transmit .env values, only key names for provider detection
 - **Independent steps**: Each step is standalone. Skip any that don't apply.
-- **Limits**: Max items per category — connections: 50, goals/learning/content: 100, context points: 200, threads/snippets: 50
+- **Limits**: Max items per category - connections: 50, goals/learning/content: 100, context points: 200, threads/snippets: 50
 - **Bulk vs individual**: Use `syncState()` when pushing many categories at once. Use individual methods for targeted updates during normal operation.

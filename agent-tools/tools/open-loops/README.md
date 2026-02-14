@@ -15,7 +15,7 @@ python loops.py view 3
 ```
 
 ## Why this exists
-We already have: daily logs, context capture, and task lists. This tool is specifically for **commitments made in conversation** — open loops that are easy to forget.
+We already have: daily logs, context capture, and task lists. This tool is specifically for **commitments made in conversation** - open loops that are easy to forget.
 
 ## Data
 SQLite DB at `tools/open-loops/data/open_loops.db` (gitignored).

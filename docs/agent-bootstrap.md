@@ -1,71 +1,121 @@
-# Agent Bootstrap System
+# Agent Bootstrap
 
-Three tools for importing existing agent state into the DashClaw dashboard:
+DashClaw supports importing existing agent state (memory, goals, decisions, snippets, preferences) into the dashboard.
 
-## CLI Scanner (`scripts/bootstrap-agent.mjs`)
-Mechanical scanner that reads an agent's workspace and pushes discovered data.
+There are three supported paths:
 
-```bash
-node scripts/bootstrap-agent.mjs \
-  --dir /path/to/agent \
-  --agent-id my-agent \
-  --agent-name "My Agent" \
-  --dry-run              # Preview without pushing
+1. CLI scanner: `scripts/bootstrap-agent.mjs` (recommended)
+2. Agent self-discovery prompt: `scripts/bootstrap-prompt.md`
+3. Bulk sync API: `POST /api/sync`
 
-node scripts/bootstrap-agent.mjs \
-  --dir /path/to/agent \
-  --agent-id my-agent \
-  --local                # Push to localhost:3000
+## 1) CLI Scanner (`scripts/bootstrap-agent.mjs`)
 
-node scripts/bootstrap-agent.mjs \
-  --dir /path/to/agent \
-  --agent-id my-agent \
-  --api-key oc_live_xxx  # Push to production
+This is a mechanical scanner that reads an agent workspace directory and pushes discovered state to DashClaw.
+
+### One-liner examples
+
+Preview only (no writes to DashClaw):
+
+```powershell
+node scripts/bootstrap-agent.mjs --dir "C:\path\to\agent" --agent-id "my-agent" --agent-name "My Agent" --local --dry-run
 ```
 
-**Flags**: `--dir` (required), `--agent-id` (required), `--agent-name`, `--base-url` (falls back to `DASHCLAW_BASE_URL`), `--api-key` (falls back to `DASHCLAW_API_KEY`), `--local`, `--dry-run`
+Push to local dashboard:
 
-**7 scanners**: connections (env keys + package.json deps), memory (.claude/ health + entities), goals (todo.md), learning (lessons.md), context points (CLAUDE.md sections), context threads (CLAUDE.md headings), snippets (fenced code blocks)
+```powershell
+node scripts/bootstrap-agent.mjs --dir "C:\path\to\agent" --agent-id "my-agent" --agent-name "My Agent" --local
+```
 
-**Security**: Never reads .env values. Never transmits raw file contents. Only structured extracts.
+Push to a remote dashboard:
 
-## Agent Self-Discovery Prompt (`scripts/bootstrap-prompt.md`)
-Markdown prompt file users paste to their agent. The agent introspects its own workspace and pushes state via the SDK. 10 steps covering all data categories. Uses `syncState()` for bulk efficiency with fallback to individual methods.
+```bash
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --agent-name "My Agent" --base-url "https://your-host" --api-key "oc_live_..."
+```
 
-## Bulk Sync API (`POST /api/sync`)
-Single endpoint that accepts all data categories in one request. Each category is a try/catch island — partial failures don't block other categories.
+### Flags
 
-**Request** (every key optional):
+- `--dir` (required): agent workspace directory
+- `--agent-id` (required): unique agent identifier (e.g. `moltfire`)
+- `--agent-name` (optional): display name
+- `--base-url` (optional): API base URL (default `http://localhost:3000`)
+- `--api-key` (optional): API key (defaults to `DASHCLAW_API_KEY` from the DashClaw server `.env.local`)
+- `--local`: shorthand for `--base-url http://localhost:3000`
+- `--dry-run`: print JSON payload preview and exit
+
+### What it reads (workspace)
+
+The scanner is designed to work with OpenClaw-style workspaces as well as Claude-style `.claude/` notes.
+
+- Markdown sources (curated):
+  - `MEMORY.md`, `projects.md`, `CLAUDE.md`, `insights.md`, `SECURITY.md`, `USER.md`, `IDENTITY.md`, `SOUL.md`
+  - `.claude/**/*.md`
+  - `memory/**/*.md` (includes structured memory plus the most recent daily logs)
+- Connection detection:
+  - Reads `.env*` files for **key names only**, never values
+  - Reads `package.json` dependency names
+
+### What it syncs
+
+- `connections`: inferred providers (GitHub, Google, Neon, Stripe, etc.) from env key names and dependencies
+- `memory`:
+  - health snapshot (file/line/size stats, daily log span)
+  - entities/topics extracted from markdown headings/bold/backticks
+- `goals`:
+  - `tasks/todo.md` checkboxes (if present)
+  - `projects.md` project goals and checkbox task lists (OpenClaw-style)
+  - `memory/pending-tasks.md` `**Task:**` blocks (if present)
+- `learning` (decisions/lessons):
+  - `memory/decisions/*.md` tables: `Decision | Why | Outcome`
+  - `tasks/lessons.md` bullets (if present)
+  - `CLAUDE.md` lesson/pattern sections (if present)
+- `context_points`:
+  - `CLAUDE.md` sections (if present)
+  - `MEMORY.md` section summaries (lightweight)
+- `snippets`:
+  - fenced code blocks from a small set of high-signal docs (e.g. `TOOLS*.md`, `projects.md`, `MEMORY.md`)
+- `preferences`:
+  - extracted from `MEMORY.md` "Active Preferences" bullet list (if present)
+
+### Security notes
+
+- The scanner does **not** transmit `.env` values.
+- It **does** transmit extracted text and code blocks from markdown when importing snippets/context/goals/decisions. Use `--dry-run` to preview exactly what will be sent.
+- The server applies best-effort DLP redaction before storing high-risk text fields, but do not rely on DLP as your only defense.
+
+## 2) Agent Self-Discovery Prompt (`scripts/bootstrap-prompt.md`)
+
+This is a markdown prompt you paste to an agent. The agent introspects its own workspace and pushes state via the SDK.
+
+Use this when you cannot run `scripts/bootstrap-agent.mjs` on the same machine as the workspace.
+
+## 3) Bulk Sync API (`POST /api/sync`)
+
+Single endpoint that accepts multiple data categories in one request. Each category is processed independently (partial failures do not block other categories).
+
+Request (every key optional):
+
 ```json
 {
-  "agent_id": "my-agent",
   "connections": [{ "provider": "github", "auth_type": "oauth", "status": "active" }],
   "memory": { "health": { "score": 75 }, "entities": [], "topics": [] },
   "goals": [{ "title": "Deploy v2", "status": "active" }],
-  "learning": [{ "decision": "Used JWT", "reasoning": "Edge compat" }],
-  "content": [{ "title": "API Docs", "platform": "docs" }],
-  "inspiration": [{ "title": "Real-time signals", "category": "feature" }],
-  "context_points": [{ "content": "Dark theme", "category": "insight", "importance": 7 }],
-  "context_threads": [{ "name": "Auth", "summary": "Tracking auth decisions" }],
-  "handoffs": [{ "summary": "Completed auth", "key_decisions": ["JWT"] }],
-  "preferences": {
-    "observations": [{ "observation": "Prefers dark mode" }],
-    "preferences": [{ "preference": "Concise responses", "confidence": 90 }],
-    "moods": [{ "mood": "focused", "energy": 8 }],
-    "approaches": [{ "approach": "Code-first", "success": true }]
-  },
-  "snippets": [{ "name": "api-pattern", "code": "...", "language": "javascript" }]
+  "learning": [{ "decision": "Used JWT", "reasoning": "Edge compat", "outcome": "success" }],
+  "context_points": [{ "content": "Dark-only theme", "category": "insight", "importance": 7 }],
+  "snippets": [{ "name": "api-pattern", "code": "...", "language": "javascript" }],
+  "preferences": { "preferences": [{ "preference": "Prefer concise output", "confidence": 80 }] }
 }
 ```
 
-**Response**:
-```json
-{
-  "results": { "connections": { "synced": 5 }, "goals": { "synced": 3, "errors": ["..."] } },
-  "total_synced": 46,
-  "total_errors": 1,
-  "duration_ms": 1250
-}
-```
+Category limits (current defaults; see `app/api/sync/route.js`):
 
-**Limits**: connections 50, goals/learning/content/inspiration 100, context_points 200, threads/snippets/handoffs/preference sub-arrays 50
+- `connections`: 1000
+- `goals`: 2000
+- `learning`: 2000
+- `content`: 2000
+- `inspiration`: 2000
+- `context_points`: 5000
+- `context_threads`: 1000
+- `snippets`: 1000
+- `handoffs`: 1000
+- `observations` / `preferences` / `moods` / `approaches`: 1000 each
+

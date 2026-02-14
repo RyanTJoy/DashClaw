@@ -274,7 +274,7 @@ If we later provide a managed SaaS tier:
 
 - Demo under the same codebase (this Next.js app).
   - Rationale: speed and shared visual language. Demo is isolated to `/demo` and does not depend on `/api/*`.
-- First cloud “user-paid one click” target: Railway.
+- First cloud "user-paid one click" target: Railway.
   - Rationale: easiest path for non-technical users to provision Postgres + env vars with minimal yak shaving.
   - Follow-ups: add Render and Fly templates after Railway is stable.
 - Local password mode is single-user (admin) only for v1.

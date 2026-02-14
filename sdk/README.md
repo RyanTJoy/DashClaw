@@ -356,7 +356,7 @@ Get drift report for assumptions with risk scoring. Shows which assumptions are 
 
 ## Signals
 
-Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns — no configuration required.
+Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns - no configuration required.
 
 ### claw.getSignals()
 Get current risk signals across all agents. Returns 7 signal types: autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, and stale_running_action.

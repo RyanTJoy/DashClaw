@@ -1,7 +1,7 @@
 ---
 source-of-truth: true
 owner: DevEx Lead
-last-verified: 2026-02-13
+last-verified: 2026-02-14
 doc-type: governance
 ---
 
@@ -18,7 +18,8 @@ When documents disagree, use this precedence order:
 1. `docs/decisions/*.md` (ADRs and decision records)
 2. `docs/rfcs/*.md` with `Status: Approved` for active roadmap commitments
 3. `PROJECT_DETAILS.md` for architecture and system behavior
-4. `README.md` for onboarding and quickstart only
+4. `README.md` and `QUICK-START.md` for onboarding and quickstart only
+5. `CLAUDE.md` for coding-agent handoff notes (non-canonical, but should be kept current)
 
 ## Architecture Docs In Scope
 
@@ -29,6 +30,16 @@ The following files are treated as architecture-governed docs and must include m
 - `docs/decisions/2026-02-13-revert-draggable-dashboard.md`
 - `docs/rfcs/platform-convergence.md`
 - `docs/rfcs/platform-convergence-status.md`
+
+## Handoff Docs In Scope
+
+The following files are not architecture sources-of-truth, but are treated as operational handoff docs and should be updated whenever workflows change:
+
+- `CLAUDE.md`
+- `README.md`
+- `QUICK-START.md`
+- `docs/agent-bootstrap.md`
+- `docs/client-setup-guide.md`
 
 ## Required Metadata Header
 

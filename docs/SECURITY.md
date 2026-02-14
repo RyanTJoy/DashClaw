@@ -54,6 +54,10 @@ Fail-closed behavior:
 - By default this is best-effort per-instance. For multi-instance deployments, distributed rate limiting is supported via Upstash REST:
   - `UPSTASH_REDIS_REST_URL`
   - `UPSTASH_REDIS_REST_TOKEN`
+- Local/self-host tuning (middleware env vars):
+  - `DASHCLAW_RATE_LIMIT_WINDOW_MS` (default: 60000)
+  - `DASHCLAW_RATE_LIMIT_MAX` (default: 1000 in development, 100 otherwise)
+  - `DASHCLAW_DISABLE_RATE_LIMIT=true` (dev only; do not use on public deployments)
 - Self-hosting behind a proxy: set `TRUST_PROXY=true` if (and only if) you control your proxy and it sets `X-Forwarded-For` correctly. Otherwise, do not trust forwarded IPs for rate limiting/audit attribution.
 
 ### DLP Redaction (On Write + Before External Calls)
@@ -115,4 +119,3 @@ DashClaw supports Vercel Web Analytics (`@vercel/analytics`), but it is intentio
 ## Reporting Security Issues
 
 Please do not open a public issue for security vulnerabilities. Email `practicalsystems@gmail.com` or open a private GitHub security advisory.
-

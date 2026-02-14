@@ -1,6 +1,6 @@
-﻿# DashClaw: Complete Setup & Usage Guide
+# DashClaw: Complete Setup & Usage Guide
 
-> **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do â€” every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
+> **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do - every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
 >
 > **Live Demo (fake data):** https://dashclaw.io/demo
 > **Your Dashboard (self-host):** http://localhost:3000 (or `https://YOUR_DASHCLAW_HOST`)
@@ -45,7 +45,14 @@ Go to your dashboard:
 - Visit `YOUR_BASE_URL/dashboard`
 - If auth is enabled, you will be redirected to `YOUR_BASE_URL/login`.
 
-Local dev note: when running `npm run dev`, the dashboard uses a local dev session so you can get in without configuring OAuth.
+Local dev note (current): the dashboard UI uses NextAuth (OAuth) on localhost. Configure at least one provider callback URL:
+
+- GitHub: `http://localhost:3000/api/auth/callback/github`
+- Google: `http://localhost:3000/api/auth/callback/google`
+
+If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
+
+If you only want to preview the UI without login, use the demo sandbox: `YOUR_BASE_URL/demo` (fake data, read-only).
 
 You can sign in with:
 - **GitHub** (recommended for developers)
@@ -83,7 +90,7 @@ DASHCLAW_API_KEY=oc_live_a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
 npm install dashclaw
 ```
 
-Requirements: **Node.js 18+** (uses native `fetch`).
+Requirements: **Node.js 20+** recommended (uses native `fetch`).
 
 ### Step 5: Send Your First Action
 
@@ -257,7 +264,7 @@ An **action** is anything your agent does that's worth tracking. Each action has
 
 ### Open Loops
 
-An **open loop** is something unresolved â€” a pending follow-up, a question waiting for an answer, a dependency that hasn't been met. Track them to prevent things falling through the cracks.
+An **open loop** is something unresolved â€" a pending follow-up, a question waiting for an answer, a dependency that hasn't been met. Track them to prevent things falling through the cracks.
 
 Types: `followup`, `question`, `dependency`, `approval`, `review`, `handoff`, `other`
 Priorities: `low`, `medium`, `high`, `critical`
@@ -268,7 +275,7 @@ An **assumption** is something your agent believes to be true. Log assumptions s
 
 ### Risk Signals
 
-DashClaw automatically monitors for 7 risk patterns (see [Section 8](#8-risk-signals-automatic-monitoring)). No configuration needed â€” signals fire automatically based on your agent's behavior data.
+DashClaw automatically monitors for 7 risk patterns (see [Section 8](#8-risk-signals-automatic-monitoring)). No configuration needed â€" signals fire automatically based on your agent's behavior data.
 
 ### Guard Policies
 
@@ -737,25 +744,25 @@ After signing in, you have access to these pages via the sidebar:
 
 Your operational overview. Contains 12 widget cards:
 
-- **Onboarding Checklist** â€” 4-step guided setup (auto-hides when complete)
-- **Risk Signals** â€” Active signal count with severity breakdown
-- **Open Loops** â€” Unresolved loops by priority
-- **Recent Actions** â€” Latest agent actions with status badges
-- **Projects** â€” Systems touched across all actions
-- **Goals Chart** â€” Goal completion progress (visual chart)
-- **Learning Stats** â€” Decisions and lessons counts
-- **Follow-ups** â€” Action items and pending tasks
-- **Calendar** â€” Upcoming events
-- **Context** â€” Recent decisions snapshot
-- **Integrations** â€” Active connections per agent
-- **Memory Health** â€” Memory file health score
-- **Inspiration** â€” Ideas tracker
+- **Onboarding Checklist** â€" 4-step guided setup (auto-hides when complete)
+- **Risk Signals** â€" Active signal count with severity breakdown
+- **Open Loops** â€" Unresolved loops by priority
+- **Recent Actions** â€" Latest agent actions with status badges
+- **Projects** â€" Systems touched across all actions
+- **Goals Chart** â€" Goal completion progress (visual chart)
+- **Learning Stats** â€" Decisions and lessons counts
+- **Follow-ups** â€" Action items and pending tasks
+- **Calendar** â€" Upcoming events
+- **Context** â€" Recent decisions snapshot
+- **Integrations** â€" Active connections per agent
+- **Memory Health** â€" Memory file health score
+- **Inspiration** â€" Ideas tracker
 
 ### Actions (`/actions`)
 
 Table of all action records. Click any action to open the **Post-Mortem Page** which shows:
 - Key metrics (risk score, confidence, reversible, duration, cost)
-- **Trace Graph** â€” visual SVG diagram of parent chain, assumptions, loops
+- **Trace Graph** â€" visual SVG diagram of parent chain, assumptions, loops
 - Root cause analysis (for failed/completed actions)
 - Interactive assumptions (validate/invalidate with reasons)
 - Interactive loops (resolve/cancel with resolution text)
@@ -772,19 +779,19 @@ Real-time risk monitoring. Auto-refreshes every 30 seconds.
 
 ### Policies (`/policies`)
 
-Create and manage guard policies. 5 policy types available â€” see [Section 7](#7-behavior-guard-controlling-agent-actions).
+Create and manage guard policies. 5 policy types available â€" see [Section 7](#7-behavior-guard-controlling-agent-actions).
 
 ### Messages (`/messages`)
 
 Agent-to-agent communication hub with 4 tabs:
-- **Inbox** â€” Received messages with read/unread status
-- **Sent** â€” Outgoing messages
-- **Threads** â€” Multi-turn conversations
-- **Docs** â€” Shared workspace documents
+- **Inbox** â€" Received messages with read/unread status
+- **Sent** â€" Outgoing messages
+- **Threads** â€" Multi-turn conversations
+- **Docs** â€" Shared workspace documents
 
 ### Workspace (`/workspace`)
 
-Multi-tab agent workspace â€” see [Section 9](#9-agent-workspace).
+Multi-tab agent workspace â€" see [Section 9](#9-agent-workspace).
 
 ### Content (`/content`)
 
@@ -854,35 +861,35 @@ The Guard system lets you set rules that agents check **before** taking risky ac
 Block or warn when risk score exceeds a threshold.
 
 ```
-Example: Any action with risk >= 80 â†’ block
+Example: Any action with risk >= 80 â†' block
 ```
 
 #### Require Approval
 Require human approval for specific action types.
 
 ```
-Example: deploy, security â†’ require_approval
+Example: deploy, security â†' require_approval
 ```
 
 #### Block Action Type
 Unconditionally block specific action types.
 
 ```
-Example: deploy â†’ block (no deploys allowed)
+Example: deploy â†' block (no deploys allowed)
 ```
 
 #### Rate Limit
 Warn or block when an agent exceeds action frequency.
 
 ```
-Example: Max 20 actions per 60 minutes â†’ warn
+Example: Max 20 actions per 60 minutes â†' warn
 ```
 
 #### Webhook Check
 Call an external HTTPS endpoint for custom decision logic. Your endpoint receives the context and preliminary decision, and can escalate (but never downgrade) the severity.
 
 ```
-Example: POST to https://your-api.com/guard â†’ returns { decision: 'block', reasons: ['...'] }
+Example: POST to https://your-api.com/guard â†' returns { decision: 'block', reasons: ['...'] }
 ```
 
 Webhook check features:
@@ -1057,34 +1064,23 @@ await claw.syncState({
 Mechanically scans an agent's workspace directory and pushes structured data:
 
 ```bash
-# Preview what would be synced (dry run)
-node scripts/bootstrap-agent.mjs \
-  --dir /path/to/agent/workspace \
-  --agent-id my-agent \
-  --dry-run
+# PowerShell (Windows) - preview (dry run)
+node scripts/bootstrap-agent.mjs --dir "C:\\path\\to\\agent\\workspace" --agent-id "my-agent" --agent-name "My Agent" --local --dry-run
 
-# Push to DashClaw
-node scripts/bootstrap-agent.mjs \
-  --dir /path/to/agent/workspace \
-  --agent-id my-agent \
-  --agent-name "My Agent" \
-  --api-key oc_live_xxx
+# PowerShell (Windows) - push to local dashboard
+node scripts/bootstrap-agent.mjs --dir "C:\\path\\to\\agent\\workspace" --agent-id "my-agent" --agent-name "My Agent" --local
 
-# Use local dev server
-node scripts/bootstrap-agent.mjs \
-  --dir /path/to/agent/workspace \
-  --agent-id my-agent \
-  --local
+# macOS/Linux - push to a remote dashboard
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent/workspace" --agent-id "my-agent" --agent-name "My Agent" --base-url "https://your-host" --api-key "oc_live_xxx"
 ```
 
 The scanner detects:
-1. **Connections** â€” environment keys + package.json dependencies (18 provider types)
-2. **Memory** â€” `.claude/` directory health score, entities, topics
-3. **Goals** â€” `tasks/todo.md` checkboxes
-4. **Learning** â€” `tasks/lessons.md` entries
-5. **Context Points** â€” CLAUDE.md sections with auto-scored importance
-6. **Context Threads** â€” CLAUDE.md headings as thread names
-7. **Snippets** â€” Fenced code blocks from markdown files
+1. **Connections** - environment key names (not values) + `package.json` dependency names
+2. **Memory** - `MEMORY.md`, `.claude/**/*.md`, `memory/**/*.md` (entities/topics + health snapshot)
+3. **Goals** - OpenClaw-style `projects.md` + checkbox task lists, plus common TODO formats when present
+4. **Learning** - OpenClaw-style `memory/decisions/*.md` tables and other curated learning notes when present
+5. **Context Points** - extracted sections/summaries from curated markdown docs
+6. **Snippets** - fenced code blocks from a curated set of markdown files
 
 ### Option C: Self-Discovery Prompt
 
@@ -1100,7 +1096,7 @@ Paste the contents of `scripts/bootstrap-prompt.md` directly to your agent. The 
 2. Click **Invite Member**
 3. Optionally enter an email, select a role (admin/member)
 4. Copy the invite link (valid for 7 days)
-5. Share the link â€” recipient signs in and joins your workspace
+5. Share the link - recipient signs in and joins your workspace
 
 ### Roles
 
@@ -1133,7 +1129,7 @@ Set up webhook endpoints to receive signal notifications:
 2. Click **Add Webhook**
 3. Enter your endpoint URL
 4. Select which signal types to subscribe to (or "all")
-5. Save â€” you'll see a **webhook secret** (shown once)
+5. Save - you'll see a **webhook secret** (shown once)
 
 Webhooks include an `X-DashClaw-Signature` header (HMAC-SHA256) for verification.
 
@@ -1279,7 +1275,7 @@ node scripts/create-org.mjs --name "Acme AI" --slug "acme"
 DATABASE_URL=... node scripts/migrate-multi-tenant.mjs
 ```
 
-Idempotent â€” safe to run multiple times.
+Idempotent â€" safe to run multiple times.
 
 ---
 
@@ -1291,7 +1287,7 @@ Idempotent â€” safe to run multiple times.
 - **Set ENCRYPTION_KEY**: In production, ensure the `ENCRYPTION_KEY` (32 characters) environment variable is set. This key is used to encrypt all sensitive settings (AI provider keys, etc.) at rest in your database.
 - **Rotate keys** if compromised. Revoke from the API Keys page; revocation is instant.
 - **Use separate keys** for each agent or environment.
-- **Key format:** `oc_live_{32_hex_chars}` â€” stored as SHA-256 hash server-side.
+- **Key format:** `oc_live_{32_hex_chars}` â€" stored as SHA-256 hash server-side.
 
 ### Scan Content Before Sending
 
@@ -1325,10 +1321,10 @@ await claw.createAction({
 
 Set up guard policies to enforce boundaries:
 
-1. **Risk Threshold** â€” block anything above risk 90
-2. **Require Approval** â€” require approval for `deploy`, `security` actions
-3. **Rate Limit** â€” max 30 actions per hour per agent
-4. **Webhook Check** â€” call your own endpoint for custom business rules
+1. **Risk Threshold** â€" block anything above risk 90
+2. **Require Approval** â€" require approval for `deploy`, `security` actions
+3. **Rate Limit** â€" max 30 actions per hour per agent
+4. **Webhook Check** â€" call your own endpoint for custom business rules
 
 ---
 
@@ -1443,7 +1439,7 @@ The SDK sends **only what you explicitly pass** to each method. It never:
 - Accesses code or memory automatically
 - Tracks anything without an explicit method call
 
-The `bootstrap-agent.mjs` scanner reads workspace files but only sends structured extracts (titles, categories, scores) â€” never raw file contents.
+The `bootstrap-agent.mjs` scanner does not transmit `.env` values, but it *does* transmit extracted text and code blocks when importing snippets/context/goals/learning. Use `--dry-run` to preview exactly what will be sent.
 
 ---
 
@@ -1474,9 +1470,9 @@ MOST USED METHODS:
   claw.syncState({ connections, memory, goals, learning, ... })
 
 GUARD MODES:
-  'off'     â†’ no auto-check (default)
-  'warn'    â†’ console.warn + proceed
-  'enforce' â†’ throw GuardBlockedError on block
+  'off'     â†' no auto-check (default)
+  'warn'    â†' console.warn + proceed
+  'enforce' â†' throw GuardBlockedError on block
 
 PLAN LIMITS (FREE):
   100 actions/mo, 1 agent, 2 members, 2 keys

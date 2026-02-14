@@ -1,55 +1,84 @@
+---
+source-of-truth: false
+owner: maintainers
+last-verified: 2026-02-14
+doc-type: handoff
+---
+
 # DashClaw
 
-AI agent observability platform — a Next.js 14 app (JavaScript) providing a command center for AI agents and operators to track actions, learning, relationships, goals, and workflows.
+DashClaw is an AI agent observability and governance platform: a Next.js 15 (JavaScript) app that provides a command center for actions, learning/decisions, goals, guardrails, security signals, messaging, and operator workflows.
 
-**For full technical details, API routes, patterns, and database schema, see [PROJECT_DETAILS.md](PROJECT_DETAILS.md).**
+For architecture, API inventory, and schema-level behavior, use `PROJECT_DETAILS.md` as the canonical reference.
 
-## Core Routes
-- **`/`** — Public landing page (server component)
-- **`/docs`** — Public SDK documentation
-- **`/dashboard`** — Authenticated operations dashboard
-- **`/workspace`** — Agent workspace (digest, context, handoffs, snippets, preferences, memory)
-- **`/security`** — Security monitoring (risk signals, guard decisions)
+## Product Surfaces
+
+- `/` - public landing site
+- `/demo` - demo sandbox UI (fake data, read-only, no login)
+- `/dashboard` - authenticated operations dashboard (real data)
+- `/workspace` - per-agent workspace (digest, context, handoffs, snippets, preferences, memory)
+- `/security` - security dashboard (signals, guard decisions, findings)
 
 ## Tech Stack
-- **Runtime**: Node.js 18+
-- **Framework**: Next.js 14 (App Router)
-- **Language**: JavaScript (not TypeScript)
-- **Styling**: Tailwind CSS 3
-- **Database**: Neon PostgreSQL (`@neondatabase/serverless`)
-- **Auth**: NextAuth.js v4 (GitHub + Google OAuth)
-- **Icons**: lucide-react
+
+- Runtime: Node.js 20+ recommended (Next.js 15 requires modern Node)
+- Framework: Next.js 15 (App Router)
+- Language: JavaScript
+- Styling: Tailwind CSS 3
+- Database: Postgres (Neon recommended), `@neondatabase/serverless`
+- Auth (UI): NextAuth v4 (GitHub + Google OAuth)
+- Auth (agents/tools): `x-api-key` header (DashClaw API keys)
 
 ## Essential Commands
+
 ```bash
-npm install          # Install dependencies
-npm run dev          # Dev server on :3000
-npm run build        # Production build
-npm run lint         # ESLint check
-node scripts/test-actions.mjs   # ActionRecord tests (needs DATABASE_URL)
-node scripts/security-scan.js   # Pre-deploy security audit
+npm install
+npm run dev
+npm run build
+npm run lint
+npm run docs:check
+npm run route-sql:check
 ```
 
-## Environment Variables
-See `.env.example`. Key variables required:
-- `DATABASE_URL`: Neon PostgreSQL connection string
-- `NEXTAUTH_URL` & `NEXTAUTH_SECRET`: NextAuth configuration
-- `GITHUB_ID` & `GITHUB_SECRET`: GitHub OAuth credentials
-- `GOOGLE_ID` & `GOOGLE_SECRET`: Google OAuth credentials
-- `DASHCLAW_API_KEY`: Production API protection
+DB bootstrap and migrations (idempotent, safe to re-run):
 
-## Key Patterns
-- **Database**: Use ``sql`SELECT...` `` with `@neondatabase/serverless`. Always cast TEXT timestamps for comparisons.
-- **Multi-Tenancy**: Every route uses `getOrgId(request)` from `app/lib/org.js` to scope queries.
-- **Auth**: `middleware.js` gates all `/api/*` and dashboard routes. Roles: `admin`, `member`.
-- **UI**: Dark-only theme using CSS variables in `globals.css`. Shared primitives in `app/components/ui/`.
+```bash
+node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
+node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
+node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
+```
 
----
-Refer to **[PROJECT_DETAILS.md](PROJECT_DETAILS.md)** for:
-- Detailed Directory Structure
-- Complete API Route Reference
-- DB Table Schemas & Migrations
-- SDK Method List
-- Multi-tenant Resolution Logic
-- Behavior Guard Implementation
-- Deployment Configurations
+## Environment Variables (Must Know)
+
+See `.env.example`.
+
+- `DATABASE_URL` (required): Postgres connection string
+- `NEXTAUTH_URL` + `NEXTAUTH_SECRET` (required for UI auth)
+- `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET` (required to sign in)
+- `DASHCLAW_API_KEY` (required in production): protects `/api/*` and seeds `org_default`
+
+Rate limiting (optional):
+
+- `DASHCLAW_RATE_LIMIT_MAX`
+- `DASHCLAW_RATE_LIMIT_WINDOW_MS`
+- `DASHCLAW_DISABLE_RATE_LIMIT=true` (dev only)
+
+OAuth callback URIs (local dev):
+
+- `http://localhost:3000/api/auth/callback/github`
+- `http://localhost:3000/api/auth/callback/google`
+
+If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
+
+## Guardrails (Do Not Regress)
+
+- Default-deny for `/api/*` is enforced in `middleware.js` (only explicit `PUBLIC_ROUTES` are unauthenticated).
+- Org context headers (`x-org-id`, `x-org-role`, `x-user-id`) must never be accepted from clients; middleware injects trusted values.
+- Route SQL guardrail: do not introduce new direct SQL usage inside `app/api/**/route.js` handlers. Put query logic in repositories (see `app/lib/repositories/*`). CI blocks new route-level SQL (`npm run route-sql:check`).
+
+## Where To Look First
+
+- `PROJECT_DETAILS.md` - system map, route list, schema, invariants
+- `docs/agent-bootstrap.md` - importing an existing agent/workspace (CLI scanner + security notes)
+- `docs/client-setup-guide.md` - SDK + operator guide (long-form reference)
+
