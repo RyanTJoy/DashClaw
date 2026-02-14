@@ -1,6 +1,6 @@
-# DashClaw: Complete Setup & Usage Guide
+﻿# DashClaw: Complete Setup & Usage Guide
 
-> **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do — every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
+> **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do â€” every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
 >
 > **Live Demo (fake data):** https://dashclaw.io/demo
 > **Your Dashboard (self-host):** http://localhost:3000 (or `https://YOUR_DASHCLAW_HOST`)
@@ -24,7 +24,7 @@
 11. [Bootstrap an Existing Agent](#11-bootstrap-an-existing-agent)
 12. [Team Management](#12-team-management)
 13. [Webhooks & Email Alerts](#13-webhooks--email-alerts)
-14. [Billing & Plans](#14-billing--plans)
+14. [Usage & Plans](#14-usage--plans)
 15. [Token & Cost Analytics](#15-token--cost-analytics)
 16. [CLI Tools](#16-cli-tools)
 17. [Security Best Practices](#17-security-best-practices)
@@ -34,13 +34,18 @@
 
 ## 1. Getting Started (First 5 Minutes)
 
-### Step 1: Sign In
+### Step 1: Open The Right Dashboard
 
 If you just want to see what DashClaw looks like, open the demo: **https://dashclaw.io/demo**.
+In the demo, there is **no login** and all data/actions are fake.
 
 If you want to connect your real agents, you must run your own dashboard (self-host) and use **your** base URL (example: **http://localhost:3000**).
 
-Open your dashboard URL and click **Sign In**.
+Go to your dashboard:
+- Visit `YOUR_BASE_URL/dashboard`
+- If auth is enabled, you will be redirected to `YOUR_BASE_URL/login`.
+
+Local dev note: when running `npm run dev`, the dashboard uses a local dev session so you can get in without configuring OAuth.
 
 You can sign in with:
 - **GitHub** (recommended for developers)
@@ -88,7 +93,8 @@ Add this to your agent's code:
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'http://localhost:3000',
+  // Tip: scripts/init-self-host-env.mjs prints DASHCLAW_BASE_URL for your agents.
+  baseUrl: process.env.DASHCLAW_BASE_URL || 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',          // unique ID for this agent
   agentName: 'My First Agent',  // human-readable name (optional)
@@ -251,7 +257,7 @@ An **action** is anything your agent does that's worth tracking. Each action has
 
 ### Open Loops
 
-An **open loop** is something unresolved — a pending follow-up, a question waiting for an answer, a dependency that hasn't been met. Track them to prevent things falling through the cracks.
+An **open loop** is something unresolved â€” a pending follow-up, a question waiting for an answer, a dependency that hasn't been met. Track them to prevent things falling through the cracks.
 
 Types: `followup`, `question`, `dependency`, `approval`, `review`, `handoff`, `other`
 Priorities: `low`, `medium`, `high`, `critical`
@@ -262,7 +268,7 @@ An **assumption** is something your agent believes to be true. Log assumptions s
 
 ### Risk Signals
 
-DashClaw automatically monitors for 7 risk patterns (see [Section 8](#8-risk-signals-automatic-monitoring)). No configuration needed — signals fire automatically based on your agent's behavior data.
+DashClaw automatically monitors for 7 risk patterns (see [Section 8](#8-risk-signals-automatic-monitoring)). No configuration needed â€” signals fire automatically based on your agent's behavior data.
 
 ### Guard Policies
 
@@ -731,25 +737,25 @@ After signing in, you have access to these pages via the sidebar:
 
 Your operational overview. Contains 12 widget cards:
 
-- **Onboarding Checklist** — 4-step guided setup (auto-hides when complete)
-- **Risk Signals** — Active signal count with severity breakdown
-- **Open Loops** — Unresolved loops by priority
-- **Recent Actions** — Latest agent actions with status badges
-- **Projects** — Systems touched across all actions
-- **Goals Chart** — Goal completion progress (visual chart)
-- **Learning Stats** — Decisions and lessons counts
-- **Follow-ups** — Action items and pending tasks
-- **Calendar** — Upcoming events
-- **Context** — Recent decisions snapshot
-- **Integrations** — Active connections per agent
-- **Memory Health** — Memory file health score
-- **Inspiration** — Ideas tracker
+- **Onboarding Checklist** â€” 4-step guided setup (auto-hides when complete)
+- **Risk Signals** â€” Active signal count with severity breakdown
+- **Open Loops** â€” Unresolved loops by priority
+- **Recent Actions** â€” Latest agent actions with status badges
+- **Projects** â€” Systems touched across all actions
+- **Goals Chart** â€” Goal completion progress (visual chart)
+- **Learning Stats** â€” Decisions and lessons counts
+- **Follow-ups** â€” Action items and pending tasks
+- **Calendar** â€” Upcoming events
+- **Context** â€” Recent decisions snapshot
+- **Integrations** â€” Active connections per agent
+- **Memory Health** â€” Memory file health score
+- **Inspiration** â€” Ideas tracker
 
 ### Actions (`/actions`)
 
 Table of all action records. Click any action to open the **Post-Mortem Page** which shows:
 - Key metrics (risk score, confidence, reversible, duration, cost)
-- **Trace Graph** — visual SVG diagram of parent chain, assumptions, loops
+- **Trace Graph** â€” visual SVG diagram of parent chain, assumptions, loops
 - Root cause analysis (for failed/completed actions)
 - Interactive assumptions (validate/invalidate with reasons)
 - Interactive loops (resolve/cancel with resolution text)
@@ -766,19 +772,19 @@ Real-time risk monitoring. Auto-refreshes every 30 seconds.
 
 ### Policies (`/policies`)
 
-Create and manage guard policies. 5 policy types available — see [Section 7](#7-behavior-guard-controlling-agent-actions).
+Create and manage guard policies. 5 policy types available â€” see [Section 7](#7-behavior-guard-controlling-agent-actions).
 
 ### Messages (`/messages`)
 
 Agent-to-agent communication hub with 4 tabs:
-- **Inbox** — Received messages with read/unread status
-- **Sent** — Outgoing messages
-- **Threads** — Multi-turn conversations
-- **Docs** — Shared workspace documents
+- **Inbox** â€” Received messages with read/unread status
+- **Sent** â€” Outgoing messages
+- **Threads** â€” Multi-turn conversations
+- **Docs** â€” Shared workspace documents
 
 ### Workspace (`/workspace`)
 
-Multi-tab agent workspace — see [Section 9](#9-agent-workspace).
+Multi-tab agent workspace â€” see [Section 9](#9-agent-workspace).
 
 ### Content (`/content`)
 
@@ -809,9 +815,9 @@ Manage API keys for your workspace. Admins can generate and revoke keys.
 
 Manage workspace members. Admins can invite (7-day link expiry), change roles, and remove members. See [Section 12](#12-team-management).
 
-### Billing (`/billing`)
+### Usage (`/usage`)
 
-Plan management and usage meters. See [Section 14](#14-billing--plans).
+Usage meters for actions/agents/members/api keys. See [Section 14](#14-usage--plans).
 
 ### Activity (`/activity`)
 
@@ -848,35 +854,35 @@ The Guard system lets you set rules that agents check **before** taking risky ac
 Block or warn when risk score exceeds a threshold.
 
 ```
-Example: Any action with risk >= 80 → block
+Example: Any action with risk >= 80 â†’ block
 ```
 
 #### Require Approval
 Require human approval for specific action types.
 
 ```
-Example: deploy, security → require_approval
+Example: deploy, security â†’ require_approval
 ```
 
 #### Block Action Type
 Unconditionally block specific action types.
 
 ```
-Example: deploy → block (no deploys allowed)
+Example: deploy â†’ block (no deploys allowed)
 ```
 
 #### Rate Limit
 Warn or block when an agent exceeds action frequency.
 
 ```
-Example: Max 20 actions per 60 minutes → warn
+Example: Max 20 actions per 60 minutes â†’ warn
 ```
 
 #### Webhook Check
 Call an external HTTPS endpoint for custom decision logic. Your endpoint receives the context and preliminary decision, and can escalate (but never downgrade) the severity.
 
 ```
-Example: POST to https://your-api.com/guard → returns { decision: 'block', reasons: ['...'] }
+Example: POST to https://your-api.com/guard â†’ returns { decision: 'block', reasons: ['...'] }
 ```
 
 Webhook check features:
@@ -1072,13 +1078,13 @@ node scripts/bootstrap-agent.mjs \
 ```
 
 The scanner detects:
-1. **Connections** — environment keys + package.json dependencies (18 provider types)
-2. **Memory** — `.claude/` directory health score, entities, topics
-3. **Goals** — `tasks/todo.md` checkboxes
-4. **Learning** — `tasks/lessons.md` entries
-5. **Context Points** — CLAUDE.md sections with auto-scored importance
-6. **Context Threads** — CLAUDE.md headings as thread names
-7. **Snippets** — Fenced code blocks from markdown files
+1. **Connections** â€” environment keys + package.json dependencies (18 provider types)
+2. **Memory** â€” `.claude/` directory health score, entities, topics
+3. **Goals** â€” `tasks/todo.md` checkboxes
+4. **Learning** â€” `tasks/lessons.md` entries
+5. **Context Points** â€” CLAUDE.md sections with auto-scored importance
+6. **Context Threads** â€” CLAUDE.md headings as thread names
+7. **Snippets** â€” Fenced code blocks from markdown files
 
 ### Option C: Self-Discovery Prompt
 
@@ -1094,7 +1100,7 @@ Paste the contents of `scripts/bootstrap-prompt.md` directly to your agent. The 
 2. Click **Invite Member**
 3. Optionally enter an email, select a role (admin/member)
 4. Copy the invite link (valid for 7 days)
-5. Share the link — recipient signs in and joins your workspace
+5. Share the link â€” recipient signs in and joins your workspace
 
 ### Roles
 
@@ -1127,7 +1133,7 @@ Set up webhook endpoints to receive signal notifications:
 2. Click **Add Webhook**
 3. Enter your endpoint URL
 4. Select which signal types to subscribe to (or "all")
-5. Save — you'll see a **webhook secret** (shown once)
+5. Save â€” you'll see a **webhook secret** (shown once)
 
 Webhooks include an `X-DashClaw-Signature` header (HMAC-SHA256) for verification.
 
@@ -1142,32 +1148,14 @@ Webhooks include an `X-DashClaw-Signature` header (HMAC-SHA256) for verification
 
 ---
 
-## 14. Billing & Plans
+## 14. Usage & Plans
 
-### Plan Comparison
+DashClaw is designed to be self-hosted.
 
-| Feature | Free | Pro ($29/mo) | Team ($79/mo) | Enterprise |
-|---------|------|-------------|---------------|------------|
-| Actions/month | 100 | 5,000 | 50,000 | Unlimited |
-| Agents | 1 | 10 | Unlimited | Unlimited |
-| Team members | 2 | 5 | 25 | Unlimited |
-| API keys | 2 | 10 | 50 | Unlimited |
-| All dashboard pages | Yes | Yes | Yes | Yes |
-| 7 risk signals | Yes | Yes | Yes | Yes |
-| Webhooks & alerts | — | Yes | Yes | Yes |
-| Activity audit log | — | Yes | Yes | Yes |
-| Priority support | — | — | Yes | Yes |
-
-### Quota Enforcement
-
-- **Warning** at 80% usage (header: `x-quota-warning`)
-- **10% grace buffer** above limit before hard block
-- **Hard block** returns HTTP 402
-
-### Upgrading
-
-Admins can upgrade from the **Billing** page. Checkout redirects to Stripe.
-
+In this open-source/self-host edition:
+- The **Usage** page (`/usage`) shows usage meters.
+- Quotas are **unlimited by default** (you should not see HTTP 402 unless you add your own quota enforcement).
+- Stripe configuration is optional and not required to run the dashboard.
 ---
 
 ## 15. Token & Cost Analytics
@@ -1291,7 +1279,7 @@ node scripts/create-org.mjs --name "Acme AI" --slug "acme"
 DATABASE_URL=... node scripts/migrate-multi-tenant.mjs
 ```
 
-Idempotent — safe to run multiple times.
+Idempotent â€” safe to run multiple times.
 
 ---
 
@@ -1303,7 +1291,7 @@ Idempotent — safe to run multiple times.
 - **Set ENCRYPTION_KEY**: In production, ensure the `ENCRYPTION_KEY` (32 characters) environment variable is set. This key is used to encrypt all sensitive settings (AI provider keys, etc.) at rest in your database.
 - **Rotate keys** if compromised. Revoke from the API Keys page; revocation is instant.
 - **Use separate keys** for each agent or environment.
-- **Key format:** `oc_live_{32_hex_chars}` — stored as SHA-256 hash server-side.
+- **Key format:** `oc_live_{32_hex_chars}` â€” stored as SHA-256 hash server-side.
 
 ### Scan Content Before Sending
 
@@ -1337,10 +1325,10 @@ await claw.createAction({
 
 Set up guard policies to enforce boundaries:
 
-1. **Risk Threshold** — block anything above risk 90
-2. **Require Approval** — require approval for `deploy`, `security` actions
-3. **Rate Limit** — max 30 actions per hour per agent
-4. **Webhook Check** — call your own endpoint for custom business rules
+1. **Risk Threshold** â€” block anything above risk 90
+2. **Require Approval** â€” require approval for `deploy`, `security` actions
+3. **Rate Limit** â€” max 30 actions per hour per agent
+4. **Webhook Check** â€” call your own endpoint for custom business rules
 
 ---
 
@@ -1348,7 +1336,15 @@ Set up guard policies to enforce boundaries:
 
 ### "My signed actions are not verified / how do I register an agent public key?"
 
-If your agent is signing actions (you configured a private key), you must register the matching public key PEM in DashClaw:
+If your agent is signing actions (you configured a private key), DashClaw needs the matching public key to verify signatures.
+
+Recommended: use **one-click pairing** (it registers the public key automatically).
+
+1. In your agent, create a pairing request (from the private JWK) and print the link.
+2. Open the link (or use `/pairings` to approve many agents).
+3. Re-try sending a signed action.
+
+Advanced/manual fallback: register the public key PEM directly (easy to mess up if you grab the wrong keypair):
 
 1. Generate a keypair (see `node scripts/generate-agent-keys.mjs <agent-id>`).
 2. Configure your agent with the private key (so it can sign).
@@ -1383,8 +1379,8 @@ If you get `403 Admin access required`, you are using a non-admin API key, or th
 
 ### "I get a 402 error"
 
-- You've hit a plan quota limit. Check the Billing page for usage
-- Upgrade your plan or wait for the monthly reset (actions reset monthly)
+- In the open-source/self-host edition, quotas are unlimited. A `402` usually means you are running a modified build, a hosted edition, or you added your own quota enforcement.
+- If you expected quotas to apply, check `app/lib/usage.js` and your org plan record in the database.
 
 ### "Guard is blocking my actions"
 
@@ -1422,7 +1418,7 @@ Both agents share the same org data but are tracked separately. Use the global *
 git clone git@github.com:ucsandman/DashClaw.git
 cd DashClaw
 npm install
-cp .env.example .env
+cp .env.example .env.local
 # Fill in DATABASE_URL (get a free Neon DB at neon.tech)
 # Fill in NEXTAUTH_URL=http://localhost:3000
 # Fill in NEXTAUTH_SECRET (run: openssl rand -hex 32)
@@ -1447,7 +1443,7 @@ The SDK sends **only what you explicitly pass** to each method. It never:
 - Accesses code or memory automatically
 - Tracks anything without an explicit method call
 
-The `bootstrap-agent.mjs` scanner reads workspace files but only sends structured extracts (titles, categories, scores) — never raw file contents.
+The `bootstrap-agent.mjs` scanner reads workspace files but only sends structured extracts (titles, categories, scores) â€” never raw file contents.
 
 ---
 
@@ -1478,10 +1474,11 @@ MOST USED METHODS:
   claw.syncState({ connections, memory, goals, learning, ... })
 
 GUARD MODES:
-  'off'     → no auto-check (default)
-  'warn'    → console.warn + proceed
-  'enforce' → throw GuardBlockedError on block
+  'off'     â†’ no auto-check (default)
+  'warn'    â†’ console.warn + proceed
+  'enforce' â†’ throw GuardBlockedError on block
 
 PLAN LIMITS (FREE):
   100 actions/mo, 1 agent, 2 members, 2 keys
 ```
+

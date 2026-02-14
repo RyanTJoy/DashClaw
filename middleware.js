@@ -578,6 +578,10 @@ export async function middleware(request) {
         return demoJson(request, demoTokens(fixtures));
       }
 
+      if (pathname === '/api/usage') {
+        return demoJson(request, fixtures.usage);
+      }
+
       if (pathname === '/api/security/status') {
         return demoJson(request, fixtures.securityStatus);
       }

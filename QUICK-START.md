@@ -28,9 +28,13 @@ Node.js is what runs the dashboard. If you don't have it:
 
 ---
 
-## Step 2: Get a Free Database
+## Step 2: Get a Database (Where DashClaw Stores Data)
 
-Your dashboard needs somewhere to store data. Neon gives you a free database:
+DashClaw is self-hosted (you run it). You bring the database.
+
+### Option A: Free Neon Database (Recommended)
+
+Neon gives you a free hosted Postgres database:
 
 1. Go to **[neon.tech](https://neon.tech/)**
 2. Click **"Start Free"** and create an account (GitHub login works!)
@@ -40,6 +44,20 @@ Your dashboard needs somewhere to store data. Neon gives you a free database:
 
 **Keep this safe - you'll need it in the next step!**
 
+### Option B: Local Postgres (Docker)
+
+If you already have Docker Desktop installed, you can run Postgres locally:
+
+```bash
+docker compose up -d db
+```
+
+Then use:
+
+```bash
+DATABASE_URL=postgresql://dashclaw:dashclaw@localhost:5432/dashclaw
+```
+
 ---
 
 ## Step 3: Download & Install
@@ -47,7 +65,7 @@ Your dashboard needs somewhere to store data. Neon gives you a free database:
 ### Fastest path (recommended)
 
 Run the installer for your platform. It will:
-- ask for your `DATABASE_URL` (from Neon)
+- ask for your `DATABASE_URL` (from Neon or local Postgres)
 - generate `NEXTAUTH_SECRET`, `DASHCLAW_API_KEY`, and `ENCRYPTION_KEY`
 - write `.env.local`
 

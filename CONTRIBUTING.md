@@ -26,7 +26,11 @@ To get started with the codebase:
     ```bash
     cp .env.example .env.local
     ```
-    You will need a [Neon](https://neon.tech) PostgreSQL connection string for the `DATABASE_URL`.
+    You will need a PostgreSQL connection string for `DATABASE_URL`.
+    You can use Neon (hosted) or run the included local Postgres via Docker:
+    ```bash
+    docker compose up -d db
+    ```
 
 4.  **Run the Development Server**:
     ```bash
@@ -43,7 +47,7 @@ To get started with the codebase:
     We use Drizzle ORM for schema management.
     ```bash
     npm run db:generate  # Generate migration files
-    npm run db:push      # Apply changes to your Neon DB
+    npm run db:push      # Apply changes to your Postgres DB
     ```
 
 ## Project Structure

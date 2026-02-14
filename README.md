@@ -3,8 +3,8 @@
 [DashClaw](https://www.dashclaw.io/) is a production-focused AI agent observability and governance platform.
 
 It combines:
-- A customer-facing website (`/`) and operator dashboard (`/dashboard`)
-- A live demo sandbox (`/demo`) for “show me what this is” (read-only)
+- A customer-facing website (`/`) and operations dashboard (`/dashboard`)
+- A live demo sandbox (`/demo`) that shows the real dashboard UI with fake data (read-only, no login)
 - A Next.js API control plane (`app/api/*`)
 - Realtime SSE streaming with replay (`/api/stream`)
 - Node and Python SDKs for agent instrumentation
@@ -23,9 +23,11 @@ It combines:
 ## Product Surfaces
 
 - `http://localhost:3000/`: public/customer-facing site
-- `http://localhost:3000/demo`: live demo (read-only sample data)
+- `http://localhost:3000/demo`: live demo (real UI, fake data, read-only, no login)
 - `http://localhost:3000/self-host`: self-host instructions
-- `http://localhost:3000/dashboard`: authenticated operations dashboard (your real data; self-hosted)
+- `http://localhost:3000/dashboard`: operations dashboard
+  - Demo: public + fake data
+  - Self-host: your data (requires auth in production)
 - `http://localhost:3000/docs`: SDK and platform documentation
 - `http://localhost:3000/toolkit`: agent tools overview
 
@@ -75,11 +77,17 @@ npm install
 cp .env.example .env.local
 ```
 
-Minimum local variables:
-- `DATABASE_URL`
-- `NEXTAUTH_URL=http://localhost:3000`
-- `NEXTAUTH_SECRET`
-- `DASHCLAW_API_KEY` (strongly recommended; required for production)
+Fast path: generate the required secrets + an admin API key (and keep your existing values if re-running):
+
+```bash
+# Requires DATABASE_URL to be set (either in your shell or passed via --database-url)
+node scripts/init-self-host-env.mjs --database-url "postgresql://..."
+```
+
+Minimum variables (self-host):
+- `DATABASE_URL` (Postgres)
+- `NEXTAUTH_URL` + `NEXTAUTH_SECRET`
+- `DASHCLAW_API_KEY` (required for production deployments; strongly recommended locally)
 
 ### 3) Run migrations (idempotent)
 

@@ -57,7 +57,8 @@ app/
 ├── lib/maintenance.js         # Proactive memory health engine
 ├── lib/org.js                 # Multi-tenant org helpers (getOrgId, getOrgRole, getUserId)
 ├── lib/auth.js                # NextAuth config (GitHub + Google, JWT, user upsert)
-├── lib/billing.js             # Plan limits, usage metering, quota checking
+├── lib/billing.js             # Cost estimation (tokens -> USD)
+├── lib/usage.js               # Usage meters + quota checks
 ├── lib/colors.js              # Agent color hashing, action type icon map
 ├── lib/audit.js               # Fire-and-forget activity logging (logActivity)
 ├── lib/signals.js             # Shared signal computation (computeSignals)
@@ -415,7 +416,7 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Monthly resources (`actions_per_month`, `agents`): period = `'2026-02'`; snapshot resources (`members`, `api_keys`): period = `'current'`
 - Cold start: first request seeds meters from live COUNTs; subsequent requests read 1 row
 - Increments are fire-and-forget (don't block API responses); `GREATEST(0, count + delta)` prevents negative counters
-- Functions in `app/lib/billing.js`: `getCurrentPeriod()`, `incrementMeter()`, `checkQuotaFast()`, `seedMeters()` (private)
+- Functions in `app/lib/usage.js`: `getCurrentPeriod()`, `incrementMeter()`, `checkQuotaFast()`, `seedMeters()` (private)
 - `getUsage()` reads from meters (1 query for up to 4 rows); `checkQuota()` delegates to `checkQuotaFast()`
 - Meter increment points: `POST /api/actions` (+actions, +agents if new), `POST/DELETE /api/keys` (+/-api_keys), `POST /api/invite/[token]` accept (+members), `DELETE /api/team/[userId]` (-members)
 - Migration Step 19 in `migrate-multi-tenant.mjs`
@@ -429,7 +430,7 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 - Actor types: `user`, `system`, `api_key`, `cron`
 - Audited events: `key.created`, `key.revoked`, `invite.created`, `invite.revoked`, `invite.accepted`, `role.changed`, `member.removed`, `member.left`, `setting.updated`, `setting.deleted`, `billing.checkout_started`, `webhook.created`, `webhook.deleted`, `webhook.tested`, `webhook.fired`, `signal.detected`, `alert.email_sent`
 - Indexes: org_id, created_at, action, actor_id
-- Sidebar: "Activity" link with Clock icon in System group (after Billing)
+- Sidebar: "Activity" link with Clock icon in System group (after Usage)
 - Migration Step 20 in `migrate-multi-tenant.mjs`
 
 ## Webhooks (Implemented)
