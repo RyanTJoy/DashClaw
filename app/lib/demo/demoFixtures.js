@@ -354,6 +354,20 @@ function buildFixtures() {
     updated_at: isoFromNow(int(rnd, 5, 120) * 60 * 1000),
   }));
 
+  const pairings = Array.from({ length: 12 }).map((_, i) => {
+    const agent = agents[i % agents.length];
+    return {
+      id: `pair_demo_${String(i + 1).padStart(3, '0')}`,
+      agent_id: agent.agent_id,
+      agent_name: agent.agent_name,
+      algorithm: 'RSASSA-PKCS1-v1_5',
+      status: 'pending',
+      created_at: isoFromNow((5 + i * 7) * 60 * 1000),
+      updated_at: isoFromNow((5 + i * 7) * 60 * 1000),
+      expires_at: isoInFuture((15 + i) * 60 * 1000),
+    };
+  });
+
   const memory = {
     health: {
       score: int(rnd, 68, 96),
@@ -481,6 +495,7 @@ function buildFixtures() {
     tokensToday,
     settings,
     connections,
+    pairings,
     memory,
     signals,
     recommendations,
@@ -495,4 +510,3 @@ export function getDemoFixtures() {
   _cached = buildFixtures();
   return _cached;
 }
-
