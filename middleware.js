@@ -562,6 +562,20 @@ export async function middleware(request) {
         return demoJson(request, fixtures.securityStatus);
       }
 
+      if (pathname === '/api/pairings') {
+        const status = url.searchParams.get('status') || 'pending';
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200);
+        const pairings = fixtures.pairings.filter(p => p.status === status).slice(0, limit);
+        return demoJson(request, { pairings });
+      }
+
+      if (segments[0] === 'api' && segments[1] === 'pairings' && segments.length === 3) {
+        const pairingId = segments[2];
+        const pairing = fixtures.pairings.find(p => p.id === pairingId) || null;
+        if (!pairing) return demoJson(request, { error: 'Pairing not found' }, 404);
+        return demoJson(request, { pairing });
+      }
+
       return demoJson(request, { error: 'Demo mode: endpoint disabled.' }, 403);
     }
 
