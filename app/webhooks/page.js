@@ -11,6 +11,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
+import { isDemoMode } from '../lib/isDemoMode';
 
 const EVENT_TYPES = [
   { value: 'all', label: 'All Events' },
@@ -26,6 +27,8 @@ const EVENT_TYPES = [
 export default function WebhooksPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
+  const isDemo = isDemoMode();
+  const canEdit = isAdmin && !isDemo;
 
   const [webhooks, setWebhooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -214,7 +217,7 @@ export default function WebhooksPage() {
       title="Webhooks"
       subtitle="Receive real-time notifications when security signals are detected"
       actions={
-        isAdmin && (
+        canEdit && (
           <button
             onClick={() => {
               setShowAddForm(!showAddForm);
@@ -229,6 +232,11 @@ export default function WebhooksPage() {
         )
       }
     >
+      {isDemo && (
+        <div className="mb-4 p-3 rounded-lg bg-zinc-500/10 border border-zinc-500/20 text-zinc-300 text-sm">
+          Demo mode: webhooks are read-only.
+        </div>
+      )}
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         <Card hover={false}>
@@ -281,7 +289,7 @@ export default function WebhooksPage() {
       )}
 
       {/* Add webhook form */}
-      {showAddForm && isAdmin && (
+      {showAddForm && canEdit && (
         <Card className="mb-6">
           <CardContent className="py-5">
             <div className="space-y-4">
@@ -361,7 +369,7 @@ export default function WebhooksPage() {
                   : "Ask an admin to configure webhooks for this workspace"
               }
               action={
-                isAdmin && (
+                canEdit && (
                   <button
                     onClick={() => setShowAddForm(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand/90 transition-colors"
@@ -416,7 +424,7 @@ export default function WebhooksPage() {
                     </div>
 
                     <div className="flex items-center gap-2 ml-4">
-                      {isAdmin && (
+                      {canEdit && (
                         <>
                           <button
                             onClick={() => handleTest(webhook.id)}

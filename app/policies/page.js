@@ -11,6 +11,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
+import { isDemoMode } from '../lib/isDemoMode';
 
 const POLICY_TYPES = [
   { value: 'risk_threshold', label: 'Risk Threshold', desc: 'Block or warn when risk score exceeds a threshold' },
@@ -67,6 +68,8 @@ function formatRules(policy) {
 export default function PoliciesPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
+  const isDemo = isDemoMode();
+  const canEdit = isAdmin && !isDemo;
 
   const [policies, setPolicies] = useState([]);
   const [decisions, setDecisions] = useState([]);
@@ -203,6 +206,11 @@ export default function PoliciesPage() {
       subtitle="Guard rules that govern agent behavior before actions execute"
       breadcrumbs={['Policies']}
     >
+      {isDemo && (
+        <div className="mb-4 p-3 rounded-lg bg-zinc-500/10 border border-zinc-500/20 text-zinc-300 text-sm flex items-center gap-2">
+          <AlertTriangle size={14} /> Demo mode: policies are read-only.
+        </div>
+      )}
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
           <AlertTriangle size={14} /> {error}
@@ -222,7 +230,7 @@ export default function PoliciesPage() {
       <Card className="mb-6">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-sm font-medium text-white">Guard Policies</h2>
-          {isAdmin && (
+          {canEdit && (
             <button
               onClick={() => setShowAddForm(!showAddForm)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-hover transition-colors"
@@ -234,7 +242,7 @@ export default function PoliciesPage() {
         </div>
 
         {/* Add form */}
-        {showAddForm && isAdmin && (
+        {showAddForm && canEdit && (
           <form onSubmit={handleCreate} className="px-5 py-4 border-b border-[rgba(255,255,255,0.06)] space-y-4 bg-[rgba(255,255,255,0.02)]">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -458,7 +466,7 @@ export default function PoliciesPage() {
                     <p className="text-xs text-zinc-400">{formatRules(policy)}</p>
                     <p className="text-xs text-zinc-600 mt-0.5 font-mono">{policy.id}</p>
                   </div>
-                  {isAdmin && (
+                  {canEdit && (
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => handleToggle(policy)}

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useSession } from 'next-auth/react';
+import { isDemoMode } from '../lib/isDemoMode';
 
 export default function ApprovalsPage() {
   const [pendingActions, setPendingActions] = useState([]);
@@ -59,6 +60,8 @@ export default function ApprovalsPage() {
   };
 
   const isAdmin = session?.user?.role === 'admin';
+  const isDemo = isDemoMode();
+  const canDecide = isAdmin && !isDemo;
 
   return (
     <PageLayout
@@ -72,6 +75,15 @@ export default function ApprovalsPage() {
       }
     >
       <div className="max-w-5xl mx-auto">
+        {isDemo && (
+          <div className="mb-6 p-4 rounded-xl bg-zinc-500/10 border border-zinc-500/20 flex gap-3 items-start">
+            <Info className="text-zinc-300 mt-0.5" size={18} />
+            <div>
+              <div className="text-sm font-bold text-zinc-200">Demo Mode</div>
+              <p className="text-xs text-zinc-400 mt-1">Approvals are read-only in the demo. Self-host to approve/deny actions for real agents.</p>
+            </div>
+          </div>
+        )}
         {!isAdmin && (
           <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3 items-start">
             <ShieldAlert className="text-amber-500 mt-0.5" size={18} />
@@ -153,14 +165,14 @@ export default function ApprovalsPage() {
                     <div className="md:w-48 flex flex-row md:flex-col gap-2 justify-center">
                       <button
                         onClick={() => handleDecision(action.action_id, 'allow')}
-                        disabled={!isAdmin || processingId === action.action_id}
+                        disabled={!canDecide || processingId === action.action_id}
                         className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-green-600 hover:bg-green-500 text-white rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
                       >
                         <Check size={18} /> Allow
                       </button>
                       <button
                         onClick={() => handleDecision(action.action_id, 'deny')}
-                        disabled={!isAdmin || processingId === action.action_id}
+                        disabled={!canDecide || processingId === action.action_id}
                         className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
                       >
                         <X size={18} /> Deny

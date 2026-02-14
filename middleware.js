@@ -268,6 +268,358 @@ function demoTokens(fixtures) {
   };
 }
 
+function demoPolicies(fixtures) {
+  return { policies: fixtures.policies || [] };
+}
+
+function demoGuard(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const decision = sp.get('decision') || undefined;
+  const limit = Math.min(parseInt(sp.get('limit') || '20', 10), 200);
+  const offset = parseInt(sp.get('offset') || '0', 10);
+
+  let items = (fixtures.guardDecisions || []).slice();
+  if (agentId) items = items.filter(d => d.agent_id === agentId);
+  if (decision) items = items.filter(d => d.decision === decision);
+
+  items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  const total = items.length;
+  const paged = items.slice(offset, offset + limit);
+
+  const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+  const recent = items.filter(d => (d.created_at ? new Date(d.created_at).getTime() : 0) >= dayAgo);
+  const stats = {
+    total_24h: String(recent.length),
+    blocks_24h: String(recent.filter(d => d.decision === 'block').length),
+    warns_24h: String(recent.filter(d => d.decision === 'warn').length),
+    approvals_24h: String(recent.filter(d => d.decision === 'require_approval').length),
+  };
+
+  return { decisions: paged, total, stats, limit, offset };
+}
+
+function demoMessages(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const direction = sp.get('direction') || 'inbox';
+  const type = sp.get('type') || undefined;
+  const limit = Math.min(parseInt(sp.get('limit') || '50', 10), 500);
+  const offset = parseInt(sp.get('offset') || '0', 10);
+
+  let items = (fixtures.messages || []).slice();
+  if (direction === 'sent') {
+    items = items.filter(m => m.from_agent_id === 'dashboard');
+  } else {
+    items = items.filter(m => m.to_agent_id === 'dashboard' || m.to_agent_id == null);
+  }
+
+  if (agentId) items = items.filter(m => m.from_agent_id === agentId || m.to_agent_id === agentId);
+  if (type) items = items.filter(m => m.message_type === type);
+
+  items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  const total = items.length;
+  const paged = items.slice(offset, offset + limit);
+
+  const unreadCount = items.filter(m => m.status === 'sent' && (m.to_agent_id === 'dashboard' || m.to_agent_id == null)).length;
+  return { messages: paged, total, unread_count: unreadCount };
+}
+
+function demoMessageThreads(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const limit = Math.min(parseInt(sp.get('limit') || '20', 10), 100);
+
+  let items = (fixtures.messageThreads || []).slice();
+  if (agentId) {
+    items = items.filter(t => {
+      if (t.created_by === agentId) return true;
+      try {
+        const p = JSON.parse(t.participants || '[]');
+        return Array.isArray(p) && p.includes(agentId);
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  items.sort((a, b) => ((b.last_message_at || b.created_at || '')).localeCompare((a.last_message_at || a.created_at || '')));
+  return { threads: items.slice(0, limit), total: Math.min(limit, items.length) };
+}
+
+function demoMessageDocs(fixtures, url) {
+  const sp = url.searchParams;
+  const search = sp.get('search') || '';
+  const limit = Math.min(parseInt(sp.get('limit') || '20', 10), 100);
+
+  let items = (fixtures.sharedDocs || []).slice();
+  if (search) items = items.filter(d => String(d.name || '').toLowerCase().includes(search.toLowerCase()));
+  items.sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+  return { docs: items.slice(0, limit), total: Math.min(limit, items.length) };
+}
+
+function demoContent(fixtures, url) {
+  const agentId = url.searchParams.get('agent_id') || undefined;
+  let items = (fixtures.content || []).slice();
+  if (agentId) items = items.filter(c => c.agent_id === agentId);
+  items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  const byPlatform = {};
+  for (const c of items) {
+    const platform = c.platform || 'other';
+    if (!byPlatform[platform]) byPlatform[platform] = { count: 0, published: 0, draft: 0 };
+    byPlatform[platform].count += 1;
+    if (c.status === 'published') byPlatform[platform].published += 1;
+    if (c.status === 'draft') byPlatform[platform].draft += 1;
+  }
+
+  return {
+    content: items,
+    stats: {
+      totalContent: items.length,
+      published: items.filter(c => c.status === 'published').length,
+      draft: items.filter(c => c.status === 'draft').length,
+      byPlatform,
+    },
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+function demoTeam(fixtures) {
+  const members = (fixtures.teamMembers || []).slice();
+  const org = fixtures.teamOrg || { id: 'org_demo', name: 'Demo Workspace' };
+  return { org, members, member_count: members.length };
+}
+
+function demoTeamInvites(fixtures) {
+  return { invites: fixtures.teamInvites || [] };
+}
+
+function demoActivity(fixtures, url) {
+  const sp = url.searchParams;
+  const action = sp.get('action') || undefined;
+  const limit = Math.min(parseInt(sp.get('limit') || '50', 10), 200);
+  const offset = parseInt(sp.get('offset') || '0', 10);
+
+  let items = (fixtures.activityLogs || []).slice();
+  if (action && action !== 'all') items = items.filter(l => l.action === action);
+  items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+  const paged = items.slice(offset, offset + limit);
+  const today = new Date().toISOString().slice(0, 10);
+  const stats = {
+    total: items.length,
+    today: items.filter(l => (l.created_at || '').startsWith(today)).length,
+    unique_actors: new Set(items.map(l => l.actor_id)).size,
+  };
+
+  return { logs: paged, stats, pagination: { limit, offset } };
+}
+
+function demoWebhooks(fixtures) {
+  return { webhooks: fixtures.webhooks || [] };
+}
+
+function demoWebhookDeliveries(fixtures, webhookId) {
+  const deliveries = fixtures.webhookDeliveries?.[webhookId] || [];
+  return { deliveries };
+}
+
+function demoWorkflows(fixtures, url) {
+  const agentId = url.searchParams.get('agent_id') || undefined;
+
+  let workflows = (fixtures.workflows || []).slice();
+  let executions = (fixtures.executions || []).slice();
+  const scheduledJobs = (fixtures.schedules || []).slice();
+
+  if (agentId) {
+    workflows = workflows.filter(w => w.agent_id === agentId);
+    executions = executions.filter(e => e.agent_id === agentId);
+  }
+
+  workflows.sort((a, b) => (b.last_run || '').localeCompare(a.last_run || ''));
+  executions.sort((a, b) => (b.started_at || '').localeCompare(a.started_at || ''));
+
+  const enabled = workflows.filter(w => w.enabled === 1).length;
+  const totalRuns = workflows.reduce((s, w) => s + (parseInt(w.run_count, 10) || 0), 0);
+  const recentSuccess = executions.filter(e => e.status === 'success').length;
+  const recentFailed = executions.filter(e => e.status === 'failed').length;
+
+  return {
+    workflows,
+    executions: executions.slice(0, 20),
+    scheduledJobs,
+    stats: {
+      totalWorkflows: workflows.length,
+      enabled,
+      totalRuns,
+      recentExecutions: Math.min(20, executions.length),
+      recentSuccess,
+      recentFailed,
+      scheduledJobs: scheduledJobs.length,
+    },
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+function demoSchedules(fixtures) {
+  const schedules = (fixtures.schedules || []).slice();
+  const now = new Date().toISOString();
+  const stats = {
+    totalJobs: schedules.length,
+    enabledJobs: schedules.filter(s => s.enabled === 1).length,
+    dueNow: schedules.filter(s => s.next_run && s.next_run <= now).length,
+  };
+  return { schedules, stats, lastUpdated: new Date().toISOString() };
+}
+
+function demoDigest(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const date = sp.get('date') || new Date().toISOString().slice(0, 10);
+
+  const isOnDate = (iso) => (iso || '').slice(0, 10) === date;
+
+  const actions = fixtures.actions
+    .filter(a => isOnDate(a.timestamp_start) && (!agentId || a.agent_id === agentId))
+    .slice(0, 20)
+    .map(a => ({
+      action_id: a.action_id,
+      action_type: a.action_type,
+      goal: a.declared_goal,
+      description: a.output_summary,
+      risk_score: a.risk_score,
+      status: a.status,
+    }));
+
+  const decisions = (fixtures.decisions || [])
+    .filter(d => isOnDate(d.timestamp) && (!agentId || d.agent_id === agentId))
+    .slice(0, 10)
+    .map(d => ({ id: d.id, decision: d.decision, outcome: d.outcome }));
+
+  const lessons = (fixtures.lessons || [])
+    .filter(l => isOnDate(l.timestamp))
+    .slice(0, 10)
+    .map(l => ({ id: l.id, lesson: l.lesson, confidence: l.confidence }));
+
+  const content = (fixtures.content || [])
+    .filter(c => isOnDate(c.created_at) && (!agentId || c.agent_id === agentId))
+    .slice(0, 10)
+    .map(c => ({ id: c.id, title: c.title, platform: c.platform, status: c.status }));
+
+  const ideas = (fixtures.ideas || [])
+    .filter(i => isOnDate(i.captured_at))
+    .slice(0, 10)
+    .map(i => ({ id: i.id, title: i.title, score: i.score }));
+
+  const interactions = (fixtures.interactions || [])
+    .filter(ix => isOnDate(ix.created_at) && (!agentId || ix.agent_id === agentId))
+    .slice(0, 10)
+    .map(ix => ({ id: ix.id, contact_name: ix.contact_name, summary: ix.summary, direction: ix.direction }));
+
+  const goals = (fixtures.goals || [])
+    .filter(g => isOnDate(g.created_at) && (!agentId || g.agent_id === agentId))
+    .slice(0, 10)
+    .map(g => ({ id: g.id, title: g.title, progress: g.progress, status: g.status }));
+
+  return {
+    date,
+    agent_id: agentId || null,
+    actions,
+    decisions,
+    lessons,
+    content,
+    ideas,
+    interactions,
+    goals,
+  };
+}
+
+function demoContextPoints(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const category = sp.get('category') || undefined;
+  const sessionDate = sp.get('session_date') || undefined;
+  const limit = Math.min(parseInt(sp.get('limit') || '50', 10), 200);
+
+  let items = (fixtures.contextPoints || []).slice();
+  if (agentId) items = items.filter(p => p.agent_id === agentId);
+  if (category) items = items.filter(p => p.category === category);
+  if (sessionDate) items = items.filter(p => p.session_date === sessionDate);
+
+  items.sort((a, b) => ((b.importance || 0) - (a.importance || 0)) || (b.created_at || '').localeCompare(a.created_at || ''));
+  return { points: items.slice(0, limit), total: Math.min(limit, items.length) };
+}
+
+function demoContextThreads(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const status = sp.get('status') || undefined;
+  const limit = Math.min(parseInt(sp.get('limit') || '20', 10), 100);
+
+  let items = (fixtures.contextThreads || []).slice();
+  if (agentId) items = items.filter(t => t.agent_id === agentId);
+  if (status) items = items.filter(t => t.status === status);
+  items.sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+  return { threads: items.slice(0, limit), total: Math.min(limit, items.length) };
+}
+
+function demoContextThreadDetail(fixtures, threadId) {
+  const thread = (fixtures.contextThreads || []).find(t => t.id === threadId) || null;
+  if (!thread) return null;
+  const entries = (fixtures.contextEntries || []).filter(e => e.thread_id === threadId).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  return { thread, entries };
+}
+
+function demoHandoffs(fixtures, url) {
+  const sp = url.searchParams;
+  const agentId = sp.get('agent_id') || undefined;
+  const date = sp.get('date') || undefined;
+  const latest = sp.get('latest') === 'true';
+  const limit = Math.min(parseInt(sp.get('limit') || '50', 10), 1000);
+
+  let items = (fixtures.handoffs || []).slice();
+  if (agentId) items = items.filter(h => h.agent_id === agentId);
+  if (date) items = items.filter(h => h.session_date === date);
+
+  items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  if (latest) return { handoff: items[0] || null };
+  return { handoffs: items.slice(0, limit), total: Math.min(limit, items.length) };
+}
+
+function demoSnippets(fixtures, url) {
+  const sp = url.searchParams;
+  const search = sp.get('search') || '';
+  const tag = sp.get('tag') || '';
+  const language = sp.get('language') || '';
+  const limit = Math.min(parseInt(sp.get('limit') || '50', 10), 200);
+
+  let items = (fixtures.snippets || []).slice();
+  if (search) {
+    const s = search.toLowerCase();
+    items = items.filter(sn => String(sn.name || '').toLowerCase().includes(s) || String(sn.description || '').toLowerCase().includes(s));
+  }
+  if (tag) items = items.filter(sn => String(sn.tags || '').includes(tag));
+  if (language) items = items.filter(sn => String(sn.language || '') === language);
+
+  items.sort((a, b) => ((b.use_count || 0) - (a.use_count || 0)) || (b.created_at || '').localeCompare(a.created_at || ''));
+  return { snippets: items.slice(0, limit), total: Math.min(limit, items.length) };
+}
+
+function demoPreferences(fixtures, url) {
+  const sp = url.searchParams;
+  const type = sp.get('type') || 'summary';
+
+  const summary = fixtures.preferences || {};
+  if (type === 'summary') return { summary };
+  if (type === 'observations') return { observations: [], total: 0 };
+  if (type === 'preferences') return { preferences: summary.preferences || [], total: (summary.preferences || []).length };
+  if (type === 'moods') return { moods: summary.recent_moods || [], total: (summary.recent_moods || []).length };
+  if (type === 'approaches') return { approaches: summary.top_approaches || [], total: (summary.top_approaches || []).length };
+
+  return { error: `Invalid type: ${type}. Use: summary, observations, preferences, moods, approaches` };
+}
+
 function demoSwarmGraph(fixtures, url) {
   // Demo goal: a readable, "alive-looking" graph that sells the concept.
   // We intentionally show the most active subset of agents to keep the map uncluttered.
@@ -635,10 +987,96 @@ export async function middleware(request) {
         return demoJson(request, { settings: fixtures.settings });
       }
 
+      if (pathname === '/api/policies') {
+        return demoJson(request, demoPolicies(fixtures));
+      }
+
+      if (pathname === '/api/guard') {
+        return demoJson(request, demoGuard(fixtures, url));
+      }
+
+      if (pathname === '/api/messages') {
+        return demoJson(request, demoMessages(fixtures, url));
+      }
+
+      if (pathname === '/api/messages/threads') {
+        return demoJson(request, demoMessageThreads(fixtures, url));
+      }
+
+      if (pathname === '/api/messages/docs') {
+        return demoJson(request, demoMessageDocs(fixtures, url));
+      }
+
+      if (pathname === '/api/content') {
+        return demoJson(request, demoContent(fixtures, url));
+      }
+
       if (pathname === '/api/agents/connections') {
         const agentId = url.searchParams.get('agent_id');
         const connections = agentId ? fixtures.connections.filter(c => c.agent_id === agentId) : fixtures.connections;
         return demoJson(request, { connections, total: connections.length });
+      }
+
+      if (pathname === '/api/team') {
+        return demoJson(request, demoTeam(fixtures));
+      }
+
+      if (pathname === '/api/team/invite') {
+        return demoJson(request, demoTeamInvites(fixtures));
+      }
+
+      if (pathname === '/api/activity') {
+        return demoJson(request, demoActivity(fixtures, url));
+      }
+
+      if (pathname === '/api/webhooks') {
+        return demoJson(request, demoWebhooks(fixtures));
+      }
+
+      if (segments[0] === 'api' && segments[1] === 'webhooks' && segments.length === 4 && segments[3] === 'deliveries') {
+        const webhookId = segments[2];
+        return demoJson(request, demoWebhookDeliveries(fixtures, webhookId));
+      }
+
+      if (pathname === '/api/workflows') {
+        return demoJson(request, demoWorkflows(fixtures, url));
+      }
+
+      if (pathname === '/api/schedules') {
+        return demoJson(request, demoSchedules(fixtures));
+      }
+
+      if (pathname === '/api/digest') {
+        return demoJson(request, demoDigest(fixtures, url));
+      }
+
+      if (pathname === '/api/context/points') {
+        return demoJson(request, demoContextPoints(fixtures, url));
+      }
+
+      if (pathname === '/api/context/threads') {
+        return demoJson(request, demoContextThreads(fixtures, url));
+      }
+
+      if (segments[0] === 'api' && segments[1] === 'context' && segments[2] === 'threads' && segments.length === 4) {
+        const threadId = segments[3];
+        const detail = demoContextThreadDetail(fixtures, threadId);
+        if (!detail) return demoJson(request, { error: 'Thread not found' }, 404);
+        return demoJson(request, detail);
+      }
+
+      if (pathname === '/api/handoffs') {
+        return demoJson(request, demoHandoffs(fixtures, url));
+      }
+
+      if (pathname === '/api/snippets') {
+        return demoJson(request, demoSnippets(fixtures, url));
+      }
+
+      if (pathname === '/api/preferences') {
+        const payload = demoPreferences(fixtures, url);
+        const status = payload?.error ? 400 : 200;
+        return demoJson(request, payload, status);
       }
 
       if (pathname === '/api/memory') {
