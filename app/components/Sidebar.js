@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { isDemoMode } from '../lib/isDemoMode';
 import {
   Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
@@ -66,6 +67,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const demo = isDemoMode();
 
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard';
@@ -76,8 +78,21 @@ export default function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-[rgba(255,255,255,0.06)]">
-        <Flame size={20} className="text-brand flex-shrink-0" />
-        {!collapsed && <span className="text-lg font-semibold text-white">DashClaw</span>}
+        {demo ? (
+          <a
+            href="https://www.dashclaw.io/"
+            className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
+            title="Back to dashclaw.io"
+          >
+            <Flame size={20} className="text-brand flex-shrink-0" />
+            {!collapsed && <span className="text-lg font-semibold text-white">DashClaw</span>}
+          </a>
+        ) : (
+          <Link href="/dashboard" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+            <Flame size={20} className="text-brand flex-shrink-0" />
+            {!collapsed && <span className="text-lg font-semibold text-white">DashClaw</span>}
+          </Link>
+        )}
       </div>
 
       {/* Nav Groups */}

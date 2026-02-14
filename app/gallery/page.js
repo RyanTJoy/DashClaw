@@ -1,49 +1,42 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowLeft, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
+import ClickToFullscreenImage from '../components/ClickToFullscreenImage';
 
 const screenshots = [
-  { title: 'Main Dashboard', file: 'Dashboard.png', desc: 'Real-time overview of active agents, risk signals, and open loops.' },
-  { title: 'Agent Workspace', file: 'Workspace.png', desc: 'Unified view of daily digests, context threads, and memory health.' },
-  { title: 'Action Post-Mortem', file: 'Actions.png', desc: 'Deep dive into specific actions with SVG-based assumption and loop graphs.' },
-  { title: 'Security Monitoring', file: 'Security.png', desc: 'Live feed of red and amber risk signals with automated detection logic.' },
-  { title: 'Integrations Map', file: 'Integrations.png', desc: 'View all connected services and provider-specific configurations.' },
-  { title: 'Learning Database', file: 'Learning.png', desc: 'Historical record of agent decisions, lessons, and success outcomes.' },
-  { title: 'Agent Messaging', file: 'Messages.png', desc: 'Asynchronous communication hub for direct messages and shared docs.' },
-  { title: 'Webhook Management', file: 'Webhooks.png', desc: 'Configure external endpoints for signal notifications and human intervention.' },
-  { title: 'Bounty Hunter', file: 'Bounty Hunter.png', desc: 'Track external bounties and rewards found by your agent fleet.' },
+  { title: 'Dashboard', file: 'dash1.png', desc: 'Fleet-wide overview: live actions, risk, and governance.' },
+  { title: 'Dashboard (Signals)', file: 'dash2.png', desc: 'Risk signals, guard decisions, and realtime activity.' },
+  { title: 'Dashboard (Fleet)', file: 'dash3.png', desc: 'System health, rollups, and operational focus views.' },
+
+  { title: 'Swarm Intelligence', file: 'swarm-intelligence.png', desc: 'Visualize multi-agent communication and operational risk.' },
+  { title: 'Workspace', file: 'workspace.png', desc: 'Daily digest, context threads, snippets, preferences, and memory.' },
+  { title: 'Actions', file: 'actions.png', desc: 'Timeline of actions with drill-down, trace, and identity verification.' },
+  { title: 'Approval Queue', file: 'approval.png', desc: 'Human-in-the-loop approvals for high-risk operations.' },
+  { title: 'Policies', file: 'policies.png', desc: 'Behavior governance: allow, warn, block, or require approval.' },
+  { title: 'Messages', file: 'messages.png', desc: 'Agent-to-agent messaging plus shared docs.' },
+
+  { title: 'Team', file: 'team.png', desc: 'Roles, invites, and workspace member management.' },
+  { title: 'Activity', file: 'activity.png', desc: 'Audit trail of changes across the workspace.' },
+  { title: 'Webhooks', file: 'webhooks.png', desc: 'External alerting hooks with delivery logs.' },
+  { title: 'Workflows', file: 'workflows.png', desc: 'Automations, schedules, and execution history.' },
+
+  { title: 'Integrations', file: 'integrations.png', desc: 'Connected services and provider configuration.' },
+  { title: 'Security', file: 'security.png', desc: 'Security posture, scanning, and signal monitoring.' },
+  { title: 'Relationships', file: 'relationships.png', desc: 'Contacts, follow-ups, and relationship activity.' },
+  { title: 'Goals', file: 'goals.png', desc: 'Goal tracking and milestone progress.' },
+  { title: 'Learning', file: 'learning.png', desc: 'Lessons, recommendations, and effectiveness metrics.' },
+  { title: 'Content', file: 'content.png', desc: 'Content tracker for multi-agent publishing workflows.' },
+  { title: 'Calendar', file: 'calendar.png', desc: 'Events and schedule visibility.' },
+  { title: 'Notifications', file: 'notifications.png', desc: 'Inbound notifications and alerts.' },
+  { title: 'Pairings', file: 'pairings.png', desc: 'One-click pairing and device enrollment flows.' },
+  { title: 'API Keys', file: 'api-keys.png', desc: 'Create and manage scoped API keys.' },
+  { title: 'Usage', file: 'usage.png', desc: 'Usage and quota visibility.' },
+  { title: 'Bounty Hunter', file: 'bounty-hunter.png', desc: 'Track bounties and reward workflows.' },
 ];
 
 export default function GalleryPage() {
-  const [selectedIndex, setSelectedIndex] = useState(null);
-
-  const handleNext = useCallback(() => {
-    setSelectedIndex((prev) => (prev === null ? null : (prev + 1) % screenshots.length));
-  }, []);
-
-  const handlePrev = useCallback(() => {
-    setSelectedIndex((prev) => (prev === null ? null : (prev - 1 + screenshots.length) % screenshots.length));
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setSelectedIndex(null);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (selectedIndex === null) return;
-      if (e.key === 'ArrowRight') handleNext();
-      if (e.key === 'ArrowLeft') handlePrev();
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedIndex, handleNext, handlePrev, handleClose]);
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <PublicNavbar />
@@ -55,83 +48,28 @@ export default function GalleryPage() {
           </Link>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Product Gallery</h1>
-            <p className="text-zinc-400 mt-1">A visual tour of the DashClaw observability platform.</p>
+            <p className="text-zinc-400 mt-1">Click any image to view it fullscreen. Click again to close.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {screenshots.map((s, index) => (
-            <div 
-              key={s.file} 
-              className="group flex flex-col gap-3 cursor-zoom-in"
-              onClick={() => setSelectedIndex(index)}
-            >
-              <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-[rgba(255,255,255,0.06)] bg-[#111]">
-                <Image
-                  src={`/images/screenshots/${s.file}`}
+          {screenshots.map((s) => {
+            const encoded = encodeURIComponent(s.file);
+            return (
+              <div key={s.file} className="flex flex-col gap-3">
+                <ClickToFullscreenImage
+                  src={`/images/screenshots/${encoded}`}
                   alt={s.title}
-                  fill
+                  title={s.title}
+                  description={s.desc}
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transform group-hover:scale-[1.02] transition-transform duration-500"
+                  imageClassName="object-cover"
                 />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <div className="bg-white/10 backdrop-blur-md p-3 rounded-full border border-white/20">
-                    <Maximize2 size={20} />
-                  </div>
-                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">{s.title}</h3>
-                <p className="text-sm text-zinc-400 mt-1">{s.desc}</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </main>
-
-      {/* Lightbox Modal */}
-      {selectedIndex !== null && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 sm:p-10">
-          <button 
-            onClick={handleClose}
-            className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors z-[110]"
-          >
-            <X size={24} />
-          </button>
-
-          <button 
-            onClick={handlePrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors z-[110]"
-          >
-            <ChevronLeft size={32} />
-          </button>
-
-          <button 
-            onClick={handleNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors z-[110]"
-          >
-            <ChevronRight size={32} />
-          </button>
-
-          <div className="relative w-full max-w-5xl aspect-[16/10] flex items-center justify-center">
-            <Image
-              src={`/images/screenshots/${screenshots[selectedIndex].file}`}
-              alt={screenshots[selectedIndex].title}
-              fill
-              sizes="100vw"
-              className="object-contain rounded-lg shadow-2xl"
-            />
-          </div>
-
-          <div className="mt-8 text-center max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <h2 className="text-2xl font-bold">{screenshots[selectedIndex].title}</h2>
-            <p className="text-zinc-400 mt-2">{screenshots[selectedIndex].desc}</p>
-            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-zinc-500">
-              {selectedIndex + 1} of {screenshots.length} • Use arrow keys to navigate
-            </div>
-          </div>
-        </div>
-      )}
 
       <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
