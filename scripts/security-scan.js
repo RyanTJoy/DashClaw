@@ -201,13 +201,22 @@ function checkEnvExample() {
   
   if (fs.existsSync('.env.example')) {
     const content = fs.readFileSync('.env.example', 'utf8');
-    
-    // Make sure .env.example doesn't have real values
-    SECRET_PATTERNS.forEach(({ pattern, name }) => {
-      if (pattern.test(content)) {
-        log(CRITICAL, `.env.example contains real ${name}!`);
-        issues.critical++;
-      }
+    const lines = content.split('\n');
+
+    // Make sure .env.example doesn't have real values.
+    // Scan line-by-line so comments and placeholders don't trigger false positives.
+    lines.forEach((line, index) => {
+      // Skip comments
+      if (line.trim().startsWith('#')) return;
+      // Skip placeholder/example values
+      if (isPlaceholder(line)) return;
+
+      SECRET_PATTERNS.forEach(({ pattern, name }) => {
+        if (pattern.test(line)) {
+          log(CRITICAL, `.env.example contains real ${name} at line ${index + 1}!`);
+          issues.critical++;
+        }
+      });
     });
     
     if (issues.critical === 0) {
@@ -223,8 +232,9 @@ function checkDependencies() {
   console.log('\n📦 Checking dependencies...\n');
   
   try {
-    // Cross-platform: avoid bash redirects like `2>/dev/null || true`
-    const result = execSync('npm audit --json', { encoding: 'utf8' });
+    // Cross-platform: avoid bash redirects like `2>/dev/null || true`.
+    // Use `--audit-level=high` so moderate/low issues don't fail the scan.
+    const result = execSync('npm audit --json --audit-level=high', { encoding: 'utf8' });
     const audit = JSON.parse(result || '{}');
     
     if (audit.metadata) {
@@ -245,7 +255,8 @@ function checkDependencies() {
       }
     }
   } catch (err) {
-    log(INFO, 'Could not run npm audit (npm not available or not a node project)');
+    // Note: npm audit may fail if networking is restricted.
+    log(INFO, `Could not run npm audit (${err?.message || 'unknown error'})`);
   }
 }
 

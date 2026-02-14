@@ -45,6 +45,9 @@ jobs:
       - name: Check WS1 latency regression evidence
         run: npm run reliability:ws1:check
 
+      - name: Run security scanner
+        run: node scripts/security-scan.js
+
       - name: Run tests
         run: npm run test -- --run
 
