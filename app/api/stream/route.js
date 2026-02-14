@@ -69,36 +69,49 @@ data: ${JSON.stringify(data)}
       void emitEnvelope(envelope);
     });
 
-    let replayed = 0;
-    if (lastEventId) {
-      const replay = await replayOrgEvents(orgId, { afterCursor: lastEventId, limit: 200 });
-      for (const envelope of replay) {
-        await emitEnvelope(envelope);
-        replayed += 1;
+    // IMPORTANT: run replay/flush asynchronously after the Response is returned.
+    // Awaiting writer writes before returning can deadlock on stream backpressure.
+    const startPump = async () => {
+      let replayed = 0;
+      let replayError = null;
+      try {
+        if (lastEventId) {
+          const replay = await replayOrgEvents(orgId, { afterCursor: lastEventId, limit: 200 });
+          for (const envelope of replay) {
+            await emitEnvelope(envelope);
+            replayed += 1;
+          }
+        }
+      } catch (err) {
+        replayError = err?.message || String(err);
+      } finally {
+        bufferingLiveEvents = false;
+        for (const envelope of liveQueue) {
+          await emitEnvelope(envelope);
+        }
+        liveQueue.length = 0;
+
+        await send('connected', {
+          status: 'ok',
+          orgId,
+          backend: getRealtimeBackendName(),
+          realtimeStatus: realtimeHealth.status,
+          replayed,
+          lastEventId,
+          replayError,
+        });
       }
-    }
-
-    bufferingLiveEvents = false;
-    for (const envelope of liveQueue) {
-      await emitEnvelope(envelope);
-    }
-    liveQueue.length = 0;
-
-    // Initial connection message
-    void send('connected', {
-      status: 'ok',
-      orgId,
-      backend: getRealtimeBackendName(),
-      realtimeStatus: realtimeHealth.status,
-      replayed,
-      lastEventId,
-    });
+    };
 
     // Clean up on close (when the request is aborted by client)
     request.signal.addEventListener('abort', () => {
       isClosed = true;
       void unsubscribe();
       writer.close().catch(() => {});
+    });
+
+    queueMicrotask(() => {
+      void startPump();
     });
 
     return new Response(stream.readable, {
