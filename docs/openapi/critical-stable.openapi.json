@@ -3087,6 +3087,57 @@
         "x-api-maturity": "stable"
       }
     },
+    "/api/snippets/{snippetId}": {
+      "get": {
+        "operationId": "get_api_snippets_snippetId",
+        "parameters": [
+          {
+            "description": "Path parameter: snippetId",
+            "in": "path",
+            "name": "snippetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Validation or request error"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "GET /api/snippets/{snippetId}",
+        "tags": [
+          "snippets"
+        ],
+        "x-api-maturity": "stable"
+      }
+    },
     "/api/snippets/{snippetId}/use": {
       "post": {
         "operationId": "post_api_snippets_snippetId_use",
