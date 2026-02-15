@@ -91,7 +91,9 @@ app/
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
 ├── security/                  # Security monitoring page (signals, high-risk actions)
-├── policies/                  # Guard policies management page
+├── policies/                  # Guard policies management page (+ import, test runner, proof report)
+├── routing/                   # Task routing page (agent registry, task queue, health)
+├── compliance/                # Compliance mapping page (framework controls, gap analysis, evidence, reports)
 ├── approvals/                 # Human-in-the-loop approval queue page
 ├── messages/                  # Agent communication hub (smart inbox, thread conversations, shared docs, SSE real-time)
 │   └── _components/           # Extracted sub-components (MessageList, ThreadConversation, SmartInbox, MarkdownBody, etc.)
@@ -321,6 +323,9 @@ function getSql() {
 - `GET /api/compliance/report` - generate compliance report [beta]
 - `GET /api/compliance/frameworks` - list available frameworks [beta]
 - `GET /api/compliance/evidence` - get live compliance evidence [beta]
+- UI: `/compliance` page — framework selector, coverage stats + ProgressBar, control map (expandable), gap analysis, enforcement evidence, report generation (markdown/JSON with copy/download)
+- Sidebar: Scale icon in Operations group (after Task Routing)
+- Middleware matcher includes `/compliance` and `/compliance/:path*`
 
 ### Routing
 
@@ -334,6 +339,9 @@ function getSql() {
 - `POST /api/routing/tasks/:id/complete` - complete routing task [beta]
 - `GET /api/routing/stats` - get routing stats [beta]
 - `GET /api/routing/health` - get routing health [beta]
+- UI: `/routing` page — health indicator, 6-stat bar, two-column layout with task queue (filter pills, submit form, task list) and agent registry (register form, agent cards with status/capabilities/load)
+- Sidebar: Network icon in Operations group (after Workspace)
+- Middleware matcher includes `/routing` and `/routing/:path*`
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable - NULL = org-level default)
@@ -631,6 +639,8 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - Guard decisions logged fire-and-forget (same pattern as `incrementMeter()`)
 - API: `POST /api/guard` (evaluate), `GET /api/guard` (recent decisions + 24h stats)
 - API: `GET/POST/PATCH/DELETE /api/policies` (CRUD - POST/PATCH/DELETE admin only)
+- API: `POST /api/policies/import` (import policy pack or raw YAML), `POST /api/policies/test` (run guardrails tests), `GET /api/policies/proof` (generate proof report)
+- UI: `/policies` page includes policy CRUD, guard decisions, policy pack import, test runner with per-policy expandable results, proof report generation (markdown/JSON with copy/download)
 - SDK: `claw.guard(context, options?)`, `claw.getGuardDecisions(filters?)`
 - Sidebar: Shield icon in Operations group (after Security)
 - Migration Step 33 in `migrate-multi-tenant.mjs`

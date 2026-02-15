@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Shield, Plus, Trash2, ToggleLeft, ToggleRight,
   ChevronDown, ChevronRight, AlertTriangle,
+  Upload, Play, FileDown, Copy, Check, ChevronUp,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import PageLayout from '../components/PageLayout';
@@ -93,6 +94,21 @@ export default function PoliciesPage() {
   const [formInstruction, setFormInstruction] = useState('');
   const [formFallback, setFormFallback] = useState('allow');
   const [creating, setCreating] = useState(false);
+
+  // Import Policy Pack state
+  const [importPack, setImportPack] = useState('enterprise-strict');
+  const [importYaml, setImportYaml] = useState('');
+  const [importMode, setImportMode] = useState('pack'); // 'pack' or 'yaml'
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  // Policy Test Runner state
+  const [testResults, setTestResults] = useState(null);
+  const [testRunning, setTestRunning] = useState(false);
+  const [expandedTests, setExpandedTests] = useState({});
+  // Proof Report state
+  const [proofReport, setProofReport] = useState('');
+  const [proofFormat, setProofFormat] = useState('markdown');
+  const [generatingProof, setGeneratingProof] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -196,6 +212,92 @@ export default function PoliciesPage() {
     setFormActionTypes(prev =>
       prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
     );
+  };
+
+  const handleImport = async () => {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const body = importMode === 'pack' ? { pack: importPack } : { yaml: importYaml };
+      const res = await fetch('/api/policies/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setImportResult(json);
+        fetchData();
+      } else {
+        setError(json.error || 'Import failed');
+      }
+    } catch {
+      setError('Import failed');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleRunTests = async () => {
+    setTestRunning(true);
+    setTestResults(null);
+    try {
+      const res = await fetch('/api/policies/test', { method: 'POST' });
+      const json = await res.json();
+      if (res.ok) {
+        setTestResults(json);
+      } else {
+        setError(json.error || 'Test run failed');
+      }
+    } catch {
+      setError('Test run failed');
+    } finally {
+      setTestRunning(false);
+    }
+  };
+
+  const handleGenerateProof = async () => {
+    setGeneratingProof(true);
+    setProofReport('');
+    try {
+      const res = await fetch(`/api/policies/proof?format=${proofFormat}`);
+      const text = await res.text();
+      if (res.ok) {
+        setProofReport(text);
+      } else {
+        try {
+          const json = JSON.parse(text);
+          setError(json.error || 'Failed to generate proof');
+        } catch {
+          setError('Failed to generate proof');
+        }
+      }
+    } catch {
+      setError('Failed to generate proof');
+    } finally {
+      setGeneratingProof(false);
+    }
+  };
+
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(proofReport);
+    } catch { /* ignore */ }
+  };
+
+  const handleDownloadReport = () => {
+    const ext = proofFormat === 'json' ? 'json' : 'md';
+    const blob = new Blob([proofReport], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proof-report.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleTestExpand = (policyId) => {
+    setExpandedTests(prev => ({ ...prev, [policyId]: !prev[policyId] }));
   };
 
   const activePolicies = policies.filter(p => p.active);
@@ -492,7 +594,7 @@ export default function PoliciesPage() {
       </Card>
 
       {/* Recent Guard Decisions */}
-      <Card>
+      <Card className="mb-6">
         <div className="px-5 py-3 border-b border-[rgba(255,255,255,0.06)]">
           <h2 className="text-sm font-medium text-white">Recent Guard Decisions</h2>
         </div>
@@ -523,6 +625,231 @@ export default function PoliciesPage() {
                   </span>
                 </div>
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Import Policy Pack */}
+      {canEdit && (
+        <Card className="mb-6">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(255,255,255,0.06)]">
+            <h2 className="text-sm font-medium text-white">Import Policy Pack</h2>
+            <Upload size={14} className="text-zinc-400" />
+          </div>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setImportMode('pack')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    importMode === 'pack'
+                      ? 'bg-brand text-white'
+                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  }`}
+                >
+                  Select Pack
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportMode('yaml')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    importMode === 'yaml'
+                      ? 'bg-brand text-white'
+                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+                  }`}
+                >
+                  Raw YAML
+                </button>
+              </div>
+
+              {importMode === 'pack' ? (
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">Policy Pack</label>
+                  <select
+                    value={importPack}
+                    onChange={(e) => setImportPack(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                  >
+                    <option value="enterprise-strict">Enterprise Strict</option>
+                    <option value="smb-safe">SMB Safe</option>
+                    <option value="startup-growth">Startup Growth</option>
+                    <option value="development">Development</option>
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">YAML Policy Definition</label>
+                  <textarea
+                    value={importYaml}
+                    onChange={(e) => setImportYaml(e.target.value)}
+                    placeholder="Paste your policy YAML here..."
+                    rows={6}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand font-mono"
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={handleImport}
+                disabled={importing || isDemo || (importMode === 'yaml' && !importYaml.trim())}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                {importing ? 'Importing...' : 'Import'}
+              </button>
+
+              {importResult && (
+                <div className="p-3 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] text-sm space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="success">{importResult.imported ?? 0} imported</Badge>
+                    {(importResult.skipped ?? 0) > 0 && (
+                      <Badge variant="warning">{importResult.skipped} skipped</Badge>
+                    )}
+                    {(importResult.errors ?? 0) > 0 && (
+                      <Badge variant="error">{importResult.errors} errors</Badge>
+                    )}
+                  </div>
+                  {importResult.details && (
+                    <p className="text-xs text-zinc-400 mt-1">{importResult.details}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Policy Test Runner */}
+      <Card className="mb-6">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(255,255,255,0.06)]">
+          <h2 className="text-sm font-medium text-white">Policy Test Runner</h2>
+          <button
+            onClick={handleRunTests}
+            disabled={testRunning || isDemo}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+          >
+            <Play size={12} />
+            {testRunning ? 'Running...' : 'Run Tests'}
+          </button>
+        </div>
+        <CardContent>
+          {!testResults ? (
+            <p className="text-sm text-zinc-500 py-4 text-center">
+              Click &quot;Run Tests&quot; to validate all policies against their test cases.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs text-zinc-400">
+                  {testResults.totalPolicies ?? 0} policies, {testResults.totalTests ?? 0} tests
+                </span>
+                <Badge variant={testResults.failed === 0 ? 'success' : 'error'}>
+                  {testResults.failed === 0 ? 'ALL PASS' : `${testResults.failed} FAILURES`}
+                </Badge>
+                <span className="text-xs text-zinc-500">
+                  {testResults.passed ?? 0} passed, {testResults.failed ?? 0} failed
+                </span>
+              </div>
+
+              {/* Per-policy details */}
+              {testResults.results && testResults.results.length > 0 && (
+                <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+                  {testResults.results.map(pr => (
+                    <div key={pr.policyId} className="py-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleTestExpand(pr.policyId)}
+                        className="flex items-center gap-2 w-full text-left"
+                      >
+                        {expandedTests[pr.policyId] ? (
+                          <ChevronUp size={14} className="text-zinc-500" />
+                        ) : (
+                          <ChevronDown size={14} className="text-zinc-500" />
+                        )}
+                        <span className="text-sm text-white">{pr.policyName || pr.policyId}</span>
+                        <Badge variant={pr.failCount === 0 ? 'success' : 'error'}>
+                          {pr.failCount === 0 ? 'pass' : `${pr.failCount} fail`}
+                        </Badge>
+                      </button>
+                      {expandedTests[pr.policyId] && pr.tests && (
+                        <div className="mt-2 ml-6 space-y-1">
+                          {pr.tests.map((t, i) => (
+                            <div key={i} className="flex items-center gap-2 text-xs">
+                              {t.passed ? (
+                                <Check size={12} className="text-green-500" />
+                              ) : (
+                                <AlertTriangle size={12} className="text-red-400" />
+                              )}
+                              <span className={t.passed ? 'text-zinc-300' : 'text-red-400'}>
+                                {t.name || `Test ${i + 1}`}
+                              </span>
+                              {t.message && (
+                                <span className="text-zinc-600 ml-1">{t.message}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Proof Report */}
+      <Card className="mb-6">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(255,255,255,0.06)]">
+          <h2 className="text-sm font-medium text-white">Proof Report</h2>
+          <div className="flex items-center gap-2">
+            <select
+              value={proofFormat}
+              onChange={(e) => setProofFormat(e.target.value)}
+              className="px-2 py-1 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-xs text-white focus:outline-none focus:border-brand"
+            >
+              <option value="markdown">Markdown</option>
+              <option value="json">JSON</option>
+            </select>
+            <button
+              onClick={handleGenerateProof}
+              disabled={generatingProof || isDemo}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand text-white text-xs font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+            >
+              <FileDown size={12} />
+              {generatingProof ? 'Generating...' : 'Generate'}
+            </button>
+          </div>
+        </div>
+        <CardContent>
+          {!proofReport ? (
+            <p className="text-sm text-zinc-500 py-4 text-center">
+              Generate a proof report to document policy compliance status.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopyReport}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-700 text-zinc-300 text-xs hover:bg-zinc-600 transition-colors flex items-center gap-1.5"
+                >
+                  <Copy size={12} />
+                  Copy
+                </button>
+                <button
+                  onClick={handleDownloadReport}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-700 text-zinc-300 text-xs hover:bg-zinc-600 transition-colors flex items-center gap-1.5"
+                >
+                  <FileDown size={12} />
+                  Download
+                </button>
+              </div>
+              <pre className="whitespace-pre-wrap text-xs text-zinc-300 bg-[#111] p-4 rounded-lg border border-[rgba(255,255,255,0.06)] max-h-[500px] overflow-y-auto font-mono">
+                {proofReport}
+              </pre>
             </div>
           )}
         </CardContent>
