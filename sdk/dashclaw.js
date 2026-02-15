@@ -22,7 +22,7 @@
 class DashClaw {
   /**
    * @param {Object} options
-   * @param {string} options.baseUrl - DashClaw base URL (e.g. "https://your-app.vercel.app")
+   * @param {string} options.baseUrl - DashClaw base URL (e.g. "http://localhost:3000" or "https://your-app.vercel.app")
    * @param {string} options.apiKey - API key for authentication (determines which org's data you access)
    * @param {string} options.agentId - Unique identifier for this agent
    * @param {string} [options.agentName] - Human-readable agent name

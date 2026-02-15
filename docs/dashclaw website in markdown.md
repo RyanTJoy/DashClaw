@@ -502,7 +502,7 @@ agent.js
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-dashboard.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
@@ -539,7 +539,7 @@ const claw = new DashClaw({ baseUrl, apiKey, agentId, agentName, swarmId, guardM
 
 | Parameter     | Type     | Required | Description                                                                                                     |
 | ------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------- |
-| baseUrl       | string   | Yes      | DashClaw dashboard URL (e.g. "https://your-app.vercel.app")                                                     |
+| baseUrl       | string   | Yes      | DashClaw dashboard URL (e.g. "http://localhost:3000" or "https://your-app.vercel.app")                                                     |
 | apiKey        | string   | Yes      | API key for authentication (determines which org's data you access)                                             |
 | agentId       | string   | Yes      | Unique identifier for this agent                                                                                |
 | agentName     | string   | No       | Human-readable agent name                                                                                       |
@@ -554,7 +554,7 @@ When `guardMode` is set, every call to `createAction()` and `track()` automatica
 import { DashClaw, GuardBlockedError } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-app.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   guardMode: 'enforce', // throws GuardBlockedError on block/require_approval
@@ -1736,7 +1736,7 @@ Configure dashboard sync (optional)
 cp agent-tools/.env.example agent-tools/secrets/dashclaw.env
 
 # Set your dashboard URL, API key, and agent ID
-DASHCLAW_URL=https://your-deployment.vercel.app
+DASHCLAW_URL=http://localhost:3000
 DASHCLAW_API_KEY=oc_live_...
 DASHCLAW_AGENT_ID=my-agent
 

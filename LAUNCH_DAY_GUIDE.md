@@ -21,7 +21,7 @@ Local callback URIs:
 
 2) Create a fresh database
 
-- Create a new Neon Postgres database (recommended) and copy the connection string.
+- Start a fresh database: `docker compose up -d db` (or create a new Neon project) and copy the connection string.
 - Update `DATABASE_URL` in `.env.local`.
 
 3) Run migrations (fresh DB bootstrap)

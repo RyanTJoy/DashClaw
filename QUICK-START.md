@@ -32,9 +32,21 @@ Node.js is what runs the dashboard. If you don't have it:
 
 DashClaw is self-hosted (you run it). You bring the database.
 
-### Option A: Free Neon Database (Recommended)
+### Option A: Local Postgres with Docker (fastest for local dev)
 
-Neon gives you a free hosted Postgres database:
+If you have Docker Desktop installed (or install it from [docker.com](https://www.docker.com/products/docker-desktop/)):
+
+```bash
+docker compose up -d db
+```
+
+Your connection string is: `postgresql://dashclaw:dashclaw@localhost:5432/dashclaw`
+
+That's it — database is ready.
+
+### Option B: Hosted Postgres with Neon (free tier — best for cloud deployment)
+
+If you want to access your dashboard from anywhere (phone, laptop), or prefer no Docker:
 
 1. Go to **[neon.tech](https://neon.tech/)**
 2. Click **"Start Free"** and create an account (GitHub login works!)
@@ -44,20 +56,6 @@ Neon gives you a free hosted Postgres database:
 
 **Keep this safe - you'll need it in the next step!**
 
-### Option B: Local Postgres (Docker)
-
-If you already have Docker Desktop installed, you can run Postgres locally:
-
-```bash
-docker compose up -d db
-```
-
-Then use:
-
-```bash
-DATABASE_URL=postgresql://dashclaw:dashclaw@localhost:5432/dashclaw
-```
-
 ---
 
 ## Step 3: Download & Install
@@ -65,7 +63,7 @@ DATABASE_URL=postgresql://dashclaw:dashclaw@localhost:5432/dashclaw
 ### Fastest path (recommended)
 
 Run the installer for your platform. It will:
-- ask for your `DATABASE_URL` (from Neon or local Postgres)
+- ask for your `DATABASE_URL` (from Docker or Neon)
 - generate `NEXTAUTH_SECRET`, `DASHCLAW_API_KEY`, and `ENCRYPTION_KEY`
 - write `.env.local`
 
@@ -124,15 +122,24 @@ npm run dev
 
 ---
 
-## Step 4: Deploy to Cloud (Optional)
+## Step 4: Deploy to Cloud (Optional — access from anywhere)
 
-Want it running 24/7 without leaving your computer on?
+Want to check on your agents from your phone? Deploy to Vercel for free:
 
-1. Click the **Deploy with Vercel** button in the README
-2. Connect your GitHub account
-3. Set your environment variables (`DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`)
-4. **Set `DASHCLAW_API_KEY`** to protect your data
-5. Done! You get a free URL like `your-dashboard.vercel.app`
+1. Push your fork to GitHub
+2. Go to **[vercel.com](https://vercel.com)** and import the repo
+3. Set environment variables in the Vercel dashboard:
+   - `DATABASE_URL` — use your [Neon](https://neon.tech) connection string (Neon's serverless driver is optimized for Vercel)
+   - `NEXTAUTH_URL=https://your-app.vercel.app` (replace with your actual Vercel URL)
+   - `NEXTAUTH_SECRET`
+   - `DASHCLAW_API_KEY`
+   - `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET`
+4. Deploy! You get a free URL like `https://your-app.vercel.app`
+5. Update your OAuth app callback URLs to use the Vercel URL:
+   - `https://your-app.vercel.app/api/auth/callback/github`
+   - `https://your-app.vercel.app/api/auth/callback/google`
+
+Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
 
 **Security note:**
 - **Local development**: set `DASHCLAW_API_KEY` so agents/tools can authenticate consistently.
@@ -158,7 +165,7 @@ The onboarding checklist will guide you through:
 
 ## Step 6 (Optional): Scheduled Jobs (Cron Endpoints)
 
-DashClaw includes endpoints under `/api/cron/*` for scheduled maintenance and automation. Even if you are not on a paid Vercel plan, you can still use them by running any scheduler (GitHub Actions, Windows Task Scheduler, system cron, etc.) that makes an HTTP request with:
+DashClaw includes endpoints under `/api/cron/*` for scheduled maintenance and automation. Call them with any scheduler (GitHub Actions, Windows Task Scheduler, system cron, etc.):
 
 - Header: `Authorization: Bearer $CRON_SECRET`
 

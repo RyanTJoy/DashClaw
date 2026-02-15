@@ -31,15 +31,16 @@ If missing, instruct the user to install Node.js LTS from `https://nodejs.org`.
 
 ## Step 2: Get a Postgres Database (Pick One)
 
-Option A (recommended): Neon (hosted Postgres)
-- User creates a free Neon project and gets a `postgresql://...` connection string.
-
-Option B: Local Postgres (Docker)
-- Install Docker Desktop
+Option A: Local Postgres (Docker — fastest for local dev)
+- Install Docker Desktop if not already installed
 - Run:
   - `docker compose up -d db`
 - Use:
   - `DATABASE_URL=postgresql://dashclaw:dashclaw@localhost:5432/dashclaw`
+
+Option B: Neon (hosted Postgres — best for cloud/Vercel deployment)
+- User creates a free Neon project at https://neon.tech and gets a `postgresql://...` connection string.
+- Neon's serverless driver is optimized for Vercel's edge functions.
 
 ## Step 3: Install DashClaw
 
