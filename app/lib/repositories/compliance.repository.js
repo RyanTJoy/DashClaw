@@ -36,7 +36,7 @@ export async function getGuardDecisionEvidence(sql, orgId, windowDays = 30) {
       COUNT(*) as count
     FROM guard_decisions
     WHERE org_id = ${orgId}
-      AND created_at >= NOW() - ${windowDays + ' days'}::interval
+      AND created_at::timestamptz >= NOW() - ${windowDays + ' days'}::interval
     GROUP BY action_type, decision
     ORDER BY count DESC
   `;
@@ -49,7 +49,7 @@ export async function getActionRecordEvidence(sql, orgId, windowDays = 30) {
       COUNT(*) as count
     FROM action_records
     WHERE org_id = ${orgId}
-      AND created_at >= NOW() - ${windowDays + ' days'}::interval
+      AND created_at::timestamptz >= NOW() - ${windowDays + ' days'}::interval
     GROUP BY action_type
     ORDER BY count DESC
   `;
