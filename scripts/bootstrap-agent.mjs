@@ -14,12 +14,24 @@
  *   --base-url     API base URL (default: http://localhost:3000)
  *   --api-key      API key (falls back to DASHCLAW_API_KEY / DASHCLAW_API_KEY env)
  *   --local        Shorthand for --base-url http://localhost:3000
+ *   --org-id       Target org ID (overrides API key org resolution)
  *   --dry-run      Print discovered data without pushing
  */
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { resolve, dirname, join, extname, basename } from 'path';
 import { fileURLToPath } from 'url';
+import { discoverFiles } from './lib/discovery.mjs';
+import { classifyAll, groupByCategory, CATEGORIES } from './lib/classifiers.mjs';
+import {
+  extractIdentity,
+  extractUserProfile,
+  extractRelationships,
+  extractCapabilities,
+  extractOperationalConfig,
+  extractProjects,
+  extractCreativeWorks,
+} from './lib/extractors.mjs';
 
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
@@ -847,11 +859,30 @@ async function main() {
   console.log(`${'='.repeat(50)}`);
   console.log(`Directory: ${dir}`);
   console.log(`Agent ID:  ${args.agentId}`);
+  if (args.orgId) console.log(`Org ID:    ${args.orgId}`);
   console.log(`Mode:      ${args.dryRun ? 'DRY RUN' : 'LIVE'}`);
   console.log();
 
-  // Run all scanners
-  console.log('Scanning...\n');
+  // Phase 1: Adaptive discovery + classification
+  console.log('Phase 1: Discovering files...');
+  const discovered = discoverFiles(dir);
+  console.log(`  Found ${discovered.length} files\n`);
+
+  console.log('Phase 2: Classifying...');
+  const classified = classifyAll(discovered);
+  const grouped = groupByCategory(classified);
+  const classificationSummary = {};
+  for (const [cat, files] of Object.entries(grouped)) {
+    classificationSummary[cat] = files.length;
+  }
+  console.log(`  Categories: ${Object.keys(grouped).length}`);
+  for (const [cat, count] of Object.entries(classificationSummary).sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${cat}: ${count} files`);
+  }
+  console.log();
+
+  // Phase 3: Run existing scanners + new adaptive extractors
+  console.log('Phase 3: Extracting data...\n');
   const payload = {};
   const summary = {};
 
@@ -972,11 +1003,145 @@ async function main() {
     console.error(`  Preferences: ERROR - ${e.message}`);
   }
 
+  // ─── Adaptive Extractors (from discovery) ──────────────────
+
+  // Identity
+  try {
+    const identityFiles = grouped[CATEGORIES.IDENTITY] || [];
+    if (identityFiles.length) {
+      const identity = extractIdentity(identityFiles);
+      if (identity.context_points.length) {
+        payload.context_points = [...(payload.context_points || []), ...identity.context_points];
+        summary['  identity_context'] = identity.context_points.length;
+        console.log(`  Identity Context: ${identity.context_points.length} points`);
+      }
+      if (identity.preferences.length) {
+        if (!payload.preferences) payload.preferences = {};
+        payload.preferences.preferences = [...(payload.preferences?.preferences || []), ...identity.preferences];
+        summary['  identity_prefs'] = identity.preferences.length;
+        console.log(`  Identity Preferences: ${identity.preferences.length}`);
+      }
+    }
+  } catch (e) {
+    console.error(`  Identity: ERROR - ${e.message}`);
+  }
+
+  // User profile
+  try {
+    const userFiles = grouped[CATEGORIES.USER_PROFILE] || [];
+    if (userFiles.length) {
+      const user = extractUserProfile(userFiles);
+      if (user.context_points.length) {
+        payload.context_points = [...(payload.context_points || []), ...user.context_points];
+        summary['  user_context'] = user.context_points.length;
+        console.log(`  User Profile: ${user.context_points.length} context points`);
+      }
+    }
+  } catch (e) {
+    console.error(`  User Profile: ERROR - ${e.message}`);
+  }
+
+  // Relationships
+  try {
+    const relFiles = grouped[CATEGORIES.RELATIONSHIPS] || [];
+    if (relFiles.length) {
+      const rels = extractRelationships(relFiles);
+      if (rels.relationships.length) {
+        payload.relationships = rels.relationships;
+        summary.relationships = rels.relationships.length;
+        console.log(`  Relationships: ${rels.relationships.length} contacts/entities`);
+      }
+    }
+  } catch (e) {
+    console.error(`  Relationships: ERROR - ${e.message}`);
+  }
+
+  // Capabilities (skills + tools)
+  try {
+    const skillFiles = grouped[CATEGORIES.CAPABILITY_SKILL] || [];
+    const toolFiles = grouped[CATEGORIES.CAPABILITY_TOOL] || [];
+    if (skillFiles.length || toolFiles.length) {
+      const caps = extractCapabilities(skillFiles, toolFiles);
+      if (caps.capabilities.length) {
+        payload.capabilities = caps.capabilities;
+        summary.capabilities = caps.capabilities.length;
+        const skills = caps.capabilities.filter(c => c.capability_type === 'skill').length;
+        const tools = caps.capabilities.filter(c => c.capability_type === 'tool').length;
+        console.log(`  Capabilities: ${caps.capabilities.length} (${skills} skills, ${tools} tools)`);
+      }
+    }
+  } catch (e) {
+    console.error(`  Capabilities: ERROR - ${e.message}`);
+  }
+
+  // Operational config
+  try {
+    const opFiles = grouped[CATEGORIES.OPERATIONAL_CONFIG] || [];
+    if (opFiles.length) {
+      const ops = extractOperationalConfig(opFiles);
+      if (ops.context_points.length) {
+        payload.context_points = [...(payload.context_points || []), ...ops.context_points];
+        summary['  ops_context'] = ops.context_points.length;
+        console.log(`  Operational Config: ${ops.context_points.length} context points`);
+      }
+      if (ops.preferences.length) {
+        if (!payload.preferences) payload.preferences = {};
+        payload.preferences.preferences = [...(payload.preferences?.preferences || []), ...ops.preferences];
+        summary['  ops_prefs'] = ops.preferences.length;
+        console.log(`  Operational Preferences: ${ops.preferences.length}`);
+      }
+    }
+  } catch (e) {
+    console.error(`  Operational Config: ERROR - ${e.message}`);
+  }
+
+  // Projects (from discovery — supplements existing scanGoals)
+  try {
+    const projectFiles = grouped[CATEGORIES.PROJECT] || [];
+    if (projectFiles.length) {
+      const projects = extractProjects(projectFiles);
+      if (projects.goals.length) {
+        // Merge with existing goals, dedup by title
+        const existingTitles = new Set((payload.goals || []).map(g => g.title.toLowerCase()));
+        const newGoals = projects.goals.filter(g => !existingTitles.has(g.title.toLowerCase()));
+        if (newGoals.length) {
+          payload.goals = [...(payload.goals || []), ...newGoals];
+          summary['  project_goals'] = newGoals.length;
+          console.log(`  Project Goals: ${newGoals.length} new (${projects.goals.length - newGoals.length} deduped)`);
+        }
+      }
+    }
+  } catch (e) {
+    console.error(`  Projects: ERROR - ${e.message}`);
+  }
+
+  // Creative works
+  try {
+    const creativeFiles = grouped[CATEGORIES.CREATIVE] || [];
+    if (creativeFiles.length) {
+      const creative = extractCreativeWorks(creativeFiles);
+      if (creative.content.length) {
+        payload.content = [...(payload.content || []), ...creative.content];
+        summary.content = creative.content.length;
+        console.log(`  Creative Works: ${creative.content.length} pieces`);
+      }
+    }
+  } catch (e) {
+    console.error(`  Creative Works: ERROR - ${e.message}`);
+  }
+
+  // Update summary counts for merged categories
+  if (payload.context_points) summary.context_points = payload.context_points.length;
+  if (payload.preferences?.preferences) summary.preferences = payload.preferences.preferences.length;
+  if (payload.goals) summary.goals = payload.goals.length;
+
   console.log();
 
   // Dry run — print and exit
   if (args.dryRun) {
-    console.log('DRY RUN — Summary:');
+    console.log('DRY RUN — Discovery Manifest:');
+    console.log(formatTable({ 'Total Files Discovered': discovered.length, ...classificationSummary }));
+    console.log('\nSync Summary:');
     console.log(formatTable(summary));
     console.log('\nPayload preview (JSON):');
     // Print with truncated code blocks for readability
@@ -989,6 +1154,21 @@ async function main() {
     if (preview.context_points) {
       for (const p of preview.context_points) {
         if (p.content?.length > 120) p.content = p.content.slice(0, 120) + '...';
+      }
+    }
+    if (preview.relationships) {
+      for (const r of preview.relationships) {
+        if (r.description?.length > 80) r.description = r.description.slice(0, 80) + '...';
+      }
+    }
+    if (preview.capabilities) {
+      for (const c of preview.capabilities) {
+        if (c.description?.length > 80) c.description = c.description.slice(0, 80) + '...';
+      }
+    }
+    if (preview.content) {
+      for (const c of preview.content) {
+        if (c.body?.length > 80) c.body = c.body.slice(0, 80) + '...';
       }
     }
     console.log(JSON.stringify(preview, null, 2));
@@ -1017,6 +1197,11 @@ async function main() {
     agentId: args.agentId,
     agentName: args.agentName || args.agentId,
   });
+
+  // If --org-id provided, include it so sync route targets the right org
+  if (args.orgId) {
+    payload.target_org_id = args.orgId;
+  }
 
   console.log(`Pushing to ${baseUrl}...`);
 

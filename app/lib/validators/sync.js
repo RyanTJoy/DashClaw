@@ -6,6 +6,7 @@ const optionalNumber = z.number().nullish().transform(val => val || 0);
 
 export const syncSchema = z.object({
   agent_id: z.string().optional(),
+  target_org_id: z.string().max(100).optional(),
   
   connections: z.array(z.object({
     provider: z.string().max(100),
@@ -103,6 +104,22 @@ export const syncSchema = z.object({
     code: z.string().max(10000),
     language: optionalString,
     tags: z.any().optional(), // JSON
+  })).optional(),
+
+  relationships: z.array(z.object({
+    name: z.string().max(255),
+    relationship_type: z.string().max(100).default('contact'),
+    description: optionalString,
+    source_file: optionalString,
+  })).optional(),
+
+  capabilities: z.array(z.object({
+    name: z.string().max(255),
+    capability_type: z.string().max(50).default('skill'),
+    description: optionalString,
+    source_path: optionalString,
+    file_count: optionalNumber,
+    metadata: z.record(z.any()).nullish(),
   })).optional(),
 
   preferences: z.object({
