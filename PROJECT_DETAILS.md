@@ -258,7 +258,8 @@ function getSql() {
 - **Agent filter**: `AgentFilterContext.js` provides global agent filter; `AgentFilterDropdown.js` renders in PageLayout header. `AgentFilterProvider` is in `SessionWrapper.js` (global - persists across all pages). All data pages (Content, Goals, Learning, Relationships, Workflows, Security) pass `?agent_id=X` when filter is active.
 - **Agent colors**: `app/lib/colors.js` - `getAgentColor(agentId)` returns consistent hash-based color from 8-color palette
 - **Typography**: Inter font, `text-sm text-zinc-300` body, `text-xs text-zinc-500` labels, `font-mono text-xs` for timestamps/IDs, stat numbers max `text-2xl tabular-nums`
-- **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` - no drag/customize mode
+- **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` - no drag/customize mode. Most cards include a "View all →" link that navigates to the corresponding full-page view (e.g. `/actions`, `/goals`, `/security`, `/learning`, `/usage`, `/workspace`, `/relationships`, `/calendar`).
+- **GoalsChart**: Summary stats (total, active, completed, avg progress) + top 5 goals with progress bars. No Recharts dependency — uses `StatCompact` and `ProgressBar` primitives.
 
 ## Detailed API Routes (POST-enabled)
 - `GET /api/agents` - list agents (discovered from action records plus other core tables like goals/decisions; supports `?include_connections=true`)

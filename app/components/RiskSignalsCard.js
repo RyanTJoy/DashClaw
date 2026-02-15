@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { ShieldAlert, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
@@ -49,9 +50,15 @@ export default function RiskSignalsCard() {
   const redCount = filteredSignals.filter(s => s.severity === 'red').length;
   const amberCount = filteredSignals.filter(s => s.severity === 'amber').length;
 
+  const viewAllLink = (
+    <Link href="/security" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Risk Signals" icon={ShieldAlert}>
+      <CardHeader title="Risk Signals" icon={ShieldAlert} action={viewAllLink}>
         {redCount > 0 && (
           <Badge variant="error" size="sm">{redCount} Red</Badge>
         )}

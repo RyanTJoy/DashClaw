@@ -1,35 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Target } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import Link from 'next/link';
+import { Target, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
+import { StatCompact } from './ui/Stat';
+import { ProgressBar } from './ui/ProgressBar';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 
-function getBarColor(progress) {
-  if (progress >= 100) return '#22c55e';
-  if (progress > 0) return '#f97316';
-  return '#52525b';
-}
-
-function CustomTooltip({ active, payload }) {
-  if (active && payload && payload.length) {
-    const { name, progress, cost } = payload[0].payload;
-    return (
-      <div className="bg-surface-elevated border border-[rgba(255,255,255,0.06)] rounded-lg px-3 py-2 text-sm shadow-lg">
-        <p className="text-white font-medium">{name}</p>
-        <p className="text-zinc-400 mt-0.5">Progress: <span className="text-white tabular-nums">{progress}%</span></p>
-        <p className="text-zinc-500 mt-0.5">Total Cost: <span className="text-green-400 tabular-nums">${cost.toFixed(2)}</span></p>
-      </div>
-    );
-  }
-  return null;
-}
-
 export default function GoalsChart() {
-  const [data, setData] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
 
@@ -38,21 +21,12 @@ export default function GoalsChart() {
       try {
         const res = await fetch(`/api/goals${agentId ? `?agent_id=${agentId}` : ''}`);
         const result = await res.json();
-
-        if (result.goals && result.goals.length > 0) {
-          const chartData = result.goals.map(goal => ({
-            name: goal.title?.substring(0, 20) || 'Goal',
-            progress: goal.progress || 0,
-            cost: goal.total_cost || 0,
-            target: 100
-          }));
-          setData(chartData);
-        } else {
-          setData([]);
-        }
+        setGoals(result.goals || []);
+        setStats(result.stats || {});
       } catch (error) {
         console.error('Failed to fetch goals:', error);
-        setData([]);
+        setGoals([]);
+        setStats({});
       } finally {
         setLoading(false);
       }
@@ -64,7 +38,9 @@ export default function GoalsChart() {
     return <CardSkeleton />;
   }
 
-  if (data.length === 0) {
+  const totalGoals = stats.totalGoals || goals.length;
+
+  if (totalGoals === 0) {
     return (
       <Card className="h-full">
         <CardHeader title="Goal Progress" icon={Target} />
@@ -79,44 +55,47 @@ export default function GoalsChart() {
     );
   }
 
+  const viewAllLink = (
+    <Link href="/goals" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
+  const topGoals = goals.slice(0, 5);
+
   return (
     <Card className="h-full">
-      <CardHeader title="Goal Progress" icon={Target} count={data.length} />
+      <CardHeader title="Goal Progress" icon={Target} count={totalGoals} action={viewAllLink} />
 
       <CardContent>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical">
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.06)"
-                horizontal={false}
+        {/* Stats row */}
+        <div className="bg-surface-tertiary rounded-lg px-3 py-2.5 mb-4">
+          <div className="grid grid-cols-4 gap-2">
+            <StatCompact label="Total" value={totalGoals} />
+            <StatCompact label="Active" value={stats.active || 0} color="text-blue-400" />
+            <StatCompact label="Done" value={stats.completed || 0} color="text-green-400" />
+            <StatCompact label="Avg %" value={`${stats.avgProgress || 0}%`} color="text-brand" />
+          </div>
+        </div>
+
+        {/* Top 5 goals */}
+        <div className="space-y-2.5">
+          {topGoals.map((goal) => (
+            <div key={goal.id || goal.title} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-zinc-300 truncate mr-2">
+                  {goal.title || 'Goal'}
+                </span>
+                <span className="text-xs text-zinc-500 tabular-nums flex-shrink-0">
+                  {goal.progress || 0}%
+                </span>
+              </div>
+              <ProgressBar
+                value={goal.progress || 0}
+                color={goal.progress >= 100 ? 'success' : goal.progress > 0 ? 'brand' : 'info'}
               />
-              <XAxis
-                type="number"
-                domain={[0, 100]}
-                stroke="#71717a"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                dataKey="name"
-                type="category"
-                stroke="#71717a"
-                fontSize={11}
-                width={100}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="progress" radius={[0, 4, 4, 0]}>
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getBarColor(entry.progress)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
