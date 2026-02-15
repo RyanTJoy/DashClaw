@@ -64,34 +64,6 @@
       "file": "app/api/actions/route.js"
     },
     {
-      "path": "/api/actions/{actionId}",
-      "methods": [
-        "GET",
-        "PATCH"
-      ],
-      "maturity": "stable",
-      "matched_prefix": "/api/actions",
-      "file": "app/api/actions/[actionId]/route.js"
-    },
-    {
-      "path": "/api/actions/{actionId}/approve",
-      "methods": [
-        "POST"
-      ],
-      "maturity": "stable",
-      "matched_prefix": "/api/actions",
-      "file": "app/api/actions/[actionId]/approve/route.js"
-    },
-    {
-      "path": "/api/actions/{actionId}/trace",
-      "methods": [
-        "GET"
-      ],
-      "maturity": "stable",
-      "matched_prefix": "/api/actions",
-      "file": "app/api/actions/[actionId]/trace/route.js"
-    },
-    {
       "path": "/api/actions/assumptions",
       "methods": [
         "GET",
@@ -139,6 +111,34 @@
       "maturity": "stable",
       "matched_prefix": "/api/actions",
       "file": "app/api/actions/signals/route.js"
+    },
+    {
+      "path": "/api/actions/{actionId}",
+      "methods": [
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/[actionId]/route.js"
+    },
+    {
+      "path": "/api/actions/{actionId}/approve",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/[actionId]/approve/route.js"
+    },
+    {
+      "path": "/api/actions/{actionId}/trace",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/actions",
+      "file": "app/api/actions/[actionId]/trace/route.js"
     },
     {
       "path": "/api/activity",
@@ -445,15 +445,6 @@
       "file": "app/api/learning/recommendations/route.js"
     },
     {
-      "path": "/api/learning/recommendations/{recommendationId}",
-      "methods": [
-        "PATCH"
-      ],
-      "maturity": "experimental",
-      "matched_prefix": "/api/learning",
-      "file": "app/api/learning/recommendations/[recommendationId]/route.js"
-    },
-    {
       "path": "/api/learning/recommendations/events",
       "methods": [
         "POST"
@@ -470,6 +461,15 @@
       "maturity": "experimental",
       "matched_prefix": "/api/learning",
       "file": "app/api/learning/recommendations/metrics/route.js"
+    },
+    {
+      "path": "/api/learning/recommendations/{recommendationId}",
+      "methods": [
+        "PATCH"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/learning",
+      "file": "app/api/learning/recommendations/[recommendationId]/route.js"
     },
     {
       "path": "/api/memory",
@@ -866,16 +866,6 @@
       "file": "app/api/team/route.js"
     },
     {
-      "path": "/api/team/{userId}",
-      "methods": [
-        "DELETE",
-        "PATCH"
-      ],
-      "maturity": "stable",
-      "matched_prefix": "/api/team",
-      "file": "app/api/team/[userId]/route.js"
-    },
-    {
       "path": "/api/team/invite",
       "methods": [
         "DELETE",
@@ -885,6 +875,16 @@
       "maturity": "stable",
       "matched_prefix": "/api/team",
       "file": "app/api/team/invite/route.js"
+    },
+    {
+      "path": "/api/team/{userId}",
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/team",
+      "file": "app/api/team/[userId]/route.js"
     },
     {
       "path": "/api/tokens",

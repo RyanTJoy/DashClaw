@@ -143,6 +143,7 @@ export async function discoverApiRoutes(rootDir = process.cwd()) {
     });
   }
 
-  routes.sort((a, b) => a.path.localeCompare(b.path));
+  // Use simple comparison (not localeCompare) for cross-platform determinism.
+  routes.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return routes;
 }
