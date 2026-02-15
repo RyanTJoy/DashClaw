@@ -2,7 +2,7 @@
 
 Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
 
-Install, configure, and instrument your AI agents with 60+ methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
+Install, configure, and instrument your AI agents with 78+ methods across action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, and more.
 
 ---
 
@@ -731,6 +731,231 @@ Create or update a shared workspace document. Upserts by name.
 Push multiple data categories in a single request. Accepts connections, memory, goals, learning, content, inspiration, context_points, context_threads, handoffs, preferences, and snippets.
 
 **Returns:** `Promise<{results: Object, total_synced: number, total_errors: number, duration_ms: number}>`
+
+---
+
+## Policy Testing
+
+Run guardrails tests, generate compliance proof reports, and import policy packs.
+
+### claw.testPolicies()
+Run guardrails tests against all active policies. Returns pass/fail results per policy.
+
+**Returns:** `Promise<{ results: Object[], total: number, passed: number, failed: number }>`
+
+**Example:**
+```javascript
+const report = await claw.testPolicies();
+console.log(`${report.passed}/${report.total} policies passed`);
+for (const r of report.results.filter(r => !r.passed)) {
+  console.log(`FAIL: ${r.policy} — ${r.reason}`);
+}
+```
+
+### claw.getProofReport(options?)
+Generate a compliance proof report summarizing guard decisions, policy evaluations, and audit evidence.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| format | string | No | Output format: "json" (default) or "md" |
+
+**Returns:** `Promise<{ report: Object|string }>`
+
+### claw.importPolicies({ pack?, yaml? })
+Import a policy pack or raw YAML. Admin only. Replaces or merges into active policies.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| pack | string | No | Named policy pack: enterprise-strict, smb-safe, startup-growth, development |
+| yaml | string | No | Raw YAML policy definition |
+
+**Returns:** `Promise<{ imported: number, policies: Object[] }>`
+
+---
+
+## Compliance Engine
+
+Map policies to regulatory frameworks, run gap analysis, and generate compliance reports.
+
+### claw.mapCompliance(framework)
+Map active policies to framework controls. Returns a control-by-control coverage matrix.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| framework | string | Yes | Target framework: soc2, iso27001, gdpr, nist-ai-rmf, imda-agentic |
+
+**Returns:** `Promise<{ framework: string, controls: Object[], coverage_pct: number }>`
+
+**Example:**
+```javascript
+const { controls, coverage_pct } = await claw.mapCompliance('soc2');
+console.log(`SOC 2 coverage: ${coverage_pct}%`);
+for (const ctrl of controls.filter(c => !c.covered)) {
+  console.log(`Gap: ${ctrl.id} — ${ctrl.name}`);
+}
+```
+
+### claw.analyzeGaps(framework)
+Run gap analysis with remediation plan. Identifies missing controls and suggests policy changes.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| framework | string | Yes | Target framework: soc2, iso27001, gdpr, nist-ai-rmf, imda-agentic |
+
+**Returns:** `Promise<{ framework: string, gaps: Object[], remediation_plan: Object[] }>`
+
+### claw.getComplianceReport(framework, options?)
+Generate a full compliance report and save a point-in-time snapshot.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| framework | string | Yes | Target framework |
+| options.format | string | No | Output format: "json" (default) or "md" |
+
+**Returns:** `Promise<{ report: Object|string, snapshot_id: string }>`
+
+### claw.listFrameworks()
+List all available compliance frameworks with metadata.
+
+**Returns:** `Promise<{ frameworks: Object[] }>`
+
+### claw.getComplianceEvidence(options?)
+Get live guard decision evidence for compliance audits. Returns timestamped decision records.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| options.window | string | No | Time window: "7d" (default), "30d", "90d" |
+
+**Returns:** `Promise<{ evidence: Object[], window: string, total: number }>`
+
+---
+
+## Task Routing
+
+Route tasks to agents based on capabilities, availability, and workload. Manage the agent pool and monitor routing health.
+
+### claw.listRoutingAgents(filters?)
+List registered routing agents with optional status filter.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.status | string | No | Filter by status: available, busy, offline |
+
+**Returns:** `Promise<{ agents: Object[], total: number }>`
+
+### claw.registerRoutingAgent(agent)
+Register a new agent in the routing pool.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| name | string | Yes | Agent display name |
+| capabilities | string[] | No | List of skills/capabilities |
+| maxConcurrent | number | No | Max concurrent tasks (default: 1) |
+| endpoint | string | No | Agent callback endpoint URL |
+
+**Returns:** `Promise<{ agent: Object, agent_id: string }>`
+
+### claw.getRoutingAgent(agentId)
+Get a single routing agent with current metrics.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| agentId | string | Yes | The routing agent ID |
+
+**Returns:** `Promise<{ agent: Object, metrics: Object }>`
+
+### claw.updateRoutingAgentStatus(agentId, status)
+Update a routing agent's availability status.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| agentId | string | Yes | The routing agent ID |
+| status | string | Yes | New status: available, busy, offline |
+
+**Returns:** `Promise<{ agent: Object }>`
+
+### claw.deleteRoutingAgent(agentId)
+Remove an agent from the routing pool.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| agentId | string | Yes | The routing agent ID |
+
+**Returns:** `Promise<{ deleted: boolean, id: string }>`
+
+### claw.listRoutingTasks(filters?)
+List routing tasks with optional filters.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.status | string | No | Filter by status: pending, assigned, completed, failed |
+| filters.agent_id | string | No | Filter by assigned agent |
+| filters.limit | number | No | Max results (default: 50) |
+| filters.offset | number | No | Pagination offset |
+
+**Returns:** `Promise<{ tasks: Object[], total: number }>`
+
+### claw.submitRoutingTask(task)
+Submit a task for automatic routing to the best available agent.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| title | string | Yes | Task title |
+| description | string | No | Detailed description |
+| requiredSkills | string[] | No | Skills needed to handle this task |
+| urgency | string | No | low, medium, high, critical (default: medium) |
+| timeoutSeconds | number | No | Task timeout in seconds |
+| maxRetries | number | No | Max retry attempts on failure |
+| callbackUrl | string | No | URL to notify on completion |
+
+**Returns:** `Promise<{ task: Object, task_id: string, assigned_agent: Object|null }>`
+
+**Example:**
+```javascript
+const { task_id, assigned_agent } = await claw.submitRoutingTask({
+  title: 'Analyze quarterly metrics',
+  description: 'Pull Q4 data and generate summary report',
+  requiredSkills: ['data-analysis', 'reporting'],
+  urgency: 'high',
+  timeoutSeconds: 600,
+  callbackUrl: 'https://hooks.example.com/task-done',
+});
+console.log(`Task ${task_id} assigned to ${assigned_agent?.name ?? 'queue'}`);
+```
+
+### claw.completeRoutingTask(taskId, result?)
+Mark a routing task as completed with optional result payload.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| taskId | string | Yes | The task ID |
+| result | Object | No | Task result data |
+
+**Returns:** `Promise<{ task: Object }>`
+
+### claw.getRoutingStats()
+Get aggregate routing statistics (throughput, latency, agent utilization).
+
+**Returns:** `Promise<{ stats: Object }>`
+
+### claw.getRoutingHealth()
+Get routing system health status and diagnostics.
+
+**Returns:** `Promise<{ healthy: boolean, agents: Object, tasks: Object, latency: Object }>`
 
 ---
 

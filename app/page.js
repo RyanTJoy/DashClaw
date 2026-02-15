@@ -4,6 +4,7 @@ import {
   ExternalLink, BookOpen, FolderKanban, MessageSquare, ArrowLeftRight,
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
   Webhook, Clock, Compass, Building2, Terminal, BarChart3,
+  Scale, Network, FileCheck,
 } from 'lucide-react';
 import PublicNavbar from './components/PublicNavbar';
 import ImageCarousel from './components/ImageCarousel';
@@ -42,6 +43,9 @@ const platformFeatures = [
   { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
   { icon: CircleDot, title: 'Open Loop Tracking', description: 'Track unresolved dependencies, pending approvals, and blockers across agents.' },
   { icon: Eye, title: 'Assumption Monitoring', description: 'Log what agents assume, validate or invalidate, and catch drift early.' },
+  { icon: Scale, title: 'Compliance Engine', description: 'Map policies to SOC 2, ISO 27001, GDPR, NIST AI RMF with gap analysis and audit-ready reports.' },
+  { icon: Network, title: 'Task Routing', description: 'Skill-based auto-routing with scoring, retry, escalation, and performance tracking.' },
+  { icon: FileCheck, title: 'Policy Testing', description: 'Run guardrails tests, generate proof reports, and import pre-built policy packs.' },
 ];
 
 const operationalFeatures = [
@@ -126,6 +130,18 @@ const shippedHighlights = [
     description: 'Backfill and recommendation rebuild cron routes keep adaptive recommendation data fresh.',
     href: '/learning',
   },
+  {
+    icon: Scale,
+    title: 'Compliance Engine',
+    description: 'Map guardrail policies to SOC 2, ISO 27001, GDPR, NIST AI RMF, and IMDA frameworks with gap analysis and audit-ready reports.',
+    href: '/docs#compliance-engine',
+  },
+  {
+    icon: Network,
+    title: 'Skill-Based Task Routing',
+    description: 'Auto-route tasks to the best agent based on capability match, load, performance history, and urgency with retry and escalation.',
+    href: '/docs#task-routing',
+  },
 ];
 
 /* ─── page ─── */
@@ -152,11 +168,12 @@ export default function LandingPage() {
             Guard what they do before they do it.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">60+ SDK methods</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">78+ SDK methods</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Behavior guardrails</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Adaptive recommendation metrics</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Compliance engine</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Task routing</span>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
@@ -340,7 +357,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
                 <Package size={12} />
-                60+ methods across 13 categories
+                78+ methods across 16 categories
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">

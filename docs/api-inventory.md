@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `78`
-- Stable routes: `38`
-- Beta routes: `13`
-- Experimental routes: `27`
+- Total routes: `93`
+- Stable routes: `41`
+- Beta routes: `14`
+- Experimental routes: `38`
 
 ## Routes
 
@@ -36,6 +36,11 @@ doc-type: architecture
 | `/api/agents/connections` | `GET, POST` | `experimental` | `/api/agents` | `app/api/agents/connections/route.js` |
 | `/api/bounties` | `GET` | `experimental` | `/api/bounties` | `app/api/bounties/route.js` |
 | `/api/calendar` | `GET, POST` | `experimental` | `/api/calendar` | `app/api/calendar/route.js` |
+| `/api/compliance/evidence` | `GET` | `experimental` | `(default)` | `app/api/compliance/evidence/route.js` |
+| `/api/compliance/frameworks` | `GET` | `experimental` | `(default)` | `app/api/compliance/frameworks/route.js` |
+| `/api/compliance/gaps` | `GET` | `experimental` | `(default)` | `app/api/compliance/gaps/route.js` |
+| `/api/compliance/map` | `GET` | `experimental` | `(default)` | `app/api/compliance/map/route.js` |
+| `/api/compliance/report` | `GET` | `experimental` | `(default)` | `app/api/compliance/report/route.js` |
 | `/api/content` | `GET, POST` | `experimental` | `/api/content` | `app/api/content/route.js` |
 | `/api/context/points` | `GET, POST` | `stable` | `/api/context` | `app/api/context/points/route.js` |
 | `/api/context/threads` | `GET, POST` | `stable` | `/api/context` | `app/api/context/threads/route.js` |
@@ -44,6 +49,7 @@ doc-type: architecture
 | `/api/cron/learning-episodes-backfill` | `GET` | `beta` | `/api/cron` | `app/api/cron/learning-episodes-backfill/route.js` |
 | `/api/cron/learning-recommendations` | `GET` | `beta` | `/api/cron` | `app/api/cron/learning-recommendations/route.js` |
 | `/api/cron/memory-maintenance` | `GET` | `beta` | `/api/cron` | `app/api/cron/memory-maintenance/route.js` |
+| `/api/cron/routing-maintenance` | `POST` | `beta` | `/api/cron` | `app/api/cron/routing-maintenance/route.js` |
 | `/api/cron/signals` | `GET` | `beta` | `/api/cron` | `app/api/cron/signals/route.js` |
 | `/api/digest` | `GET` | `experimental` | `(default)` | `app/api/digest/route.js` |
 | `/api/docs/raw` | `GET` | `beta` | `/api/docs` | `app/api/docs/raw/route.js` |
@@ -75,10 +81,19 @@ doc-type: architecture
 | `/api/pairings/{pairingId}` | `GET` | `experimental` | `(default)` | `app/api/pairings/[pairingId]/route.js` |
 | `/api/pairings/{pairingId}/approve` | `POST` | `experimental` | `(default)` | `app/api/pairings/[pairingId]/approve/route.js` |
 | `/api/policies` | `DELETE, GET, PATCH, POST` | `stable` | `/api/policies` | `app/api/policies/route.js` |
+| `/api/policies/import` | `POST` | `stable` | `/api/policies` | `app/api/policies/import/route.js` |
+| `/api/policies/proof` | `GET` | `stable` | `/api/policies` | `app/api/policies/proof/route.js` |
+| `/api/policies/test` | `POST` | `stable` | `/api/policies` | `app/api/policies/test/route.js` |
 | `/api/preferences` | `GET, POST` | `experimental` | `(default)` | `app/api/preferences/route.js` |
 | `/api/prompts/agent-connect/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/agent-connect/raw/route.js` |
 | `/api/prompts/server-setup/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/server-setup/raw/route.js` |
 | `/api/relationships` | `GET, POST` | `experimental` | `/api/relationships` | `app/api/relationships/route.js` |
+| `/api/routing/agents` | `GET, POST` | `experimental` | `(default)` | `app/api/routing/agents/route.js` |
+| `/api/routing/agents/{agentId}` | `DELETE, GET, PATCH` | `experimental` | `(default)` | `app/api/routing/agents/[agentId]/route.js` |
+| `/api/routing/health` | `GET` | `experimental` | `(default)` | `app/api/routing/health/route.js` |
+| `/api/routing/stats` | `GET` | `experimental` | `(default)` | `app/api/routing/stats/route.js` |
+| `/api/routing/tasks` | `GET, POST` | `experimental` | `(default)` | `app/api/routing/tasks/route.js` |
+| `/api/routing/tasks/{taskId}/complete` | `POST` | `experimental` | `(default)` | `app/api/routing/tasks/[taskId]/complete/route.js` |
 | `/api/schedules` | `GET` | `experimental` | `/api/schedules` | `app/api/schedules/route.js` |
 | `/api/security/scan` | `POST` | `beta` | `/api/security` | `app/api/security/scan/route.js` |
 | `/api/security/status` | `GET` | `beta` | `/api/security` | `app/api/security/status/route.js` |
