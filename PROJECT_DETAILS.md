@@ -581,6 +581,12 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - Columns: `id`, `org_id`, `name`, `content`, `created_by`, `last_edited_by`, `version` (auto-incrementing on upsert), `created_at`, `updated_at`
 - Indexes: org_id; UNIQUE (org_id, name) for upsert
 
+### Agent Capabilities Table (migrate-capabilities.mjs)
+- `agent_capabilities` (`ac_`) - discovered skills and tools for an agent
+- Columns: `id`, `org_id`, `agent_id`, `name`, `capability_type` (skill|tool), `description`, `source_path`, `file_count`, `metadata` (JSONB), `created_at`, `updated_at`
+- Indexes: org_id; UNIQUE (org_id, COALESCE(agent_id, ''), name, capability_type) for upsert
+- Populated by: adaptive bootstrap scanner (`scripts/bootstrap-agent.mjs`) and `POST /api/sync` (capabilities category)
+
 ## Behavior Guard (Implemented)
 - Route: `/policies` - manage guard policies that govern agent behavior
 - Library: `app/lib/guard.js` - `evaluateGuard(orgId, context, sql, options)` core evaluation engine

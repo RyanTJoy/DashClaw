@@ -38,6 +38,8 @@ const LIMITS = {
   preferences: 1000,
   moods: 1000,
   approaches: 1000,
+  relationships: 1000,
+  capabilities: 1000,
 };
 
 // --- Category sync functions ---
@@ -397,23 +399,78 @@ async function syncSnippets(sql, orgId, agentId, snippets) {
   return { synced, errors };
 }
 
+async function syncRelationships(sql, orgId, agentId, relationships) {
+  const now = new Date().toISOString();
+  let synced = 0;
+  const errors = [];
+
+  for (const r of relationships.slice(0, LIMITS.relationships)) {
+    try {
+      const name = redactText(r.name);
+      // Skip if contact already exists for this org+agent
+      const existing = await sql`
+        SELECT id FROM contacts WHERE org_id = ${orgId} AND agent_id = ${agentId} AND name = ${name} LIMIT 1
+      `;
+      if (existing.length > 0) { synced++; continue; }
+
+      await sql`
+        INSERT INTO contacts (org_id, agent_id, name, platform, notes, opportunity_type, created_at)
+        VALUES (${orgId}, ${agentId}, ${name}, ${r.relationship_type || 'contact'}, ${redactText(r.description || null)}, ${r.relationship_type || null}, ${now})
+      `;
+      synced++;
+    } catch (e) {
+      errors.push(`relationship "${r.name}": sync failed`);
+    }
+  }
+  return { synced, errors };
+}
+
+async function syncCapabilities(sql, orgId, agentId, capabilities) {
+  const now = new Date().toISOString();
+  let synced = 0;
+  const errors = [];
+
+  for (const c of capabilities.slice(0, LIMITS.capabilities)) {
+    try {
+      const id = genId('ac_');
+      await sql`
+        INSERT INTO agent_capabilities (id, org_id, agent_id, name, capability_type, description, source_path, file_count, metadata, created_at, updated_at)
+        VALUES (${id}, ${orgId}, ${agentId}, ${redactText(c.name)}, ${c.capability_type || 'skill'}, ${redactText(c.description || null)}, ${c.source_path || null}, ${c.file_count || 1}, ${c.metadata ? JSON.stringify(c.metadata) : null}, ${now}, ${now})
+        ON CONFLICT (org_id, COALESCE(agent_id, ''), name, capability_type) DO UPDATE SET
+          description = COALESCE(EXCLUDED.description, agent_capabilities.description),
+          source_path = COALESCE(EXCLUDED.source_path, agent_capabilities.source_path),
+          file_count = EXCLUDED.file_count,
+          metadata = COALESCE(EXCLUDED.metadata, agent_capabilities.metadata),
+          updated_at = EXCLUDED.updated_at
+      `;
+      synced++;
+    } catch (e) {
+      errors.push(`capability "${c.name}": sync failed`);
+    }
+  }
+  return { synced, errors };
+}
+
 // --- Main POST handler ---
 
 export async function POST(request) {
   try {
-    const orgId = getOrgId(request);
+    const callerOrgId = getOrgId(request);
+    const callerRole = request.headers.get('x-org-role') || 'member';
     const bodyRaw = await request.json();
-    
+
     // Validate payload
     const validation = syncSchema.safeParse(bodyRaw);
     if (!validation.success) {
-      return NextResponse.json({ 
-        error: 'Validation failed', 
-        details: validation.error.format() 
+      return NextResponse.json({
+        error: 'Validation failed',
+        details: validation.error.format()
       }, { status: 400 });
     }
     const body = validation.data;
 
+    // Allow admin callers to target a specific org (for bootstrap scripts)
+    const orgId = (body.target_org_id && callerRole === 'admin') ? body.target_org_id : callerOrgId;
     const agentId = body.agent_id || null;
     const sql = getSql();
     const start = Date.now();
@@ -435,6 +492,8 @@ export async function POST(request) {
       { key: 'handoffs', fn: () => syncHandoffs(sql, orgId, agentId, body.handoffs) },
       { key: 'preferences', fn: () => syncPreferences(sql, orgId, agentId, body.preferences) },
       { key: 'snippets', fn: () => syncSnippets(sql, orgId, agentId, body.snippets) },
+      { key: 'relationships', fn: () => syncRelationships(sql, orgId, agentId, body.relationships) },
+      { key: 'capabilities', fn: () => syncCapabilities(sql, orgId, agentId, body.capabilities) },
     ];
 
     for (const { key, fn } of categories) {

@@ -10,12 +10,12 @@
       "label": "sql.query call"
     }
   ],
-  "files_scanned": 76,
-  "files_with_direct_sql": 61,
+  "files_scanned": 78,
+  "files_with_direct_sql": 60,
   "totals": {
-    "tagged_template": 248,
+    "tagged_template": 249,
     "query_call": 21,
-    "total": 269
+    "total": 270
   },
   "files": [
     {
@@ -71,12 +71,6 @@
       "tagged_template": 4,
       "query_call": 1,
       "total": 5
-    },
-    {
-      "file": "app/api/agents/route.js",
-      "tagged_template": 2,
-      "query_call": 0,
-      "total": 2
     },
     {
       "file": "app/api/calendar/route.js",
@@ -332,9 +326,9 @@
     },
     {
       "file": "app/api/sync/route.js",
-      "tagged_template": 18,
+      "tagged_template": 21,
       "query_call": 0,
-      "total": 18
+      "total": 21
     },
     {
       "file": "app/api/team/[userId]/route.js",
