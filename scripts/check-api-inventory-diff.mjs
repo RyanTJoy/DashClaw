@@ -24,6 +24,10 @@ async function readOrNull(filePath) {
   }
 }
 
+function normalize(str) {
+  return str.replace(/\r\n/g, '\n');
+}
+
 async function main() {
   const rootDir = process.cwd();
   const inventory = await generateApiInventory(rootDir);
@@ -38,13 +42,13 @@ async function main() {
   const issues = [];
   if (actualJson == null) {
     issues.push(`missing file: ${path.relative(rootDir, jsonPath)}`);
-  } else if (actualJson !== expectedJson) {
+  } else if (normalize(actualJson) !== normalize(expectedJson)) {
     issues.push(`out-of-date file: ${path.relative(rootDir, jsonPath)}`);
   }
 
   if (actualMd == null) {
     issues.push(`missing file: ${path.relative(rootDir, mdPath)}`);
-  } else if (actualMd !== expectedMd) {
+  } else if (normalize(actualMd) !== normalize(expectedMd)) {
     issues.push(`out-of-date file: ${path.relative(rootDir, mdPath)}`);
   }
 
