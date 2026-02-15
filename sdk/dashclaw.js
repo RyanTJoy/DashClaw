@@ -10,7 +10,7 @@
  * - Dashboard Data (9)
  * - Session Handoffs (3)
  * - Context Manager (7)
- * - Automation Snippets (4)
+ * - Automation Snippets (5)
  * - User Preferences (6)
  * - Daily Digest (1)
  * - Security Scanning (2)
@@ -1138,7 +1138,7 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 7: Automation Snippets (4 methods)
+  // Category 7: Automation Snippets (5 methods)
   // ══════════════════════════════════════════════
 
   /**
@@ -1174,6 +1174,15 @@ class DashClaw {
     if (filters.language) params.set('language', filters.language);
     if (filters.limit) params.set('limit', String(filters.limit));
     return this._request(`/api/snippets?${params}`, 'GET');
+  }
+
+  /**
+   * Fetch a single snippet by ID.
+   * @param {string} snippetId - The snippet ID
+   * @returns {Promise<{snippet: Object}>}
+   */
+  async getSnippet(snippetId) {
+    return this._request(`/api/snippets/${snippetId}`, 'GET');
   }
 
   /**

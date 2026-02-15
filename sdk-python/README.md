@@ -118,6 +118,27 @@ claw.record_recommendation_events({
 })
 ```
 
+## Automation Snippets
+
+Save, search, fetch, and reuse code snippets across agent sessions:
+
+```python
+# Save a snippet (upserts by name)
+claw.save_snippet("fetch-with-retry", code="async def fetch_retry(url, n=3): ...", language="python")
+
+# Fetch a single snippet by ID
+snippet = claw.get_snippet("sn_abc123")
+
+# Search snippets
+results = claw.get_snippets(language="python", search="retry")
+
+# Mark as used (increments use_count)
+claw.use_snippet("sn_abc123")
+
+# Delete
+claw.delete_snippet("sn_abc123")
+```
+
 ## Context + Messaging APIs
 
 Python SDK parity now includes context thread management, message lifecycle, and shared docs:

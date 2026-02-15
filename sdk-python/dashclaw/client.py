@@ -649,6 +649,29 @@ class DashClaw:
             "threads": threads_result.get("threads", []),
         }
 
+    # --- Category 7: Automation Snippets ---
+
+    def save_snippet(self, name, code, **kwargs):
+        payload = {"name": name, "code": code, "agent_id": self.agent_id, **kwargs}
+        return self._request("/api/snippets", method="POST", body=payload)
+
+    def get_snippets(self, **filters):
+        params = {k: v for k, v in filters.items() if v is not None}
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/snippets?{query}")
+
+    def get_snippet(self, snippet_id):
+        snippet_id = urllib.parse.quote(str(snippet_id), safe="")
+        return self._request(f"/api/snippets/{snippet_id}")
+
+    def use_snippet(self, snippet_id):
+        snippet_id = urllib.parse.quote(str(snippet_id), safe="")
+        return self._request(f"/api/snippets/{snippet_id}/use", method="POST")
+
+    def delete_snippet(self, snippet_id):
+        snippet_id = urllib.parse.quote(str(snippet_id), safe="")
+        return self._request(f"/api/snippets?id={snippet_id}", method="DELETE")
+
     # --- Category 11: Agent Messaging ---
 
     def send_message(self, body, to=None, message_type="info", **kwargs):
