@@ -1291,7 +1291,7 @@ python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context
             <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
             <Link href="/toolkit" className="hover:text-zinc-300">Toolkit</Link>
             <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/self-host" className="hover:text-zinc-300">Self-Host</Link>
+            <Link href="/self-host" className="hover:text-zinc-300">Get Started</Link>
           </div>
         </div>
       </footer>

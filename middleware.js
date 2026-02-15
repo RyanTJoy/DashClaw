@@ -880,8 +880,8 @@ export async function middleware(request) {
   // - Serve the REAL dashboard UI.
   // - Back /api/* reads with deterministic fixtures.
   // - Block all writes (no secrets, no mutations).
-  // In self_host mode, ignore the demo cookie — only explicit DASHCLAW_MODE=demo enables demo.
-  if (mode === 'demo' || (demoCookie && mode !== 'self_host')) {
+  // Demo sandbox: cookie or explicit DASHCLAW_MODE=demo. Cookie only provides fixture data, never real data.
+  if (mode === 'demo' || demoCookie) {
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
