@@ -15,6 +15,10 @@ function getOpenApiOverrideTag() {
   }
 }
 
+function normalize(str) {
+  return str.replace(/\r\n/g, '\n');
+}
+
 async function main() {
   const rootDir = process.cwd();
   const outputPath = getOpenApiOutputPath(rootDir);
@@ -30,7 +34,7 @@ async function main() {
     return;
   }
 
-  if (actual !== expected) {
+  if (normalize(actual) !== normalize(expected)) {
     const overrideRfc = getOpenApiOverrideTag();
     if (overrideRfc) {
       console.warn(`OpenAPI artifact drift detected, but override tag found: ${overrideRfc}`);
