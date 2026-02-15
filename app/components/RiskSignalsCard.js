@@ -20,7 +20,7 @@ export default function RiskSignalsCard() {
   useEffect(() => {
     async function fetchSignals() {
       try {
-        const res = await fetch('/api/actions/signals');
+        const res = await fetch(`/api/actions/signals${agentId ? `?agent_id=${agentId}` : ''}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
         setSignals(data.signals || []);
@@ -32,7 +32,7 @@ export default function RiskSignalsCard() {
       }
     }
     fetchSignals();
-  }, []);
+  }, [agentId]);
 
   if (loading) {
     return <CardSkeleton />;
@@ -45,8 +45,7 @@ export default function RiskSignalsCard() {
     if (stored) dismissed = new Set(JSON.parse(stored));
   } catch { /* ignore */ }
 
-  const agentFiltered = agentId ? signals.filter(s => s.agent_id === agentId) : signals;
-  const filteredSignals = agentFiltered.filter(s => !dismissed.has(getSignalHash(s)));
+  const filteredSignals = signals.filter(s => !dismissed.has(getSignalHash(s)));
   const redCount = filteredSignals.filter(s => s.severity === 'red').length;
   const amberCount = filteredSignals.filter(s => s.severity === 'amber').length;
 

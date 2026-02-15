@@ -6,47 +6,48 @@ import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
 import { ListSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function FollowUpsCard() {
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const fetchData = async () => {
-    try {
-      const res = await fetch('/api/relationships');
-      const data = await res.json();
-      if (data.contacts && Array.isArray(data.contacts)) {
-        const withFollowUps = data.contacts
-          .filter(c => c.followUpDate)
-          .map(c => {
-            const dueDate = new Date(c.followUpDate);
-            const today = new Date();
-            const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-            return {
-              id: c.id || 0,
-              name: c.name || 'Unknown',
-              type: c.context || 'Contact',
-              temperature: (c.temperature || 'warm').toUpperCase(),
-              dueDate: c.followUpDate,
-              daysLeft
-            };
-          })
-          .sort((a, b) => a.daysLeft - b.daysLeft)
-          .slice(0, 5);
-        setFollowUps(withFollowUps);
-      }
-    } catch (error) {
-      console.error('Failed to fetch follow-ups:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch(`/api/relationships${agentId ? `?agent_id=${agentId}` : ''}`);
+        const data = await res.json();
+        if (data.contacts && Array.isArray(data.contacts)) {
+          const withFollowUps = data.contacts
+            .filter(c => c.followUpDate)
+            .map(c => {
+              const dueDate = new Date(c.followUpDate);
+              const today = new Date();
+              const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+              return {
+                id: c.id || 0,
+                name: c.name || 'Unknown',
+                type: c.context || 'Contact',
+                temperature: (c.temperature || 'warm').toUpperCase(),
+                dueDate: c.followUpDate,
+                daysLeft
+              };
+            })
+            .sort((a, b) => a.daysLeft - b.daysLeft)
+            .slice(0, 5);
+          setFollowUps(withFollowUps);
+        }
+      } catch (error) {
+        console.error('Failed to fetch follow-ups:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [agentId]);
 
   const getTempVariant = (temp) => {
     switch (temp) {

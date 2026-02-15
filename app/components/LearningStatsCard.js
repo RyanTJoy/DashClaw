@@ -7,38 +7,39 @@ import { StatCompact } from './ui/Stat';
 import { ProgressBar } from './ui/ProgressBar';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function LearningStatsCard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchData = async () => {
-    try {
-      const res = await fetch('/api/learning');
-      const data = await res.json();
-      if (data.stats && data.lessons) {
-        setStats({
-          decisions: data.stats.totalDecisions || 0,
-          lessons: data.stats.totalLessons || 0,
-          successRate: data.stats.successRate || 0,
-          recentLessons: data.lessons.slice(0, 4).map(l => l.lesson || l.text || 'Lesson')
-        });
-      } else {
-        setStats({ decisions: 0, lessons: 0, successRate: 0, recentLessons: [] });
-      }
-    } catch (error) {
-      console.error('Failed to fetch learning stats:', error);
-      setStats({ decisions: 0, lessons: 0, successRate: 0, recentLessons: [] });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch(`/api/learning${agentId ? `?agent_id=${agentId}` : ''}`);
+        const data = await res.json();
+        if (data.stats && data.lessons) {
+          setStats({
+            decisions: data.stats.totalDecisions || 0,
+            lessons: data.stats.totalLessons || 0,
+            successRate: data.stats.successRate || 0,
+            recentLessons: data.lessons.slice(0, 4).map(l => l.lesson || l.text || 'Lesson')
+          });
+        } else {
+          setStats({ decisions: 0, lessons: 0, successRate: 0, recentLessons: [] });
+        }
+      } catch (error) {
+        console.error('Failed to fetch learning stats:', error);
+        setStats({ decisions: 0, lessons: 0, successRate: 0, recentLessons: [] });
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchData();
     const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [agentId]);
 
   if (loading) {
     return <CardSkeleton />;
