@@ -51,8 +51,8 @@ __pycache__/
 # Claude Code local settings
 .claude/
 
-# Session tracking
-tasks/
+# Session tracking (root-level only, not app/api/routing/tasks/)
+/tasks/
 
 # Agent tools local data (SQLite databases, secrets)
 agent-tools/tools/*/data/
