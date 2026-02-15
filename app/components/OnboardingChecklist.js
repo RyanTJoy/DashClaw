@@ -175,7 +175,7 @@ export default function OnboardingChecklist() {
 
   // SDK snippets with key pre-filled
   const apiKeyDisplay = generatedKey || 'oc_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://your-app.vercel.app';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
   const installSnippet = 'npm install dashclaw';
   const bootstrapSnippet = `node scripts/bootstrap-agent.mjs --dir . --agent-id my-agent --api-key ${apiKeyDisplay} --base-url ${baseUrl}`;
   const initSnippet = `// Add this to your agent's entry point or a shared config file

@@ -19,7 +19,8 @@ npm install dashclaw
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-dashboard.vercel.app',
+  baseUrl: process.env.DASHCLAW_BASE_URL || 'http://localhost:3000',
+  // Use http://localhost:3000 for local, or https://your-app.vercel.app for cloud
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
@@ -70,7 +71,7 @@ const claw = new DashClaw({
 ### Parameters
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| baseUrl | string | Yes | DashClaw dashboard URL (e.g. "https://your-app.vercel.app") |
+| baseUrl | string | Yes | DashClaw dashboard URL (e.g. "http://localhost:3000" or "https://your-app.vercel.app") |
 | apiKey | string | Yes | API key for authentication (determines which org\'s data you access) |
 | agentId | string | Yes | Unique identifier for this agent |
 | agentName | string | No | Human-readable agent name |
@@ -89,7 +90,7 @@ When enabled, every call to `createAction()` can run recommendation adaptation a
 import { DashClaw, GuardBlockedError, ApprovalDeniedError } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-app.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   autoRecommend: 'enforce', // apply safe recommendation hints

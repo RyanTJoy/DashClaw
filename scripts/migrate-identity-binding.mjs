@@ -6,7 +6,7 @@
  * Adds agent_identities table and updates action_records for cryptographic signatures.
  *
  * Usage:
- *   DATABASE_URL=<neon_url> node scripts/migrate-identity-binding.mjs
+ *   DATABASE_URL=<db_url> node scripts/migrate-identity-binding.mjs
  */
 
 process.on('unhandledRejection', (reason) => {

@@ -21,12 +21,27 @@ Screenshots live in `public/images/screenshots/`.
 - `docs/`: RFCs, runbooks, parity matrix, governance docs
 - `PROJECT_DETAILS.md`: deep architecture and behavior reference (canonical)
 
+## Deployment Options
+
+DashClaw runs anywhere Node.js runs. Pick the setup that fits your needs:
+
+| | **Local (Docker)** | **Cloud (Vercel + Neon)** |
+|---|---|---|
+| **Best for** | Development, privacy, maximum speed | Remote access from anywhere (phone, laptop) |
+| **Database** | Docker Postgres (direct TCP, fastest) | Neon free tier (serverless, no infra to manage) |
+| **Hosting** | Your machine (`localhost:3000`) | Vercel free tier (`your-app.vercel.app`) |
+| **Cost** | Free | Free |
+
+You can also mix and match — run Vercel with a self-hosted Postgres, or run locally with a Neon database. DashClaw auto-detects your database type and uses the optimal driver.
+
+---
+
 ## Quick Start (Local)
 
 Prereqs:
 
 - Node.js 20+ recommended
-- A Postgres-compatible database (Neon recommended)
+- Docker Desktop (for local Postgres) or a Neon account (for hosted Postgres)
 
 1) Install
 
@@ -36,7 +51,21 @@ cd DashClaw
 npm install
 ```
 
-2) Configure environment
+2) Start a database
+
+**Option A: Local Postgres (Docker — fastest)**
+
+```bash
+docker compose up -d db
+```
+
+Connection string: `postgresql://dashclaw:dashclaw@localhost:5432/dashclaw`
+
+**Option B: Hosted Postgres (Neon — free tier, no Docker needed)**
+
+Create a project at [neon.tech](https://neon.tech) and copy your connection string.
+
+3) Configure environment
 
 ```bash
 cp .env.example .env.local
@@ -44,7 +73,7 @@ cp .env.example .env.local
 
 At minimum set:
 
-- `DATABASE_URL`
+- `DATABASE_URL` (from step 2)
 - `NEXTAUTH_URL=http://localhost:3000`
 - `NEXTAUTH_SECRET`
 - `DASHCLAW_API_KEY`
@@ -57,15 +86,26 @@ OAuth callback URIs (local dev):
 
 If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
 
-3) Run migrations (idempotent)
+Or run the interactive installer which generates `.env.local` for you:
+
+```bash
+# Windows
+./install-windows.bat
+
+# Mac / Linux
+bash ./install-mac.sh
+```
+
+4) Run migrations (idempotent)
 
 ```bash
 node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
 node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
 node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
+node scripts/_run-with-env.mjs scripts/migrate-capabilities.mjs
 ```
 
-4) Start the app
+5) Start the app
 
 ```bash
 npm run dev
@@ -75,6 +115,31 @@ Open:
 
 - `http://localhost:3000/dashboard` (real data)
 - `http://localhost:3000/demo` (no-login preview)
+
+---
+
+## Deploy to Cloud (Vercel — access from anywhere)
+
+Want to check on your agents from your phone? Deploy to Vercel for free:
+
+1. Push your fork to GitHub
+2. Go to [vercel.com](https://vercel.com), import the repo
+3. Set environment variables in the Vercel dashboard:
+   - `DATABASE_URL` (use a [Neon](https://neon.tech) free-tier database — Neon's serverless driver is optimized for Vercel's edge functions)
+   - `NEXTAUTH_URL=https://your-app.vercel.app`
+   - `NEXTAUTH_SECRET`
+   - `DASHCLAW_API_KEY`
+   - `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET`
+4. Deploy — you get a free URL like `https://your-app.vercel.app`
+
+OAuth callback URIs (Vercel):
+
+- `https://your-app.vercel.app/api/auth/callback/github`
+- `https://your-app.vercel.app/api/auth/callback/google`
+
+Point your agents at the Vercel URL instead of localhost and you can monitor them from anywhere.
+
+Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
 
 ## Bootstrap An Existing Agent (Optional)
 

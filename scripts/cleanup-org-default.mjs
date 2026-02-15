@@ -8,8 +8,8 @@
  * Clears all agent data, settings, keys, logs, etc.
  *
  * Usage:
- *   DATABASE_URL=<neon_url> node scripts/cleanup-org-default.mjs --dry-run
- *   DATABASE_URL=<neon_url> node scripts/cleanup-org-default.mjs
+ *   DATABASE_URL=<db_url> node scripts/cleanup-org-default.mjs --dry-run
+ *   DATABASE_URL=<db_url> node scripts/cleanup-org-default.mjs
  */
 
 process.on('unhandledRejection', (reason) => {

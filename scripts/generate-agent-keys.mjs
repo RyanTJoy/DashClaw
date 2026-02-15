@@ -33,7 +33,7 @@ async function generateIdentity() {
 
   console.log('\n--- 1. REGISTER THIS IDENTITY (Admin Only) ---');
   console.log('Run this curl command to register the public key with DashClaw:');
-  console.log(`\ncurl -X POST https://your-app.vercel.app/api/identities \n  -H "x-api-key: YOUR_ADMIN_KEY" \n  -H "Content-Type: application/json" \n  -d '{\n    "agent_id": "${agentId}",\n    "public_key": ${JSON.stringify(publicPem)},\n    "algorithm": "RSASSA-PKCS1-v1_5"\n  }'\n`);
+  console.log(`\ncurl -X POST http://localhost:3000/api/identities \n  -H "x-api-key: YOUR_ADMIN_KEY" \n  -H "Content-Type: application/json" \n  -d '{\n    "agent_id": "${agentId}",\n    "public_key": ${JSON.stringify(publicPem)},\n    "algorithm": "RSASSA-PKCS1-v1_5"\n  }'\n`);
 
   console.log('\n--- 2. CONFIGURE YOUR AGENT ---');
   console.log('Pass this Private Key to your DashClaw SDK constructor:');

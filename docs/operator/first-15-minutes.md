@@ -19,7 +19,7 @@ DashClaw is an AI agent observability and governance platform. It provides a web
 
 - Node.js 20+
 - npm 10+
-- Postgres compatible database (Neon works)
+- Postgres database (local Docker or hosted Neon)
 
 ### Install
 
@@ -43,12 +43,21 @@ Minimum variables:
 - `DASHCLAW_API_KEY` (recommended locally; required in production or `/api/*` will fail-closed with `503`)
 - `ENCRYPTION_KEY` (32 characters; required to securely store integration credentials at rest)
 
+### Database
+
+Start a local Postgres (if not using a hosted provider):
+
+```bash
+docker compose up -d db
+```
+
 ### Migrate
 
 ```bash
 node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
 node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
 node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
+node scripts/_run-with-env.mjs scripts/migrate-capabilities.mjs
 ```
 
 ### Start

@@ -25,7 +25,7 @@ For architecture, API inventory, and schema-level behavior, use `PROJECT_DETAILS
 - Framework: Next.js 15 (App Router)
 - Language: JavaScript
 - Styling: Tailwind CSS 3
-- Database: Postgres (Neon recommended), `@neondatabase/serverless`
+- Database: Postgres (local via Docker or hosted via Neon), dual adapter (`postgres` for TCP, `@neondatabase/serverless` for Neon)
 - Auth (UI): NextAuth v4 (GitHub + Google OAuth)
 - Auth (agents/tools): `x-api-key` header (DashClaw API keys)
 
@@ -46,6 +46,7 @@ DB bootstrap and migrations (idempotent, safe to re-run):
 node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
 node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
 node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
+node scripts/_run-with-env.mjs scripts/migrate-capabilities.mjs
 ```
 
 ## Environment Variables (Must Know)

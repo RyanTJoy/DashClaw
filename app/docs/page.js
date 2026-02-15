@@ -238,7 +238,7 @@ export default function DocsPage() {
                   <CodeBlock title="agent.js">{`import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-dashboard.vercel.app',
+  baseUrl: 'http://localhost:3000', // or https://your-app.vercel.app
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   agentName: 'My Agent',
@@ -284,7 +284,7 @@ await claw.updateOutcome(action_id, {
 
             <div className="mt-6">
               <ParamTable params={[
-                { name: 'baseUrl', type: 'string', required: true, desc: 'DashClaw dashboard URL (e.g. "https://your-app.vercel.app")' },
+                { name: 'baseUrl', type: 'string', required: true, desc: 'DashClaw dashboard URL (e.g. "http://localhost:3000" or "https://your-app.vercel.app")' },
                 { name: 'apiKey', type: 'string', required: true, desc: 'API key for authentication (determines which org\'s data you access)' },
                 { name: 'agentId', type: 'string', required: true, desc: 'Unique identifier for this agent' },
                 { name: 'agentName', type: 'string', required: false, desc: 'Human-readable agent name' },
@@ -302,7 +302,7 @@ await claw.updateOutcome(action_id, {
               <CodeBlock>{`import { DashClaw, GuardBlockedError } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-app.vercel.app',
+  baseUrl: 'http://localhost:3000',
   apiKey: process.env.DASHCLAW_API_KEY,
   agentId: 'my-agent',
   guardMode: 'enforce', // throws GuardBlockedError on block/require_approval
@@ -1201,7 +1201,7 @@ console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`
 cp agent-tools/.env.example agent-tools/secrets/dashclaw.env
 
 # Set your dashboard URL, API key, and agent ID
-DASHCLAW_URL=https://your-deployment.vercel.app
+DASHCLAW_URL=http://localhost:3000  # or https://your-app.vercel.app
 DASHCLAW_API_KEY=oc_live_...
 DASHCLAW_AGENT_ID=my-agent`}</CodeBlock>
           </div>

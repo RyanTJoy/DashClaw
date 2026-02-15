@@ -27,9 +27,10 @@ To get started with the codebase:
     cp .env.example .env.local
     ```
     You will need a PostgreSQL connection string for `DATABASE_URL`.
-    You can use Neon (hosted) or run the included local Postgres via Docker:
+    Run local Postgres via Docker (recommended) or use Neon (hosted):
     ```bash
     docker compose up -d db
+    # DATABASE_URL=postgresql://dashclaw:dashclaw@localhost:5432/dashclaw
     ```
 
 4.  **Run the Development Server**:
@@ -43,11 +44,12 @@ To get started with the codebase:
     npm run test -- --run
     ```
 
-6.  **Manage Database Schema**:
-    We use Drizzle ORM for schema management.
+6.  **Run Migrations** (idempotent, safe to re-run):
     ```bash
-    npm run db:generate  # Generate migration files
-    npm run db:push      # Apply changes to your Postgres DB
+    node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
+    node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
+    node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
+    node scripts/_run-with-env.mjs scripts/migrate-capabilities.mjs
     ```
 
 ## Project Structure

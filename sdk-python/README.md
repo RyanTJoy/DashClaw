@@ -14,7 +14,7 @@ pip install dashclaw
 from dashclaw import DashClaw
 
 claw = DashClaw(
-    base_url="https://your-app.vercel.app",
+    base_url="http://localhost:3000",  # or "https://your-app.vercel.app"
     api_key="your-api-key",
     agent_id="my-python-agent",
     agent_name="My Python Agent",

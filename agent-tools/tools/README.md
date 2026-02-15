@@ -260,7 +260,7 @@ python learner.py log "Made decision X" --push
 
 Configure in `secrets/dashclaw.env`:
 ```bash
-DASHCLAW_URL=https://your-dashboard.vercel.app
+DASHCLAW_URL=http://localhost:3000  # or https://your-app.vercel.app
 DASHCLAW_API_KEY=oc_live_your_key_here
 DASHCLAW_AGENT_ID=my-agent
 ```

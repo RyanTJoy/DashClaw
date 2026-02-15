@@ -4,8 +4,8 @@
  * Create a new organization and admin API key.
  *
  * Usage:
- *   DATABASE_URL=<neon_url> node scripts/create-org.mjs --name "Acme Corp" --slug "acme"
- *   DATABASE_URL=<neon_url> node scripts/create-org.mjs --name "Acme Corp" --slug "acme" --plan pro
+ *   DATABASE_URL=<db_url> node scripts/create-org.mjs --name "Acme Corp" --slug "acme"
+ *   DATABASE_URL=<db_url> node scripts/create-org.mjs --name "Acme Corp" --slug "acme" --plan pro
  */
 
 process.on('unhandledRejection', (reason) => {
@@ -83,7 +83,7 @@ async function run() {
   console.log(`  role:    admin`);
 
   console.log('\nUsage with SDK:');
-  console.log(`  const agent = new DashClaw({ baseUrl: "https://your-app.vercel.app", apiKey: "${rawKey}" });`);
+  console.log(`  const agent = new DashClaw({ baseUrl: "http://localhost:3000", apiKey: "${rawKey}" }); // or https://your-app.vercel.app`);
   console.log('\n=== Done ===\n');
 }
 
