@@ -8,6 +8,7 @@ import {
   listOrganizations,
   listUnscoredActionIds,
 } from '../../../lib/repositories/learningLoop.repository.js';
+import { timingSafeCompare } from '../../../lib/timing-safe.js';
 
 function parseBoundedInt(value, min, max, fallback) {
   const parsed = parseInt(String(value ?? fallback), 10);
@@ -23,7 +24,7 @@ export async function GET(request) {
     }
 
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!authHeader || !timingSafeCompare(authHeader, `Bearer ${cronSecret}`)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

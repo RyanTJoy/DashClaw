@@ -157,7 +157,10 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
   switch (policy.policy_type) {
     case 'risk_threshold': {
       const threshold = rules.threshold ?? 80;
-      const riskScore = context.risk_score ?? 0;
+      // SECURITY: Clamp agent-reported risk_score to valid range (0-100).
+      // Agent-supplied scores are advisory — treat as untrusted input.
+      const rawScore = Number(context.risk_score) || 0;
+      const riskScore = Math.max(0, Math.min(rawScore, 100));
       if (riskScore >= threshold) {
         return { action: rules.action || 'block', reason: `Risk score ${riskScore} >= threshold ${threshold}` };
       }
@@ -258,7 +261,10 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
       const instruction = rules.instruction;
       if (!instruction) return null;
 
-      const fallback = rules.fallback || 'allow'; // Default to fail-open if no LLM key
+      // Fallback when LLM check fails: 'allow' (fail-open) or 'block' (fail-closed).
+      // Per-policy setting via rules.fallback, with global override via env var.
+      const globalFallback = process.env.DASHCLAW_GUARD_FALLBACK || 'allow';
+      const fallback = rules.fallback || globalFallback;
       const model = rules.model || 'gpt-4o-mini';
 
       const result = await checkSemanticGuardrail(context, instruction, model);

@@ -119,18 +119,25 @@ export async function POST(request) {
     // Quota check: agents (only block new agent_ids)
     let isNewAgent = false;
     if (data.agent_id) {
-      const agentsQuota = await checkQuotaFast(orgId, 'agents', plan, sql);
-      if (!agentsQuota.allowed) {
-        const existing = await hasAgentAction(sql, orgId, data.agent_id);
-        if (!existing) {
+      const existing = await hasAgentAction(sql, orgId, data.agent_id);
+      isNewAgent = !existing;
+
+      // SECURITY: Closed enrollment mode — reject unknown agent_ids
+      if (isNewAgent && process.env.DASHCLAW_CLOSED_ENROLLMENT === 'true') {
+        return NextResponse.json(
+          { error: 'Agent not registered. Enable open enrollment or pre-register this agent.', code: 'AGENT_NOT_REGISTERED' },
+          { status: 403 }
+        );
+      }
+
+      if (!existing) {
+        const agentsQuota = await checkQuotaFast(orgId, 'agents', plan, sql);
+        if (!agentsQuota.allowed) {
           return NextResponse.json(
             { error: 'Agent limit reached. Upgrade your plan.', code: 'QUOTA_EXCEEDED', usage: agentsQuota.usage, limit: agentsQuota.limit },
             { status: 402 }
           );
         }
-      } else {
-        const existing = await hasAgentAction(sql, orgId, data.agent_id);
-        isNewAgent = !existing;
       }
     }
 
@@ -141,7 +148,10 @@ export async function POST(request) {
     // Identity Verification
     const signature = body._signature || null;
     let verified = false;
-    const enforceSignatures = process.env.ENFORCE_AGENT_SIGNATURES === 'true';
+    // SECURITY: Default to enforcing signatures in production unless explicitly disabled
+    const enforceSignatures = process.env.NODE_ENV === 'production'
+      ? process.env.ENFORCE_AGENT_SIGNATURES !== 'false'
+      : process.env.ENFORCE_AGENT_SIGNATURES === 'true';
 
     if (enforceSignatures && !signature) {
       return NextResponse.json(
@@ -180,6 +190,13 @@ export async function POST(request) {
     const actionStatus = isPendingApproval ? 'pending_approval' : (data.status || 'running');
 
     // Auto-calculate cost if tokens are provided
+    // SECURITY: Clamp agent-reported cost/token values to reasonable bounds
+    const MAX_TOKENS = 10_000_000;
+    const MAX_COST_USD = 10_000;
+    if (data.tokens_in !== undefined) data.tokens_in = Math.max(0, Math.min(Number(data.tokens_in) || 0, MAX_TOKENS));
+    if (data.tokens_out !== undefined) data.tokens_out = Math.max(0, Math.min(Number(data.tokens_out) || 0, MAX_TOKENS));
+    if (data.cost_estimate !== undefined) data.cost_estimate = Math.max(0, Math.min(Number(data.cost_estimate) || 0, MAX_COST_USD));
+
     let costEstimate = data.cost_estimate || 0;
     if ((data.tokens_in || data.tokens_out) && !data.cost_estimate) {
       costEstimate = estimateCost(data.tokens_in || 0, data.tokens_out || 0, data.model);

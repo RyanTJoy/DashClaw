@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../../lib/db.js';
 import { runMemoryMaintenance } from '../../../lib/maintenance.js';
 import { logActivity } from '../../../lib/audit.js';
+import { timingSafeCompare } from '../../../lib/timing-safe.js';
 
 // GET /api/cron/memory-maintenance - Vercel Cron handler
 export async function GET(request) {
@@ -15,7 +16,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
     }
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!authHeader || !timingSafeCompare(authHeader, `Bearer ${cronSecret}`)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

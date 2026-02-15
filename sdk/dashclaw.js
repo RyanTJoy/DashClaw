@@ -65,6 +65,9 @@ class DashClaw {
     }
 
     this.baseUrl = baseUrl.replace(/\/$/, '');
+    if (!this.baseUrl.startsWith('https://') && !this.baseUrl.includes('localhost') && !this.baseUrl.includes('127.0.0.1')) {
+      console.warn('[DashClaw] WARNING: baseUrl does not use HTTPS. API keys will be sent in plaintext. Use HTTPS in production.');
+    }
     this.apiKey = apiKey;
     this.agentId = agentId;
     this.agentName = agentName || null;

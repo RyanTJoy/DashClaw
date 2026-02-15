@@ -1,5 +1,6 @@
 import { neon } from '@neondatabase/serverless';
 import postgres from 'postgres';
+import './validateEnv.js';
 
 // Use globalThis to survive Next.js dev mode hot reloads.
 // Without this, each HMR re-evaluation creates a new connection pool

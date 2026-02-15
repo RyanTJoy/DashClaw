@@ -90,9 +90,10 @@ export async function POST(request) {
       VALUES (${inviteId}, ${orgId}, ${email}, ${role}, ${token}, ${userId}, 'pending', ${expiresAt}, ${now})
     `;
 
-    // Build invite URL relative to the request origin
-    const origin = request.headers.get('x-forwarded-host')
-      ? `${request.headers.get('x-forwarded-proto') || 'https'}://${request.headers.get('x-forwarded-host')}`
+    // SECURITY: Use NEXTAUTH_URL as canonical origin to prevent header injection phishing.
+    // Falls back to request URL origin only as a last resort.
+    const origin = process.env.NEXTAUTH_URL
+      ? new URL(process.env.NEXTAUTH_URL).origin
       : new URL(request.url).origin;
     const inviteUrl = `${origin}/invite/${token}`;
 

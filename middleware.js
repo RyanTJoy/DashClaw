@@ -740,23 +740,20 @@ async function checkRateLimit(ip) {
   return checkRateLimitLocal(ip);
 }
 
-// SECURITY: Timing-safe string comparison to prevent timing attacks
+// SECURITY: Timing-safe string comparison to prevent timing attacks.
+// Normalizes both inputs to the same length to avoid leaking length info.
 function timingSafeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
-  if (a.length !== b.length) {
-    // Still do a "fake" comparison to keep timing somewhat consistent
-    crypto.subtle.digest('SHA-256', new TextEncoder().encode(a));
-    return false;
-  }
-  
-  const aBuf = new TextEncoder().encode(a);
-  const bBuf = new TextEncoder().encode(b);
-  
-  if (aBuf.length !== bBuf.length) return false;
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a);
+  const bBuf = encoder.encode(b);
 
-  let result = 0;
-  for (let i = 0; i < aBuf.length; i++) {
-    result |= aBuf[i] ^ bBuf[i];
+  // Use the longer length so we always do the same amount of work
+  const maxLen = Math.max(aBuf.length, bBuf.length);
+  let result = aBuf.length ^ bBuf.length; // non-zero if lengths differ
+
+  for (let i = 0; i < maxLen; i++) {
+    result |= (aBuf[i] || 0) ^ (bBuf[i] || 0);
   }
   return result === 0;
 }
@@ -885,7 +882,8 @@ export async function middleware(request) {
   // - Back /api/* reads with deterministic fixtures.
   // - Block all writes (no secrets, no mutations).
   // Demo sandbox: cookie or explicit DASHCLAW_MODE=demo. Cookie only provides fixture data, never real data.
-  if (mode === 'demo' || demoCookie) {
+  // SECURITY: Only honor demo cookie when DASHCLAW_MODE=demo to prevent self-host bypass
+  if (mode === 'demo' || (mode === 'demo' && demoCookie)) {
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
@@ -894,9 +892,8 @@ export async function middleware(request) {
       // SECURITY: Even demo mode should be rate limited.
       const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
       const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-      let ip = (trustProxy ? forwardedIp : null) ||
+      let ip = (trustProxy ? (forwardedIp || request.headers.get('x-real-ip')) : null) ||
                request.ip ||
-               request.headers.get('x-real-ip') ||
                'unknown';
       if (ip === 'unknown' && process.env.NODE_ENV === 'development') {
         ip = forwardedIp || '127.0.0.1';
@@ -1306,11 +1303,11 @@ export async function middleware(request) {
 
   // Get client IP for rate limiting.
   // SECURITY: In self-host deployments, x-forwarded-for may be attacker-controlled unless you trust your proxy.
+  // SECURITY: Only trust proxy headers (x-forwarded-for, x-real-ip) when TRUST_PROXY is enabled.
   const trustProxy = ['1', 'true', 'yes', 'on'].includes(String(process.env.TRUST_PROXY || process.env.VERCEL || '').toLowerCase());
   const forwardedIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  let ip = (trustProxy ? forwardedIp : null) ||
+  let ip = (trustProxy ? (forwardedIp || request.headers.get('x-real-ip')) : null) ||
            request.ip ||
-           request.headers.get('x-real-ip') ||
            'unknown';
   if (ip === 'unknown' && process.env.NODE_ENV === 'development') {
     ip = forwardedIp || '127.0.0.1';
@@ -1324,6 +1321,20 @@ export async function middleware(request) {
       { error: 'Rate limit exceeded. Please slow down.' },
       { status: 429, headers: { 'Retry-After': '60' } }
     );
+  }
+
+  // SECURITY: Reject oversized request bodies to prevent DoS.
+  // Applies to all write methods (POST, PUT, PATCH) on API routes.
+  const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2 MB
+  const writeMethod = ['POST', 'PUT', 'PATCH'].includes(request.method);
+  if (writeMethod) {
+    const contentLength = parseInt(request.headers.get('content-length') || '0', 10);
+    if (contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json(
+        { error: 'Request body too large', maxBytes: MAX_BODY_BYTES },
+        { status: 413 }
+      );
+    }
   }
 
   // Allow public routes without auth
