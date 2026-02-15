@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
@@ -64,9 +65,15 @@ export default function FollowUpsCard() {
     return 'text-green-400';
   };
 
+  const viewAllLink = (
+    <Link href="/relationships" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Follow-ups" icon={CheckCircle2} count={followUps.length} />
+      <CardHeader title="Follow-ups" icon={CheckCircle2} count={followUps.length} action={viewAllLink} />
       <CardContent>
         {loading ? (
           <ListSkeleton rows={3} />

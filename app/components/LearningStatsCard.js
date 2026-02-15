@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen } from 'lucide-react';
+import Link from 'next/link';
+import { BookOpen, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { StatCompact } from './ui/Stat';
 import { ProgressBar } from './ui/ProgressBar';
@@ -60,9 +61,15 @@ export default function LearningStatsCard() {
     );
   }
 
+  const viewAllLink = (
+    <Link href="/learning" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Learning" icon={BookOpen}>
+      <CardHeader title="Learning" icon={BookOpen} action={viewAllLink}>
         <span className="text-xs text-zinc-500">{stats.successRate}% success</span>
       </CardHeader>
 

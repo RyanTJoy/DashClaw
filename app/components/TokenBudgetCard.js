@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Gauge, Clock, CalendarDays, BookOpen, Cpu } from 'lucide-react';
+import Link from 'next/link';
+import { Gauge, Clock, CalendarDays, BookOpen, Cpu, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
@@ -103,9 +104,15 @@ export default function TokenBudgetCard() {
     return <CardSkeleton />;
   }
 
+  const viewAllLink = (
+    <Link href="/usage" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Token Usage" icon={Gauge}>
+      <CardHeader title="Token Usage" icon={Gauge} action={viewAllLink}>
         {getStatusBadge(data.status)}
       </CardHeader>
 

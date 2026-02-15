@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Zap, Lightbulb, Heart, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
+import { FileText, Zap, Lightbulb, Heart, BarChart3, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { ProgressBar } from './ui/ProgressBar';
@@ -91,9 +92,15 @@ export default function ContextCard() {
     return <CardSkeleton />;
   }
 
+  const viewAllLink = (
+    <Link href="/learning" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Context" icon={FileText}>
+      <CardHeader title="Context" icon={FileText} action={viewAllLink}>
         <Badge variant="success" size="sm">{contextData.todayPoints} decisions</Badge>
         {contextData.stats.totalLessons > 0 && (
           <Badge variant="info" size="sm">{contextData.stats.totalLessons} lessons</Badge>

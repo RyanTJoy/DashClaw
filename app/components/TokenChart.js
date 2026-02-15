@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, BarChart3 } from 'lucide-react';
+import Link from 'next/link';
+import { TrendingUp, BarChart3, ArrowRight } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { EmptyState } from './ui/EmptyState';
@@ -81,9 +82,15 @@ export default function TokenChart() {
     );
   }
 
+  const viewAllLink = (
+    <Link href="/usage" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Token Usage (7 Days)" icon={TrendingUp} />
+      <CardHeader title="Token Usage (7 Days)" icon={TrendingUp} action={viewAllLink} />
 
       <CardContent>
         <div className="h-64">

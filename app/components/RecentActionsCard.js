@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Zap, Hammer, Rocket, FileText, Briefcase, Shield, MessageSquare,
-  Link, Calendar, Search, Eye, Wrench, RefreshCw, FlaskConical,
+  Link as LinkIcon, Calendar, Search, Eye, Wrench, RefreshCw, FlaskConical,
   Settings, Radio, AlertTriangle, Trash2, Package,
   CheckCircle2, XCircle, Clock, Loader2, Ban, HelpCircle, Inbox,
-  ShieldCheck, ShieldAlert
+  ShieldCheck, ShieldAlert, ArrowRight
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -24,7 +25,7 @@ const TYPE_ICONS = {
   apply: Briefcase,
   security: Shield,
   message: MessageSquare,
-  api: Link,
+  api: LinkIcon,
   calendar: Calendar,
   research: Search,
   review: Eye,
@@ -157,9 +158,15 @@ export default function RecentActionsCard() {
   const pending = actions.filter(a => a.status === 'pending').length;
   const failed = actions.filter(a => a.status === 'failed').length;
 
+  const viewAllLink = (
+    <Link href="/actions" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Recent Actions" icon={Zap} count={actions.length} />
+      <CardHeader title="Recent Actions" icon={Zap} count={actions.length} action={viewAllLink} />
 
       <CardContent>
         <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">

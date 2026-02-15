@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, MapPin, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
@@ -83,9 +84,15 @@ export default function CalendarWidget() {
     );
   }
 
+  const viewAllLink = (
+    <Link href="/calendar" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Calendar" icon={Calendar}>
+      <CardHeader title="Calendar" icon={Calendar} action={viewAllLink}>
         <Badge variant="info" size="sm">{events.length} upcoming</Badge>
       </CardHeader>
       <CardContent>

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
-  CircleDot, ClipboardList, HelpCircle, Link, Hand, Eye,
-  ArrowRightLeft, RefreshCw, CheckCircle2
+  CircleDot, ClipboardList, HelpCircle, Link as LinkIcon, Hand, Eye,
+  ArrowRightLeft, RefreshCw, CheckCircle2, ArrowRight
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -15,7 +16,7 @@ import { useAgentFilter } from '../lib/AgentFilterContext';
 const LOOP_TYPE_ICONS = {
   followup: ClipboardList,
   question: HelpCircle,
-  dependency: Link,
+  dependency: LinkIcon,
   approval: Hand,
   review: Eye,
   handoff: ArrowRightLeft,
@@ -89,9 +90,15 @@ export default function OpenLoopsCard() {
   const highCount = parseInt(stats.high_open || '0', 10);
   const resolvedCount = parseInt(stats.resolved_count || '0', 10);
 
+  const viewAllLink = (
+    <Link href="/actions" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Open Loops" icon={CircleDot}>
+      <CardHeader title="Open Loops" icon={CircleDot} action={viewAllLink}>
         {openCount > 0 && (
           <Badge variant="brand" size="sm">{openCount} Open</Badge>
         )}

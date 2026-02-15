@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HardDrive, User, Wrench, Globe, File, Pin, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { HardDrive, User, Wrench, Globe, File, Pin, AlertTriangle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { ProgressBar } from './ui/ProgressBar';
 import { StatCompact } from './ui/Stat';
@@ -80,9 +81,15 @@ export default function MemoryHealthCard() {
 
   const health = data.health;
 
+  const viewAllLink = (
+    <Link href="/workspace" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      View all <ArrowRight size={12} />
+    </Link>
+  );
+
   return (
     <Card className="h-full">
-      <CardHeader title="Memory Health" icon={HardDrive}>
+      <CardHeader title="Memory Health" icon={HardDrive} action={viewAllLink}>
         {health && (
           <span className={`text-2xl font-semibold tabular-nums ${getScoreColor(health.score)}`}>
             {health.score}
