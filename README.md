@@ -4,12 +4,26 @@ DashClaw combines a public site, an operator dashboard, and an API control plane
 
 Screenshots live in `public/images/screenshots/`.
 
+## How It Works
+
+DashClaw is a single codebase that serves two roles:
+
+| | **dashclaw.io** (marketing) | **Your deployment** (self-hosted) |
+|---|---|---|
+| **Landing page** | Marketing site with demo | Same landing page, "Dashboard" goes to your real dashboard |
+| **Dashboard button** | Opens demo (fixture data) | Opens real dashboard (GitHub OAuth login) |
+| **Data** | Hardcoded fixtures | Your Postgres database |
+| **Key env var** | `NEXT_PUBLIC_IS_MARKETING=true` | Not set |
+
+Users fork the repo, deploy to Vercel free tier, and get a fully functional dashboard at `your-app.vercel.app`. The "Dashboard" button in the navbar takes them straight to their authenticated dashboard — no need to manually type `/dashboard`.
+
 ## Product Surfaces
 
-- `http://localhost:3000/` - public/customer-facing site
-- `http://localhost:3000/demo` - demo sandbox (fake data, read-only, no login)
-- `http://localhost:3000/dashboard` - operations dashboard (real data, requires auth)
-- `http://localhost:3000/docs` - SDK + platform docs (public)
+- `/` - landing page (marketing on dashclaw.io, homepage on self-hosted)
+- `/demo` - demo sandbox (fake data, read-only, no login)
+- `/dashboard` - operations dashboard (real data, requires auth)
+- `/docs` - SDK + platform docs (public)
+- `/self-host` - get started guide (Vercel + Neon setup)
 
 ## Repo Layout
 
@@ -105,18 +119,23 @@ If you see "redirect_uri is not associated with this application", your OAuth ap
 
 ---
 
-## Deploy to Cloud (Vercel)
+## Deploy to Cloud (Vercel + Neon) — Recommended
 
-Want to check on your agents from your phone? Deploy to Vercel for free:
+The fastest path: Vercel free tier + Neon free tier. Accessible from any device, auto-HTTPS.
 
-1. Run `node scripts/setup.mjs` and choose **Cloud** deployment — it prints all the env vars you need
-2. Push your repo to GitHub
-3. Go to [vercel.com](https://vercel.com), import the repo
-4. Paste the env vars from the setup script output into Vercel's Environment Variables settings
-5. Set up GitHub OAuth with the Vercel callback URL (see above)
-6. Deploy — you get a free URL like `https://your-app.vercel.app`
+1. Create a free database at [neon.tech](https://neon.tech) — copy the connection string
+2. Fork this repo to your GitHub account
+3. Go to [vercel.com/new](https://vercel.com/new) and import your fork
+4. Add environment variables:
+   - `DATABASE_URL` — your Neon connection string
+   - `NEXTAUTH_URL` — `https://your-app.vercel.app`
+   - `NEXTAUTH_SECRET` — generate with `openssl rand -base64 32`
+   - `DASHCLAW_API_KEY` — generate with `openssl rand -base64 32`
+   - `GITHUB_ID` + `GITHUB_SECRET` — from GitHub OAuth setup (see above)
+5. Deploy — tables are created automatically on first request
+6. Visit `your-app.vercel.app` → click **Dashboard** → sign in with GitHub
 
-For the database, use [Neon](https://neon.tech) (free tier) — its serverless driver is optimized for Vercel's edge functions.
+**Do not** set `NEXT_PUBLIC_IS_MARKETING=true` on your deployment — that's only for dashclaw.io.
 
 Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
 
