@@ -944,6 +944,261 @@ function buildFixtures() {
     timestamp: new Date(BASE_NOW).toISOString(),
   };
 
+  // ── Routing fixtures ──
+  const routingHealth = {
+    status: 'healthy',
+    router_version: '1.0.0',
+    uptime_seconds: 86400,
+    last_decision_at: isoFromNow(120 * 1000),
+  };
+
+  const routingStats = {
+    total_agents: 8,
+    available_agents: 5,
+    busy_agents: 3,
+    pending_tasks: 4,
+    completed_tasks: 127,
+    routing_decisions: 284,
+  };
+
+  const routingAgentDefs = [
+    { name: 'code-reviewer', capabilities: ['code_review', 'static_analysis', 'security_audit'], status: 'available', max_concurrent: 5, current_load: 2 },
+    { name: 'deploy-bot', capabilities: ['deployment', 'rollback', 'infrastructure'], status: 'busy', max_concurrent: 3, current_load: 3 },
+    { name: 'security-scanner', capabilities: ['vulnerability_scan', 'dependency_audit', 'secret_detection'], status: 'available', max_concurrent: 4, current_load: 1 },
+    { name: 'docs-writer', capabilities: ['documentation', 'api_specs', 'changelog'], status: 'available', max_concurrent: 6, current_load: 0 },
+    { name: 'test-runner', capabilities: ['unit_tests', 'integration_tests', 'e2e_tests'], status: 'busy', max_concurrent: 4, current_load: 4 },
+    { name: 'data-analyst', capabilities: ['data_pipeline', 'analytics', 'reporting'], status: 'available', max_concurrent: 3, current_load: 1 },
+    { name: 'incident-responder', capabilities: ['incident_triage', 'root_cause_analysis', 'escalation'], status: 'offline', max_concurrent: 2, current_load: 0 },
+    { name: 'refactor-agent', capabilities: ['refactoring', 'code_review', 'performance_optimization'], status: 'busy', max_concurrent: 3, current_load: 2 },
+  ];
+  const routingAgents = routingAgentDefs.map((def, i) => ({
+    id: stableId('ra', i + 1),
+    org_id: 'org_demo',
+    name: def.name,
+    capabilities: JSON.stringify(def.capabilities),
+    status: def.status,
+    max_concurrent: def.max_concurrent,
+    current_load: def.current_load,
+    endpoint: `https://agents.example.com/${def.name}`,
+    created_at: isoFromNow((30 - i) * 24 * 60 * 60 * 1000),
+  }));
+
+  const routingTaskDefs = [
+    { title: 'Review PR #482 — auth refactor', required_skills: ['code_review', 'security_audit'], urgency: 'high', status: 'assigned', agent_idx: 0 },
+    { title: 'Deploy staging v2.14.0', required_skills: ['deployment'], urgency: 'normal', status: 'assigned', agent_idx: 1 },
+    { title: 'Scan npm dependencies for CVEs', required_skills: ['vulnerability_scan', 'dependency_audit'], urgency: 'high', status: 'completed', agent_idx: 2 },
+    { title: 'Update API changelog for Q4', required_skills: ['documentation', 'api_specs'], urgency: 'low', status: 'pending', agent_idx: null },
+    { title: 'Run regression suite on payments', required_skills: ['integration_tests', 'e2e_tests'], urgency: 'critical', status: 'assigned', agent_idx: 4 },
+    { title: 'Analyze error rate spike in /api/actions', required_skills: ['data_pipeline', 'analytics'], urgency: 'high', status: 'assigned', agent_idx: 5 },
+    { title: 'Triage PagerDuty alert #9102', required_skills: ['incident_triage', 'escalation'], urgency: 'critical', status: 'failed', agent_idx: 6 },
+    { title: 'Refactor token billing module', required_skills: ['refactoring', 'performance_optimization'], urgency: 'normal', status: 'assigned', agent_idx: 7 },
+    { title: 'Review PR #479 — SSE reconnect', required_skills: ['code_review'], urgency: 'normal', status: 'completed', agent_idx: 0 },
+    { title: 'Secret scan on new env vars', required_skills: ['secret_detection'], urgency: 'high', status: 'pending', agent_idx: null },
+    { title: 'Generate coverage report', required_skills: ['unit_tests'], urgency: 'low', status: 'pending', agent_idx: null },
+    { title: 'Deploy production v2.13.2 hotfix', required_skills: ['deployment', 'rollback'], urgency: 'critical', status: 'completed', agent_idx: 1 },
+  ];
+  const routingTasks = routingTaskDefs.map((def, i) => ({
+    id: stableId('rt', i + 1),
+    org_id: 'org_demo',
+    title: def.title,
+    description: `Task: ${def.title}`,
+    required_skills: JSON.stringify(def.required_skills),
+    urgency: def.urgency,
+    status: def.status,
+    assigned_agent_id: def.agent_idx !== null ? routingAgents[def.agent_idx].id : null,
+    created_at: isoFromNow((24 - i * 2) * 60 * 60 * 1000),
+    completed_at: def.status === 'completed' ? isoFromNow((12 - i) * 60 * 60 * 1000) : null,
+  }));
+
+  // ── Compliance fixtures ──
+  const complianceFrameworks = [
+    { id: 'soc2', name: 'SOC 2' },
+    { id: 'iso27001', name: 'ISO 27001' },
+    { id: 'nist-ai-rmf', name: 'NIST AI RMF' },
+    { id: 'eu-ai-act', name: 'EU AI Act' },
+    { id: 'gdpr', name: 'GDPR' },
+  ];
+
+  const makeControls = (framework) => {
+    const controlSets = {
+      'soc2': [
+        { control_id: 'CC6.1', title: 'Logical & Physical Access', status: 'covered', matched_policies: ['Block ultra high risk', 'Require approval for deploy/security'] },
+        { control_id: 'CC6.2', title: 'System Credentials Management', status: 'covered', matched_policies: ['Block ultra high risk'] },
+        { control_id: 'CC6.3', title: 'Role-Based Access Enforcement', status: 'covered', matched_policies: ['Require approval for deploy/security'] },
+        { control_id: 'CC7.1', title: 'Vulnerability Management', status: 'partial', matched_policies: ['Rate limit noisy agents'], recommendations: ['Add vulnerability scanning policy'] },
+        { control_id: 'CC7.2', title: 'Anomaly Detection', status: 'covered', matched_policies: ['Block ultra high risk', 'Rate limit noisy agents'] },
+        { control_id: 'CC8.1', title: 'Change Management', status: 'covered', matched_policies: ['Require approval for deploy/security'] },
+        { control_id: 'CC9.1', title: 'Risk Mitigation', status: 'partial', matched_policies: ['Block ultra high risk'], recommendations: ['Add data classification policy'] },
+        { control_id: 'A1.1', title: 'Availability Commitments', status: 'gap', matched_policies: [], recommendations: ['Add uptime monitoring policy', 'Define SLA thresholds'] },
+        { control_id: 'A1.2', title: 'Recovery Procedures', status: 'gap', matched_policies: [], recommendations: ['Add disaster recovery policy'] },
+        { control_id: 'PI1.1', title: 'Processing Integrity', status: 'covered', matched_policies: ['Block delete actions (example)'] },
+      ],
+      'iso27001': [
+        { control_id: 'A.5.1', title: 'Information Security Policies', status: 'covered', matched_policies: ['Block ultra high risk', 'Require approval for deploy/security'] },
+        { control_id: 'A.6.1', title: 'Organization of Information Security', status: 'partial', matched_policies: ['Require approval for deploy/security'], recommendations: ['Define org-level security roles'] },
+        { control_id: 'A.8.1', title: 'Asset Management', status: 'gap', matched_policies: [], recommendations: ['Add asset inventory policy'] },
+        { control_id: 'A.9.1', title: 'Access Control', status: 'covered', matched_policies: ['Block ultra high risk', 'Require approval for deploy/security'] },
+        { control_id: 'A.9.4', title: 'System Access Control', status: 'covered', matched_policies: ['Block ultra high risk'] },
+        { control_id: 'A.12.1', title: 'Operational Procedures', status: 'covered', matched_policies: ['Rate limit noisy agents'] },
+        { control_id: 'A.12.4', title: 'Logging & Monitoring', status: 'covered', matched_policies: ['Rate limit noisy agents', 'Block ultra high risk'] },
+        { control_id: 'A.14.1', title: 'Security Requirements', status: 'partial', matched_policies: ['Block ultra high risk'], recommendations: ['Add SDLC security policy'] },
+      ],
+      'nist-ai-rmf': [
+        { control_id: 'GOV-1', title: 'AI Governance Structure', status: 'covered', matched_policies: ['Block ultra high risk', 'Require approval for deploy/security'] },
+        { control_id: 'GOV-2', title: 'Risk Tolerance', status: 'covered', matched_policies: ['Block ultra high risk'] },
+        { control_id: 'MAP-1', title: 'Context Mapping', status: 'partial', matched_policies: ['Rate limit noisy agents'], recommendations: ['Add AI use-case documentation policy'] },
+        { control_id: 'MAP-3', title: 'Benefits & Costs', status: 'gap', matched_policies: [], recommendations: ['Add cost-benefit analysis requirement'] },
+        { control_id: 'MEASURE-1', title: 'Performance Metrics', status: 'covered', matched_policies: ['Rate limit noisy agents'] },
+        { control_id: 'MEASURE-2', title: 'Bias & Fairness', status: 'gap', matched_policies: [], recommendations: ['Add bias detection policy'] },
+        { control_id: 'MANAGE-1', title: 'Risk Response', status: 'covered', matched_policies: ['Block ultra high risk', 'Rate limit noisy agents'] },
+        { control_id: 'MANAGE-3', title: 'Continuous Improvement', status: 'partial', matched_policies: ['Rate limit noisy agents'], recommendations: ['Add periodic review policy'] },
+      ],
+      'eu-ai-act': [
+        { control_id: 'ART-9', title: 'Risk Management System', status: 'covered', matched_policies: ['Block ultra high risk'] },
+        { control_id: 'ART-10', title: 'Data Governance', status: 'gap', matched_policies: [], recommendations: ['Add data governance policy for training data'] },
+        { control_id: 'ART-11', title: 'Technical Documentation', status: 'partial', matched_policies: [], recommendations: ['Add documentation requirements policy'] },
+        { control_id: 'ART-13', title: 'Transparency', status: 'covered', matched_policies: ['Require approval for deploy/security'] },
+        { control_id: 'ART-14', title: 'Human Oversight', status: 'covered', matched_policies: ['Require approval for deploy/security', 'Block ultra high risk'] },
+        { control_id: 'ART-15', title: 'Accuracy & Robustness', status: 'partial', matched_policies: ['Rate limit noisy agents'], recommendations: ['Add accuracy monitoring policy'] },
+        { control_id: 'ART-17', title: 'Quality Management', status: 'gap', matched_policies: [], recommendations: ['Add QMS for AI systems'] },
+        { control_id: 'ART-52', title: 'Transparency for General-Purpose AI', status: 'covered', matched_policies: ['Block ultra high risk'] },
+      ],
+      'gdpr': [
+        { control_id: 'ART-5', title: 'Principles of Processing', status: 'covered', matched_policies: ['Block ultra high risk', 'Rate limit noisy agents'] },
+        { control_id: 'ART-6', title: 'Lawfulness of Processing', status: 'partial', matched_policies: ['Require approval for deploy/security'], recommendations: ['Add legal basis documentation'] },
+        { control_id: 'ART-25', title: 'Data Protection by Design', status: 'covered', matched_policies: ['Block ultra high risk'] },
+        { control_id: 'ART-30', title: 'Records of Processing', status: 'covered', matched_policies: ['Rate limit noisy agents', 'Block ultra high risk'] },
+        { control_id: 'ART-32', title: 'Security of Processing', status: 'covered', matched_policies: ['Block ultra high risk', 'Require approval for deploy/security'] },
+        { control_id: 'ART-33', title: 'Breach Notification', status: 'gap', matched_policies: [], recommendations: ['Add breach notification workflow'] },
+        { control_id: 'ART-35', title: 'Data Protection Impact Assessment', status: 'partial', matched_policies: ['Block ultra high risk'], recommendations: ['Add DPIA template and process'] },
+        { control_id: 'ART-37', title: 'Data Protection Officer', status: 'gap', matched_policies: [], recommendations: ['Designate DPO contact'] },
+      ],
+    };
+    const controls = (controlSets[framework] || []).map((c, i) => ({
+      id: stableId(`cc_${framework}`, i + 1),
+      ...c,
+      description: `${c.title} — enforcement and monitoring requirements.`,
+      matched_policies: c.matched_policies || [],
+      recommendations: c.recommendations || [],
+    }));
+    const covered = controls.filter(c => c.status === 'covered').length;
+    const partial = controls.filter(c => c.status === 'partial').length;
+    const gaps = controls.filter(c => c.status === 'gap').length;
+    return { controls, coverage: { total: controls.length, covered, partial, gaps } };
+  };
+
+  const complianceMap = {};
+  const complianceGaps = {};
+  for (const fw of complianceFrameworks) {
+    const mapped = makeControls(fw.id);
+    complianceMap[fw.id] = mapped;
+    const gapControls = mapped.controls.filter(c => c.status === 'gap');
+    const partialControls = mapped.controls.filter(c => c.status === 'partial');
+    const riskLevel = gapControls.length > 2 ? 'high' : gapControls.length > 0 ? 'medium' : 'low';
+    complianceGaps[fw.id] = {
+      risk_level: riskLevel,
+      narrative: `${fw.name} compliance analysis: ${mapped.coverage.covered} controls fully covered, ${mapped.coverage.partial} partially covered, ${mapped.coverage.gaps} gaps identified.`,
+      quick_wins: partialControls.length > 0
+        ? `Address partial controls first: ${partialControls.map(c => c.control_id).join(', ')}`
+        : 'No quick wins — all controls are either covered or need full implementation.',
+      gaps: gapControls.map(c => ({ control_id: c.control_id, title: c.title, recommendations: c.recommendations })),
+      remediations: gapControls.flatMap(c => c.recommendations.map(r => ({ action: r, effort: r.length > 40 ? 'high' : 'medium' }))),
+    };
+  }
+
+  const complianceEvidence = {
+    guard_decisions: 847,
+    blocked: 23,
+    approval_requests: 56,
+    actions_recorded: 12340,
+  };
+
+  // ── Policy test & proof fixtures ──
+  const policyTestResults = {
+    summary: { total_policies: 4, total_tests: 12, passed: 11, failed: 1 },
+    results: [
+      {
+        policy_id: policies[0].id, policy_name: 'Block ultra high risk', status: 'pass',
+        tests: [
+          { name: 'Blocks action with risk >= 90', passed: true, message: 'Action with risk 95 correctly blocked.' },
+          { name: 'Allows action with risk < 90', passed: true, message: 'Action with risk 60 correctly allowed.' },
+          { name: 'Returns block reason in response', passed: true, message: 'Block reason included in guard decision.' },
+        ],
+      },
+      {
+        policy_id: policies[1].id, policy_name: 'Require approval for deploy/security', status: 'pass',
+        tests: [
+          { name: 'Requires approval for deploy actions', passed: true, message: 'Deploy action routed to approval queue.' },
+          { name: 'Requires approval for security actions', passed: true, message: 'Security action routed to approval queue.' },
+          { name: 'Skips approval for non-matching types', passed: true, message: 'Research action bypassed approval correctly.' },
+        ],
+      },
+      {
+        policy_id: policies[2].id, policy_name: 'Rate limit noisy agents', status: 'fail',
+        tests: [
+          { name: 'Warns when agent exceeds 30 actions/hour', passed: true, message: 'Warning issued at 31st action.' },
+          { name: 'Resets counter after window expires', passed: false, message: 'Counter did not reset after 60-minute window. Expected 0, got 12.' },
+          { name: 'Tracks per-agent counters independently', passed: true, message: 'Separate counters confirmed for agent_01 and agent_02.' },
+        ],
+      },
+      {
+        policy_id: policies[3].id, policy_name: 'Block delete actions (example)', status: 'pass',
+        tests: [
+          { name: 'Blocks cleanup action type', passed: true, message: 'Cleanup action correctly blocked.' },
+          { name: 'Allows non-matching action types', passed: true, message: 'Deploy action allowed through.' },
+          { name: 'Policy inactive flag respected', passed: true, message: 'Inactive policy did not enforce block.' },
+        ],
+      },
+    ],
+  };
+
+  const policyProofReport = [
+    '# Compliance Proof Report',
+    '',
+    `**Organization:** org_demo`,
+    `**Generated:** ${new Date(BASE_NOW).toISOString()}`,
+    `**Report Type:** Policy Enforcement Proof`,
+    '',
+    '---',
+    '',
+    '## Active Policies',
+    '',
+    `| Policy | Type | Status |`,
+    `|--------|------|--------|`,
+    `| Block ultra high risk | risk_threshold | Active |`,
+    `| Require approval for deploy/security | require_approval | Active |`,
+    `| Rate limit noisy agents | rate_limit | Active |`,
+    `| Block delete actions (example) | block_action_type | Inactive |`,
+    '',
+    '## Test Results Summary',
+    '',
+    `- **Total Policies Tested:** 4`,
+    `- **Total Test Cases:** 12`,
+    `- **Passed:** 11`,
+    `- **Failed:** 1`,
+    '',
+    '## Enforcement Evidence',
+    '',
+    `- **Guard Decisions Recorded:** 847`,
+    `- **Actions Blocked:** 23`,
+    `- **Approval Requests Generated:** 56`,
+    `- **Total Actions Observed:** 12,340`,
+    '',
+    '## Compliance Posture',
+    '',
+    'DashClaw guardrail policies are actively enforcing risk thresholds, approval workflows, and rate limits.',
+    'One test failure detected in the rate-limit window reset logic — remediation recommended.',
+    '',
+    '## Recommendations',
+    '',
+    '1. Investigate rate-limit counter reset behavior (policy: "Rate limit noisy agents")',
+    '2. Enable the inactive "Block delete actions" policy or remove it to reduce confusion',
+    '3. Consider adding a data classification policy to strengthen SOC 2 CC9.1 coverage',
+    '',
+    '---',
+    '*Generated by DashClaw Policy Engine*',
+  ].join('\n');
+
   return {
     agents,
     actions,
@@ -990,6 +1245,16 @@ function buildFixtures() {
     metrics,
     metricsSummary,
     securityStatus,
+    routingHealth,
+    routingStats,
+    routingAgents,
+    routingTasks,
+    complianceFrameworks,
+    complianceMap,
+    complianceGaps,
+    complianceEvidence,
+    policyTestResults,
+    policyProofReport,
   };
 }
 
