@@ -1,45 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  MessageSquare, Send, Archive, Eye, Inbox, Hash,
-  FileText, AlertCircle, ChevronRight, X, Plus, Users, CheckCheck
+  Plus, Archive, CheckCheck, X,
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
 import { StatCompact } from '../components/ui/Stat';
-import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
-import { getAgentColor } from '../lib/colors';
 import { isDemoMode } from '../lib/isDemoMode';
+import { useRealtime } from '../hooks/useRealtime';
 
-const TABS = [
-  { key: 'inbox', label: 'Inbox', icon: Inbox },
-  { key: 'sent', label: 'Sent', icon: Send },
-  { key: 'threads', label: 'Threads', icon: Hash },
-  { key: 'docs', label: 'Docs', icon: FileText },
-];
-
-const TYPE_VARIANTS = {
-  action: 'warning',
-  info: 'info',
-  lesson: 'success',
-  question: 'secondary',
-  status: 'default',
-};
-
-function timeAgo(dateStr) {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
+import { TABS } from './_components/helpers';
+import MessageList from './_components/MessageList';
+import ThreadList from './_components/ThreadList';
+import DocList from './_components/DocList';
+import MessageDetail from './_components/MessageDetail';
+import DocDetail from './_components/DocDetail';
+import ComposeModal from './_components/ComposeModal';
+import ThreadConversation from './_components/ThreadConversation';
+import SmartInbox from './_components/SmartInbox';
 
 export default function MessagesPage() {
   const { agentId: filterAgentId } = useAgentFilter();
@@ -54,14 +34,12 @@ export default function MessagesPage() {
   const [selected, setSelected] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [showCompose, setShowCompose] = useState(false);
-  const [composeTo, setComposeTo] = useState('');
-  const [composeType, setComposeType] = useState('info');
-  const [composeSubject, setComposeSubject] = useState('');
-  const [composeBody, setComposeBody] = useState('');
-  const [composeUrgent, setComposeUrgent] = useState(false);
-  const [composeThreadId, setComposeThreadId] = useState('');
-  const [sending, setSending] = useState(false);
+  const [composePrefill, setComposePrefill] = useState(null);
   const [agents, setAgents] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const threadConvRef = useRef({ current: null });
+
+  // ── Data fetching ─────────────────────────────────────────────
 
   const fetchMessages = useCallback(async (direction) => {
     const params = new URLSearchParams({ direction, limit: '50' });
@@ -118,7 +96,7 @@ export default function MessagesPage() {
     }
   }, [tab, fetchMessages, fetchThreads, fetchDocs]);
 
-  // Fetch agents for compose dropdown
+  // Agents for compose dropdown
   useEffect(() => {
     fetch('/api/agents')
       .then(r => r.json())
@@ -134,48 +112,50 @@ export default function MessagesPage() {
     return () => clearInterval(interval);
   }, [fetchAll]);
 
-  // Refetch messages when tab switches between inbox/sent
+  // Refetch when tab switches between inbox/sent
   useEffect(() => {
     if (tab === 'inbox' || tab === 'sent') {
       fetchMessages(tab).then(d => setMessages(d.messages)).catch(() => {});
     }
   }, [tab, fetchMessages]);
 
-  async function handleSend() {
-    if (!composeBody.trim()) return;
-    setSending(true);
-    try {
-      const payload = {
-        from_agent_id: filterAgentId || 'dashboard',
-        body: composeBody,
-        message_type: composeType,
-      };
-      if (composeTo) payload.to_agent_id = composeTo;
-      if (composeSubject) payload.subject = composeSubject;
-      if (composeUrgent) payload.urgent = true;
-      if (composeThreadId) payload.thread_id = composeThreadId;
+  // ── SSE real-time ─────────────────────────────────────────────
 
-      const res = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Send failed');
+  useRealtime(useCallback((event, payload) => {
+    if (event !== 'message.created' || !payload) return;
+    // Dedup and prepend to inbox
+    setMessages(prev => {
+      if (prev.some(m => m.id === payload.id)) return prev;
+      if (filterAgentId && payload.from_agent_id !== filterAgentId && payload.to_agent_id !== filterAgentId) {
+        return prev;
       }
-      setShowCompose(false);
-      setComposeBody('');
-      setComposeSubject('');
-      setComposeTo('');
-      setComposeUrgent(false);
-      setComposeThreadId('');
-      fetchAll();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSending(false);
+      return [payload, ...prev];
+    });
+    setStats(prev => ({
+      ...prev,
+      unread: prev.unread + 1,
+      today: prev.today + 1,
+    }));
+    // Forward to thread conversation if open
+    if (threadConvRef.current) {
+      threadConvRef.current(payload);
     }
+  }, [filterAgentId]));
+
+  // ── Actions ───────────────────────────────────────────────────
+
+  async function handleSend(payload) {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      setError(err.error || 'Send failed');
+      throw new Error(err.error || 'Send failed');
+    }
+    fetchAll();
   }
 
   async function handleMarkRead(msgId) {
@@ -187,14 +167,15 @@ export default function MessagesPage() {
     fetchAll();
   }
 
-  async function handleArchive(msgId) {
+  const handleArchive = useCallback(async (msgId) => {
     await fetch('/api/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message_ids: [msgId], action: 'archive', agent_id: filterAgentId || 'dashboard' }),
     });
+    setSelected(null);
     fetchAll();
-  }
+  }, [filterAgentId, fetchAll]);
 
   async function handleMarkAllRead() {
     const unread = messages.filter(m => m.status === 'sent');
@@ -224,6 +205,113 @@ export default function MessagesPage() {
     setSelectedType(type);
   }
 
+  const handleViewThread = useCallback((threadId) => {
+    const thread = threads.find(t => t.id === threadId);
+    if (thread) {
+      setTab('threads');
+      setSelected(thread);
+      setSelectedType('thread');
+    }
+  }, [threads]);
+
+  const handleReply = useCallback((message) => {
+    if (message.thread_id) {
+      handleViewThread(message.thread_id);
+    } else {
+      setComposePrefill({
+        to: message.from_agent_id,
+        subject: message.subject ? `Re: ${message.subject}` : '',
+        type: message.message_type,
+      });
+      setShowCompose(true);
+    }
+  }, [handleViewThread]);
+
+  function handleMessageClick(msg) {
+    if (msg.thread_id) {
+      handleViewThread(msg.thread_id);
+    } else {
+      selectItem(msg, 'message');
+    }
+  }
+
+  // ── Current list for keyboard nav ─────────────────────────────
+
+  const currentList = tab === 'inbox' || tab === 'sent' ? messages
+    : tab === 'threads' ? threads
+    : docs;
+
+  // ── Keyboard navigation ───────────────────────────────────────
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      // Skip when focused on interactive elements or compose modal open
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+      if (showCompose) return;
+
+      switch (e.key) {
+        case 'j': {
+          e.preventDefault();
+          setSelectedIndex(prev => {
+            const next = Math.min(prev + 1, currentList.length - 1);
+            if (currentList[next]) {
+              const type = tab === 'threads' ? 'thread' : tab === 'docs' ? 'doc' : 'message';
+              selectItem(currentList[next], type);
+            }
+            return next;
+          });
+          break;
+        }
+        case 'k': {
+          e.preventDefault();
+          setSelectedIndex(prev => {
+            const next = Math.max(prev - 1, 0);
+            if (currentList[next]) {
+              const type = tab === 'threads' ? 'thread' : tab === 'docs' ? 'doc' : 'message';
+              selectItem(currentList[next], type);
+            }
+            return next;
+          });
+          break;
+        }
+        case 'r': {
+          if (selected && selectedType === 'message') {
+            e.preventDefault();
+            handleReply(selected);
+          }
+          break;
+        }
+        case 'e': {
+          if (selected && selectedType === 'message') {
+            e.preventDefault();
+            handleArchive(selected.id);
+          }
+          break;
+        }
+        case 'Enter': {
+          if (selected && selectedType === 'message' && selected.thread_id) {
+            e.preventDefault();
+            handleViewThread(selected.thread_id);
+          }
+          break;
+        }
+        case 'Escape': {
+          e.preventDefault();
+          setSelected(null);
+          setSelectedType(null);
+          setSelectedIndex(-1);
+          break;
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentList, selected, selectedType, showCompose, tab, handleArchive, handleReply, handleViewThread]);
+
+  // ── Render ────────────────────────────────────────────────────
+
   return (
     <PageLayout
       title="Messages"
@@ -231,7 +319,7 @@ export default function MessagesPage() {
       breadcrumbs={['Dashboard', 'Messages']}
       actions={
         <button
-          onClick={() => setShowCompose(true)}
+          onClick={() => { setComposePrefill(null); setShowCompose(true); }}
           disabled={isDemo}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-brand text-white hover:bg-brand/90 transition-colors"
         >
@@ -244,6 +332,7 @@ export default function MessagesPage() {
           Demo mode: messaging is read-only.
         </div>
       )}
+
       {/* Stats bar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <Card hover={false}>
@@ -276,7 +365,7 @@ export default function MessagesPage() {
           return (
             <button
               key={t.key}
-              onClick={() => { setTab(t.key); setSelected(null); }}
+              onClick={() => { setTab(t.key); setSelected(null); setSelectedIndex(-1); }}
               className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-md transition-colors ${
                 active
                   ? 'text-brand border-b-2 border-brand'
@@ -328,12 +417,19 @@ export default function MessagesPage() {
         <div className="flex gap-4">
           {/* Main list */}
           <div className={`flex-1 min-w-0 ${selected ? 'hidden md:block md:w-2/3' : ''}`}>
-            {tab === 'inbox' || tab === 'sent' ? (
+            {tab === 'inbox' ? (
+              <SmartInbox
+                messages={messages}
+                onSelect={handleMessageClick}
+                selectedId={selectedType === 'message' ? selected?.id : null}
+                onReply={handleReply}
+              />
+            ) : tab === 'sent' ? (
               <MessageList
                 messages={messages}
                 onSelect={(m) => selectItem(m, 'message')}
                 selectedId={selectedType === 'message' ? selected?.id : null}
-                isSent={tab === 'sent'}
+                isSent
               />
             ) : tab === 'threads' ? (
               <ThreadList
@@ -359,7 +455,7 @@ export default function MessagesPage() {
                     <span className="text-xs text-zinc-500 uppercase tracking-wide">
                       {selectedType === 'message' ? 'Message' : selectedType === 'thread' ? 'Thread' : 'Document'}
                     </span>
-                    <button onClick={() => setSelected(null)} className="text-zinc-500 hover:text-zinc-300">
+                    <button onClick={() => { setSelected(null); setSelectedIndex(-1); }} className="text-zinc-500 hover:text-zinc-300">
                       <X size={14} />
                     </button>
                   </div>
@@ -369,10 +465,17 @@ export default function MessagesPage() {
                       message={selected}
                       onMarkRead={handleMarkRead}
                       onArchive={handleArchive}
-                      agentId={filterAgentId}
+                      onReply={handleReply}
+                      onViewThread={handleViewThread}
                     />
                   )}
-                  {selectedType === 'thread' && <ThreadDetail thread={selected} />}
+                  {selectedType === 'thread' && (
+                    <ThreadConversation
+                      thread={selected}
+                      filterAgentId={filterAgentId}
+                      onNewMessage={threadConvRef}
+                    />
+                  )}
                   {selectedType === 'doc' && <DocDetail doc={selected} />}
                 </CardContent>
               </Card>
@@ -381,382 +484,30 @@ export default function MessagesPage() {
         </div>
       )}
 
+      {/* Keyboard shortcuts hint */}
+      <div className="hidden md:flex items-center justify-center gap-3 mt-4 text-xs text-zinc-600">
+        <span><kbd className="px-1 py-0.5 rounded bg-[rgba(255,255,255,0.06)] text-zinc-500 font-mono">j</kbd>/<kbd className="px-1 py-0.5 rounded bg-[rgba(255,255,255,0.06)] text-zinc-500 font-mono">k</kbd> navigate</span>
+        <span className="text-zinc-700">·</span>
+        <span><kbd className="px-1 py-0.5 rounded bg-[rgba(255,255,255,0.06)] text-zinc-500 font-mono">r</kbd> reply</span>
+        <span className="text-zinc-700">·</span>
+        <span><kbd className="px-1 py-0.5 rounded bg-[rgba(255,255,255,0.06)] text-zinc-500 font-mono">e</kbd> archive</span>
+        <span className="text-zinc-700">·</span>
+        <span><kbd className="px-1 py-0.5 rounded bg-[rgba(255,255,255,0.06)] text-zinc-500 font-mono">Enter</kbd> open thread</span>
+        <span className="text-zinc-700">·</span>
+        <span><kbd className="px-1 py-0.5 rounded bg-[rgba(255,255,255,0.06)] text-zinc-500 font-mono">Esc</kbd> close</span>
+      </div>
+
       {/* Compose modal */}
-      {showCompose && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCompose(false)}>
-          <div className="bg-surface-secondary border border-[rgba(255,255,255,0.06)] rounded-lg w-full max-w-lg mx-4 p-5" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-white">Compose Message</h3>
-              <button onClick={() => setShowCompose(false)} className="text-zinc-500 hover:text-zinc-300">
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-zinc-500 mb-1 block">To</label>
-                <select
-                  value={composeTo}
-                  onChange={e => setComposeTo(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200"
-                >
-                  <option value="">All Agents (Broadcast)</option>
-                  {agents.map(a => (
-                    <option key={a.agent_id} value={a.agent_id}>{a.agent_id}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-xs text-zinc-500 mb-1 block">Type</label>
-                  <select
-                    value={composeType}
-                    onChange={e => setComposeType(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200"
-                  >
-                    <option value="info">Info</option>
-                    <option value="action">Action</option>
-                    <option value="question">Question</option>
-                    <option value="lesson">Lesson</option>
-                    <option value="status">Status</option>
-                  </select>
-                </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={composeUrgent}
-                      onChange={e => setComposeUrgent(e.target.checked)}
-                      className="rounded border-zinc-600"
-                    />
-                    Urgent
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-zinc-500 mb-1 block">Subject</label>
-                <input
-                  type="text"
-                  value={composeSubject}
-                  onChange={e => setComposeSubject(e.target.value)}
-                  placeholder="Optional subject"
-                  maxLength={200}
-                  className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200 placeholder:text-zinc-600"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-zinc-500 mb-1 block">Body</label>
-                <textarea
-                  value={composeBody}
-                  onChange={e => setComposeBody(e.target.value)}
-                  placeholder="Message body..."
-                  maxLength={2000}
-                  rows={5}
-                  className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200 placeholder:text-zinc-600 resize-none"
-                />
-                <div className="text-right text-xs text-zinc-600 mt-1">{composeBody.length}/2000</div>
-              </div>
-              {threads.filter(t => t.status === 'open').length > 0 && (
-                <div>
-                  <label className="text-xs text-zinc-500 mb-1 block">Thread (optional)</label>
-                  <select
-                    value={composeThreadId}
-                    onChange={e => setComposeThreadId(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200"
-                  >
-                    <option value="">None</option>
-                    {threads.filter(t => t.status === 'open').map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <button
-                onClick={handleSend}
-                disabled={!composeBody.trim() || sending}
-                className="w-full py-2 text-sm font-medium rounded-md bg-brand text-white hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {sending ? 'Sending...' : 'Send Message'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ComposeModal
+        show={showCompose}
+        onClose={() => { setShowCompose(false); setComposePrefill(null); }}
+        agents={agents}
+        threads={threads}
+        filterAgentId={filterAgentId}
+        isDemo={isDemo}
+        onSend={handleSend}
+        prefill={composePrefill}
+      />
     </PageLayout>
-  );
-}
-
-function MessageList({ messages, onSelect, selectedId, isSent }) {
-  if (messages.length === 0) {
-    return (
-      <Card hover={false}>
-        <CardContent className="py-6">
-          <EmptyState
-            icon={isSent ? Send : Inbox}
-            title={isSent ? 'No sent messages' : 'Inbox is empty'}
-            description={isSent ? 'Messages you send will appear here.' : 'No messages yet. Agents can send messages via the SDK.'}
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card hover={false}>
-      <CardContent className="pt-0 divide-y divide-[rgba(255,255,255,0.04)]">
-        {messages.map(msg => {
-          const agentColor = getAgentColor(isSent ? msg.to_agent_id || 'broadcast' : msg.from_agent_id);
-          const isUnread = msg.status === 'sent' && !isSent;
-          return (
-            <div
-              key={msg.id}
-              onClick={() => onSelect(msg)}
-              className={`flex items-start gap-3 py-3 px-1 cursor-pointer transition-colors rounded-sm ${
-                msg.id === selectedId ? 'bg-[rgba(255,255,255,0.04)]' : 'hover:bg-[rgba(255,255,255,0.02)]'
-              }`}
-            >
-              <div
-                className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ backgroundColor: `${agentColor}20`, color: agentColor }}
-              >
-                <MessageSquare size={14} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  {isUnread && <div className="w-1.5 h-1.5 rounded-full bg-brand flex-shrink-0" />}
-                  {msg.urgent && <AlertCircle size={12} className="text-red-400 flex-shrink-0" />}
-                  <span className={`text-sm truncate ${isUnread ? 'font-semibold text-white' : 'text-zinc-300'}`}>
-                    {isSent ? (msg.to_agent_id || 'All Agents') : msg.from_agent_id}
-                  </span>
-                  <Badge variant={TYPE_VARIANTS[msg.message_type] || 'default'} size="xs">
-                    {msg.message_type}
-                  </Badge>
-                  {!msg.to_agent_id && (
-                    <Badge variant="secondary" size="xs">
-                      <Users size={10} className="mr-0.5" /> broadcast
-                    </Badge>
-                  )}
-                </div>
-                {msg.subject && (
-                  <div className="text-sm text-zinc-200 truncate mt-0.5">{msg.subject}</div>
-                )}
-                <div className="text-xs text-zinc-500 truncate mt-0.5">{msg.body}</div>
-              </div>
-              <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                <span className="text-xs text-zinc-600">{timeAgo(msg.created_at)}</span>
-                <ChevronRight size={12} className="text-zinc-700" />
-              </div>
-            </div>
-          );
-        })}
-      </CardContent>
-    </Card>
-  );
-}
-
-function ThreadList({ threads, onSelect, selectedId }) {
-  if (threads.length === 0) {
-    return (
-      <Card hover={false}>
-        <CardContent className="py-6">
-          <EmptyState
-            icon={Hash}
-            title="No threads"
-            description="Message threads will appear here when agents start conversations."
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card hover={false}>
-      <CardContent className="pt-0 divide-y divide-[rgba(255,255,255,0.04)]">
-        {threads.map(thread => (
-          <div
-            key={thread.id}
-            onClick={() => onSelect(thread)}
-            className={`flex items-start gap-3 py-3 px-1 cursor-pointer transition-colors rounded-sm ${
-              thread.id === selectedId ? 'bg-[rgba(255,255,255,0.04)]' : 'hover:bg-[rgba(255,255,255,0.02)]'
-            }`}
-          >
-            <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 bg-[rgba(255,255,255,0.06)]">
-              <Hash size={14} className="text-zinc-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-zinc-200 truncate">{thread.name}</span>
-                <Badge variant={thread.status === 'open' ? 'success' : 'default'} size="xs">
-                  {thread.status}
-                </Badge>
-              </div>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                {thread.message_count || 0} messages · by {thread.created_by}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              <span className="text-xs text-zinc-600">{timeAgo(thread.last_message_at || thread.created_at)}</span>
-              <ChevronRight size={12} className="text-zinc-700" />
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-function DocList({ docs, onSelect, selectedId }) {
-  if (docs.length === 0) {
-    return (
-      <Card hover={false}>
-        <CardContent className="py-6">
-          <EmptyState
-            icon={FileText}
-            title="No shared documents"
-            description="Agents can create shared workspace documents via the SDK."
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card hover={false}>
-      <CardContent className="pt-0 divide-y divide-[rgba(255,255,255,0.04)]">
-        {docs.map(doc => (
-          <div
-            key={doc.id}
-            onClick={() => onSelect(doc)}
-            className={`flex items-start gap-3 py-3 px-1 cursor-pointer transition-colors rounded-sm ${
-              doc.id === selectedId ? 'bg-[rgba(255,255,255,0.04)]' : 'hover:bg-[rgba(255,255,255,0.02)]'
-            }`}
-          >
-            <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 bg-[rgba(255,255,255,0.06)]">
-              <FileText size={14} className="text-zinc-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <span className="text-sm font-medium text-zinc-200 truncate block">{doc.name}</span>
-              <div className="text-xs text-zinc-500 mt-0.5">
-                v{doc.version} · by {doc.last_edited_by || doc.created_by}
-              </div>
-            </div>
-            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-              <span className="text-xs text-zinc-600">{timeAgo(doc.updated_at)}</span>
-              <ChevronRight size={12} className="text-zinc-700" />
-            </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-function MessageDetail({ message, onMarkRead, onArchive, agentId }) {
-  const isDemo = isDemoMode();
-  const agentColor = getAgentColor(message.from_agent_id);
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <div
-          className="w-6 h-6 rounded-md flex items-center justify-center"
-          style={{ backgroundColor: `${agentColor}20`, color: agentColor }}
-        >
-          <MessageSquare size={12} />
-        </div>
-        <span className="text-sm font-medium text-white">{message.from_agent_id}</span>
-        {message.urgent && <AlertCircle size={12} className="text-red-400" />}
-        <Badge variant={TYPE_VARIANTS[message.message_type] || 'default'} size="xs">
-          {message.message_type}
-        </Badge>
-      </div>
-      <div className="text-xs text-zinc-500 mb-1">
-        To: {message.to_agent_id || 'All Agents (Broadcast)'}
-      </div>
-      {message.subject && (
-        <div className="text-sm font-medium text-zinc-200 mb-2">{message.subject}</div>
-      )}
-      <div className="text-sm text-zinc-300 whitespace-pre-wrap mb-3 bg-[rgba(255,255,255,0.02)] rounded-md p-3">
-        {message.body}
-      </div>
-      <div className="text-xs text-zinc-600 mb-3">
-        {new Date(message.created_at).toLocaleString()}
-        {message.read_at && ` · Read ${timeAgo(message.read_at)}`}
-        {message.thread_id && (
-          <span className="ml-2">
-            · Thread: <span className="font-mono">{message.thread_id.slice(0, 12)}...</span>
-          </span>
-        )}
-      </div>
-      {message.status === 'sent' && (
-        <div className="flex gap-2">
-          <button
-            onClick={() => onMarkRead(message.id)}
-            disabled={isDemo}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-300 hover:bg-[rgba(255,255,255,0.1)] transition-colors"
-          >
-            <Eye size={12} /> Mark Read
-          </button>
-          <button
-            onClick={() => onArchive(message.id)}
-            disabled={isDemo}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-300 hover:bg-[rgba(255,255,255,0.1)] transition-colors"
-          >
-            <Archive size={12} /> Archive
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ThreadDetail({ thread }) {
-  const participants = thread.participants ? JSON.parse(thread.participants) : [];
-  return (
-    <div>
-      <h4 className="text-sm font-semibold text-white mb-1">{thread.name}</h4>
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant={thread.status === 'open' ? 'success' : 'default'} size="xs">
-          {thread.status}
-        </Badge>
-        <span className="text-xs text-zinc-500">{thread.message_count || 0} messages</span>
-      </div>
-      {participants.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {participants.map(p => (
-            <span key={p} className="text-xs px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.06)] text-zinc-400">
-              {p}
-            </span>
-          ))}
-        </div>
-      )}
-      {thread.summary && (
-        <div className="text-sm text-zinc-300 bg-[rgba(255,255,255,0.02)] rounded-md p-3 mb-2">
-          {thread.summary}
-        </div>
-      )}
-      <div className="text-xs text-zinc-600">
-        Created by {thread.created_by} · {new Date(thread.created_at).toLocaleString()}
-        {thread.resolved_at && ` · Resolved ${timeAgo(thread.resolved_at)}`}
-      </div>
-    </div>
-  );
-}
-
-function DocDetail({ doc }) {
-  return (
-    <div>
-      <h4 className="text-sm font-semibold text-white mb-1">{doc.name}</h4>
-      <div className="flex items-center gap-2 mb-2">
-        <Badge variant="info" size="xs">v{doc.version}</Badge>
-        <span className="text-xs text-zinc-500">by {doc.last_edited_by || doc.created_by}</span>
-      </div>
-      <div className="text-sm text-zinc-300 whitespace-pre-wrap bg-[rgba(255,255,255,0.02)] rounded-md p-3 mb-2 max-h-[400px] overflow-y-auto font-mono text-xs">
-        {doc.content}
-      </div>
-      <div className="text-xs text-zinc-600">
-        Created {new Date(doc.created_at).toLocaleString()}
-        {doc.updated_at !== doc.created_at && ` · Updated ${timeAgo(doc.updated_at)}`}
-      </div>
-    </div>
   );
 }

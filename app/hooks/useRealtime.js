@@ -35,6 +35,14 @@ function attachListeners(es) {
       console.error('SSE Parse Error:', err);
     }
   });
+
+  es.addEventListener('message.created', (e) => {
+    try {
+      broadcast('message.created', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
 }
 
 function ensureEventSource() {

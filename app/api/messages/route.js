@@ -17,6 +17,7 @@ import {
   touchMessageThread,
   updateMessageReadBy,
 } from '../../lib/repositories/messagesContext.repository.js';
+import { EVENTS, publishOrgEvent } from '../../lib/events.js';
 import { randomUUID } from 'node:crypto';
 
 const VALID_TYPES = ['action', 'info', 'lesson', 'question', 'status'];
@@ -112,6 +113,12 @@ export async function POST(request) {
     if (thread_id) {
       await touchMessageThread(sql, thread_id, now);
     }
+
+    // Emit real-time event
+    void publishOrgEvent(EVENTS.MESSAGE_CREATED, {
+      orgId,
+      message: created,
+    });
 
     return NextResponse.json({ message: created, message_id: id }, { status: 201 });
   } catch (error) {
