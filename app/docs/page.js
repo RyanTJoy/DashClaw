@@ -143,6 +143,7 @@ const navItems = [
   { href: '#automation-snippets', label: 'Automation Snippets' },
   { href: '#saveSnippet', label: 'saveSnippet', indent: true },
   { href: '#getSnippets', label: 'getSnippets', indent: true },
+  { href: '#getSnippet', label: 'getSnippet', indent: true },
   { href: '#useSnippet', label: 'useSnippet', indent: true },
   { href: '#deleteSnippet', label: 'deleteSnippet', indent: true },
   { href: '#user-preferences', label: 'User Preferences' },
@@ -1031,6 +1032,9 @@ if (handoff) {
 });`} />
 
             <MethodEntry id="getSnippets" signature="getSnippets(filters?)" description="Search and list snippets." params={[{ name: 'search', type: 'string', required: false, desc: 'Search name/description' }, { name: 'tag', type: 'string', required: false, desc: 'Filter by tag' }, { name: 'language', type: 'string', required: false, desc: 'Filter by language' }, { name: 'limit', type: 'number', required: false, desc: 'Max results' }]} returns="Promise<{snippets: Object[], total: number}>" example={`const { snippets } = await claw.getSnippets({ language: 'javascript' });`} />
+
+            <MethodEntry id="getSnippet" signature="getSnippet(snippetId)" description="Fetch a single snippet by ID." params={[{ name: 'snippetId', type: 'string', required: true, desc: 'Snippet ID' }]} returns="Promise<{snippet: Object}>" example={`const { snippet } = await claw.getSnippet('sn_abc123');
+console.log(snippet.name, snippet.language);`} />
 
             <MethodEntry id="useSnippet" signature="useSnippet(snippetId)" description="Mark a snippet as used (increments use_count)." params={[{ name: 'snippetId', type: 'string', required: true, desc: 'Snippet ID' }]} returns="Promise<{snippet: Object}>" example={`await claw.useSnippet('sn_abc123');`} />
 

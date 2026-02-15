@@ -295,6 +295,7 @@ function getSql() {
 - `GET/PATCH /api/context/threads/[threadId]` - thread detail + update (PATCH: summary, status)
 - `POST /api/context/threads/[threadId]/entries` - add entry to thread (validates thread exists + not closed)
 - `GET/POST/DELETE /api/snippets` - snippets CRUD (GET: `?search`, `?tag`, `?language`; POST: upserts on org+name)
+- `GET /api/snippets/[snippetId]` - fetch single snippet by ID
 - `POST /api/snippets/[snippetId]/use` - increment snippet use_count
 - `GET/POST /api/preferences` - user preferences (GET: `?type=summary|observations|preferences|moods|approaches`; POST: body.type discriminator)
 - `GET /api/digest` - daily digest aggregation (GET: `?date`, `?agent_id`; aggregates from 7 tables, no storage)

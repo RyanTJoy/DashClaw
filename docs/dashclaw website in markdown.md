@@ -1329,6 +1329,19 @@ await claw.saveSnippet({
   tags: ['fetch', 'retry'],
 });
 
+### getSnippet(snippetId)
+
+Fetch a single snippet by ID.
+
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| snippetId | string | Yes      | Snippet ID  |
+
+Returns: `Promise<{snippet: Object}>`
+
+const { snippet } = await claw.getSnippet('sn_abc123');
+console.log(snippet.name, snippet.language);
+
 ### getSnippets(filters?)
 
 Search and list snippets.

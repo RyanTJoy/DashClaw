@@ -608,6 +608,100 @@ Add an entry to an existing thread.
 
 ---
 
+## Automation Snippets
+
+Save, search, and reuse code snippets across agent sessions.
+
+### claw.saveSnippet(snippet)
+Save or update a reusable code snippet. Upserts on name.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| name | string | Yes | Snippet name (unique per org) |
+| code | string | Yes | The snippet code |
+| description | string | No | What this snippet does |
+| language | string | No | Programming language |
+| tags | string[] | No | Tags for categorization |
+
+**Returns:** `Promise<{snippet: Object, snippet_id: string}>`
+
+**Example:**
+```javascript
+await claw.saveSnippet({
+  name: 'fetch-with-retry',
+  code: 'async function fetchRetry(url, n = 3) { ... }',
+  language: 'javascript',
+  tags: ['fetch', 'retry'],
+});
+```
+
+### claw.getSnippet(snippetId)
+Fetch a single snippet by ID.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| snippetId | string | Yes | The snippet ID |
+
+**Returns:** `Promise<{snippet: Object}>`
+
+**Example:**
+```javascript
+const { snippet } = await claw.getSnippet('sn_abc123');
+console.log(snippet.name, snippet.language);
+```
+
+### claw.getSnippets(filters?)
+Search and list snippets.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| search | string | No | Search name/description |
+| tag | string | No | Filter by tag |
+| language | string | No | Filter by language |
+| limit | number | No | Max results |
+
+**Returns:** `Promise<{snippets: Object[], total: number}>`
+
+**Example:**
+```javascript
+const { snippets } = await claw.getSnippets({ language: 'javascript' });
+```
+
+### claw.useSnippet(snippetId)
+Mark a snippet as used (increments use_count).
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| snippetId | string | Yes | Snippet ID |
+
+**Returns:** `Promise<{snippet: Object}>`
+
+**Example:**
+```javascript
+await claw.useSnippet('sn_abc123');
+```
+
+### claw.deleteSnippet(snippetId)
+Delete a snippet.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| snippetId | string | Yes | Snippet ID |
+
+**Returns:** `Promise<{deleted: boolean, id: string}>`
+
+**Example:**
+```javascript
+await claw.deleteSnippet('sn_abc123');
+```
+
+---
+
 ## Agent Messaging
 
 ### claw.sendMessage(params)

@@ -15,8 +15,8 @@ Baseline parity for critical SDK capabilities, derived from:
 ## Snapshot Summary
 
 - Node public methods: `60+`
-- Python public methods: `50`
-- Current parity (method-level, normalized by Node surface): `85%`
+- Python public methods: `55`
+- Current parity (method-level, normalized by Node surface): `90%`
 
 ## WS5 M2 Critical Domain Delta (February 14, 2026)
 
@@ -100,7 +100,7 @@ Current shared contract cases covered by the harness:
 | Dashboard Data | 9 | 6 | Partial parity |
 | Session Handoffs | 3 | 3 | Full parity |
 | Context Manager | 7 | 7 | Full parity |
-| Automation Snippets | 4 | 0 | Missing in Python |
+| Automation Snippets | 5 | 5 | Full parity |
 | User Preferences | 6 | 0 | Missing in Python |
 | Daily Digest | 1 | 0 | Missing in Python |
 | Security Scanning | 2 | 0 | Missing in Python |
@@ -115,10 +115,7 @@ Current shared contract cases covered by the harness:
   - `createCalendarEvent`
   - `recordIdea`
 - Automation Snippets:
-  - `saveSnippet`
-  - `getSnippets`
-  - `useSnippet`
-  - `deleteSnippet`
+  - None (full parity as of February 15, 2026)
 - User Preferences:
   - `logObservation`
   - `setPreference`
@@ -138,7 +135,8 @@ Current shared contract cases covered by the harness:
 
 - Python method naming uses `snake_case`; Node uses `camelCase`.
 - Critical-domain payload/path contract parity is validated by the shared integration harness listed above.
-- Non-critical category gaps (snippets/preferences/digest/security scanning + selected dashboard-data methods) remain intentionally out-of-scope for WS5 M2-M4.
+- Non-critical category gaps (preferences/digest/security scanning + selected dashboard-data methods) remain intentionally out-of-scope for WS5 M2-M4.
+- Automation Snippets reached full parity (5/5 methods) on February 15, 2026.
 
 ## Version Compatibility Policy
 

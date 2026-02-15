@@ -13,8 +13,8 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `77`
-- Stable routes: `37`
+- Total routes: `78`
+- Stable routes: `38`
 - Beta routes: `13`
 - Experimental routes: `27`
 
@@ -86,6 +86,7 @@ doc-type: architecture
 | `/api/settings/test` | `POST` | `stable` | `/api/settings` | `app/api/settings/test/route.js` |
 | `/api/setup/status` | `GET` | `beta` | `/api/setup` | `app/api/setup/status/route.js` |
 | `/api/snippets` | `DELETE, GET, POST` | `stable` | `/api/snippets` | `app/api/snippets/route.js` |
+| `/api/snippets/{snippetId}` | `GET` | `stable` | `/api/snippets` | `app/api/snippets/[snippetId]/route.js` |
 | `/api/snippets/{snippetId}/use` | `POST` | `stable` | `/api/snippets` | `app/api/snippets/[snippetId]/use/route.js` |
 | `/api/stream` | `GET` | `experimental` | `(default)` | `app/api/stream/route.js` |
 | `/api/swarm/graph` | `GET` | `experimental` | `/api/swarm` | `app/api/swarm/graph/route.js` |
