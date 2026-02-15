@@ -163,7 +163,7 @@ export default function LandingPage() {
               Live Demo <ArrowRight size={16} />
             </Link>
             <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
-              <Terminal size={16} /> Self-Host
+              <Terminal size={16} /> Get Started
             </Link>
             <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.06)] text-zinc-300 text-sm font-medium hover:bg-[#181818] hover:text-white transition-colors inline-flex items-center gap-2">
               <BookOpen size={16} /> Docs
@@ -534,7 +534,7 @@ export default function LandingPage() {
               Live Demo <ArrowRight size={16} />
             </Link>
             <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
-              <Terminal size={16} /> Self-Host
+              <Terminal size={16} /> Get Started
             </Link>
           </div>
         </div>
@@ -567,6 +567,10 @@ export default function LandingPage() {
             <Link href="/demo" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
               <ExternalLink size={14} />
               Live Demo
+            </Link>
+            <Link href="/self-host" className="flex items-center gap-1.5 hover:text-zinc-300 transition-colors">
+              <ArrowRight size={14} />
+              Get Started
             </Link>
           </div>
         </div>

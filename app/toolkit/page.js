@@ -116,7 +116,7 @@ export default function ToolkitPage() {
             <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300">GitHub</a>
             <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
             <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/self-host" className="hover:text-zinc-300">Self-Host</Link>
+            <Link href="/self-host" className="hover:text-zinc-300">Get Started</Link>
           </div>
         </div>
       </footer>

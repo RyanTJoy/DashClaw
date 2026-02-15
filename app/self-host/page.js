@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server } from 'lucide-react';
+import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
 import CopyMarkdownButton from '../components/CopyMarkdownButton';
 
 export const metadata = {
-  title: 'Self-Host DashClaw',
-  description: 'Run your own DashClaw dashboard locally or in your cloud account. You pay, you own the data.',
+  title: 'Get Started with DashClaw',
+  description: 'Deploy your own DashClaw dashboard for free with Vercel + Neon, or run locally with Docker.',
 };
 
 function CodeBlock({ title, children }) {
@@ -49,7 +49,7 @@ export default function SelfHostPage() {
           <div className="flex items-center gap-2 text-sm text-zinc-500 mb-4">
             <Link href="/" className="hover:text-zinc-300 transition-colors">Home</Link>
             <ChevronRight size={14} />
-            <span className="text-zinc-300">Self-Host</span>
+            <span className="text-zinc-300">Get Started</span>
           </div>
 
           <div className="flex items-start gap-3 mb-3">
@@ -57,9 +57,9 @@ export default function SelfHostPage() {
               <Terminal size={20} className="text-brand" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Self-host DashClaw</h1>
+              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Get started with DashClaw</h1>
               <p className="mt-2 text-zinc-400 max-w-2xl leading-relaxed">
-                You own the dashboard, you own the data, and you pay your own hosting bill. Your agents point at your base URL.
+                Deploy free, access from anywhere — including your phone. You own the data.
               </p>
             </div>
           </div>
@@ -78,14 +78,130 @@ export default function SelfHostPage() {
         </div>
       </section>
 
+      {/* Two-path intro */}
+      <section className="pb-8 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-xl bg-[#111] border border-brand/30 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Cloud size={18} className="text-brand" />
+                <h3 className="text-sm font-semibold text-white">Cloud (recommended)</h3>
+              </div>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Vercel + Neon free tiers. Zero cost, accessible from any device, auto-HTTPS. Takes ~10 minutes.
+              </p>
+            </div>
+            <div className="rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)] p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Server size={18} className="text-zinc-400" />
+                <h3 className="text-sm font-semibold text-white">Local</h3>
+              </div>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Docker + localhost. Good for development or if you want everything on your machine.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Cloud path */}
       <section className="pb-20 px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-1 gap-5">
           <StepCard
             n="1"
-            title="Start your dashboard (local)"
-            desc="The installer generates secrets, writes .env.local, installs dependencies, and prints the API key your agents should use."
-            icon={Server}
+            title="Create a free Neon database"
+            desc="Neon gives you a serverless Postgres database on their free tier — no credit card required."
+            icon={Database}
           >
+            <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-1.5 mb-4">
+              <li>Sign up at <a href="https://neon.tech" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">neon.tech</a></li>
+              <li>Create a new project (any name, e.g. &quot;dashclaw&quot;)</li>
+              <li>Copy the connection string — it looks like <code className="text-zinc-300 font-mono text-xs">postgresql://user:pass@ep-xyz.neon.tech/neondb</code></li>
+            </ol>
+            <p className="text-xs text-zinc-500">
+              You&apos;ll paste this as <code className="font-mono text-zinc-300">DATABASE_URL</code> in the next step.
+            </p>
+          </StepCard>
+
+          <StepCard
+            n="2"
+            title="Deploy to Vercel"
+            desc="Fork the repo and import it into Vercel. Add the environment variables and deploy."
+            icon={Cloud}
+          >
+            <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-1.5 mb-4">
+              <li>Fork <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">ucsandman/DashClaw</a> to your GitHub account</li>
+              <li>Go to <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">vercel.com/new</a> and import your fork</li>
+              <li>Add these environment variables before deploying:</li>
+            </ol>
+            <CodeBlock title="Required environment variables">{`DATABASE_URL=postgresql://user:pass@ep-xyz.neon.tech/neondb
+NEXTAUTH_URL=https://your-app.vercel.app
+NEXTAUTH_SECRET=<random-32-char-secret>
+DASHCLAW_API_KEY=<your-secret-api-key>
+GITHUB_ID=<from-step-3>
+GITHUB_SECRET=<from-step-3>`}</CodeBlock>
+            <p className="mt-3 text-xs text-zinc-500">
+              Generate secrets with <code className="font-mono text-zinc-300">openssl rand -base64 32</code>. Tables are created automatically on first request.
+            </p>
+          </StepCard>
+
+          <StepCard
+            n="3"
+            title="Set up GitHub OAuth"
+            desc="Create a GitHub OAuth app so you can sign in to your dashboard."
+            icon={Github}
+          >
+            <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-1.5 mb-4">
+              <li>Go to <a href="https://github.com/settings/developers" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">GitHub Developer Settings</a> → OAuth Apps → New OAuth App</li>
+              <li>Set <strong className="text-zinc-200">Homepage URL</strong> to <code className="font-mono text-zinc-300 text-xs">https://your-app.vercel.app</code></li>
+              <li>Set <strong className="text-zinc-200">Authorization callback URL</strong> to <code className="font-mono text-zinc-300 text-xs">https://your-app.vercel.app/api/auth/callback/github</code></li>
+              <li>Copy the Client ID and Client Secret into your Vercel env vars as <code className="font-mono text-zinc-300">GITHUB_ID</code> and <code className="font-mono text-zinc-300">GITHUB_SECRET</code></li>
+              <li>Redeploy from the Vercel dashboard</li>
+            </ol>
+            <p className="text-xs text-zinc-500">
+              Replace <code className="font-mono text-zinc-300">your-app.vercel.app</code> with your actual Vercel domain.
+            </p>
+          </StepCard>
+
+          <StepCard
+            n="4"
+            title="Connect your agents"
+            desc="Agents only need a base URL + API key. Paste these into your agent's environment."
+            icon={KeyRound}
+          >
+            <div className="mb-4">
+              <CopyMarkdownButton
+                href="/api/prompts/agent-connect/raw"
+                label="Copy Agent Connect Prompt"
+                rawLabel="View prompt"
+              />
+            </div>
+            <CodeBlock title="Agent environment (example)">{`DASHCLAW_BASE_URL=https://your-app.vercel.app
+DASHCLAW_API_KEY=<your-secret-api-key>
+DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
+            <p className="mt-3 text-xs text-zinc-500">
+              Your Vercel app uses Vercel env vars. Your agent uses its own environment variables.
+            </p>
+          </StepCard>
+
+          {/* Divider */}
+          <div className="relative py-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[rgba(255,255,255,0.06)]"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-[#0a0a0a] px-4 text-sm text-zinc-500">Alternative: Local Setup</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Server size={18} className="text-zinc-400" />
+              <h3 className="text-base font-semibold text-zinc-200">Run locally with Docker</h3>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4 leading-relaxed">
+              The installer generates secrets, writes .env.local, installs dependencies, and prints the API key your agents should use.
+            </p>
             <div className="mb-4">
               <CopyMarkdownButton
                 href="/api/prompts/server-setup/raw"
@@ -100,31 +216,11 @@ export default function SelfHostPage() {
             <p className="mt-3 text-xs text-zinc-500">
               When it finishes, open <span className="font-mono text-zinc-300">http://localhost:3000</span>.
             </p>
-          </StepCard>
+          </div>
 
+          {/* Verified agents */}
           <StepCard
-            n="2"
-            title="Point your agents at your base URL"
-            desc="Agents do not need your database URL. They only need a base URL + API key. Paste these into your agent machine."
-            icon={KeyRound}
-          >
-            <div className="mb-4">
-              <CopyMarkdownButton
-                href="/api/prompts/agent-connect/raw"
-                label="Copy Agent Connect Prompt"
-                rawLabel="View prompt"
-              />
-            </div>
-            <CodeBlock title="Agent environment (example)">{`DASHCLAW_BASE_URL=http://localhost:3000
-DASHCLAW_API_KEY=oc_live_...
-DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
-            <p className="mt-3 text-xs text-zinc-500">
-              Your server uses <span className="font-mono text-zinc-300">.env.local</span>. Your agent uses its own environment variables.
-            </p>
-          </StepCard>
-
-          <StepCard
-            n="3"
+            n="5"
             title="Optional: enable verified agents (one-click pairing)"
             desc="If you want cryptographic identity binding, your agent generates a keypair and prints a one-click pairing URL. You approve once (or approve-all)."
             icon={Shield}
@@ -136,9 +232,6 @@ DASHCLAW_PRIVATE_KEY_PATH=./secrets/cinder-private.jwk
 ENFORCE_AGENT_SIGNATURES=true`}</CodeBlock>
             <p className="mt-3 text-sm text-zinc-400">
               The goal is: no manual public key uploads. Pairing registers the matching public key automatically.
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">
-              Next: we’ll add “pairIfNeeded()” helpers to the SDK so agents print a link and block until approved.
             </p>
           </StepCard>
         </div>
