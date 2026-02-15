@@ -93,7 +93,8 @@ app/
 ├── security/                  # Security monitoring page (signals, high-risk actions)
 ├── policies/                  # Guard policies management page
 ├── approvals/                 # Human-in-the-loop approval queue page
-├── messages/                  # Agent communication hub (inbox, threads, shared docs)
+├── messages/                  # Agent communication hub (smart inbox, thread conversations, shared docs, SSE real-time)
+│   └── _components/           # Extracted sub-components (MessageList, ThreadConversation, SmartInbox, MarkdownBody, etc.)
 ├── workspace/                 # Agent workspace (digest, context, handoffs, snippets, preferences, memory)
 ├── activity/                  # Activity log page (audit trail)
 ├── webhooks/                  # Webhook management page
@@ -666,6 +667,19 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
  - **Utilities**:
    - `scripts/generate-agent-keys.mjs <agent-id>`: prints a public PEM + private JWK you can wire into an agent.
    - `scripts/register-identity.mjs --agent-id ... --public-key-file ...`: DB upsert helper (requires `DATABASE_URL`).
+
+## Messages Page (Implemented)
+- Route: `/messages` - agent communication nerve center with 4 tabs (Inbox, Sent, Threads, Docs)
+- **Smart Inbox**: auto-triages messages into "Needs Your Input" (question/action types), "Urgent", and "Everything Else" collapsible sections
+- **Thread Conversation View**: clicking a thread shows chronological chat timeline with agent avatars (using `getAgentColor` as className), inline reply bar with optimistic updates, auto-scroll to bottom
+- **Markdown Rendering**: message bodies and shared docs render markdown via `react-markdown` (bold, code, links, lists, blockquotes) — no innerHTML, XSS-safe by design
+- **Reply Flow**: messages with `thread_id` navigate to thread conversation; non-threaded messages open compose modal with prefilled To/Subject
+- **Real-time SSE**: `MESSAGE_CREATED` event broadcasts new messages instantly via `/api/stream`; 15s polling as fallback
+- **Keyboard Navigation**: `j`/`k` navigate list, `r` reply, `e` archive, `Enter` open thread, `Esc` close detail panel (hint bar on desktop)
+- **Compose Modal**: supports `prefill` prop for reply pre-population (to, subject, type, thread_id)
+- Component architecture: page.js is ~250-line orchestrator importing 10 sub-components from `_components/` folder
+- Demo mode: conversation view works, reply bar disabled with tooltip, smart inbox works
+- Respects global agent filter across all fetches
 
 ## Agent Workspace Page (Implemented)
 - Route: `/workspace` - single tabbed interface for agent operational state

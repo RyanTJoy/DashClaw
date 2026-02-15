@@ -268,17 +268,21 @@ function demoMessages(fixtures, url) {
   const agentId = sp.get('agent_id') || undefined;
   const direction = sp.get('direction') || 'inbox';
   const type = sp.get('type') || undefined;
+  const threadId = sp.get('thread_id') || undefined;
   const limit = Math.min(parseInt(sp.get('limit') || '50', 10), 500);
   const offset = parseInt(sp.get('offset') || '0', 10);
 
   let items = (fixtures.messages || []).slice();
-  if (direction === 'sent') {
+  if (direction === 'all' || direction === 'thread') {
+    // Return all messages regardless of sender (for thread views)
+  } else if (direction === 'sent') {
     items = items.filter(m => m.from_agent_id === 'dashboard');
   } else {
     items = items.filter(m => m.to_agent_id === 'dashboard' || m.to_agent_id == null);
   }
 
   if (agentId) items = items.filter(m => m.from_agent_id === agentId || m.to_agent_id === agentId);
+  if (threadId) items = items.filter(m => m.thread_id === threadId);
   if (type) items = items.filter(m => m.message_type === type);
 
   items.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));

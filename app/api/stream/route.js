@@ -50,6 +50,9 @@ data: ${JSON.stringify(data)}
       if (envelope.event === EVENTS.ACTION_CREATED || envelope.event === EVENTS.ACTION_UPDATED) {
         return envelope.payload?.action || null;
       }
+      if (envelope.event === EVENTS.MESSAGE_CREATED) {
+        return envelope.payload?.message || null;
+      }
       return envelope.payload || null;
     };
 
