@@ -8,8 +8,8 @@
  * backfills existing data to org_default, makes org_id NOT NULL.
  *
  * Usage:
- *   DATABASE_URL=<neon_url> node scripts/migrate-multi-tenant.mjs
- *   DATABASE_URL=<neon_url> DASHCLAW_API_KEY=<key> node scripts/migrate-multi-tenant.mjs
+ *   DATABASE_URL=<db_url> node scripts/migrate-multi-tenant.mjs
+ *   DATABASE_URL=<db_url> DASHCLAW_API_KEY=<key> node scripts/migrate-multi-tenant.mjs
  */
 
 process.on('unhandledRejection', (reason) => {
@@ -880,6 +880,105 @@ async function run() {
     log('✅', 'topics table + index ready');
   } catch (err) {
     log('⚠️', `topics migration: ${err.message}`);
+  }
+
+  // Step 13b: Create calendar_events table
+  console.log('Step 13b: Creating calendar_events table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS calendar_events (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        summary TEXT NOT NULL,
+        start_time TIMESTAMPTZ NOT NULL,
+        end_time TIMESTAMPTZ,
+        location TEXT,
+        description TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_org_id ON calendar_events(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time)`;
+    log('✅', 'calendar_events table + indexes ready');
+  } catch (err) {
+    log('⚠️', `calendar_events migration: ${err.message}`);
+  }
+
+  // Step 13c: Create workflows table
+  console.log('Step 13c: Creating workflows table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS workflows (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        name TEXT NOT NULL,
+        description TEXT,
+        enabled INTEGER DEFAULT 1,
+        trigger_type TEXT,
+        run_count INTEGER DEFAULT 0,
+        last_run TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_workflows_org_id ON workflows(org_id)`;
+    await sql`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'workflows_org_name_unique'
+        ) THEN
+          ALTER TABLE workflows ADD CONSTRAINT workflows_org_name_unique UNIQUE (org_id, name);
+        END IF;
+      END $$
+    `;
+    log('✅', 'workflows table + indexes ready');
+  } catch (err) {
+    log('⚠️', `workflows migration: ${err.message}`);
+  }
+
+  // Step 13d: Create executions table
+  console.log('Step 13d: Creating executions table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS executions (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT,
+        workflow_id INTEGER REFERENCES workflows(id),
+        status TEXT DEFAULT 'pending',
+        started_at TIMESTAMPTZ DEFAULT NOW(),
+        finished_at TIMESTAMPTZ,
+        error TEXT
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_executions_org_id ON executions(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_executions_started_at ON executions(started_at)`;
+    log('✅', 'executions table + indexes ready');
+  } catch (err) {
+    log('⚠️', `executions migration: ${err.message}`);
+  }
+
+  // Step 13e: Create scheduled_jobs table
+  console.log('Step 13e: Creating scheduled_jobs table...');
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS scheduled_jobs (
+        id SERIAL PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        workflow_id INTEGER REFERENCES workflows(id),
+        name TEXT,
+        cron_expression TEXT,
+        enabled INTEGER DEFAULT 1,
+        next_run TIMESTAMPTZ,
+        last_run TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_org_id ON scheduled_jobs(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_next_run ON scheduled_jobs(next_run)`;
+    log('✅', 'scheduled_jobs table + indexes ready');
+  } catch (err) {
+    log('⚠️', `scheduled_jobs migration: ${err.message}`);
   }
 
   // Step 14: Create waitlist table (pre-auth, no org_id)
