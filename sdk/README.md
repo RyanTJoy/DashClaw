@@ -2,7 +2,7 @@
 
 Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
 
-Install, configure, and instrument your AI agents with 78+ methods across action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, and more.
+Install, configure, and instrument your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, context management, session handoffs, security scanning, agent messaging, agent pairing, identity binding, organization management, webhooks, policy testing, compliance, task routing, and more.
 
 ---
 
@@ -412,6 +412,20 @@ Retrieve recent guard evaluation decisions for audit and review.
 
 Push data from your agent directly to the DashClaw dashboard. All methods auto-attach the agent's agentId.
 
+### claw.reportTokenUsage(usage)
+Report a token usage snapshot for this agent.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| tokens_in | number | Yes | Input tokens consumed |
+| tokens_out | number | Yes | Output tokens generated |
+| context_used | number | No | Context window tokens used |
+| context_max | number | No | Context window max capacity |
+| model | string | No | Model name |
+
+**Returns:** `Promise<{snapshot: Object}>`
+
 ### claw.recordDecision(entry)
 Record a decision for the learning database. Track what your agent decides and why.
 
@@ -543,6 +557,47 @@ Report active connections/integrations for this agent.
 
 **Returns:** `Promise<{ connections: Object[], created: number }>`
 
+### claw.createCalendarEvent(event)
+Create a calendar event.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| summary | string | Yes | Event title/summary |
+| start_time | string | Yes | Start time (ISO string) |
+| end_time | string | No | End time (ISO string) |
+| location | string | No | Event location |
+| description | string | No | Event description |
+
+**Returns:** `Promise<{event: Object}>`
+
+### claw.recordIdea(idea)
+Record an idea or inspiration for later review.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| title | string | Yes | Idea title |
+| description | string | No | Detailed description |
+| category | string | No | Category |
+| score | number | No | Priority/quality score 0-100 |
+| status | string | No | "pending", "in_progress", "shipped", "rejected" |
+| source | string | No | Where this idea came from |
+
+**Returns:** `Promise<{idea: Object}>`
+
+### claw.reportMemoryHealth(report)
+Report a memory health snapshot with entities and topics.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| health | Object | Yes | Health metrics (must include `score` 0-100) |
+| entities | Object[] | No | Key entities found in memory |
+| topics | Object[] | No | Topics/themes found in memory |
+
+**Returns:** `Promise<{snapshot: Object, entities_count: number, topics_count: number}>`
+
 ---
 
 ## Session Handoffs
@@ -572,6 +627,20 @@ Get handoffs for this agent with optional date and limit filters.
 | limit | number | No | Max results |
 
 **Returns:** `Promise<{handoffs: Object[], total: number}>`
+
+### claw.getLatestHandoff()
+Get the most recent handoff for this agent. Useful for resuming context at the start of a new session.
+
+**Returns:** `Promise<{handoff: Object|null}>`
+
+**Example:**
+```javascript
+const { handoff } = await claw.getLatestHandoff();
+if (handoff) {
+  console.log('Last session:', handoff.summary);
+  console.log('Next priorities:', handoff.next_priorities);
+}
+```
 
 ---
 
@@ -603,8 +672,62 @@ Create a context thread for tracking a topic across multiple entries.
 
 **Returns:** `Promise<{thread: Object, thread_id: string}>`
 
+### claw.getKeyPoints(filters?)
+Get key points with optional filters.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| category | string | No | Filter by category: decision, task, insight, question, general |
+| session_date | string | No | Filter by date (YYYY-MM-DD) |
+| limit | number | No | Max results |
+
+**Returns:** `Promise<{points: Object[], total: number}>`
+
 ### claw.addThreadEntry(threadId, content, entryType?)
 Add an entry to an existing thread.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| threadId | string | Yes | The thread ID |
+| content | string | Yes | Entry content |
+| entryType | string | No | Entry type (default: "note") |
+
+**Returns:** `Promise<{entry: Object, entry_id: string}>`
+
+### claw.closeThread(threadId, summary?)
+Close a context thread with an optional final summary.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| threadId | string | Yes | The thread ID to close |
+| summary | string | No | Final summary for the thread |
+
+**Returns:** `Promise<{thread: Object}>`
+
+### claw.getThreads(filters?)
+Get context threads with optional filters.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| status | string | No | Filter by status: active, closed |
+| limit | number | No | Max results |
+
+**Returns:** `Promise<{threads: Object[], total: number}>`
+
+### claw.getContextSummary()
+Get a combined context summary containing today's key points and all active threads. Convenience method that calls `getKeyPoints()` and `getThreads()` in parallel.
+
+**Returns:** `Promise<{points: Object[], threads: Object[]}>`
+
+**Example:**
+```javascript
+const { points, threads } = await claw.getContextSummary();
+console.log(`${points.length} key points today, ${threads.length} active threads`);
+```
 
 ---
 
@@ -702,6 +825,144 @@ await claw.deleteSnippet('sn_abc123');
 
 ---
 
+## User Preferences
+
+Track user observations, learned preferences, mood/energy, and approach effectiveness across sessions.
+
+### claw.logObservation(obs)
+Log a user observation (what you noticed about the user's behavior or preferences).
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| observation | string | Yes | The observation text |
+| category | string | No | Category tag |
+| importance | number | No | Importance 1-10 |
+
+**Returns:** `Promise<{observation: Object, observation_id: string}>`
+
+**Example:**
+```javascript
+await claw.logObservation({
+  observation: 'User prefers concise responses over detailed explanations',
+  category: 'communication',
+  importance: 8,
+});
+```
+
+### claw.setPreference(pref)
+Set a learned user preference. Use this to record patterns you detect about how the user likes to work.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| preference | string | Yes | The preference description |
+| category | string | No | Category tag |
+| confidence | number | No | Confidence 0-100 |
+
+**Returns:** `Promise<{preference: Object, preference_id: string}>`
+
+### claw.logMood(entry)
+Log user mood/energy for a session. Helps track patterns in productivity and satisfaction.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| mood | string | Yes | Mood description (e.g., "focused", "frustrated") |
+| energy | string | No | Energy level (e.g., "high", "low") |
+| notes | string | No | Additional notes |
+
+**Returns:** `Promise<{mood: Object, mood_id: string}>`
+
+### claw.trackApproach(entry)
+Track an approach and whether it succeeded or failed. Builds a knowledge base of what works.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| approach | string | Yes | The approach description |
+| context | string | No | Context for when to use this approach |
+| success | boolean | No | true = worked, false = failed, undefined = just recording |
+
+**Returns:** `Promise<{approach: Object, approach_id: string}>`
+
+### claw.getPreferenceSummary()
+Get a summary of all user preference data including observations, preferences, moods, and approaches.
+
+**Returns:** `Promise<{summary: Object}>`
+
+### claw.getApproaches(filters?)
+Get tracked approaches with success/fail counts.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| limit | number | No | Max results |
+
+**Returns:** `Promise<{approaches: Object[], total: number}>`
+
+---
+
+## Daily Digest
+
+### claw.getDailyDigest(date?)
+Get a daily activity digest aggregated from all data sources (actions, decisions, handoffs, context, etc.).
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| date | string | No | Date string YYYY-MM-DD (defaults to today) |
+
+**Returns:** `Promise<{date: string, digest: Object, summary: Object}>`
+
+**Example:**
+```javascript
+const { digest, summary } = await claw.getDailyDigest('2025-01-15');
+console.log(`Actions: ${summary.actions_count}, Decisions: ${summary.decisions_count}`);
+```
+
+---
+
+## Security Scanning
+
+Scan text for sensitive data before sending it anywhere. The scanner detects API keys, tokens, PII, and other secrets.
+
+### claw.scanContent(text, destination?)
+Scan text for sensitive data. Returns findings and redacted text. Does NOT store the original content.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| text | string | Yes | Text to scan |
+| destination | string | No | Where this text is headed (for context) |
+
+**Returns:** `Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>`
+
+**Example:**
+```javascript
+const result = await claw.scanContent(
+  'Deploy with key sk-abc123xyz to production',
+  'slack'
+);
+if (!result.clean) {
+  console.log(`Found ${result.findings_count} issues`);
+  console.log('Safe version:', result.redacted_text);
+}
+```
+
+### claw.reportSecurityFinding(text, destination?)
+Scan text and store finding metadata for audit trails. The original content is never stored, only the finding metadata.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| text | string | Yes | Text to scan |
+| destination | string | No | Where this text is headed |
+
+**Returns:** `Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>`
+
+---
+
 ## Agent Messaging
 
 ### claw.sendMessage(params)
@@ -720,8 +981,297 @@ Send a message to another agent or broadcast.
 
 **Returns:** `Promise<{message: Object, message_id: string}>`
 
+### claw.getInbox(params?)
+Get inbox messages for this agent.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| type | string | No | Filter by message type |
+| unread | boolean | No | Only unread messages |
+| threadId | string | No | Filter by thread |
+| limit | number | No | Max messages to return (default: 50) |
+
+**Returns:** `Promise<{messages: Object[], total: number, unread_count: number}>`
+
+### claw.markRead(messageIds)
+Mark messages as read.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| messageIds | string[] | Yes | Array of message IDs to mark read |
+
+**Returns:** `Promise<{updated: number}>`
+
+### claw.archiveMessages(messageIds)
+Archive messages.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| messageIds | string[] | Yes | Array of message IDs to archive |
+
+**Returns:** `Promise<{updated: number}>`
+
+### claw.broadcast(params)
+Broadcast a message to all agents in the organization.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| type | string | No | Message type (default: "info") |
+| subject | string | No | Subject line |
+| body | string | Yes | Message body |
+| threadId | string | No | Thread ID |
+
+**Returns:** `Promise<{message: Object, message_id: string}>`
+
+### claw.createMessageThread(params)
+Create a new message thread for multi-turn conversations between agents.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| name | string | Yes | Thread name |
+| participants | string[] | No | Agent IDs (null = open to all) |
+
+**Returns:** `Promise<{thread: Object, thread_id: string}>`
+
+### claw.getMessageThreads(params?)
+List message threads.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| status | string | No | Filter by status: open, resolved, archived |
+| limit | number | No | Max threads to return (default: 20) |
+
+**Returns:** `Promise<{threads: Object[], total: number}>`
+
+### claw.resolveMessageThread(threadId, summary?)
+Resolve (close) a message thread with an optional summary.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| threadId | string | Yes | Thread ID to resolve |
+| summary | string | No | Resolution summary |
+
+**Returns:** `Promise<{thread: Object}>`
+
 ### claw.saveSharedDoc(params)
 Create or update a shared workspace document. Upserts by name.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| name | string | Yes | Document name (unique per org) |
+| content | string | Yes | Document content |
+
+**Returns:** `Promise<{doc: Object, doc_id: string}>`
+
+---
+
+## Agent Pairing
+
+Pair agents with user accounts via public key registration and approval flow.
+
+### claw.createPairing(options)
+Create an agent pairing request. Returns a link the user can click to approve the pairing.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| publicKeyPem | string | Yes | PEM public key (SPKI format) to register for this agent |
+| algorithm | string | No | Signing algorithm (default: "RSASSA-PKCS1-v1_5") |
+| agentName | string | No | Agent name override |
+
+**Returns:** `Promise<{pairing: Object, pairing_url: string}>`
+
+### claw.createPairingFromPrivateJwk(privateJwk, options?)
+Convenience method that derives the public PEM from a private JWK and creates a pairing request.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| privateJwk | Object | Yes | Private key in JWK format |
+| options.agentName | string | No | Agent name override |
+
+**Returns:** `Promise<{pairing: Object, pairing_url: string}>`
+
+### claw.waitForPairing(pairingId, options?)
+Poll a pairing request until it is approved or expired.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| pairingId | string | Yes | The pairing ID to poll |
+| options.timeout | number | No | Max wait time in ms (default: 300000 / 5 min) |
+| options.interval | number | No | Poll interval in ms (default: 2000) |
+
+**Returns:** `Promise<Object>` (the approved pairing object)
+
+**Throws:** `Error` if pairing expires or times out.
+
+**Example:**
+```javascript
+const { pairing, pairing_url } = await claw.createPairing({
+  publicKeyPem: myPublicKeyPem,
+});
+console.log('Approve pairing at:', pairing_url);
+
+const approved = await claw.waitForPairing(pairing.id);
+console.log('Pairing approved!', approved.status);
+```
+
+---
+
+## Identity Binding
+
+Register and manage agent public keys for cryptographic identity verification.
+
+### claw.registerIdentity(identity)
+Register or update an agent's public key for identity verification. Requires admin API key.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| agent_id | string | Yes | Agent ID to register |
+| public_key | string | Yes | PEM public key (SPKI format) |
+| algorithm | string | No | Signing algorithm (default: "RSASSA-PKCS1-v1_5") |
+
+**Returns:** `Promise<{identity: Object}>`
+
+### claw.getIdentities()
+List all registered agent identities for this organization.
+
+**Returns:** `Promise<{identities: Object[]}>`
+
+---
+
+## Organization Management
+
+Manage organizations and API keys. All methods require admin API key.
+
+### claw.getOrg()
+Get the current organization's details.
+
+**Returns:** `Promise<{organizations: Object[]}>`
+
+### claw.createOrg(org)
+Create a new organization with an initial admin API key.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| name | string | Yes | Organization name |
+| slug | string | Yes | URL-safe slug (lowercase alphanumeric + hyphens) |
+
+**Returns:** `Promise<{organization: Object, api_key: Object}>`
+
+### claw.getOrgById(orgId)
+Get organization details by ID.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| orgId | string | Yes | Organization ID |
+
+**Returns:** `Promise<{organization: Object}>`
+
+### claw.updateOrg(orgId, updates)
+Update organization details.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| orgId | string | Yes | Organization ID |
+| updates | Object | Yes | Fields to update (name, slug) |
+
+**Returns:** `Promise<{organization: Object}>`
+
+### claw.getOrgKeys(orgId)
+List API keys for an organization.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| orgId | string | Yes | Organization ID |
+
+**Returns:** `Promise<{keys: Object[]}>`
+
+---
+
+## Activity Logs
+
+### claw.getActivityLogs(filters?)
+Get activity/audit logs for the organization.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| action | string | No | Filter by action type |
+| actor_id | string | No | Filter by actor |
+| resource_type | string | No | Filter by resource type |
+| before | string | No | Before timestamp (ISO string) |
+| after | string | No | After timestamp (ISO string) |
+| limit | number | No | Max results (default: 50, max: 200) |
+| offset | number | No | Pagination offset |
+
+**Returns:** `Promise<{logs: Object[], stats: Object, pagination: Object}>`
+
+---
+
+## Webhooks
+
+Subscribe to DashClaw events and receive real-time notifications.
+
+### claw.getWebhooks()
+List all webhooks for this organization.
+
+**Returns:** `Promise<{webhooks: Object[]}>`
+
+### claw.createWebhook(webhook)
+Create a new webhook subscription.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| url | string | Yes | Webhook endpoint URL |
+| events | string[] | No | Event types to subscribe to |
+
+**Returns:** `Promise<{webhook: Object}>`
+
+### claw.deleteWebhook(webhookId)
+Delete a webhook.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| webhookId | string | Yes | Webhook ID |
+
+**Returns:** `Promise<{deleted: boolean}>`
+
+### claw.testWebhook(webhookId)
+Send a test event to a webhook to verify connectivity.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| webhookId | string | Yes | Webhook ID |
+
+**Returns:** `Promise<{delivery: Object}>`
+
+### claw.getWebhookDeliveries(webhookId)
+Get delivery history for a webhook.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| webhookId | string | Yes | Webhook ID |
+
+**Returns:** `Promise<{deliveries: Object[]}>`
 
 ---
 

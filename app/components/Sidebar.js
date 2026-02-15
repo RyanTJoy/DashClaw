@@ -7,7 +7,7 @@ import { isDemoMode } from '../lib/isDemoMode';
 import {
   Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
-  GitBranch, Settings, Crosshair, Calendar, BarChart3,
+  GitBranch, Settings, Crosshair, Calendar, BarChart3, Coins,
   Clock, Webhook, Bell, FolderKanban, Network, Scale,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react';
@@ -40,6 +40,7 @@ const navGroups = [
       { href: '/relationships', icon: Users, label: 'Relationships' },
       { href: '/learning', icon: BookOpen, label: 'Learning' },
       { href: '/goals', icon: Target, label: 'Goals' },
+      { href: '/tokens', icon: Coins, label: 'Token Budget' },
     ],
   },
   {

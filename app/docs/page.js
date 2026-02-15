@@ -9,7 +9,7 @@ import PublicNavbar from '../components/PublicNavbar';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
-  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 78+ methods across 16 categories covering action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, and more.',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 95+ methods across 21 categories covering action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, webhooks, identity binding, and more.',
 };
 
 /* ─── helpers ─── */
@@ -191,6 +191,27 @@ const navItems = [
   { href: '#completeRoutingTask', label: 'completeRoutingTask', indent: true },
   { href: '#getRoutingStats', label: 'getRoutingStats', indent: true },
   { href: '#getRoutingHealth', label: 'getRoutingHealth', indent: true },
+  { href: '#agent-pairing', label: 'Agent Pairing' },
+  { href: '#createPairing', label: 'createPairing', indent: true },
+  { href: '#createPairingFromPrivateJwk', label: 'createPairingFromPrivateJwk', indent: true },
+  { href: '#waitForPairing', label: 'waitForPairing', indent: true },
+  { href: '#identity-binding', label: 'Identity Binding' },
+  { href: '#registerIdentity', label: 'registerIdentity', indent: true },
+  { href: '#getIdentities', label: 'getIdentities', indent: true },
+  { href: '#org-management', label: 'Organization Management' },
+  { href: '#getOrg', label: 'getOrg', indent: true },
+  { href: '#createOrg', label: 'createOrg', indent: true },
+  { href: '#getOrgById', label: 'getOrgById', indent: true },
+  { href: '#updateOrg', label: 'updateOrg', indent: true },
+  { href: '#getOrgKeys', label: 'getOrgKeys', indent: true },
+  { href: '#activity-logs', label: 'Activity Logs' },
+  { href: '#getActivityLogs', label: 'getActivityLogs', indent: true },
+  { href: '#webhooks', label: 'Webhooks' },
+  { href: '#getWebhooks', label: 'getWebhooks', indent: true },
+  { href: '#createWebhook', label: 'createWebhook', indent: true },
+  { href: '#deleteWebhook', label: 'deleteWebhook', indent: true },
+  { href: '#testWebhook', label: 'testWebhook', indent: true },
+  { href: '#getWebhookDeliveries', label: 'getWebhookDeliveries', indent: true },
   { href: '#error-handling', label: 'Error Handling' },
   { href: '#agent-tools', label: 'Agent Tools (Python)' },
 ];
@@ -218,8 +239,8 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK. 78+ methods across 16 categories to instrument your AI agents with
-            action recording, governance, context management, session handoffs, security scanning, policy testing, compliance, task routing, and more.
+            Full reference for the DashClaw SDK. 95+ methods across 21 categories to instrument your AI agents with
+            action recording, governance, context management, session handoffs, security scanning, policy testing, compliance, task routing, webhooks, identity binding, and more.
           </p>
           <CopyDocsButton />
         </div>
@@ -1473,6 +1494,231 @@ console.log(\`Tasks: \${stats.tasks.total} (\${stats.tasks.pending} pending)\`);
 console.log('Routing status:', health.status);
 console.log('Available agents:', health.agents.available);
 console.log('Queued tasks:', health.tasks.queued);`}
+            />
+          </section>
+
+          {/* ── Agent Pairing ── */}
+          <section id="agent-pairing" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <CircleDot size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Agent Pairing</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">One-click agent enrollment. Agents request pairing with a public key, admins approve via a click link.</p>
+
+            <MethodEntry
+              id="createPairing"
+              signature="claw.createPairing(options)"
+              description="Create an agent pairing request. Returns a link the user can click to approve the agent."
+              params={[
+                { name: 'publicKeyPem', type: 'string', required: true, desc: 'PEM public key (SPKI format) to register for this agent' },
+                { name: 'algorithm', type: 'string', required: false, desc: 'Signing algorithm (default: RSASSA-PKCS1-v1_5)' },
+                { name: 'agentName', type: 'string', required: false, desc: 'Agent display name' },
+              ]}
+              returns="Promise<{ pairing: Object, pairing_url: string }>"
+            />
+
+            <MethodEntry
+              id="createPairingFromPrivateJwk"
+              signature="claw.createPairingFromPrivateJwk(privateJwk, options?)"
+              description="Convenience method: derive a public PEM from a private JWK and create a pairing request in one step."
+              params={[
+                { name: 'privateJwk', type: 'Object', required: true, desc: 'Private key in JWK format' },
+                { name: 'options.agentName', type: 'string', required: false, desc: 'Agent display name' },
+              ]}
+              returns="Promise<{ pairing: Object, pairing_url: string }>"
+            />
+
+            <MethodEntry
+              id="waitForPairing"
+              signature="claw.waitForPairing(pairingId, options?)"
+              description="Poll a pairing request until it is approved or expires. Throws on timeout or expiration."
+              params={[
+                { name: 'pairingId', type: 'string', required: true, desc: 'The pairing ID to poll' },
+                { name: 'options.timeout', type: 'number', required: false, desc: 'Max wait time in ms (default: 300000 / 5 min)' },
+                { name: 'options.interval', type: 'number', required: false, desc: 'Poll interval in ms (default: 2000)' },
+              ]}
+              returns="Promise<Object>"
+            />
+          </section>
+
+          {/* ── Identity Binding ── */}
+          <section id="identity-binding" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <Shield size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Identity Binding</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Register and manage agent public keys for cryptographic action verification. Requires admin API key.</p>
+
+            <MethodEntry
+              id="registerIdentity"
+              signature="claw.registerIdentity(identity)"
+              description="Register or update an agent's public key for identity verification. Upserts on agent_id."
+              params={[
+                { name: 'agent_id', type: 'string', required: true, desc: 'Agent ID to register' },
+                { name: 'public_key', type: 'string', required: true, desc: 'PEM public key (SPKI format)' },
+                { name: 'algorithm', type: 'string', required: false, desc: 'Signing algorithm (default: RSASSA-PKCS1-v1_5)' },
+              ]}
+              returns="Promise<{ identity: Object }>"
+            />
+
+            <MethodEntry
+              id="getIdentities"
+              signature="claw.getIdentities()"
+              description="List all registered agent identities for this organization."
+              params={[]}
+              returns="Promise<{ identities: Object[] }>"
+            />
+          </section>
+
+          {/* ── Organization Management ── */}
+          <section id="org-management" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <Network size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Organization Management</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Manage organizations and API keys. All methods require an admin-role API key.</p>
+
+            <MethodEntry
+              id="getOrg"
+              signature="claw.getOrg()"
+              description="Get the current organization's details."
+              params={[]}
+              returns="Promise<{ organizations: Object[] }>"
+            />
+
+            <MethodEntry
+              id="createOrg"
+              signature="claw.createOrg(org)"
+              description="Create a new organization with an initial admin API key. The new org always starts on the free plan."
+              params={[
+                { name: 'name', type: 'string', required: true, desc: 'Organization name' },
+                { name: 'slug', type: 'string', required: true, desc: 'URL-safe slug (lowercase alphanumeric + hyphens, max 64 chars)' },
+              ]}
+              returns="Promise<{ organization: Object, api_key: Object }>"
+            />
+
+            <MethodEntry
+              id="getOrgById"
+              signature="claw.getOrgById(orgId)"
+              description="Get organization details by ID."
+              params={[
+                { name: 'orgId', type: 'string', required: true, desc: 'Organization ID' },
+              ]}
+              returns="Promise<{ organization: Object }>"
+            />
+
+            <MethodEntry
+              id="updateOrg"
+              signature="claw.updateOrg(orgId, updates)"
+              description="Update organization details (name, slug)."
+              params={[
+                { name: 'orgId', type: 'string', required: true, desc: 'Organization ID' },
+                { name: 'updates', type: 'Object', required: true, desc: 'Fields to update (name, slug)' },
+              ]}
+              returns="Promise<{ organization: Object }>"
+            />
+
+            <MethodEntry
+              id="getOrgKeys"
+              signature="claw.getOrgKeys(orgId)"
+              description="List API keys for an organization. Returns key metadata (prefix, role, label) but never the full key."
+              params={[
+                { name: 'orgId', type: 'string', required: true, desc: 'Organization ID' },
+              ]}
+              returns="Promise<{ keys: Object[] }>"
+            />
+          </section>
+
+          {/* ── Activity Logs ── */}
+          <section id="activity-logs" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <Eye size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Activity Logs</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Query the organization-wide activity audit log.</p>
+
+            <MethodEntry
+              id="getActivityLogs"
+              signature="claw.getActivityLogs(filters?)"
+              description="Get activity/audit logs for the organization. Returns paginated results with stats."
+              params={[
+                { name: 'action', type: 'string', required: false, desc: 'Filter by action type' },
+                { name: 'actor_id', type: 'string', required: false, desc: 'Filter by actor' },
+                { name: 'resource_type', type: 'string', required: false, desc: 'Filter by resource type' },
+                { name: 'before', type: 'string', required: false, desc: 'Before timestamp (ISO string)' },
+                { name: 'after', type: 'string', required: false, desc: 'After timestamp (ISO string)' },
+                { name: 'limit', type: 'number', required: false, desc: 'Max results (default: 50, max: 200)' },
+                { name: 'offset', type: 'number', required: false, desc: 'Pagination offset' },
+              ]}
+              returns="Promise<{ logs: Object[], stats: Object, pagination: Object }>"
+            />
+          </section>
+
+          {/* ── Webhooks ── */}
+          <section id="webhooks" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <ExternalLink size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Webhooks</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Manage webhook subscriptions for real-time event delivery to your endpoints.</p>
+
+            <MethodEntry
+              id="getWebhooks"
+              signature="claw.getWebhooks()"
+              description="List all webhooks for this organization."
+              params={[]}
+              returns="Promise<{ webhooks: Object[] }>"
+            />
+
+            <MethodEntry
+              id="createWebhook"
+              signature="claw.createWebhook(webhook)"
+              description="Create a new webhook subscription."
+              params={[
+                { name: 'url', type: 'string', required: true, desc: 'Webhook endpoint URL (must be HTTPS in production)' },
+                { name: 'events', type: 'string[]', required: false, desc: 'Event types to subscribe to' },
+              ]}
+              returns="Promise<{ webhook: Object }>"
+            />
+
+            <MethodEntry
+              id="deleteWebhook"
+              signature="claw.deleteWebhook(webhookId)"
+              description="Delete a webhook subscription."
+              params={[
+                { name: 'webhookId', type: 'string', required: true, desc: 'Webhook ID' },
+              ]}
+              returns="Promise<{ deleted: boolean }>"
+            />
+
+            <MethodEntry
+              id="testWebhook"
+              signature="claw.testWebhook(webhookId)"
+              description="Send a test event to a webhook endpoint to verify connectivity."
+              params={[
+                { name: 'webhookId', type: 'string', required: true, desc: 'Webhook ID' },
+              ]}
+              returns="Promise<{ delivery: Object }>"
+            />
+
+            <MethodEntry
+              id="getWebhookDeliveries"
+              signature="claw.getWebhookDeliveries(webhookId)"
+              description="Get delivery history for a webhook. Shows recent attempts, statuses, and response codes."
+              params={[
+                { name: 'webhookId', type: 'string', required: true, desc: 'Webhook ID' },
+              ]}
+              returns="Promise<{ deliveries: Object[] }>"
             />
           </section>
 

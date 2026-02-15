@@ -3,7 +3,7 @@
  * Full-featured agent toolkit for the DashClaw platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 78+ methods across 16+ categories:
+ * 95+ methods across 21+ categories:
  * - Action Recording (7)
  * - Loops & Assumptions (7)
  * - Signals (1)
@@ -16,6 +16,11 @@
  * - Security Scanning (2)
  * - Agent Messaging (9)
  * - Behavior Guard (2)
+ * - Agent Pairing (3)
+ * - Identity Binding (2)
+ * - Organization Management (5)
+ * - Activity Logs (1)
+ * - Webhooks (5)
  * - Bulk Sync (1)
  * - Policy Testing (3)
  * - Compliance Engine (5)
@@ -1748,6 +1753,165 @@ class DashClaw {
    */
   async getRoutingHealth() {
     return this._request('/api/routing/health', 'GET');
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Agent Pairing (3 methods)
+  // ══════════════════════════════════════════════════════════
+
+  // createPairing, createPairingFromPrivateJwk, waitForPairing
+  // (defined near the top of the class)
+
+  // ══════════════════════════════════════════════════════════
+  // Identity Binding (2 methods)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * Register or update an agent's public key for identity verification.
+   * Requires admin API key.
+   * @param {Object} identity
+   * @param {string} identity.agent_id - Agent ID to register
+   * @param {string} identity.public_key - PEM public key (SPKI format)
+   * @param {string} [identity.algorithm='RSASSA-PKCS1-v1_5'] - Signing algorithm
+   * @returns {Promise<{identity: Object}>}
+   */
+  async registerIdentity(identity) {
+    return this._request('/api/identities', 'POST', identity);
+  }
+
+  /**
+   * List all registered agent identities for this org.
+   * @returns {Promise<{identities: Object[]}>}
+   */
+  async getIdentities() {
+    return this._request('/api/identities', 'GET');
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Organization Management (5 methods)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * Get the current organization's details. Requires admin API key.
+   * @returns {Promise<{organizations: Object[]}>}
+   */
+  async getOrg() {
+    return this._request('/api/orgs', 'GET');
+  }
+
+  /**
+   * Create a new organization with an initial admin API key. Requires admin API key.
+   * @param {Object} org
+   * @param {string} org.name - Organization name
+   * @param {string} org.slug - URL-safe slug (lowercase alphanumeric + hyphens)
+   * @returns {Promise<{organization: Object, api_key: Object}>}
+   */
+  async createOrg(org) {
+    return this._request('/api/orgs', 'POST', org);
+  }
+
+  /**
+   * Get organization details by ID. Requires admin API key.
+   * @param {string} orgId - Organization ID
+   * @returns {Promise<{organization: Object}>}
+   */
+  async getOrgById(orgId) {
+    return this._request(`/api/orgs/${encodeURIComponent(orgId)}`, 'GET');
+  }
+
+  /**
+   * Update organization details. Requires admin API key.
+   * @param {string} orgId - Organization ID
+   * @param {Object} updates - Fields to update (name, slug)
+   * @returns {Promise<{organization: Object}>}
+   */
+  async updateOrg(orgId, updates) {
+    return this._request(`/api/orgs/${encodeURIComponent(orgId)}`, 'PATCH', updates);
+  }
+
+  /**
+   * List API keys for an organization. Requires admin API key.
+   * @param {string} orgId - Organization ID
+   * @returns {Promise<{keys: Object[]}>}
+   */
+  async getOrgKeys(orgId) {
+    return this._request(`/api/orgs/${encodeURIComponent(orgId)}/keys`, 'GET');
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Activity Logs (1 method)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * Get activity/audit logs for the organization.
+   * @param {Object} [filters]
+   * @param {string} [filters.action] - Filter by action type
+   * @param {string} [filters.actor_id] - Filter by actor
+   * @param {string} [filters.resource_type] - Filter by resource type
+   * @param {string} [filters.before] - Before timestamp (ISO string)
+   * @param {string} [filters.after] - After timestamp (ISO string)
+   * @param {number} [filters.limit=50] - Max results (max 200)
+   * @param {number} [filters.offset=0] - Pagination offset
+   * @returns {Promise<{logs: Object[], stats: Object, pagination: Object}>}
+   */
+  async getActivityLogs(filters = {}) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, String(value));
+      }
+    }
+    return this._request(`/api/activity?${params}`, 'GET');
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Webhooks (5 methods)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * List all webhooks for this org.
+   * @returns {Promise<{webhooks: Object[]}>}
+   */
+  async getWebhooks() {
+    return this._request('/api/webhooks', 'GET');
+  }
+
+  /**
+   * Create a new webhook subscription.
+   * @param {Object} webhook
+   * @param {string} webhook.url - Webhook endpoint URL
+   * @param {string[]} [webhook.events] - Event types to subscribe to
+   * @returns {Promise<{webhook: Object}>}
+   */
+  async createWebhook(webhook) {
+    return this._request('/api/webhooks', 'POST', webhook);
+  }
+
+  /**
+   * Delete a webhook.
+   * @param {string} webhookId - Webhook ID
+   * @returns {Promise<{deleted: boolean}>}
+   */
+  async deleteWebhook(webhookId) {
+    return this._request(`/api/webhooks?id=${encodeURIComponent(webhookId)}`, 'DELETE');
+  }
+
+  /**
+   * Send a test event to a webhook.
+   * @param {string} webhookId - Webhook ID
+   * @returns {Promise<{delivery: Object}>}
+   */
+  async testWebhook(webhookId) {
+    return this._request(`/api/webhooks/${encodeURIComponent(webhookId)}/test`, 'POST');
+  }
+
+  /**
+   * Get delivery history for a webhook.
+   * @param {string} webhookId - Webhook ID
+   * @returns {Promise<{deliveries: Object[]}>}
+   */
+  async getWebhookDeliveries(webhookId) {
+    return this._request(`/api/webhooks/${encodeURIComponent(webhookId)}/deliveries`, 'GET');
   }
 
   // ─── Bulk Sync ────────────────────────────────────────────

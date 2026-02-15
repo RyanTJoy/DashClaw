@@ -14,9 +14,9 @@ Baseline parity for critical SDK capabilities, derived from:
 
 ## Snapshot Summary
 
-- Node public methods: `78+`
-- Python public methods: `73+`
-- Current parity (method-level, normalized by Node surface): `93%`
+- Node public methods: `95+`
+- Python public methods: `95+`
+- Current parity (method-level, normalized by Node surface): `100%`
 
 ## WS5 M2 Critical Domain Delta (February 14, 2026)
 
@@ -97,15 +97,20 @@ Current shared contract cases covered by the harness:
 | Action Recording | 7 | 7 | Full parity |
 | Loops & Assumptions | 7 | 7 | Full parity |
 | Signals | 1 | 1 | Full parity |
-| Dashboard Data | 9 | 6 | Partial parity |
+| Dashboard Data | 12 | 12 | Full parity |
 | Session Handoffs | 3 | 3 | Full parity |
 | Context Manager | 7 | 7 | Full parity |
 | Automation Snippets | 5 | 5 | Full parity |
-| User Preferences | 6 | 0 | Missing in Python |
-| Daily Digest | 1 | 0 | Missing in Python |
-| Security Scanning | 2 | 0 | Missing in Python |
+| User Preferences | 6 | 6 | Full parity |
+| Daily Digest | 1 | 1 | Full parity |
+| Security Scanning | 2 | 2 | Full parity |
 | Agent Messaging | 9 | 9 | Full parity |
 | Behavior Guard | 2 | 2 | Full parity |
+| Agent Pairing | 3 | 3 | Full parity |
+| Identity Binding | 2 | 2 | Full parity |
+| Organization Management | 5 | 5 | Full parity |
+| Activity Logs | 1 | 1 | Full parity |
+| Webhooks | 5 | 5 | Full parity |
 | Bulk Sync | 1 | 1 | Full parity |
 | Policy Testing | 3 | 3 | Full parity |
 | Compliance Engine | 5 | 5 | Full parity |
@@ -113,33 +118,40 @@ Current shared contract cases covered by the harness:
 
 ## Confirmed Missing Python Methods
 
+None — full parity achieved as of February 15, 2026.
+
+## Full Parity Milestone (February 15, 2026)
+
+Python SDK additions shipped to reach 100% parity:
+
 - Dashboard Data:
-  - `reportTokenUsage`
-  - `createCalendarEvent`
-  - `recordIdea`
-- Automation Snippets:
-  - None (full parity as of February 15, 2026)
-- User Preferences:
-  - `logObservation`
-  - `setPreference`
-  - `logMood`
-  - `trackApproach`
-  - `getPreferenceSummary`
-  - `getApproaches`
+  - `report_token_usage`, `create_calendar_event`, `record_idea`
+- User Preferences (6 methods):
+  - `log_observation`, `set_preference`, `log_mood`, `track_approach`, `get_preference_summary`, `get_approaches`
 - Daily Digest:
-  - `getDailyDigest`
+  - `get_daily_digest`
 - Security Scanning:
-  - `scanContent`
-  - `reportSecurityFinding`
-- Behavior Guard:
-  - None
+  - `scan_content`, `report_security_finding`
+- Agent Pairing:
+  - `create_pairing`, `wait_for_pairing`, `get_pairing`
+- Identity Binding:
+  - `register_identity`, `get_identities`
+- Organization Management:
+  - `get_org`, `create_org`, `get_org_by_id`, `update_org`, `get_org_keys`
+- Activity Logs:
+  - `get_activity_logs`
+
+New Node SDK methods added in the same release:
+- Identity Binding: `registerIdentity`, `getIdentities`
+- Organization Management: `getOrg`, `createOrg`, `getOrgById`, `updateOrg`, `getOrgKeys`
+- Activity Logs: `getActivityLogs`
+- Webhooks: `getWebhooks`, `createWebhook`, `deleteWebhook`, `testWebhook`, `getWebhookDeliveries`
 
 ## Notes
 
 - Python method naming uses `snake_case`; Node uses `camelCase`.
 - Critical-domain payload/path contract parity is validated by the shared integration harness listed above.
-- Non-critical category gaps (preferences/digest/security scanning + selected dashboard-data methods) remain intentionally out-of-scope for WS5 M2-M4.
-- Automation Snippets reached full parity (5/5 methods) on February 15, 2026.
+- All 21 categories now have full parity between Node and Python SDKs.
 
 ## Version Compatibility Policy
 
