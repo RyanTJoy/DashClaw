@@ -70,8 +70,17 @@ export default function UserMenu() {
             </div>
           )}
           {isDemo && (
-            <div className="px-4 py-3 text-xs text-zinc-500">
-              Demo mode is read-only.
+            <div className="p-1.5">
+              <button
+                onClick={() => {
+                  document.cookie = 'dashclaw_demo=; path=/; max-age=0';
+                  window.location.href = '/';
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-[rgba(255,255,255,0.06)] rounded-md transition-colors"
+              >
+                <LogOut size={14} />
+                Exit Demo
+              </button>
             </div>
           )}
         </div>
