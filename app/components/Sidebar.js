@@ -8,7 +8,7 @@ import {
   Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
   GitBranch, Settings, Crosshair, Calendar, BarChart3,
-  Clock, Webhook, Bell, FolderKanban,
+  Clock, Webhook, Bell, FolderKanban, Network, Scale,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react';
 
@@ -29,6 +29,8 @@ const navGroups = [
       { href: '/policies', icon: Shield, label: 'Policies' },
       { href: '/messages', icon: MessageSquare, label: 'Messages' },
       { href: '/workspace', icon: FolderKanban, label: 'Workspace' },
+      { href: '/routing', icon: Network, label: 'Task Routing' },
+      { href: '/compliance', icon: Scale, label: 'Compliance' },
     ],
   },
   {
