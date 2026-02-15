@@ -17,7 +17,7 @@ export default function DemoBanner() {
         </div>
         <div className="flex items-center gap-3 text-xs">
           <Link href="/self-host" className="text-brand hover:text-brand-hover transition-colors">
-            Self-Host
+            Get Started
           </Link>
           <Link href="/" className="text-zinc-400 hover:text-white transition-colors">
             What is DashClaw?
