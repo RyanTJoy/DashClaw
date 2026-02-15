@@ -861,11 +861,6 @@ export async function middleware(request) {
   const mode = getDashclawMode();
   const demoCookie = isDemoCookieSet(request);
 
-  // self_host mode: redirect root "/" to dashboard (requires login)
-  if (pathname === '/' && mode === 'self_host') {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
   // /demo is always a public entrypoint: it sets a non-secret cookie and forwards into the dashboard.
   // This makes the live demo work even if the deployment forgot to set DASHCLAW_MODE=demo.
   if (pathname === '/demo') {
