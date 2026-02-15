@@ -11,11 +11,13 @@ DashClaw is a single codebase that serves two roles:
 | | **dashclaw.io** (marketing) | **Your deployment** (self-hosted) |
 |---|---|---|
 | **Landing page** | Marketing site with demo | Same landing page, "Dashboard" goes to your real dashboard |
-| **Dashboard button** | Opens demo (fixture data) | Opens real dashboard (GitHub OAuth login) |
+| **Dashboard button** | Opens demo (fixture data, no login) | Opens real dashboard (GitHub OAuth login) |
 | **Data** | Hardcoded fixtures | Your Postgres database |
-| **Key env var** | `NEXT_PUBLIC_IS_MARKETING=true` | Not set |
+| **DASHCLAW_MODE** | `demo` | `self_host` (default) |
 
-Users fork the repo, deploy to Vercel free tier, and get a fully functional dashboard at `your-app.vercel.app`. The "Dashboard" button in the navbar takes them straight to their authenticated dashboard — no need to manually type `/dashboard`.
+Both modes use the same "Dashboard" button linking to `/dashboard`. The middleware decides what happens based on `DASHCLAW_MODE`: demo mode skips auth and serves fixtures, self_host mode requires login and hits your database.
+
+Users fork the repo, deploy to Vercel free tier, and get a fully functional dashboard at `your-app.vercel.app`. The "Dashboard" button takes them straight to their authenticated dashboard.
 
 ## Product Surfaces
 
@@ -135,7 +137,7 @@ The fastest path: Vercel free tier + Neon free tier. Accessible from any device,
 5. Deploy — tables are created automatically on first request
 6. Visit `your-app.vercel.app` → click **Dashboard** → sign in with GitHub
 
-**Do not** set `NEXT_PUBLIC_IS_MARKETING=true` on your deployment — that's only for dashclaw.io.
+**Do not** set `DASHCLAW_MODE=demo` on your deployment — that's only for dashclaw.io. The default (`self_host`) is what you want.
 
 Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
 

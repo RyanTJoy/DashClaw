@@ -13,16 +13,12 @@ For architecture, API inventory, and schema-level behavior, use `PROJECT_DETAILS
 
 ## Deployment Model
 
-DashClaw ships as a single codebase that serves two roles:
+DashClaw ships as a single codebase that serves two roles depending on `DASHCLAW_MODE`:
 
-- **Marketing site** (dashclaw.io) — public landing page, demo sandbox, docs, get-started guide
-- **Self-hosted instances** — users fork the repo, deploy to Vercel (or run locally), and get their own dashboard with real data behind GitHub OAuth
+- **Marketing site** (dashclaw.io) — `DASHCLAW_MODE=demo` + `NEXT_PUBLIC_DASHCLAW_MODE=demo`. The "Dashboard" button links to `/dashboard` which works without login (middleware skips auth, API returns fixtures, SessionWrapper provides a mock session).
+- **Self-hosted instances** — `DASHCLAW_MODE=self_host` (default). The "Dashboard" button links to `/dashboard` which requires GitHub OAuth login and hits the real database.
 
-The "Dashboard" button in the navbar is environment-aware:
-- On dashclaw.io (`NEXT_PUBLIC_IS_MARKETING=true`): links to `/demo` (fixture data, no login)
-- On self-hosted clones (var unset): links to `/dashboard` (real data, requires login)
-
-This means self-hosted users see the same landing page as dashclaw.io, but the primary CTA takes them straight to their authenticated dashboard. The demo cookie (`dashclaw_demo=1`) enables fixture-data mode on any instance.
+Both modes use the same landing page and the same "Dashboard" button (`/dashboard`). The middleware decides what happens based on the mode. No cookies or special env vars needed — `DASHCLAW_MODE` controls everything.
 
 ## Product Surfaces
 
@@ -70,7 +66,6 @@ See `.env.example`.
 - `NEXTAUTH_URL` + `NEXTAUTH_SECRET` (required for UI auth)
 - `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET` (required to sign in)
 - `DASHCLAW_API_KEY` (required in production): protects `/api/*` and seeds `org_default`
-- `NEXT_PUBLIC_IS_MARKETING` (dashclaw.io only): set to `true` so "Dashboard" links to `/demo` instead of `/dashboard`
 
 Rate limiting (optional):
 
