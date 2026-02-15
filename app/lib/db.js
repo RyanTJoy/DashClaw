@@ -1,7 +1,12 @@
 import { neon } from '@neondatabase/serverless';
 import postgres from 'postgres';
 
-let _sql;
+// Use globalThis to survive Next.js dev mode hot reloads.
+// Without this, each HMR re-evaluation creates a new connection pool
+// while the old pool's connections remain open, exhausting max_connections.
+if (!globalThis.__dashclaw_sql) globalThis.__dashclaw_sql = undefined;
+const _getSql = () => globalThis.__dashclaw_sql;
+const _setSql = (v) => { globalThis.__dashclaw_sql = v; };
 
 function parseHostname(dbUrl) {
   try {
@@ -25,7 +30,7 @@ function isNeonUrl(dbUrl) {
  * The returned object is a tagged-template function with a `.query(text, params)` method.
  */
 export function getSql() {
-  if (_sql) return _sql;
+  if (_getSql()) return _getSql();
 
   const url = process.env.DATABASE_URL;
 
@@ -45,8 +50,8 @@ export function getSql() {
       console.log('[DB-MOCK] Executed query with params:', text, params);
       return [];
     };
-    _sql = mockSql;
-    return _sql;
+    _setSql(mockSql);
+    return _getSql();
   }
 
   const driverOverride = String(process.env.DASHCLAW_DB_DRIVER || '').toLowerCase();
@@ -56,8 +61,8 @@ export function getSql() {
     (driverOverride !== 'postgres' && (isNeonUrl(url) || hostname.endsWith('neon.tech')));
 
   if (shouldUseNeon) {
-    _sql = neon(url);
-    return _sql;
+    _setSql(neon(url));
+    return _getSql();
   }
 
   // Direct TCP connection for local/self-host Postgres.
@@ -66,13 +71,13 @@ export function getSql() {
     return Number.isFinite(v) && v > 0 ? v : 10;
   })();
 
-  const client = postgres(url, { max });
+  const client = postgres(url, { max, idle_timeout: 20 });
 
   // Provide a neon-like surface: tag + `.query(text, params)`.
   const sql = (...args) => client(...args);
   sql.query = async (text, params = []) => client.unsafe(text, params);
   sql.end = async (opts) => client.end(opts);
 
-  _sql = sql;
-  return _sql;
+  _setSql(sql);
+  return _getSql();
 }

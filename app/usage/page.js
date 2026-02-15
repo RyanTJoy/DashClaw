@@ -11,7 +11,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { EmptyState } from '../components/ui/EmptyState';
 
 function UsageMeter({ label, icon: Icon, usage, limit, className = '' }) {
-  const isUnlimited = limit === null || limit === Infinity || limit === -1;
+  const isUnlimited = limit == null || limit === Infinity || limit === -1;
   const displayLimit = isUnlimited ? 'Unlimited' : limit.toLocaleString();
 
   return (
