@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { RotateCcw } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
+import { clearLayouts } from '../lib/dashboardLayoutState';
 
 const DraggableDashboard = dynamic(() => import('../components/DraggableDashboard'), {
   ssr: false,
@@ -15,13 +18,30 @@ const DraggableDashboard = dynamic(() => import('../components/DraggableDashboar
 });
 
 export default function Dashboard() {
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleResetLayout = () => {
+    clearLayouts();
+    setResetKey((k) => k + 1);
+  };
+
   return (
     <PageLayout
       title="Dashboard"
       subtitle="AI Agent Operations, Adaptive Learning, and Reliability Controls"
       breadcrumbs={['Dashboard']}
+      actions={
+        <button
+          onClick={handleResetLayout}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-surface-tertiary border border-border rounded-lg transition-colors"
+          title="Reset dashboard layout to defaults"
+        >
+          <RotateCcw size={14} />
+          Reset Layout
+        </button>
+      }
     >
-      <DraggableDashboard />
+      <DraggableDashboard key={resetKey} />
     </PageLayout>
   );
 }

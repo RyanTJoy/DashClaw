@@ -1,5 +1,9 @@
 'use client';
 
+import { useMemo, useCallback } from 'react';
+import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
+import { loadLayouts, saveLayouts } from '../lib/dashboardLayoutState';
+
 import RiskSignalsCard from './RiskSignalsCard';
 import OpenLoopsCard from './OpenLoopsCard';
 import RecentActionsCard from './RecentActionsCard';
@@ -17,69 +21,126 @@ import TokenChart from './TokenChart';
 import OnboardingChecklist from './OnboardingChecklist';
 import CapabilityHighlightsCard from './CapabilityHighlightsCard';
 
-// Reverted to static layout due to persistent issues with react-grid-layout rendering 1x1 columns.
-// See docs/decisions/2026-02-13-revert-draggable-dashboard.md for details.
+const CARD_COMPONENTS = {
+  'risk-signals': RiskSignalsCard,
+  'open-loops': OpenLoopsCard,
+  'recent-actions': RecentActionsCard,
+  'projects': ProjectsCard,
+  'goals': GoalsChart,
+  'learning': LearningStatsCard,
+  'follow-ups': FollowUpsCard,
+  'calendar': CalendarWidget,
+  'context': ContextCard,
+  'token-budget': TokenBudgetCard,
+  'memory-health': MemoryHealthCard,
+  'token-chart': TokenChart,
+  'integrations': IntegrationsCard,
+  'inspiration': InspirationCard,
+};
+
+const SHARED_CONSTRAINTS = { maxW: 4, maxH: 8, minW: 1, minH: 2 };
+
+const DEFAULT_LAYOUTS = {
+  lg: [
+    { i: 'risk-signals',   x: 0, y: 0,  w: 2, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'open-loops',     x: 2, y: 0,  w: 2, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'recent-actions', x: 0, y: 2,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'projects',       x: 2, y: 2,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'goals',          x: 0, y: 5,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'learning',       x: 1, y: 5,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'follow-ups',     x: 2, y: 5,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'calendar',       x: 3, y: 5,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'context',        x: 0, y: 8,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-budget',   x: 2, y: 8,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'memory-health',  x: 3, y: 8,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-chart',    x: 0, y: 11, w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+    { i: 'integrations',   x: 2, y: 11, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'inspiration',    x: 3, y: 11, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+  ],
+  md: [
+    { i: 'risk-signals',   x: 0, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'open-loops',     x: 1, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'recent-actions', x: 0, y: 2,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'projects',       x: 1, y: 2,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'goals',          x: 0, y: 5,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'learning',       x: 1, y: 5,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'follow-ups',     x: 0, y: 8,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'calendar',       x: 1, y: 8,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'context',        x: 0, y: 11, w: 2, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-budget',   x: 0, y: 14, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'memory-health',  x: 1, y: 14, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-chart',    x: 0, y: 17, w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+    { i: 'integrations',   x: 0, y: 20, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'inspiration',    x: 1, y: 20, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+  ],
+  sm: [
+    { i: 'risk-signals',   x: 0, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'open-loops',     x: 0, y: 2,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'recent-actions', x: 0, y: 4,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'projects',       x: 0, y: 7,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'goals',          x: 0, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'learning',       x: 0, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'follow-ups',     x: 0, y: 16, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'calendar',       x: 0, y: 19, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'context',        x: 0, y: 22, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-budget',   x: 0, y: 25, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'memory-health',  x: 0, y: 28, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-chart',    x: 0, y: 31, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'integrations',   x: 0, y: 34, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'inspiration',    x: 0, y: 37, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+  ],
+};
+
+const BREAKPOINTS = { lg: 1200, md: 768, sm: 0 };
+const COLS = { lg: 4, md: 2, sm: 1 };
+const ROW_HEIGHT = 80;
+
 export default function DraggableDashboard() {
+  const { width, mounted, containerRef } = useContainerWidth({ measureBeforeMount: true });
+
+  const initialLayouts = useMemo(() => {
+    const saved = loadLayouts();
+    return saved || DEFAULT_LAYOUTS;
+  }, []);
+
+  const handleLayoutChange = useCallback((_currentLayout, allLayouts) => {
+    saveLayouts(allLayouts);
+  }, []);
+
+  const isMobile = width < 768;
+
   return (
     <div className="space-y-6">
-      {/* Onboarding: full-width */}
+      {/* Full-width sections above grid */}
       <OnboardingChecklist />
       <CapabilityHighlightsCard />
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Row 1: Status overview */}
-        <div className="md:col-span-2">
-          <RiskSignalsCard />
-        </div>
-        <div className="md:col-span-2">
-          <OpenLoopsCard />
-        </div>
-
-        {/* Row 2: Activity */}
-        <div className="md:col-span-2">
-          <RecentActionsCard />
-        </div>
-        <div className="md:col-span-2">
-          <ProjectsCard />
-        </div>
-
-        {/* Row 3: Goals & Learning */}
-        <div>
-          <GoalsChart />
-        </div>
-        <div>
-          <LearningStatsCard />
-        </div>
-        <div>
-          <FollowUpsCard />
-        </div>
-        <div>
-          <CalendarWidget />
-        </div>
-
-        {/* Row 4: Context & System */}
-        <div className="md:col-span-2">
-          <ContextCard />
-        </div>
-        <div>
-          <TokenBudgetCard />
-        </div>
-        <div>
-          <MemoryHealthCard />
-        </div>
-
-        {/* Row 5: Analytics & Extras */}
-        <div className="md:col-span-2">
-          <TokenChart />
-        </div>
-        <div>
-          <IntegrationsCard />
-        </div>
-        <div>
-          <InspirationCard />
-        </div>
+      {/* Draggable grid */}
+      <div ref={containerRef}>
+        {mounted ? (
+          <ResponsiveGridLayout
+            layouts={initialLayouts}
+            breakpoints={BREAKPOINTS}
+            cols={COLS}
+            rowHeight={ROW_HEIGHT}
+            width={width}
+            containerPadding={[0, 0]}
+            margin={[16, 16]}
+            compactType="vertical"
+            useCSSTransforms={true}
+            resizeHandles={['se']}
+            isDraggable={!isMobile}
+            isResizable={!isMobile}
+            draggableCancel="a, button, input, textarea, select"
+            onLayoutChange={handleLayoutChange}
+          >
+            {Object.entries(CARD_COMPONENTS).map(([key, Component]) => (
+              <div key={key} className="h-full">
+                <Component />
+              </div>
+            ))}
+          </ResponsiveGridLayout>
+        ) : null}
       </div>
     </div>
   );
