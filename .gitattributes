@@ -1,0 +1,4 @@
+# Enforce LF line endings for generated artifacts to prevent cross-platform drift.
+docs/api-inventory.json text eol=lf
+docs/api-inventory.md text eol=lf
+docs/openapi/critical-stable.openapi.json text eol=lf

@@ -77,7 +77,8 @@ export async function scanRouteSqlUsage(rootDir = process.cwd()) {
     });
   }
 
-  files.sort((a, b) => a.file.localeCompare(b.file));
+  // Use simple comparison (not localeCompare) for cross-platform determinism.
+  files.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : 0));
 
   return {
     scope: 'app/api/**/route.js',

@@ -23,14 +23,14 @@ doc-type: architecture
 | Path | Methods | Maturity | Rule Prefix | File |
 |---|---|---|---|---|
 | `/api/actions` | `DELETE, GET, POST` | `stable` | `/api/actions` | `app/api/actions/route.js` |
-| `/api/actions/{actionId}` | `GET, PATCH` | `stable` | `/api/actions` | `app/api/actions/[actionId]/route.js` |
-| `/api/actions/{actionId}/approve` | `POST` | `stable` | `/api/actions` | `app/api/actions/[actionId]/approve/route.js` |
-| `/api/actions/{actionId}/trace` | `GET` | `stable` | `/api/actions` | `app/api/actions/[actionId]/trace/route.js` |
 | `/api/actions/assumptions` | `GET, POST` | `stable` | `/api/actions` | `app/api/actions/assumptions/route.js` |
 | `/api/actions/assumptions/{assumptionId}` | `GET, PATCH` | `stable` | `/api/actions` | `app/api/actions/assumptions/[assumptionId]/route.js` |
 | `/api/actions/loops` | `GET, POST` | `stable` | `/api/actions` | `app/api/actions/loops/route.js` |
 | `/api/actions/loops/{loopId}` | `GET, PATCH` | `stable` | `/api/actions` | `app/api/actions/loops/[loopId]/route.js` |
 | `/api/actions/signals` | `GET` | `stable` | `/api/actions` | `app/api/actions/signals/route.js` |
+| `/api/actions/{actionId}` | `GET, PATCH` | `stable` | `/api/actions` | `app/api/actions/[actionId]/route.js` |
+| `/api/actions/{actionId}/approve` | `POST` | `stable` | `/api/actions` | `app/api/actions/[actionId]/approve/route.js` |
+| `/api/actions/{actionId}/trace` | `GET` | `stable` | `/api/actions` | `app/api/actions/[actionId]/trace/route.js` |
 | `/api/activity` | `GET` | `beta` | `/api/activity` | `app/api/activity/route.js` |
 | `/api/agents` | `GET` | `experimental` | `/api/agents` | `app/api/agents/route.js` |
 | `/api/agents/connections` | `GET, POST` | `experimental` | `/api/agents` | `app/api/agents/connections/route.js` |
@@ -63,9 +63,9 @@ doc-type: architecture
 | `/api/keys` | `DELETE, GET, POST` | `stable` | `/api/keys` | `app/api/keys/route.js` |
 | `/api/learning` | `GET, POST` | `experimental` | `/api/learning` | `app/api/learning/route.js` |
 | `/api/learning/recommendations` | `GET, POST` | `experimental` | `/api/learning` | `app/api/learning/recommendations/route.js` |
-| `/api/learning/recommendations/{recommendationId}` | `PATCH` | `experimental` | `/api/learning` | `app/api/learning/recommendations/[recommendationId]/route.js` |
 | `/api/learning/recommendations/events` | `POST` | `experimental` | `/api/learning` | `app/api/learning/recommendations/events/route.js` |
 | `/api/learning/recommendations/metrics` | `GET` | `experimental` | `/api/learning` | `app/api/learning/recommendations/metrics/route.js` |
+| `/api/learning/recommendations/{recommendationId}` | `PATCH` | `experimental` | `/api/learning` | `app/api/learning/recommendations/[recommendationId]/route.js` |
 | `/api/memory` | `GET, POST` | `stable` | `/api/memory` | `app/api/memory/route.js` |
 | `/api/messages` | `GET, PATCH, POST` | `stable` | `/api/messages` | `app/api/messages/route.js` |
 | `/api/messages/docs` | `GET, POST` | `stable` | `/api/messages` | `app/api/messages/docs/route.js` |
@@ -107,8 +107,8 @@ doc-type: architecture
 | `/api/swarm/graph` | `GET` | `experimental` | `/api/swarm` | `app/api/swarm/graph/route.js` |
 | `/api/sync` | `POST` | `experimental` | `(default)` | `app/api/sync/route.js` |
 | `/api/team` | `GET` | `stable` | `/api/team` | `app/api/team/route.js` |
-| `/api/team/{userId}` | `DELETE, PATCH` | `stable` | `/api/team` | `app/api/team/[userId]/route.js` |
 | `/api/team/invite` | `DELETE, GET, POST` | `stable` | `/api/team` | `app/api/team/invite/route.js` |
+| `/api/team/{userId}` | `DELETE, PATCH` | `stable` | `/api/team` | `app/api/team/[userId]/route.js` |
 | `/api/tokens` | `GET, POST` | `experimental` | `/api/tokens` | `app/api/tokens/route.js` |
 | `/api/usage` | `GET` | `stable` | `/api/usage` | `app/api/usage/route.js` |
 | `/api/webhooks` | `DELETE, GET, POST` | `stable` | `/api/webhooks` | `app/api/webhooks/route.js` |

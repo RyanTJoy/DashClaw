@@ -56,6 +56,33 @@ async function main() {
     console.error('API inventory drift detected:');
     for (const issue of issues) console.error(`- ${issue}`);
     console.error('Run: npm run api:inventory:generate and commit the updated artifacts.');
+
+    // Diagnostic: show first difference so cross-platform issues are debuggable.
+    if (actualJson != null && normalize(actualJson) !== normalize(expectedJson)) {
+      const a = normalize(actualJson);
+      const b = normalize(expectedJson);
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        if (a[i] !== b[i]) {
+          console.error(`JSON first diff at byte ${i}:`);
+          console.error(`  committed: ${JSON.stringify(a.slice(Math.max(0, i - 40), i + 40))}`);
+          console.error(`  expected:  ${JSON.stringify(b.slice(Math.max(0, i - 40), i + 40))}`);
+          break;
+        }
+      }
+    }
+    if (actualMd != null && normalize(actualMd) !== normalize(expectedMd)) {
+      const a = normalize(actualMd);
+      const b = normalize(expectedMd);
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        if (a[i] !== b[i]) {
+          console.error(`MD first diff at byte ${i}:`);
+          console.error(`  committed: ${JSON.stringify(a.slice(Math.max(0, i - 40), i + 40))}`);
+          console.error(`  expected:  ${JSON.stringify(b.slice(Math.max(0, i - 40), i + 40))}`);
+          break;
+        }
+      }
+    }
+
     process.exitCode = 1;
     return;
   }
