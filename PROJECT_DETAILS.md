@@ -132,6 +132,7 @@ app/
     ├── notifications/         # Notification preferences API
     ├── cron/signals/          # Cron endpoint: signal detection + alerting (schedule via external runner)
     ├── cron/memory-maintenance # Cron endpoint: memory health cleanup (schedule via external runner)
+    ├── cron/routing-maintenance # Cron endpoint: route pending tasks + check timeouts [beta]
     ├── workflows/             # Workflow definitions
     ├── handoffs/              # Session handoffs API (GET/POST)
     ├── context/               # Context manager: points, threads, entries
@@ -141,11 +142,13 @@ app/
     ├── security/scan/         # Content security scanning (POST only)
     ├── sync/                  # Bulk sync (POST - all categories in one request)
     ├── guard/                 # Guard evaluation (POST: check policies, GET: recent decisions)
-    ├── policies/              # Guard policy CRUD (GET/POST/PATCH/DELETE - POST/PATCH/DELETE admin only)
+    ├── policies/              # Guard policy CRUD (GET/POST/PATCH/DELETE - POST/PATCH/DELETE admin only) + test/proof/import [beta]
+    ├── compliance/            # Compliance engine: framework mapping, gap analysis, reports, evidence [beta]
+    ├── routing/               # Task routing: agents, tasks, stats, health [beta]
     └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (60+ methods, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (78+ methods, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -289,6 +292,7 @@ function getSql() {
 - `GET /api/webhooks/[webhookId]/deliveries` - recent delivery history (last 20)
 - `GET/POST /api/notifications` - notification preferences API
 - `GET /api/cron/signals` - cron endpoint: detect new signals, fire webhooks, send email alerts
+- `POST /api/cron/routing-maintenance` - cron endpoint: route pending tasks + check timeouts [beta]
 - `GET/POST /api/handoffs` - session handoffs (GET: `?agent_id`, `?date`, `?latest=true`; POST: required summary + agent_id)
 - `GET/POST /api/context/points` - key points (GET: `?agent_id`, `?category`, `?session_date`; POST: required content)
 - `GET/POST /api/context/threads` - threads (GET: `?agent_id`, `?status`; POST: required name, upserts on org+agent+name)
@@ -306,6 +310,30 @@ function getSql() {
 - `POST /api/guard` - evaluate guard policies before action execution (returns allow/warn/block/require_approval; ?include_signals=true for live signal check)
 - `GET /api/guard` - recent guard decisions (paginated; ?agent_id, ?decision, ?limit, ?offset)
 - `GET/POST/PATCH/DELETE /api/policies` - guard policy CRUD (GET: all members; POST/PATCH/DELETE: admin only)
+- `POST /api/policies/test` - run guardrails tests against active policies [beta]
+- `GET /api/policies/proof` - generate compliance proof report [beta]
+- `POST /api/policies/import` - import policy pack or raw YAML [beta]
+
+### Compliance
+
+- `GET /api/compliance/map` - map policies to compliance framework [beta]
+- `GET /api/compliance/gaps` - run gap analysis [beta]
+- `GET /api/compliance/report` - generate compliance report [beta]
+- `GET /api/compliance/frameworks` - list available frameworks [beta]
+- `GET /api/compliance/evidence` - get live compliance evidence [beta]
+
+### Routing
+
+- `GET /api/routing/agents` - list routing agents [beta]
+- `POST /api/routing/agents` - register routing agent [beta]
+- `GET /api/routing/agents/:id` - get routing agent [beta]
+- `PATCH /api/routing/agents/:id` - update agent status [beta]
+- `DELETE /api/routing/agents/:id` - delete routing agent [beta]
+- `GET /api/routing/tasks` - list routing tasks [beta]
+- `POST /api/routing/tasks` - submit routing task [beta]
+- `POST /api/routing/tasks/:id/complete` - complete routing task [beta]
+- `GET /api/routing/stats` - get routing stats [beta]
+- `GET /api/routing/health` - get routing health [beta]
 
 ### Per-Agent Settings
 - Settings table has `agent_id TEXT` column (nullable - NULL = org-level default)
@@ -339,7 +367,7 @@ function getSql() {
   - `GET/POST /api/actions/loops` - list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` - single loop + resolve/cancel
   - `GET /api/actions/signals` - 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/dashclaw.js` - 60+ methods across 13 categories (see `docs/client-setup-guide.md` for current method reference)
+- SDK: `sdk/dashclaw.js` - 78+ methods across 16 categories (see `docs/client-setup-guide.md` for current method reference)
 - Tests: `scripts/test-actions.mjs` - ~95 assertions across 11 phases
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
@@ -737,7 +765,7 @@ const claw = new DashClaw({
 ```
 Agents do NOT need `DATABASE_URL` - the API handles the database connection server-side.
 
-### DashClaw SDK (npm package - 60+ methods)
+### DashClaw SDK (npm package - 78+ methods)
 
 The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
 
@@ -806,6 +834,12 @@ const claw = new DashClaw({
 **Behavior Guard (2)**: `guard()`, `getGuardDecisions()` - `guardMode` constructor option enables auto guard check before `createAction()`/`track()`
 
 **Bulk Sync (1)**: `syncState()`
+
+**Policy Testing (3)**: `testPolicies()`, `getComplianceProof()`, `importPolicyPack()`
+
+**Compliance Engine (5)**: `getComplianceMap()`, `getComplianceGaps()`, `getComplianceReport()`, `getComplianceFrameworks()`, `getComplianceEvidence()`
+
+**Task Routing (10)**: `listRoutingAgents()`, `registerRoutingAgent()`, `getRoutingAgent()`, `updateRoutingAgent()`, `deleteRoutingAgent()`, `listRoutingTasks()`, `submitRoutingTask()`, `completeRoutingTask()`, `getRoutingStats()`, `getRoutingHealth()`
 
 **Error Classes**: `GuardBlockedError` - thrown when `guardMode: 'enforce'` and guard blocks an action
 

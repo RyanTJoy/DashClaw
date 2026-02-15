@@ -46,10 +46,10 @@
     ]
   },
   "summary": {
-    "total_routes": 78,
-    "stable_routes": 38,
-    "beta_routes": 13,
-    "experimental_routes": 27
+    "total_routes": 93,
+    "stable_routes": 41,
+    "beta_routes": 14,
+    "experimental_routes": 38
   },
   "routes": [
     {
@@ -188,6 +188,51 @@
       "file": "app/api/calendar/route.js"
     },
     {
+      "path": "/api/compliance/evidence",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/compliance/evidence/route.js"
+    },
+    {
+      "path": "/api/compliance/frameworks",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/compliance/frameworks/route.js"
+    },
+    {
+      "path": "/api/compliance/gaps",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/compliance/gaps/route.js"
+    },
+    {
+      "path": "/api/compliance/map",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/compliance/map/route.js"
+    },
+    {
+      "path": "/api/compliance/report",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/compliance/report/route.js"
+    },
+    {
       "path": "/api/content",
       "methods": [
         "GET",
@@ -262,6 +307,15 @@
       "maturity": "beta",
       "matched_prefix": "/api/cron",
       "file": "app/api/cron/memory-maintenance/route.js"
+    },
+    {
+      "path": "/api/cron/routing-maintenance",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/cron",
+      "file": "app/api/cron/routing-maintenance/route.js"
     },
     {
       "path": "/api/cron/signals",
@@ -568,6 +622,33 @@
       "file": "app/api/policies/route.js"
     },
     {
+      "path": "/api/policies/import",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/policies",
+      "file": "app/api/policies/import/route.js"
+    },
+    {
+      "path": "/api/policies/proof",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/policies",
+      "file": "app/api/policies/proof/route.js"
+    },
+    {
+      "path": "/api/policies/test",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/policies",
+      "file": "app/api/policies/test/route.js"
+    },
+    {
       "path": "/api/preferences",
       "methods": [
         "GET",
@@ -604,6 +685,64 @@
       "maturity": "experimental",
       "matched_prefix": "/api/relationships",
       "file": "app/api/relationships/route.js"
+    },
+    {
+      "path": "/api/routing/agents",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/agents/route.js"
+    },
+    {
+      "path": "/api/routing/agents/{agentId}",
+      "methods": [
+        "DELETE",
+        "GET",
+        "PATCH"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/agents/[agentId]/route.js"
+    },
+    {
+      "path": "/api/routing/health",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/health/route.js"
+    },
+    {
+      "path": "/api/routing/stats",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/stats/route.js"
+    },
+    {
+      "path": "/api/routing/tasks",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/tasks/route.js"
+    },
+    {
+      "path": "/api/routing/tasks/{taskId}/complete",
+      "methods": [
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/tasks/[taskId]/complete/route.js"
     },
     {
       "path": "/api/schedules",

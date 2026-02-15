@@ -8,7 +8,7 @@ Agent Observability Platform
 
 Open-source, self-hosted observability, risk signals, and behavior governance for autonomous AI agents. Guard what they do before they do it.
 
-60+ SDK methodsNode + Python SDKsSSE real-time streamBehavior guardrailsAdaptive recommendation metrics
+78+ SDK methodsNode + Python SDKsSSE real-time streamBehavior guardrailsCompliance engineTask routing
 
 [Live Demo ](/demo)[ Self-Host](/self-host)[ Docs](/docs)
 
@@ -115,6 +115,18 @@ Track unresolved dependencies, pending approvals, and blockers across agents.
 
 Log what agents assume, validate or invalidate, and catch drift early.
 
+### Policy Testing Engine
+
+Run guard policies against test vectors, generate proof reports, and import policy packs. Validate governance rules before they hit production.
+
+### Compliance Engine
+
+Map guard policies to regulatory frameworks (SOC 2, ISO 27001, NIST AI RMF, EU AI Act). Analyze coverage gaps, generate compliance reports, and export evidence bundles.
+
+### Skill-Based Task Routing
+
+Register agents with capability declarations, submit tasks with skill requirements, and let the routing engine match work to the best-fit available agent. Built-in load balancing, health checks, and retry logic.
+
 ## Complete platform scope
 
 DashClaw is more than a dashboard. It is a full platform spanning control plane UX, APIs, data contracts, realtime transport, SDKs, and CI governance.
@@ -137,9 +149,9 @@ Node and Python SDKs, CLI toolkit, parity test suites, and docs/CI governance.
 
 ### Production hardening shipped
 
-[Adaptive Learning LoopCompleted actions are scored into episodes, recommendations are synthesized per agent/action type, telemetry is captured, and effectiveness metrics are computed.Explore ](/learning)[Route SQL GuardrailsCritical data-layer paths are protected by SQL drift checks and repository contract tests in CI.Explore ](/docs)[API Contract GovernanceOpenAPI drift checks and API inventory maturity gates prevent silent contract regressions.Explore ](/docs)[Cross-SDK Contract HarnessNode and Python SDK critical paths are validated against shared contract fixtures.Explore ](/docs)[Learning Loop AutomationBackfill and recommendation rebuild cron routes keep adaptive recommendation data fresh.Explore ](/learning)
+[Adaptive Learning LoopCompleted actions are scored into episodes, recommendations are synthesized per agent/action type, telemetry is captured, and effectiveness metrics are computed.Explore ](/learning)[Route SQL GuardrailsCritical data-layer paths are protected by SQL drift checks and repository contract tests in CI.Explore ](/docs)[API Contract GovernanceOpenAPI drift checks and API inventory maturity gates prevent silent contract regressions.Explore ](/docs)[Cross-SDK Contract HarnessNode and Python SDK critical paths are validated against shared contract fixtures.Explore ](/docs)[Learning Loop AutomationBackfill and recommendation rebuild cron routes keep adaptive recommendation data fresh.Explore ](/learning)[Compliance EngineMap guard policies to SOC 2, ISO 27001, NIST AI RMF, and EU AI Act. Analyze gaps and generate evidence bundles.Explore ](/docs#compliance-engine)[Skill-Based Task RoutingRegister agents with capabilities, submit tasks with skill requirements, and route work to the best-fit available agent.Explore ](/docs#task-routing)
 
-60+ methods across 13 categories
+78+ methods across 16 categories
 
 ## One SDK. Full observability.
 
@@ -470,14 +482,14 @@ Install the toolkit and the SDK to get full dashboard observability in minutes.
 [Install Toolkit](/docs)[ Star on GitHub](https://github.com/ucsandman/DashClaw)
 
 ---
-description: Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 60+ methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.
+description: Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 78+ methods across action recording, behavior guard, compliance, task routing, context management, session handoffs, security scanning, and more.
 ---
 
 [Home](/)SDK Documentation
 
 # SDK Documentation
 
-Full reference for the DashClaw SDK. 60+ methods across 13 categories to instrument your AI agents with action recording, governance, context management, session handoffs, security scanning, and more.
+Full reference for the DashClaw SDK. 78+ methods across 16 categories to instrument your AI agents with action recording, governance, compliance, task routing, context management, session handoffs, security scanning, and more.
 
 Copy as Markdown[View raw](/api/docs/raw)
 
@@ -1656,6 +1668,232 @@ await claw.saveSharedDoc({
   name: 'runbook/auth-deploy',
   content: '# Auth Deploy Runbook\n\n1. Run migrations...',
 });
+
+## Policy Testing
+
+Run guard policies against test vectors and generate compliance proof reports.
+
+### claw.testPolicies()
+
+Run all active guard policies against their embedded test vectors.
+
+Returns: `Promise<{ run_id: string, total_policies: number, total_tests: number, passed: number, failed: number, success: boolean, details: Object[] }>`
+
+const result = await claw.testPolicies();
+console.log(`${result.passed}/${result.total_tests} tests passed`);
+
+### claw.getProofReport(options?)
+
+Generate a proof report of the latest policy test run.
+
+| Parameter | Type   | Required | Description                   |
+| --------- | ------ | -------- | ----------------------------- |
+| format    | string | No       | "json" or "markdown" (default: json) |
+
+Returns: `Promise<{ report: Object }>`
+
+const { report } = await claw.getProofReport({ format: 'markdown' });
+
+### claw.importPolicies({ pack?, yaml? })
+
+Import a policy pack or raw YAML policy definitions.
+
+| Parameter | Type   | Required | Description                                              |
+| --------- | ------ | -------- | -------------------------------------------------------- |
+| pack      | string | No       | Pack name: enterprise-strict, smb-safe, startup-growth, development |
+| yaml      | string | No       | Raw YAML policy definitions                              |
+
+Returns: `Promise<{ imported: number, skipped: number, errors: string[], policies: Object[] }>`
+
+const result = await claw.importPolicies({ pack: 'enterprise-strict' });
+console.log(`Imported ${result.imported} policies`);
+
+## Compliance Engine
+
+Map guard policies to regulatory frameworks and generate compliance evidence.
+
+### claw.mapCompliance(framework)
+
+Map active guard policies to a compliance framework's controls.
+
+| Parameter | Type   | Required | Description                                        |
+| --------- | ------ | -------- | -------------------------------------------------- |
+| framework | string | Yes      | One of: soc2, iso27001, nist-ai-rmf, eu-ai-act     |
+
+Returns: `Promise<{ framework: string, controls: Object[], coverage: Object }>`
+
+const { controls, coverage } = await claw.mapCompliance('soc2');
+console.log(`SOC 2 coverage: ${coverage.percentage}%`);
+
+### claw.analyzeGaps(framework)
+
+Analyze coverage gaps for a compliance framework.
+
+| Parameter | Type   | Required | Description    |
+| --------- | ------ | -------- | -------------- |
+| framework | string | Yes      | Framework name |
+
+Returns: `Promise<{ framework: string, gaps: Object[], recommendations: Object[] }>`
+
+const { gaps } = await claw.analyzeGaps('iso27001');
+
+### claw.getComplianceReport(framework, options?)
+
+Generate a full compliance report for a framework.
+
+| Parameter | Type   | Required | Description                          |
+| --------- | ------ | -------- | ------------------------------------ |
+| framework | string | Yes      | Framework name                       |
+| format    | string | No       | "json" or "markdown" (default: json) |
+
+Returns: `Promise<{ report: Object }>`
+
+const { report } = await claw.getComplianceReport('nist-ai-rmf', { format: 'markdown' });
+
+### claw.listFrameworks()
+
+List all supported compliance frameworks with coverage summaries.
+
+Returns: `Promise<{ frameworks: Object[] }>`
+
+const { frameworks } = await claw.listFrameworks();
+
+### claw.getComplianceEvidence(options?)
+
+Export compliance evidence for audit purposes.
+
+| Parameter | Type   | Required | Description                            |
+| --------- | ------ | -------- | -------------------------------------- |
+| window    | string | No       | Time window (default: "30d")           |
+
+Returns: `Promise<{ evidence: Object }>`
+
+const { evidence } = await claw.getComplianceEvidence({ window: '90d' });
+
+## Task Routing
+
+Register agents with capability declarations and route tasks to the best-fit available agent.
+
+### claw.listRoutingAgents(filters?)
+
+List registered routing agents with optional status filter.
+
+| Parameter | Type   | Required | Description                             |
+| --------- | ------ | -------- | --------------------------------------- |
+| status    | string | No       | Filter: available, busy, offline, drain |
+
+Returns: `Promise<{ agents: Object[], total: number }>`
+
+const { agents } = await claw.listRoutingAgents({ status: 'available' });
+
+### claw.registerRoutingAgent(agent)
+
+Register an agent with capability declarations for task routing.
+
+| Parameter      | Type       | Required | Description                     |
+| -------------- | ---------- | -------- | ------------------------------- |
+| name           | string     | Yes      | Agent display name              |
+| capabilities   | string[]   | No       | Skill tags (e.g. ["deploy"])    |
+| max_concurrent | number     | No       | Max concurrent tasks (default: 3) |
+| endpoint       | string     | No       | Agent callback URL              |
+
+Returns: `Promise<{ agent: Object, agent_id: string }>`
+
+const { agent_id } = await claw.registerRoutingAgent({
+  name: 'deploy-agent',
+  capabilities: ['deploy', 'kubernetes', 'docker'],
+  max_concurrent: 5,
+});
+
+### claw.getRoutingAgent(agentId)
+
+Get details for a single routing agent.
+
+Returns: `Promise<{ agent: Object }>`
+
+### claw.updateRoutingAgentStatus(agentId, status)
+
+Update a routing agent's availability status.
+
+| Parameter | Type   | Required | Description                             |
+| --------- | ------ | -------- | --------------------------------------- |
+| agentId   | string | Yes      | Agent ID                                |
+| status    | string | Yes      | New status: available, busy, offline, drain |
+
+Returns: `Promise<{ agent: Object }>`
+
+await claw.updateRoutingAgentStatus('ra_abc123', 'busy');
+
+### claw.deleteRoutingAgent(agentId)
+
+Remove a routing agent from the registry.
+
+Returns: `Promise<{ deleted: boolean }>`
+
+### claw.listRoutingTasks(filters?)
+
+List routing tasks with optional status and assignee filters.
+
+| Parameter   | Type   | Required | Description             |
+| ----------- | ------ | -------- | ----------------------- |
+| status      | string | No       | Filter by task status   |
+| assigned_to | string | No       | Filter by assigned agent |
+| limit       | number | No       | Max results             |
+
+Returns: `Promise<{ tasks: Object[], total: number }>`
+
+### claw.submitRoutingTask(task)
+
+Submit a task for intelligent routing to the best-fit agent.
+
+| Parameter       | Type       | Required | Description                            |
+| --------------- | ---------- | -------- | -------------------------------------- |
+| title           | string     | Yes      | Task title                             |
+| description     | string     | No       | Task description                       |
+| required_skills | string[]   | No       | Skills needed (e.g. ["deploy"])        |
+| urgency         | string     | No       | low, normal, high, critical            |
+| timeout_seconds | number     | No       | Task timeout (default: 3600)           |
+| max_retries     | number     | No       | Max retries (default: 2)              |
+| callback_url    | string     | No       | URL to notify on completion            |
+
+Returns: `Promise<{ task: Object, task_id: string, assigned_to: string }>`
+
+const { task_id, assigned_to } = await claw.submitRoutingTask({
+  title: 'Deploy auth service v2',
+  required_skills: ['deploy', 'kubernetes'],
+  urgency: 'high',
+});
+
+### claw.completeRoutingTask(taskId, result?)
+
+Mark a routing task as completed or failed.
+
+| Parameter | Type    | Required | Description           |
+| --------- | ------- | -------- | --------------------- |
+| taskId    | string  | Yes      | Task ID               |
+| success   | boolean | No       | Success flag (default: true) |
+| result    | object  | No       | Result data           |
+| error     | string  | No       | Error message if failed |
+
+Returns: `Promise<{ task: Object }>`
+
+await claw.completeRoutingTask('rt_abc123', { success: true, result: { deployed: true } });
+
+### claw.getRoutingStats()
+
+Get routing system statistics (task counts, agent utilization, performance metrics).
+
+Returns: `Promise<{ stats: Object }>`
+
+const { stats } = await claw.getRoutingStats();
+
+### claw.getRoutingHealth()
+
+Get routing system health check (agent availability, queue depth, error rates).
+
+Returns: `Promise<{ health: Object }>`
+
+const { health } = await claw.getRoutingHealth();
 
 ## Bulk Sync
 

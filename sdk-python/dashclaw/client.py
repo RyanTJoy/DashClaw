@@ -784,6 +784,137 @@ class DashClaw:
     def get_webhook_deliveries(self, webhook_id):
         return self._request(f"/api/webhooks/{webhook_id}/deliveries")
 
+    # --- Category 14: Policy Testing ---
+
+    def test_policies(self):
+        """Run guardrails tests against all active policies."""
+        return self._request("/api/policies/test", method="POST", body={
+            "agent_id": self.agent_id,
+        })
+
+    def get_proof_report(self, format="json"):
+        """Generate a compliance proof report from active policies."""
+        params = {"format": format} if format else {}
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/policies/proof?{query}")
+
+    def import_policies(self, pack=None, yaml=None):
+        """Import a policy pack or raw YAML. Requires admin role."""
+        payload = {}
+        if pack is not None:
+            payload["pack"] = pack
+        if yaml is not None:
+            payload["yaml"] = yaml
+        return self._request("/api/policies/import", method="POST", body=payload)
+
+    # --- Category 15: Compliance Engine ---
+
+    def map_compliance(self, framework):
+        """Map active policies to a compliance framework's controls."""
+        framework_enc = urllib.parse.quote(str(framework), safe="")
+        return self._request(f"/api/compliance/map?framework={framework_enc}")
+
+    def analyze_gaps(self, framework):
+        """Run gap analysis on a compliance framework mapping."""
+        framework_enc = urllib.parse.quote(str(framework), safe="")
+        return self._request(f"/api/compliance/gaps?framework={framework_enc}")
+
+    def get_compliance_report(self, framework, format="json"):
+        """Generate a full compliance report and save a snapshot."""
+        params = {"framework": framework}
+        if format:
+            params["format"] = format
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/compliance/report?{query}")
+
+    def list_frameworks(self):
+        """List available compliance frameworks."""
+        return self._request("/api/compliance/frameworks")
+
+    def get_compliance_evidence(self, window="30d"):
+        """Get live compliance evidence from guard decisions and actions."""
+        params = {"window": window} if window else {}
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/compliance/evidence?{query}")
+
+    # --- Category 16: Task Routing ---
+
+    def list_routing_agents(self, status=None):
+        """List routing agents registered in this org."""
+        params = {}
+        if status is not None:
+            params["status"] = status
+        query = urllib.parse.urlencode(params)
+        path = f"/api/routing/agents?{query}" if query else "/api/routing/agents"
+        return self._request(path)
+
+    def register_routing_agent(self, name, capabilities=None, max_concurrent=3, endpoint=None):
+        """Register an agent for task routing."""
+        payload = {"name": name, "maxConcurrent": max_concurrent}
+        if capabilities is not None:
+            payload["capabilities"] = capabilities
+        if endpoint is not None:
+            payload["endpoint"] = endpoint
+        return self._request("/api/routing/agents", method="POST", body=payload)
+
+    def get_routing_agent(self, agent_id):
+        """Get a single routing agent by ID."""
+        agent_id = urllib.parse.quote(str(agent_id), safe="")
+        return self._request(f"/api/routing/agents/{agent_id}")
+
+    def update_routing_agent_status(self, agent_id, status):
+        """Update routing agent status (available, busy, offline)."""
+        agent_id = urllib.parse.quote(str(agent_id), safe="")
+        return self._request(f"/api/routing/agents/{agent_id}", method="PATCH", body={"status": status})
+
+    def delete_routing_agent(self, agent_id):
+        """Unregister (delete) a routing agent."""
+        agent_id = urllib.parse.quote(str(agent_id), safe="")
+        return self._request(f"/api/routing/agents/{agent_id}", method="DELETE")
+
+    def list_routing_tasks(self, status=None, assigned_to=None, limit=None):
+        """List routing tasks with optional filters."""
+        params = {}
+        if status is not None:
+            params["status"] = status
+        if assigned_to is not None:
+            params["assigned_to"] = assigned_to
+        if limit is not None:
+            params["limit"] = limit
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+        path = f"/api/routing/tasks?{query}" if query else "/api/routing/tasks"
+        return self._request(path)
+
+    def submit_routing_task(self, title, description=None, required_skills=None, urgency="normal",
+                           timeout_seconds=3600, max_retries=2, callback_url=None):
+        """Submit a task for auto-routing to the best available agent."""
+        payload = {"title": title, "urgency": urgency, "timeoutSeconds": timeout_seconds, "maxRetries": max_retries}
+        if description is not None:
+            payload["description"] = description
+        if required_skills is not None:
+            payload["requiredSkills"] = required_skills
+        if callback_url is not None:
+            payload["callbackUrl"] = callback_url
+        return self._request("/api/routing/tasks", method="POST", body=payload)
+
+    def complete_routing_task(self, task_id, success=True, result=None, error=None):
+        """Complete a routing task."""
+        task_id = urllib.parse.quote(str(task_id), safe="")
+        payload = {"success": success}
+        if result is not None:
+            payload["result"] = result
+        if error is not None:
+            payload["error"] = error
+        return self._request(f"/api/routing/tasks/{task_id}/complete", method="POST", body=payload)
+
+    def get_routing_stats(self):
+        """Get routing statistics for the org."""
+        return self._request("/api/routing/stats")
+
+    def get_routing_health(self):
+        """Get routing system health status."""
+        return self._request("/api/routing/health")
+
     # --- Bulk Sync ---
 
     def sync_state(self, state):

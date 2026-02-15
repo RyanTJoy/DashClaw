@@ -1588,6 +1588,151 @@ async function run() {
     log('⚠️', `guard_decisions migration: ${err.message}`);
   }
 
+  // --- Integration Phase: Guardrails, Compliance, Routing tables ---
+
+  // Step 34: Guardrails test runs
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS guardrails_test_runs (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        total_policies INTEGER NOT NULL DEFAULT 0,
+        total_tests INTEGER NOT NULL DEFAULT 0,
+        passed INTEGER NOT NULL DEFAULT 0,
+        failed INTEGER NOT NULL DEFAULT 0,
+        success INTEGER NOT NULL DEFAULT 0,
+        details TEXT,
+        triggered_by TEXT,
+        created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guardrails_test_runs_org ON guardrails_test_runs(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_guardrails_test_runs_created ON guardrails_test_runs(created_at)`;
+    log('✅', 'guardrails_test_runs table + indexes ready');
+  } catch (err) {
+    log('⚠️', `guardrails_test_runs migration: ${err.message}`);
+  }
+
+  // Step 35: Compliance snapshots
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS compliance_snapshots (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        framework TEXT NOT NULL,
+        total_controls INTEGER NOT NULL DEFAULT 0,
+        covered INTEGER NOT NULL DEFAULT 0,
+        partial INTEGER NOT NULL DEFAULT 0,
+        gaps INTEGER NOT NULL DEFAULT 0,
+        coverage_percentage INTEGER NOT NULL DEFAULT 0,
+        risk_level TEXT,
+        full_report TEXT,
+        created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_compliance_snapshots_org ON compliance_snapshots(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_compliance_snapshots_framework ON compliance_snapshots(org_id, framework)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_compliance_snapshots_created ON compliance_snapshots(created_at)`;
+    log('✅', 'compliance_snapshots table + indexes ready');
+  } catch (err) {
+    log('⚠️', `compliance_snapshots migration: ${err.message}`);
+  }
+
+  // Step 36: Routing agents
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS routing_agents (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        name TEXT NOT NULL,
+        capabilities TEXT,
+        max_concurrent INTEGER NOT NULL DEFAULT 3,
+        current_load INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'available',
+        endpoint TEXT,
+        created_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
+        updated_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_agents_org ON routing_agents(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_agents_status ON routing_agents(org_id, status)`;
+    log('✅', 'routing_agents table + indexes ready');
+  } catch (err) {
+    log('⚠️', `routing_agents migration: ${err.message}`);
+  }
+
+  // Step 37: Routing tasks
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS routing_tasks (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        title TEXT NOT NULL,
+        description TEXT,
+        required_skills TEXT,
+        urgency TEXT NOT NULL DEFAULT 'normal',
+        assigned_to TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        result TEXT,
+        timeout_seconds INTEGER NOT NULL DEFAULT 3600,
+        max_retries INTEGER NOT NULL DEFAULT 2,
+        retry_count INTEGER NOT NULL DEFAULT 0,
+        callback_url TEXT,
+        created_at TEXT NOT NULL DEFAULT (NOW()::TEXT),
+        updated_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_tasks_org ON routing_tasks(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_tasks_status ON routing_tasks(org_id, status)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_tasks_assigned ON routing_tasks(org_id, assigned_to)`;
+    log('✅', 'routing_tasks table + indexes ready');
+  } catch (err) {
+    log('⚠️', `routing_tasks migration: ${err.message}`);
+  }
+
+  // Step 38: Routing agent metrics
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS routing_agent_metrics (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        agent_id TEXT NOT NULL,
+        skill TEXT NOT NULL,
+        tasks_completed INTEGER NOT NULL DEFAULT 0,
+        tasks_failed INTEGER NOT NULL DEFAULT 0,
+        avg_duration_ms INTEGER,
+        last_completed_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_metrics_agent ON routing_agent_metrics(org_id, agent_id)`;
+    await sql`CREATE UNIQUE INDEX IF NOT EXISTS idx_routing_metrics_agent_skill ON routing_agent_metrics(org_id, agent_id, skill)`;
+    log('✅', 'routing_agent_metrics table + indexes ready');
+  } catch (err) {
+    log('⚠️', `routing_agent_metrics migration: ${err.message}`);
+  }
+
+  // Step 39: Routing decisions (audit trail)
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS routing_decisions (
+        id TEXT PRIMARY KEY,
+        org_id TEXT NOT NULL DEFAULT 'org_default',
+        task_id TEXT NOT NULL,
+        candidates TEXT,
+        selected_agent_id TEXT,
+        selected_score REAL,
+        reason TEXT,
+        created_at TEXT NOT NULL DEFAULT (NOW()::TEXT)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_decisions_org ON routing_decisions(org_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_routing_decisions_task ON routing_decisions(task_id)`;
+    log('✅', 'routing_decisions table + indexes ready');
+  } catch (err) {
+    log('⚠️', `routing_decisions migration: ${err.message}`);
+  }
+
   // Verification
   console.log('\n=== Verification ===\n');
 

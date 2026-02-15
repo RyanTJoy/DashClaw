@@ -3,7 +3,7 @@
  * Full-featured agent toolkit for the DashClaw platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 60+ methods across 13+ categories:
+ * 78+ methods across 16+ categories:
  * - Action Recording (7)
  * - Loops & Assumptions (7)
  * - Signals (1)
@@ -17,6 +17,9 @@
  * - Agent Messaging (9)
  * - Behavior Guard (2)
  * - Bulk Sync (1)
+ * - Policy Testing (3)
+ * - Compliance Engine (5)
+ * - Task Routing (10)
  */
 
 class DashClaw {
@@ -1531,6 +1534,217 @@ class DashClaw {
     if (filters.limit) params.set('limit', String(filters.limit));
     if (filters.offset) params.set('offset', String(filters.offset));
     return this._request(`/api/guard?${params}`, 'GET');
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Category 14: Policy Testing (3 methods)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * Run guardrails tests against all active policies for this org.
+   * @returns {Promise<{success: boolean, total_policies: number, total_tests: number, passed: number, failed: number, details: Object[]}>}
+   */
+  async testPolicies() {
+    return this._request('/api/policies/test', 'POST', {
+      agent_id: this.agentId,
+    });
+  }
+
+  /**
+   * Generate a compliance proof report from active policies.
+   * @param {Object} [options]
+   * @param {string} [options.format='json'] - 'json' or 'md'
+   * @returns {Promise<Object|string>}
+   */
+  async getProofReport(options = {}) {
+    const params = new URLSearchParams();
+    if (options.format) params.set('format', options.format);
+    return this._request(`/api/policies/proof?${params}`, 'GET');
+  }
+
+  /**
+   * Import a policy pack or raw YAML into the org's guard policies.
+   * Requires admin role.
+   * @param {Object} options
+   * @param {string} [options.pack] - Pack name: enterprise-strict, smb-safe, startup-growth, development
+   * @param {string} [options.yaml] - Raw YAML string of policies to import
+   * @returns {Promise<{imported: number, skipped: number, errors: string[], policies: Object[]}>}
+   */
+  async importPolicies({ pack, yaml } = {}) {
+    return this._request('/api/policies/import', 'POST', { pack, yaml });
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Category 15: Compliance Engine (5 methods)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * Map active policies to a compliance framework's controls.
+   * @param {string} framework - Framework ID: soc2, iso27001, gdpr, nist-ai-rmf, imda-agentic
+   * @returns {Promise<Object>} Compliance map with controls, coverage, and gaps
+   */
+  async mapCompliance(framework) {
+    return this._request(`/api/compliance/map?framework=${encodeURIComponent(framework)}`, 'GET');
+  }
+
+  /**
+   * Run gap analysis on a compliance framework mapping.
+   * @param {string} framework - Framework ID
+   * @returns {Promise<Object>} Gap analysis with remediation plan and risk assessment
+   */
+  async analyzeGaps(framework) {
+    return this._request(`/api/compliance/gaps?framework=${encodeURIComponent(framework)}`, 'GET');
+  }
+
+  /**
+   * Generate a full compliance report (markdown or JSON) and save a snapshot.
+   * @param {string} framework - Framework ID
+   * @param {Object} [options]
+   * @param {string} [options.format='json'] - 'json' or 'md'
+   * @returns {Promise<Object>}
+   */
+  async getComplianceReport(framework, options = {}) {
+    const params = new URLSearchParams({ framework });
+    if (options.format) params.set('format', options.format);
+    return this._request(`/api/compliance/report?${params}`, 'GET');
+  }
+
+  /**
+   * List available compliance frameworks.
+   * @returns {Promise<{frameworks: Object[]}>}
+   */
+  async listFrameworks() {
+    return this._request('/api/compliance/frameworks', 'GET');
+  }
+
+  /**
+   * Get live compliance evidence from guard decisions and action records.
+   * @param {Object} [options]
+   * @param {string} [options.window='30d'] - Time window (e.g., '7d', '30d', '90d')
+   * @returns {Promise<{evidence: Object}>}
+   */
+  async getComplianceEvidence(options = {}) {
+    const params = new URLSearchParams();
+    if (options.window) params.set('window', options.window);
+    return this._request(`/api/compliance/evidence?${params}`, 'GET');
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // Category 16: Task Routing (10 methods)
+  // ══════════════════════════════════════════════════════════
+
+  /**
+   * List routing agents registered in this org.
+   * @param {Object} [filters]
+   * @param {string} [filters.status] - Filter by status: available, busy, offline
+   * @returns {Promise<{agents: Object[]}>}
+   */
+  async listRoutingAgents(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    return this._request(`/api/routing/agents?${params}`, 'GET');
+  }
+
+  /**
+   * Register an agent for task routing.
+   * @param {Object} agent
+   * @param {string} agent.name - Agent name
+   * @param {Array} [agent.capabilities] - Skills/capabilities (strings or {skill, priority} objects)
+   * @param {number} [agent.maxConcurrent=3] - Max concurrent tasks
+   * @param {string} [agent.endpoint] - Webhook endpoint for task dispatch
+   * @returns {Promise<{agent: Object}>}
+   */
+  async registerRoutingAgent(agent) {
+    return this._request('/api/routing/agents', 'POST', agent);
+  }
+
+  /**
+   * Get a single routing agent by ID.
+   * @param {string} agentId - Routing agent ID
+   * @returns {Promise<{agent: Object, metrics: Object[]}>}
+   */
+  async getRoutingAgent(agentId) {
+    return this._request(`/api/routing/agents/${encodeURIComponent(agentId)}`, 'GET');
+  }
+
+  /**
+   * Update routing agent status.
+   * @param {string} agentId - Routing agent ID
+   * @param {string} status - New status: available, busy, offline
+   * @returns {Promise<{agent: Object}>}
+   */
+  async updateRoutingAgentStatus(agentId, status) {
+    return this._request(`/api/routing/agents/${encodeURIComponent(agentId)}`, 'PATCH', { status });
+  }
+
+  /**
+   * Unregister (delete) a routing agent.
+   * @param {string} agentId - Routing agent ID
+   * @returns {Promise<{deleted: Object}>}
+   */
+  async deleteRoutingAgent(agentId) {
+    return this._request(`/api/routing/agents/${encodeURIComponent(agentId)}`, 'DELETE');
+  }
+
+  /**
+   * List routing tasks with optional filters.
+   * @param {Object} [filters]
+   * @param {string} [filters.status] - Filter by status
+   * @param {string} [filters.assignedTo] - Filter by assigned agent
+   * @param {number} [filters.limit=50] - Max results
+   * @returns {Promise<{tasks: Object[]}>}
+   */
+  async listRoutingTasks(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    if (filters.assignedTo) params.set('assigned_to', filters.assignedTo);
+    if (filters.limit) params.set('limit', String(filters.limit));
+    return this._request(`/api/routing/tasks?${params}`, 'GET');
+  }
+
+  /**
+   * Submit a task for auto-routing to the best available agent.
+   * @param {Object} task
+   * @param {string} task.title - Task title
+   * @param {string} [task.description] - Task description
+   * @param {string[]} [task.requiredSkills] - Skills needed to complete this task
+   * @param {string} [task.urgency='normal'] - Urgency: low, normal, high, critical
+   * @param {number} [task.timeoutSeconds=3600] - Timeout in seconds
+   * @param {number} [task.maxRetries=2] - Max retry attempts
+   * @param {string} [task.callbackUrl] - Webhook URL for task completion callback
+   * @returns {Promise<{task: Object, routing: Object}>}
+   */
+  async submitRoutingTask(task) {
+    return this._request('/api/routing/tasks', 'POST', task);
+  }
+
+  /**
+   * Complete a routing task.
+   * @param {string} taskId - Task ID
+   * @param {Object} [result]
+   * @param {boolean} [result.success=true] - Whether task succeeded
+   * @param {Object} [result.result] - Task result data
+   * @param {string} [result.error] - Error message if failed
+   * @returns {Promise<{task: Object, routing: Object}>}
+   */
+  async completeRoutingTask(taskId, result = {}) {
+    return this._request(`/api/routing/tasks/${encodeURIComponent(taskId)}/complete`, 'POST', result);
+  }
+
+  /**
+   * Get routing statistics for the org.
+   * @returns {Promise<{agents: Object, tasks: Object, routing: Object}>}
+   */
+  async getRoutingStats() {
+    return this._request('/api/routing/stats', 'GET');
+  }
+
+  /**
+   * Get routing system health status.
+   * @returns {Promise<{status: string, agents: Object, tasks: Object}>}
+   */
+  async getRoutingHealth() {
+    return this._request('/api/routing/health', 'GET');
   }
 
   // ─── Bulk Sync ────────────────────────────────────────────

@@ -2,14 +2,14 @@ import Link from 'next/link';
 import {
   Flame, ArrowRight, Github, ExternalLink, BookOpen,
   Terminal, Zap, CircleDot, Eye, ShieldAlert, Shield, BarChart3,
-  ChevronRight,
+  ChevronRight, Network, FileCheck, Scale,
 } from 'lucide-react';
 import CopyDocsButton from '../components/CopyDocsButton';
 import PublicNavbar from '../components/PublicNavbar';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
-  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 60+ methods across action recording, behavior guard, context management, session handoffs, security scanning, and more.',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 78+ methods across 16 categories covering action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, and more.',
 };
 
 /* ─── helpers ─── */
@@ -170,6 +170,27 @@ const navItems = [
   { href: '#saveSharedDoc', label: 'saveSharedDoc', indent: true },
   { href: '#bulk-sync', label: 'Bulk Sync' },
   { href: '#syncState', label: 'syncState', indent: true },
+  { href: '#policy-testing', label: 'Policy Testing' },
+  { href: '#testPolicies', label: 'testPolicies', indent: true },
+  { href: '#getProofReport', label: 'getProofReport', indent: true },
+  { href: '#importPolicies', label: 'importPolicies', indent: true },
+  { href: '#compliance-engine', label: 'Compliance Engine' },
+  { href: '#mapCompliance', label: 'mapCompliance', indent: true },
+  { href: '#analyzeGaps', label: 'analyzeGaps', indent: true },
+  { href: '#getComplianceReport', label: 'getComplianceReport', indent: true },
+  { href: '#listFrameworks', label: 'listFrameworks', indent: true },
+  { href: '#getComplianceEvidence', label: 'getComplianceEvidence', indent: true },
+  { href: '#task-routing', label: 'Task Routing' },
+  { href: '#listRoutingAgents', label: 'listRoutingAgents', indent: true },
+  { href: '#registerRoutingAgent', label: 'registerRoutingAgent', indent: true },
+  { href: '#getRoutingAgent', label: 'getRoutingAgent', indent: true },
+  { href: '#updateRoutingAgentStatus', label: 'updateRoutingAgentStatus', indent: true },
+  { href: '#deleteRoutingAgent', label: 'deleteRoutingAgent', indent: true },
+  { href: '#listRoutingTasks', label: 'listRoutingTasks', indent: true },
+  { href: '#submitRoutingTask', label: 'submitRoutingTask', indent: true },
+  { href: '#completeRoutingTask', label: 'completeRoutingTask', indent: true },
+  { href: '#getRoutingStats', label: 'getRoutingStats', indent: true },
+  { href: '#getRoutingHealth', label: 'getRoutingHealth', indent: true },
   { href: '#error-handling', label: 'Error Handling' },
   { href: '#agent-tools', label: 'Agent Tools (Python)' },
 ];
@@ -197,8 +218,8 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK. 60+ methods across 13 categories to instrument your AI agents with
-            action recording, governance, context management, session handoffs, security scanning, and more.
+            Full reference for the DashClaw SDK. 78+ methods across 16 categories to instrument your AI agents with
+            action recording, governance, context management, session handoffs, security scanning, policy testing, compliance, task routing, and more.
           </p>
           <CopyDocsButton />
         </div>
@@ -1148,6 +1169,311 @@ console.log(\`\${unread_count} unread messages\`);`} />
   ],
 });
 console.log(\`Synced \${result.total_synced} items in \${result.duration_ms}ms\`);`} />
+          </section>
+
+          {/* ── Policy Testing ── */}
+          <section id="policy-testing" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <FileCheck size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Policy Testing</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Run guardrails tests, generate compliance proof reports, and import policy packs.</p>
+
+            <MethodEntry
+              id="testPolicies"
+              signature="claw.testPolicies()"
+              description="Run guardrails tests against all active policies for the organization. Returns a summary of which policies passed and which failed."
+              params={[]}
+              returns="Promise<{ success: boolean, totals: number, passed: number, failed: number }>"
+              example={`const result = await claw.testPolicies();
+console.log(\`\${result.passed}/\${result.totals} policies passed\`);
+if (!result.success) {
+  console.warn(\`\${result.failed} policies failed validation\`);
+}`}
+            />
+
+            <MethodEntry
+              id="getProofReport"
+              signature="claw.getProofReport(options?)"
+              description="Generate a compliance proof report summarizing policy test results, guard decisions, and overall posture. Useful for audits and stakeholder reporting."
+              params={[
+                { name: 'options.format', type: 'string', required: false, desc: 'Report format: "json" or "md" (default: "json")' },
+              ]}
+              returns="Promise<{ report: Object }>"
+              example={`// JSON format (default)
+const { report } = await claw.getProofReport();
+
+// Markdown format for sharing
+const { report: mdReport } = await claw.getProofReport({ format: 'md' });`}
+            />
+
+            <MethodEntry
+              id="importPolicies"
+              signature="claw.importPolicies({ pack?, yaml? })"
+              description="Import a named policy pack or raw YAML policy definitions. Admin only. Existing policies with the same name are skipped."
+              params={[
+                { name: 'pack', type: 'string', required: false, desc: 'Named policy pack to import (e.g., "enterprise-strict")' },
+                { name: 'yaml', type: 'string', required: false, desc: 'Raw YAML policy definitions to import' },
+              ]}
+              returns="Promise<{ imported: number, skipped: number, errors: string[] }>"
+              example={`// Import a named pack
+const result = await claw.importPolicies({ pack: 'enterprise-strict' });
+console.log(\`Imported \${result.imported}, skipped \${result.skipped}\`);
+
+// Import raw YAML
+const yaml = \`
+- name: block-high-risk
+  type: risk_threshold
+  threshold: 80
+  action: block
+\`;
+await claw.importPolicies({ yaml });`}
+            />
+          </section>
+
+          {/* ── Compliance Engine ── */}
+          <section id="compliance-engine" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(59,130,246,0.1)] flex items-center justify-center">
+                <Scale size={16} className="text-blue-400" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Compliance Engine</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Map policies to compliance frameworks, run gap analysis, generate reports, and collect evidence.</p>
+
+            <MethodEntry
+              id="mapCompliance"
+              signature="claw.mapCompliance(framework)"
+              description="Map your active policies to controls in a compliance framework. Shows which controls are covered and which are not."
+              params={[
+                { name: 'framework', type: 'string', required: true, desc: 'Framework identifier (e.g., "nist-ai-rmf", "eu-ai-act", "iso-42001")' },
+              ]}
+              returns="Promise<{ compliance_map: Object }>"
+              example={`const { compliance_map } = await claw.mapCompliance('nist-ai-rmf');
+console.log('Covered controls:', compliance_map.covered);
+console.log('Uncovered controls:', compliance_map.uncovered);`}
+            />
+
+            <MethodEntry
+              id="analyzeGaps"
+              signature="claw.analyzeGaps(framework)"
+              description="Run a gap analysis against a compliance framework. Returns identified gaps with severity ratings and a remediation plan."
+              params={[
+                { name: 'framework', type: 'string', required: true, desc: 'Framework identifier' },
+              ]}
+              returns="Promise<{ gap_analysis: Object }>"
+              example={`const { gap_analysis } = await claw.analyzeGaps('eu-ai-act');
+console.log('Gaps found:', gap_analysis.gaps.length);
+for (const gap of gap_analysis.gaps) {
+  console.log(\`[\${gap.severity}] \${gap.control}: \${gap.remediation}\`);
+}`}
+            />
+
+            <MethodEntry
+              id="getComplianceReport"
+              signature="claw.getComplianceReport(framework, options?)"
+              description="Generate a full compliance report and snapshot for a framework. Combines policy mapping, gap analysis, and evidence into a single document."
+              params={[
+                { name: 'framework', type: 'string', required: true, desc: 'Framework identifier' },
+                { name: 'options.format', type: 'string', required: false, desc: 'Report format: "json" or "md" (default: "json")' },
+              ]}
+              returns="Promise<{ report: Object }>"
+              example={`const { report } = await claw.getComplianceReport('iso-42001');
+console.log('Overall score:', report.score);
+console.log('Status:', report.status);`}
+            />
+
+            <MethodEntry
+              id="listFrameworks"
+              signature="claw.listFrameworks()"
+              description="List all available compliance frameworks that can be used for mapping, gap analysis, and reporting."
+              params={[]}
+              returns="Promise<{ frameworks: Object[] }>"
+              example={`const { frameworks } = await claw.listFrameworks();
+for (const fw of frameworks) {
+  console.log(\`\${fw.id}: \${fw.name} (\${fw.controls_count} controls)\`);
+}`}
+            />
+
+            <MethodEntry
+              id="getComplianceEvidence"
+              signature="claw.getComplianceEvidence(options?)"
+              description="Get live compliance evidence collected from guard decisions, policy tests, and agent activity within a time window."
+              params={[
+                { name: 'options.window', type: 'string', required: false, desc: 'Time window for evidence collection (default: "30d")' },
+              ]}
+              returns="Promise<{ evidence: Object }>"
+              example={`const { evidence } = await claw.getComplianceEvidence({ window: '7d' });
+console.log('Evidence items:', evidence.items.length);
+console.log('Coverage:', evidence.coverage_pct + '%');`}
+            />
+          </section>
+
+          {/* ── Task Routing ── */}
+          <section id="task-routing" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(34,197,94,0.1)] flex items-center justify-center">
+                <Network size={16} className="text-green-400" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Task Routing</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Register agents with capabilities, submit tasks for intelligent routing, and monitor routing health and statistics.</p>
+
+            <MethodEntry
+              id="listRoutingAgents"
+              signature="claw.listRoutingAgents(filters?)"
+              description="List registered routing agents with optional status filter."
+              params={[
+                { name: 'filters.status', type: 'string', required: false, desc: 'Filter by status: available, busy, offline' },
+              ]}
+              returns="Promise<{ agents: Object[] }>"
+              example={`const { agents } = await claw.listRoutingAgents({ status: 'available' });
+console.log(\`\${agents.length} agents available for tasks\`);`}
+            />
+
+            <MethodEntry
+              id="registerRoutingAgent"
+              signature="claw.registerRoutingAgent(agent)"
+              description="Register an agent for task routing with its capabilities and concurrency limits."
+              params={[
+                { name: 'name', type: 'string', required: true, desc: 'Agent name' },
+                { name: 'capabilities', type: 'string[]', required: false, desc: 'List of skills/capabilities (e.g., ["code-review", "deploy"])' },
+                { name: 'maxConcurrent', type: 'number', required: false, desc: 'Maximum concurrent tasks (default: 1)' },
+                { name: 'endpoint', type: 'string', required: false, desc: 'Webhook endpoint for task notifications' },
+              ]}
+              returns="Promise<{ agent: Object }>"
+              example={`const { agent } = await claw.registerRoutingAgent({
+  name: 'deploy-agent',
+  capabilities: ['deploy', 'rollback', 'health-check'],
+  maxConcurrent: 3,
+  endpoint: 'https://my-agent.example.com/tasks',
+});`}
+            />
+
+            <MethodEntry
+              id="getRoutingAgent"
+              signature="claw.getRoutingAgent(agentId)"
+              description="Get a single routing agent by ID, including current metrics and task counts."
+              params={[
+                { name: 'agentId', type: 'string', required: true, desc: 'Agent ID' },
+              ]}
+              returns="Promise<{ agent: Object }>"
+              example={`const { agent } = await claw.getRoutingAgent('ra_abc123');
+console.log(agent.name, agent.status, agent.active_tasks);`}
+            />
+
+            <MethodEntry
+              id="updateRoutingAgentStatus"
+              signature="claw.updateRoutingAgentStatus(agentId, status)"
+              description="Update a routing agent's availability status."
+              params={[
+                { name: 'agentId', type: 'string', required: true, desc: 'Agent ID' },
+                { name: 'status', type: 'string', required: true, desc: 'New status: available, busy, or offline' },
+              ]}
+              returns="Promise<{ agent: Object }>"
+              example={`await claw.updateRoutingAgentStatus('ra_abc123', 'busy');`}
+            />
+
+            <MethodEntry
+              id="deleteRoutingAgent"
+              signature="claw.deleteRoutingAgent(agentId)"
+              description="Delete a routing agent registration."
+              params={[
+                { name: 'agentId', type: 'string', required: true, desc: 'Agent ID' },
+              ]}
+              returns="Promise<{ deleted: Object }>"
+              example={`await claw.deleteRoutingAgent('ra_abc123');`}
+            />
+
+            <MethodEntry
+              id="listRoutingTasks"
+              signature="claw.listRoutingTasks(filters?)"
+              description="List routing tasks with optional filters for status, assignee, and pagination."
+              params={[
+                { name: 'filters.status', type: 'string', required: false, desc: 'Filter by status: pending, assigned, completed, failed, timed_out' },
+                { name: 'filters.assignedTo', type: 'string', required: false, desc: 'Filter by assigned agent ID' },
+                { name: 'filters.limit', type: 'number', required: false, desc: 'Max results (default: 50)' },
+              ]}
+              returns="Promise<{ tasks: Object[] }>"
+              example={`const { tasks } = await claw.listRoutingTasks({
+  status: 'pending',
+  limit: 10,
+});`}
+            />
+
+            <MethodEntry
+              id="submitRoutingTask"
+              signature="claw.submitRoutingTask(task)"
+              description="Submit a task for intelligent routing. The system matches required skills to available agents and assigns automatically."
+              params={[
+                { name: 'title', type: 'string', required: true, desc: 'Task title' },
+                { name: 'description', type: 'string', required: false, desc: 'Task description' },
+                { name: 'requiredSkills', type: 'string[]', required: false, desc: 'Skills needed to complete this task' },
+                { name: 'urgency', type: 'string', required: false, desc: 'Urgency level: low, normal, high, critical (default: normal)' },
+                { name: 'timeoutSeconds', type: 'number', required: false, desc: 'Task timeout in seconds' },
+                { name: 'maxRetries', type: 'number', required: false, desc: 'Maximum retry attempts on failure' },
+                { name: 'callbackUrl', type: 'string', required: false, desc: 'Webhook URL for task completion notification' },
+              ]}
+              returns="Promise<{ task: Object, routing: Object }>"
+              example={`const { task, routing } = await claw.submitRoutingTask({
+  title: 'Deploy auth service v2',
+  description: 'Deploy the latest auth service build to production',
+  requiredSkills: ['deploy', 'kubernetes'],
+  urgency: 'high',
+  timeoutSeconds: 600,
+  callbackUrl: 'https://my-app.example.com/hooks/task-done',
+});
+console.log(\`Task \${task.id} assigned to \${routing.assigned_to}\`);`}
+            />
+
+            <MethodEntry
+              id="completeRoutingTask"
+              signature="claw.completeRoutingTask(taskId, result?)"
+              description="Mark a routing task as completed with an optional result payload."
+              params={[
+                { name: 'taskId', type: 'string', required: true, desc: 'Task ID' },
+                { name: 'success', type: 'boolean', required: false, desc: 'Whether the task succeeded (default: true)' },
+                { name: 'result', type: 'Object', required: false, desc: 'Result data from task execution' },
+                { name: 'error', type: 'string', required: false, desc: 'Error message if task failed' },
+              ]}
+              returns="Promise<{ task: Object, routing: Object }>"
+              example={`// Success
+await claw.completeRoutingTask('rt_abc123', {
+  success: true,
+  result: { deployed_version: '2.1.0', pods: 3 },
+});
+
+// Failure
+await claw.completeRoutingTask('rt_abc123', {
+  success: false,
+  error: 'Health check failed after deploy',
+});`}
+            />
+
+            <MethodEntry
+              id="getRoutingStats"
+              signature="claw.getRoutingStats()"
+              description="Get aggregate routing statistics including agent counts, task counts, and routing performance metrics."
+              params={[]}
+              returns="Promise<{ agents: Object, tasks: Object, routing: Object }>"
+              example={`const stats = await claw.getRoutingStats();
+console.log(\`Agents: \${stats.agents.total} (\${stats.agents.available} available)\`);
+console.log(\`Tasks: \${stats.tasks.total} (\${stats.tasks.pending} pending)\`);`}
+            />
+
+            <MethodEntry
+              id="getRoutingHealth"
+              signature="claw.getRoutingHealth()"
+              description="Get routing system health status, including agent availability and task queue depth."
+              params={[]}
+              returns="Promise<{ status: string, agents: Object, tasks: Object }>"
+              example={`const health = await claw.getRoutingHealth();
+console.log('Routing status:', health.status);
+console.log('Available agents:', health.agents.available);
+console.log('Queued tasks:', health.tasks.queued);`}
+            />
           </section>
 
           {/* ── Error Handling ── */}

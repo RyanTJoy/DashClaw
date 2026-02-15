@@ -156,6 +156,120 @@ claw.broadcast(body="Maintenance window starts in 5 minutes", message_type="stat
 claw.save_shared_doc(name="Ops Runbook", content="Updated checklist")
 ```
 
+## Policy Testing
+
+Run guardrails tests, generate compliance proof reports, and import policy packs.
+
+```python
+# Run all policy tests
+report = claw.test_policies()
+print(f"{report['passed']}/{report['total']} policies passed")
+for r in [r for r in report["results"] if not r["passed"]]:
+    print(f"FAIL: {r['policy']} — {r['reason']}")
+
+# Generate compliance proof report
+proof = claw.get_proof_report(format="md")
+
+# Import a policy pack (admin only)
+claw.import_policies(pack="enterprise-strict")
+
+# Or import raw YAML
+claw.import_policies(yaml="policies:\n  - name: block-deploys\n    ...")
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `test_policies()` | Run guardrails tests against all active policies |
+| `get_proof_report(format="json")` | Generate compliance proof report. Format: "json" or "md" |
+| `import_policies(pack=None, yaml=None)` | Import a policy pack or raw YAML. Packs: enterprise-strict, smb-safe, startup-growth, development |
+
+## Compliance Engine
+
+Map policies to regulatory frameworks, run gap analysis, and generate compliance reports.
+
+```python
+# Map policies to SOC 2 controls
+mapping = claw.map_compliance("soc2")
+print(f"SOC 2 coverage: {mapping['coverage_pct']}%")
+for ctrl in [c for c in mapping["controls"] if not c["covered"]]:
+    print(f"Gap: {ctrl['id']} — {ctrl['name']}")
+
+# Run gap analysis with remediation plan
+gaps = claw.analyze_gaps("soc2")
+
+# Generate full compliance report
+report = claw.get_compliance_report("iso27001", format="md")
+
+# List available frameworks
+frameworks = claw.list_frameworks()
+
+# Get live guard decision evidence for audits
+evidence = claw.get_compliance_evidence(window="30d")
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `map_compliance(framework)` | Map policies to framework controls. Frameworks: soc2, iso27001, gdpr, nist-ai-rmf, imda-agentic |
+| `analyze_gaps(framework)` | Run gap analysis with remediation plan |
+| `get_compliance_report(framework, format="json")` | Generate full report (json or md) and save snapshot |
+| `list_frameworks()` | List available compliance frameworks |
+| `get_compliance_evidence(window="7d")` | Get live guard decision evidence. Windows: 7d, 30d, 90d |
+
+## Task Routing
+
+Route tasks to agents based on capabilities, availability, and workload.
+
+```python
+# Register an agent in the routing pool
+agent = claw.register_routing_agent(
+    name="data-analyst",
+    capabilities=["data-analysis", "reporting"],
+    max_concurrent=3,
+    endpoint="https://agents.example.com/analyst",
+)
+
+# Submit a task for auto-routing
+task = claw.submit_routing_task(
+    title="Analyze quarterly metrics",
+    description="Pull Q4 data and generate summary report",
+    required_skills=["data-analysis", "reporting"],
+    urgency="high",
+    timeout_seconds=600,
+    callback_url="https://hooks.example.com/task-done",
+)
+print(f"Task {task['task_id']} assigned to {task.get('assigned_agent', {}).get('name', 'queue')}")
+
+# Complete a task
+claw.complete_routing_task(task["task_id"], result={"summary": "Report generated"})
+
+# List agents and tasks
+agents = claw.list_routing_agents(status="available")
+tasks = claw.list_routing_tasks(status="pending")
+
+# Monitor routing health
+stats = claw.get_routing_stats()
+health = claw.get_routing_health()
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `list_routing_agents(status=None)` | List agents. Filter by status: available, busy, offline |
+| `register_routing_agent(name, capabilities=None, max_concurrent=1, endpoint=None)` | Register agent in routing pool |
+| `get_routing_agent(agent_id)` | Get agent with metrics |
+| `update_routing_agent_status(agent_id, status)` | Update agent status |
+| `delete_routing_agent(agent_id)` | Delete agent from pool |
+| `list_routing_tasks(status=None, agent_id=None, limit=50, offset=0)` | List tasks with filters |
+| `submit_routing_task(title, description=None, required_skills=None, urgency="medium", timeout_seconds=None, max_retries=None, callback_url=None)` | Submit task for auto-routing |
+| `complete_routing_task(task_id, result=None)` | Complete a task |
+| `get_routing_stats()` | Get routing statistics |
+| `get_routing_health()` | Get health status |
+
 ## Integrations
 
 ### LangChain
