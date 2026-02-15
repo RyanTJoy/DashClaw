@@ -43,9 +43,6 @@ const platformFeatures = [
   { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
   { icon: CircleDot, title: 'Open Loop Tracking', description: 'Track unresolved dependencies, pending approvals, and blockers across agents.' },
   { icon: Eye, title: 'Assumption Monitoring', description: 'Log what agents assume, validate or invalidate, and catch drift early.' },
-  { icon: Scale, title: 'Compliance Engine', description: 'Map policies to SOC 2, ISO 27001, GDPR, NIST AI RMF with gap analysis and audit-ready reports.' },
-  { icon: Network, title: 'Task Routing', description: 'Skill-based auto-routing with scoring, retry, escalation, and performance tracking.' },
-  { icon: FileCheck, title: 'Policy Testing', description: 'Run guardrails tests, generate proof reports, and import pre-built policy packs.' },
 ];
 
 const operationalFeatures = [
@@ -348,6 +345,86 @@ export default function LandingPage() {
             </div>
           </div>
 
+        </div>
+      </section>
+
+      {/* ── AI Governance Suite Showcase ── */}
+      <section className="py-20 px-6 border-t border-[rgba(249,115,22,0.15)]">
+        <div className="max-w-6xl mx-auto">
+          <div className="rounded-2xl bg-gradient-to-b from-[rgba(249,115,22,0.06)] to-transparent p-8 sm:p-12 border border-[rgba(249,115,22,0.12)]">
+            <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(249,115,22,0.3)] bg-[rgba(249,115,22,0.08)] text-brand text-xs font-medium mb-4">
+                <Shield size={12} />
+                AI Governance Suite
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">The only agent platform with built-in compliance</h2>
+              <p className="mt-3 text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+                Most platforms stop at logging. DashClaw ships policy enforcement,
+                regulatory compliance mapping, and intelligent task routing &mdash; all auditable,
+                all testable, all live in the demo.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+              {/* Card 1: Compliance Engine */}
+              <div className="p-6 rounded-xl bg-[#111]/80 border border-[rgba(255,255,255,0.06)]">
+                <div className="w-10 h-10 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center mb-4">
+                  <Scale size={20} className="text-brand" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-3">Compliance Engine</h3>
+                <ul className="space-y-2 text-sm text-zinc-400 mb-4">
+                  <li>SOC 2, ISO 27001, GDPR, NIST AI RMF, EU AI Act</li>
+                  <li>Control-level gap analysis with remediation priorities</li>
+                  <li>Audit-ready reports in Markdown or JSON</li>
+                  <li>Live enforcement evidence from guard decisions</li>
+                </ul>
+                <Link href="/demo" className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-hover transition-colors">
+                  Explore Compliance <ArrowRight size={14} />
+                </Link>
+              </div>
+
+              {/* Card 2: Policy Testing & Proof */}
+              <div className="p-6 rounded-xl bg-[#111]/80 border border-[rgba(255,255,255,0.06)]">
+                <div className="w-10 h-10 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center mb-4">
+                  <FileCheck size={20} className="text-brand" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-3">Policy Testing &amp; Proof</h3>
+                <ul className="space-y-2 text-sm text-zinc-400 mb-4">
+                  <li>Run tests against all active guard policies</li>
+                  <li>Per-policy pass/fail breakdown with diagnostics</li>
+                  <li>Generate compliance proof reports on demand</li>
+                  <li>Import pre-built policy packs (enterprise, SMB, startup)</li>
+                </ul>
+                <Link href="/demo" className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-hover transition-colors">
+                  Explore Policy Testing <ArrowRight size={14} />
+                </Link>
+              </div>
+
+              {/* Card 3: Intelligent Task Routing */}
+              <div className="p-6 rounded-xl bg-[#111]/80 border border-[rgba(255,255,255,0.06)]">
+                <div className="w-10 h-10 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center mb-4">
+                  <Network size={20} className="text-brand" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-3">Intelligent Task Routing</h3>
+                <ul className="space-y-2 text-sm text-zinc-400 mb-4">
+                  <li>Skill-based agent matching with scoring</li>
+                  <li>Real-time load balancing and health monitoring</li>
+                  <li>Urgency-aware queue with retry and escalation</li>
+                  <li>Full agent registry with capability tracking</li>
+                </ul>
+                <Link href="/demo" className="inline-flex items-center gap-1.5 text-sm text-brand hover:text-brand-hover transition-colors">
+                  Explore Task Routing <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-zinc-400 mb-4">Every feature works in the demo &mdash; no signup required.</p>
+              <Link href="/demo" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
+                Launch Demo <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

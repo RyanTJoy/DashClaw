@@ -115,18 +115,6 @@ Track unresolved dependencies, pending approvals, and blockers across agents.
 
 Log what agents assume, validate or invalidate, and catch drift early.
 
-### Policy Testing Engine
-
-Run guard policies against test vectors, generate proof reports, and import policy packs. Validate governance rules before they hit production.
-
-### Compliance Engine
-
-Map guard policies to regulatory frameworks (SOC 2, ISO 27001, NIST AI RMF, EU AI Act). Analyze coverage gaps, generate compliance reports, and export evidence bundles.
-
-### Skill-Based Task Routing
-
-Register agents with capability declarations, submit tasks with skill requirements, and let the routing engine match work to the best-fit available agent. Built-in load balancing, health checks, and retry logic.
-
 ## Complete platform scope
 
 DashClaw is more than a dashboard. It is a full platform spanning control plane UX, APIs, data contracts, realtime transport, SDKs, and CI governance.
@@ -150,6 +138,41 @@ Node and Python SDKs, CLI toolkit, parity test suites, and docs/CI governance.
 ### Production hardening shipped
 
 [Adaptive Learning LoopCompleted actions are scored into episodes, recommendations are synthesized per agent/action type, telemetry is captured, and effectiveness metrics are computed.Explore ](/learning)[Route SQL GuardrailsCritical data-layer paths are protected by SQL drift checks and repository contract tests in CI.Explore ](/docs)[API Contract GovernanceOpenAPI drift checks and API inventory maturity gates prevent silent contract regressions.Explore ](/docs)[Cross-SDK Contract HarnessNode and Python SDK critical paths are validated against shared contract fixtures.Explore ](/docs)[Learning Loop AutomationBackfill and recommendation rebuild cron routes keep adaptive recommendation data fresh.Explore ](/learning)[Compliance EngineMap guard policies to SOC 2, ISO 27001, NIST AI RMF, and EU AI Act. Analyze gaps and generate evidence bundles.Explore ](/docs#compliance-engine)[Skill-Based Task RoutingRegister agents with capabilities, submit tasks with skill requirements, and route work to the best-fit available agent.Explore ](/docs#task-routing)
+
+## AI Governance Suite
+
+**The only agent platform with built-in compliance**
+
+Most platforms stop at logging. DashClaw ships policy enforcement, regulatory compliance mapping, and intelligent task routing — all auditable, all testable, all live in the demo.
+
+### Compliance Engine
+
+- SOC 2, ISO 27001, GDPR, NIST AI RMF, EU AI Act
+- Control-level gap analysis with remediation priorities
+- Audit-ready reports in Markdown or JSON
+- Live enforcement evidence from guard decisions
+
+[Explore Compliance →](/demo)
+
+### Policy Testing & Proof
+
+- Run tests against all active guard policies
+- Per-policy pass/fail breakdown with diagnostics
+- Generate compliance proof reports on demand
+- Import pre-built policy packs (enterprise, SMB, startup)
+
+[Explore Policy Testing →](/demo)
+
+### Intelligent Task Routing
+
+- Skill-based agent matching with scoring
+- Real-time load balancing and health monitoring
+- Urgency-aware queue with retry and escalation
+- Full agent registry with capability tracking
+
+[Explore Task Routing →](/demo)
+
+Every feature works in the demo — no signup required. [Launch Demo →](/demo)
 
 78+ methods across 16 categories
 
