@@ -84,6 +84,11 @@ export async function POST(request) {
     }
 
     if (thread_id) {
+      if (thread_id.startsWith('ct_')) {
+        return NextResponse.json({
+          error: 'Invalid thread type: context threads (ct_*) cannot be used for messaging. Use createMessageThread() to create a message thread (mt_*).',
+        }, { status: 400 });
+      }
       const thread = await getMessageThread(sql, orgId, thread_id);
       if (!thread) {
         return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
