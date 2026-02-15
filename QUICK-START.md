@@ -5,95 +5,19 @@ This guide will get you up and running in 5 minutes, even if you've never used a
 ## What You Need
 
 1. **A Computer** (Windows, Mac, or Linux)
-2. **Internet Connection**
+2. **Node.js 20+** ([nodejs.org](https://nodejs.org/) — click the LTS button)
 3. **5 Minutes**
 
 That's it!
 
 ---
 
-## Step 1: Install Node.js (One-Time Setup)
-
-Node.js is what runs the dashboard. If you don't have it:
-
-1. Go to **[nodejs.org](https://nodejs.org/)**
-2. Click the big green **"LTS"** button
-3. Run the installer (just click Next > Next > Finish)
-4. Restart your computer
-
-**How to check if it worked:**
-- Open Command Prompt (Windows) or Terminal (Mac)
-- Type `node --version` and press Enter
-- You should see a version number like `v20.x.x`
-
----
-
-## Step 2: Get a Database (Where DashClaw Stores Data)
-
-DashClaw is self-hosted (you run it). You bring the database.
-
-### Option A: Local Postgres with Docker (fastest for local dev)
-
-If you have Docker Desktop installed (or install it from [docker.com](https://www.docker.com/products/docker-desktop/)):
-
-```bash
-docker compose up -d db
-```
-
-Your connection string is: `postgresql://dashclaw:dashclaw@localhost:5432/dashclaw`
-
-That's it — database is ready.
-
-### Option B: Hosted Postgres with Neon (free tier — best for cloud deployment)
-
-If you want to access your dashboard from anywhere (phone, laptop), or prefer no Docker:
-
-1. Go to **[neon.tech](https://neon.tech/)**
-2. Click **"Start Free"** and create an account (GitHub login works!)
-3. Create a new project (any name is fine)
-4. On your project page, find the **Connection String**
-5. Copy it - it looks like: `postgresql://user:pass@ep-xyz.us-east-2.aws.neon.tech/neondb`
-
-**Keep this safe - you'll need it in the next step!**
-
----
-
-## Step 3: Download & Install
-
-### Fastest path (recommended)
-
-Run the installer for your platform. It will:
-- ask for your `DATABASE_URL` (from Docker or Neon)
-- generate `NEXTAUTH_SECRET`, `DASHCLAW_API_KEY`, and `ENCRYPTION_KEY`
-- write `.env.local`
-
-Note: to access the real dashboard UI at `/dashboard`, you must also configure at least one OAuth provider (GitHub and/or Google) and add its credentials to `.env.local`.
-
-OAuth callback URIs for local dev:
-
-- `http://localhost:3000/api/auth/callback/github`
-- `http://localhost:3000/api/auth/callback/google`
-
-If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
-
-### Windows
-
-```bash
-./install-windows.bat
-```
-
-### Mac / Linux
-
-```bash
-bash ./install-mac.sh
-```
-
----
+## Step 1: Download DashClaw
 
 ### Option A: Clone with Git
 
 ```bash
-git clone git@github.com:ucsandman/DashClaw.git
+git clone https://github.com/ucsandman/DashClaw.git
 cd DashClaw
 ```
 
@@ -101,103 +25,117 @@ cd DashClaw
 
 1. Go to the [GitHub repo](https://github.com/ucsandman/DashClaw)
 2. Click **Code** > **Download ZIP**
-3. Extract to a folder (Desktop, Documents, etc.)
+3. Extract to a folder and open a terminal there
 
-### Configure
+---
+
+## Step 2: Run Setup
+
+One command does everything — database, secrets, dependencies, migrations, build:
 
 ```bash
-cp .env.example .env.local
+node scripts/setup.mjs
 ```
 
-Edit `.env.local` and set your `DATABASE_URL` to the connection string from Step 2.
-
-### Install & Run
+Or use the platform installer (checks for Node.js first):
 
 ```bash
-npm install
-# Optional: Enable Behavioral AI (requires pgvector + OpenAI Key)
-npm run migrate:behavioral
+# Windows
+./install-windows.bat
+
+# Mac / Linux
+bash ./install-mac.sh
+```
+
+The setup script will ask you:
+
+1. **Database** — Docker (local), Neon (cloud), or paste any Postgres URL
+2. **Deployment** — local only (`localhost:3000`) or cloud (Vercel, etc.)
+3. Then it auto-generates secrets, installs deps, runs migrations, and builds
+
+---
+
+## Step 3: Set Up OAuth (for dashboard login)
+
+You need at least one OAuth provider to sign into the dashboard.
+
+### GitHub OAuth (recommended)
+
+1. Go to [github.com/settings/developers](https://github.com/settings/developers)
+2. Click **New OAuth App**
+3. Fill in:
+   - **Application name**: `DashClaw` (or anything)
+   - **Homepage URL**: `http://localhost:3000` (or your Vercel URL)
+   - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
+4. Copy the **Client ID** and **Client Secret**
+5. Add to your `.env.local`:
+   ```
+   GITHUB_ID=your-client-id
+   GITHUB_SECRET=your-client-secret
+   ```
+
+For cloud deployments, use your Vercel URL instead of localhost in both the callback URL and Vercel env vars.
+
+---
+
+## Step 4: Start the Dashboard
+
+```bash
 npm run dev
 ```
 
----
-
-## Step 4: Deploy to Cloud (Optional — access from anywhere)
-
-Want to check on your agents from your phone? Deploy to Vercel for free:
-
-1. Push your fork to GitHub
-2. Go to **[vercel.com](https://vercel.com)** and import the repo
-3. Set environment variables in the Vercel dashboard:
-   - `DATABASE_URL` — use your [Neon](https://neon.tech) connection string (Neon's serverless driver is optimized for Vercel)
-   - `NEXTAUTH_URL=https://your-app.vercel.app` (replace with your actual Vercel URL)
-   - `NEXTAUTH_SECRET`
-   - `DASHCLAW_API_KEY`
-   - `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET`
-4. Deploy! You get a free URL like `https://your-app.vercel.app`
-5. Update your OAuth app callback URLs to use the Vercel URL:
-   - `https://your-app.vercel.app/api/auth/callback/github`
-   - `https://your-app.vercel.app/api/auth/callback/google`
-
-Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
-
-**Security note:**
-- **Local development**: set `DASHCLAW_API_KEY` so agents/tools can authenticate consistently.
-- **Production/public deployment**: you must set `DASHCLAW_API_KEY` or the `/api/*` surface will be disabled (fail-closed with `503`).
+Open `http://localhost:3000` — you'll be redirected to login. Sign in with GitHub and you're in!
 
 ---
 
-## Step 5: Start the Dashboard
+## Step 5: Deploy to Cloud (Optional — access from anywhere)
 
-After installation, open:
+Want to check on your agents from your phone?
 
-- Customer site: `http://localhost:3000/`
-- Dashboard (real data): `http://localhost:3000/dashboard`
-- Demo sandbox (fake data, no login): `http://localhost:3000/demo`
+1. Re-run setup with cloud option: `node scripts/setup.mjs`
+   - Choose **Cloud** deployment and enter your Vercel URL
+   - It prints all the env vars you need
+2. Push to GitHub and import into [Vercel](https://vercel.com)
+3. Paste the env vars into Vercel's Settings → Environment Variables
+4. Update your GitHub OAuth callback URL to use the Vercel domain
+5. Deploy!
 
-The onboarding checklist will guide you through:
-1. Creating a workspace
-2. Generating an API key
-3. Installing the SDK
-4. Sending your first action
+For the database, use [Neon](https://neon.tech) (free) — optimized for Vercel.
 
 ---
 
-## Step 6 (Optional): Scheduled Jobs (Cron Endpoints)
+## Step 6: Import Your Agent (Optional)
 
-DashClaw includes endpoints under `/api/cron/*` for scheduled maintenance and automation. Call them with any scheduler (GitHub Actions, Windows Task Scheduler, system cron, etc.):
+Already have an AI agent with a workspace? Import everything into the dashboard:
 
-- Header: `Authorization: Bearer $CRON_SECRET`
+```bash
+# Preview what will be imported
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --dry-run
 
-Endpoints:
+# Push to local dashboard
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --local
 
-- `GET /api/cron/signals`
-- `GET /api/cron/memory-maintenance`
-- `GET /api/cron/learning-recommendations`
-- `GET /api/cron/learning-episodes-backfill`
-
-PowerShell example (run from any machine that can reach your DashClaw deployment):
-
-```powershell
-$env:CRON_SECRET="your-secret"
-Invoke-RestMethod -Headers @{ Authorization = "Bearer $env:CRON_SECRET" } -Method GET "https://YOUR_HOST/api/cron/signals"
+# Push to cloud dashboard
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --base-url "https://your-app.vercel.app" --api-key "oc_live_..."
 ```
+
+The scanner auto-discovers identity files, skills, tools, relationships, goals, memory, and more.
 
 ---
 
 ## Troubleshooting
 
 ### "node is not recognized"
-Node.js isn't installed. Go back to Step 1.
+Node.js isn't installed. Download it from [nodejs.org](https://nodejs.org/).
 
 ### "Cannot connect to database"
-Double-check your connection string. Make sure you copied the whole thing.
+Double-check your connection string. For Docker, make sure Docker Desktop is running.
+
+### Login page spins forever
+Check that `NEXTAUTH_URL` matches your actual URL and that the GitHub OAuth callback URL is correct.
 
 ### "Port 3000 is already in use"
-Another app is using that port. Close it, or edit `.env.local` and add `PORT=3001`
-
-### The page is blank or shows errors
-Try refreshing. If that doesn't work, check that your database URL is correct in `.env.local`
+Another app is using that port. Close it, or add `PORT=3001` to `.env.local`.
 
 ---
 
@@ -214,6 +152,6 @@ Try refreshing. If that doesn't work, check that your database URL is correct in
 Once your dashboard is running:
 
 1. Follow the **onboarding checklist** on the dashboard
-2. Install the SDK: `npm install dashclaw`
-3. Configure your **Integrations** (API keys, etc.)
+2. Install the SDK: `npm install dashclaw` (or `pip install dashclaw`)
+3. Connect your agents using the connection snippet from setup
 4. Start tracking your AI agent's activity!

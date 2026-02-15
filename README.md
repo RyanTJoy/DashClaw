@@ -36,57 +36,32 @@ You can also mix and match — run Vercel with a self-hosted Postgres, or run lo
 
 ---
 
-## Quick Start (Local)
+## Quick Start
 
-Prereqs:
-
-- Node.js 20+ recommended
-- Docker Desktop (for local Postgres) or a Neon account (for hosted Postgres)
-
-1) Install
+Prereqs: **Node.js 20+** ([nodejs.org](https://nodejs.org/))
 
 ```bash
 git clone https://github.com/ucsandman/DashClaw.git
 cd DashClaw
-npm install
+node scripts/setup.mjs
 ```
 
-2) Start a database
+That's it. The setup script handles everything interactively:
 
-**Option A: Local Postgres (Docker — fastest)**
+1. **Database** — choose Docker (local), Neon (cloud), or paste any Postgres URL
+2. **Deployment** — local only or cloud (Vercel/Railway/etc.)
+3. **Secrets** — auto-generates API key, auth secrets, encryption key
+4. **Dependencies** — runs `npm install`
+5. **Migrations** — creates all database tables (with progress spinners)
+6. **Build** — builds the Next.js app
 
-```bash
-docker compose up -d db
-```
+When it finishes, it prints your agent connection snippet and (for cloud deployments) the exact Vercel env vars to copy-paste.
 
-Connection string: `postgresql://dashclaw:dashclaw@localhost:5432/dashclaw`
+**Note:** You also need at least one OAuth provider (GitHub or Google) for dashboard login. See [OAuth Setup](#oauth-setup) below.
 
-**Option B: Hosted Postgres (Neon — free tier, no Docker needed)**
+### Platform-specific installers
 
-Create a project at [neon.tech](https://neon.tech) and copy your connection string.
-
-3) Configure environment
-
-```bash
-cp .env.example .env.local
-```
-
-At minimum set:
-
-- `DATABASE_URL` (from step 2)
-- `NEXTAUTH_URL=http://localhost:3000`
-- `NEXTAUTH_SECRET`
-- `DASHCLAW_API_KEY`
-- `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET`
-
-OAuth callback URIs (local dev):
-
-- `http://localhost:3000/api/auth/callback/github`
-- `http://localhost:3000/api/auth/callback/google`
-
-If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
-
-Or run the interactive installer which generates `.env.local` for you:
+These just check for Node.js and call `setup.mjs`:
 
 ```bash
 # Windows
@@ -96,61 +71,77 @@ Or run the interactive installer which generates `.env.local` for you:
 bash ./install-mac.sh
 ```
 
-4) Run migrations (idempotent)
+### Or: `npm run setup`
+
+If you already have dependencies installed:
 
 ```bash
-node scripts/_run-with-env.mjs scripts/migrate-multi-tenant.mjs
-node scripts/_run-with-env.mjs scripts/migrate-cost-analytics.mjs
-node scripts/_run-with-env.mjs scripts/migrate-identity-binding.mjs
-node scripts/_run-with-env.mjs scripts/migrate-capabilities.mjs
+npm run setup
 ```
-
-5) Start the app
-
-```bash
-npm run dev
-```
-
-Open:
-
-- `http://localhost:3000/dashboard` (real data)
-- `http://localhost:3000/demo` (no-login preview)
 
 ---
 
-## Deploy to Cloud (Vercel — access from anywhere)
+## OAuth Setup
+
+The dashboard requires GitHub and/or Google OAuth for login.
+
+### GitHub OAuth
+
+1. Go to [github.com/settings/developers](https://github.com/settings/developers) → **New OAuth App**
+2. Set the callback URL:
+   - Local: `http://localhost:3000/api/auth/callback/github`
+   - Cloud: `https://your-app.vercel.app/api/auth/callback/github`
+3. Add `GITHUB_ID` and `GITHUB_SECRET` to your `.env.local` (local) or Vercel env vars (cloud)
+
+### Google OAuth (optional)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Set the callback URL:
+   - Local: `http://localhost:3000/api/auth/callback/google`
+   - Cloud: `https://your-app.vercel.app/api/auth/callback/google`
+3. Add `GOOGLE_ID` and `GOOGLE_SECRET`
+
+If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL.
+
+---
+
+## Deploy to Cloud (Vercel)
 
 Want to check on your agents from your phone? Deploy to Vercel for free:
 
-1. Push your fork to GitHub
-2. Go to [vercel.com](https://vercel.com), import the repo
-3. Set environment variables in the Vercel dashboard:
-   - `DATABASE_URL` (use a [Neon](https://neon.tech) free-tier database — Neon's serverless driver is optimized for Vercel's edge functions)
-   - `NEXTAUTH_URL=https://your-app.vercel.app`
-   - `NEXTAUTH_SECRET`
-   - `DASHCLAW_API_KEY`
-   - `GITHUB_ID` + `GITHUB_SECRET` and/or `GOOGLE_ID` + `GOOGLE_SECRET`
-4. Deploy — you get a free URL like `https://your-app.vercel.app`
+1. Run `node scripts/setup.mjs` and choose **Cloud** deployment — it prints all the env vars you need
+2. Push your repo to GitHub
+3. Go to [vercel.com](https://vercel.com), import the repo
+4. Paste the env vars from the setup script output into Vercel's Environment Variables settings
+5. Set up GitHub OAuth with the Vercel callback URL (see above)
+6. Deploy — you get a free URL like `https://your-app.vercel.app`
 
-OAuth callback URIs (Vercel):
-
-- `https://your-app.vercel.app/api/auth/callback/github`
-- `https://your-app.vercel.app/api/auth/callback/google`
-
-Point your agents at the Vercel URL instead of localhost and you can monitor them from anywhere.
+For the database, use [Neon](https://neon.tech) (free tier) — its serverless driver is optimized for Vercel's edge functions.
 
 Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
 
-## Bootstrap An Existing Agent (Optional)
+---
 
-Import goals, decisions, memory, snippets, and preferences from an existing workspace:
+## Bootstrap An Existing Agent
 
-```powershell
-node scripts/bootstrap-agent.mjs --dir "C:\\path\\to\\agent\\workspace" --agent-id "my-agent" --agent-name "My Agent" --local --dry-run
-node scripts/bootstrap-agent.mjs --dir "C:\\path\\to\\agent\\workspace" --agent-id "my-agent" --agent-name "My Agent" --local
+Import an agent's entire workspace (goals, memory, decisions, skills, tools, relationships) into the dashboard:
+
+```bash
+# Preview what will be imported (no writes)
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --dry-run
+
+# Push to local dashboard
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --local
+
+# Push to cloud dashboard
+node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --base-url "https://your-app.vercel.app" --api-key "oc_live_..."
 ```
 
+The adaptive scanner auto-discovers and classifies files — identity, skills, tools, relationships, config, creative works, and more. No hardcoded paths needed.
+
 More details: `docs/agent-bootstrap.md`.
+
+---
 
 ## CI/Quality Gates
 

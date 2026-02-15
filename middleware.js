@@ -861,6 +861,11 @@ export async function middleware(request) {
   const mode = getDashclawMode();
   const demoCookie = isDemoCookieSet(request);
 
+  // self_host mode: redirect root "/" to dashboard (requires login)
+  if (pathname === '/' && mode === 'self_host') {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   // /demo is always a public entrypoint: it sets a non-secret cookie and forwards into the dashboard.
   // This makes the live demo work even if the deployment forgot to set DASHCLAW_MODE=demo.
   if (pathname === '/demo') {
@@ -880,7 +885,8 @@ export async function middleware(request) {
   // - Serve the REAL dashboard UI.
   // - Back /api/* reads with deterministic fixtures.
   // - Block all writes (no secrets, no mutations).
-  if (mode === 'demo' || demoCookie) {
+  // In self_host mode, ignore the demo cookie — only explicit DASHCLAW_MODE=demo enables demo.
+  if (mode === 'demo' || (demoCookie && mode !== 'self_host')) {
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
@@ -1390,6 +1396,7 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
+    '/',
     '/api/:path*',
     '/demo',
     '/dashboard',
