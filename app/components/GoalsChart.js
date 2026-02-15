@@ -6,6 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 function getBarColor(progress) {
   if (progress >= 100) return '#22c55e';
@@ -30,11 +31,12 @@ function CustomTooltip({ active, payload }) {
 export default function GoalsChart() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
     async function fetchGoals() {
       try {
-        const res = await fetch('/api/goals');
+        const res = await fetch(`/api/goals${agentId ? `?agent_id=${agentId}` : ''}`);
         const result = await res.json();
 
         if (result.goals && result.goals.length > 0) {
@@ -56,7 +58,7 @@ export default function GoalsChart() {
       }
     }
     fetchGoals();
-  }, []);
+  }, [agentId]);
 
   if (loading) {
     return <CardSkeleton />;

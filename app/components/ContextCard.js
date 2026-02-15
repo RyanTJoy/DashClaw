@@ -8,6 +8,7 @@ import { ProgressBar } from './ui/ProgressBar';
 import { StatCompact } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
+import { useAgentFilter } from '../lib/AgentFilterContext';
 
 export default function ContextCard() {
   const [contextData, setContextData] = useState({
@@ -16,11 +17,12 @@ export default function ContextCard() {
     stats: {}
   });
   const [loading, setLoading] = useState(true);
+  const { agentId } = useAgentFilter();
 
   useEffect(() => {
     async function fetchContext() {
       try {
-        const res = await fetch('/api/learning');
+        const res = await fetch(`/api/learning${agentId ? `?agent_id=${agentId}` : ''}`);
         if (!res.ok) throw new Error('Failed to fetch');
         const data = await res.json();
 
@@ -48,7 +50,7 @@ export default function ContextCard() {
       }
     }
     fetchContext();
-  }, []);
+  }, [agentId]);
 
   const mapOutcomeToCategory = (outcome) => {
     if (outcome === 'success') return 'decision';
