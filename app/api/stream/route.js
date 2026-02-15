@@ -42,6 +42,7 @@ data: ${JSON.stringify(data)}
       }
     };
 
+    const MAX_SEEN = 10000;
     const seen = new Set();
     let bufferingLiveEvents = true;
     const liveQueue = [];
@@ -60,7 +61,10 @@ data: ${JSON.stringify(data)}
       if (!envelope || !envelope.event) return;
       const cursor = envelope.cursor || envelope.id || null;
       if (cursor && seen.has(cursor)) return;
-      if (cursor) seen.add(cursor);
+      if (cursor) {
+        if (seen.size >= MAX_SEEN) seen.clear();
+        seen.add(cursor);
+      }
       await send(envelope.event, toSseData(envelope), cursor);
     };
 
@@ -107,11 +111,18 @@ data: ${JSON.stringify(data)}
     };
 
     // Clean up on close (when the request is aborted by client)
-    request.signal.addEventListener('abort', () => {
+    const cleanup = () => {
+      if (isClosed) return;
       isClosed = true;
       void unsubscribe();
       writer.close().catch(() => {});
-    });
+    };
+
+    request.signal.addEventListener('abort', cleanup);
+
+    // SECURITY: Server-side max connection duration to prevent resource exhaustion
+    const MAX_SSE_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+    setTimeout(cleanup, MAX_SSE_DURATION_MS);
 
     queueMicrotask(() => {
       void startPump();

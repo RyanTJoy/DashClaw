@@ -48,6 +48,13 @@ class DashClaw:
         recommendation_callback=None,
     ):
         self.base_url = base_url.rstrip("/")
+        if not self.base_url.startswith("https://") and "localhost" not in self.base_url and "127.0.0.1" not in self.base_url:
+            import warnings
+            warnings.warn(
+                "DashClaw: baseUrl does not use HTTPS. API keys will be sent in plaintext. Use HTTPS in production.",
+                UserWarning,
+                stacklevel=2,
+            )
         self.api_key = api_key
         self.agent_id = agent_id
         self.agent_name = agent_name

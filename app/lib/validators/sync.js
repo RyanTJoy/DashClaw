@@ -14,7 +14,7 @@ export const syncSchema = z.object({
     plan_name: optionalString,
     status: z.string().max(50).default('active'),
     metadata: z.record(z.any()).nullish(),
-  })).optional(),
+  })).max(1000).optional(),
 
   memory: z.object({
     health: z.object({
@@ -35,12 +35,12 @@ export const syncSchema = z.object({
       type: z.string().max(50).optional(),
       mentions: optionalNumber,
       mention_count: optionalNumber,
-    })).optional(),
+    })).max(100).optional(),
     topics: z.array(z.object({
       name: z.string().max(255),
       mentions: optionalNumber,
       mention_count: optionalNumber,
-    })).optional(),
+    })).max(100).optional(),
   }).optional(),
 
   goals: z.array(z.object({
@@ -50,7 +50,7 @@ export const syncSchema = z.object({
     target_date: optionalString,
     progress: optionalNumber.pipe(z.number().min(0).max(100)),
     status: z.string().max(50).default('active'),
-  })).optional(),
+  })).max(2000).optional(),
 
   learning: z.array(z.object({
     decision: z.string().max(2000),
@@ -58,7 +58,7 @@ export const syncSchema = z.object({
     reasoning: optionalString,
     outcome: z.string().max(2000).default('pending'),
     confidence: optionalNumber.pipe(z.number().min(0).max(100)),
-  })).optional(),
+  })).max(2000).optional(),
 
   content: z.array(z.object({
     title: z.string().max(500),
@@ -66,7 +66,7 @@ export const syncSchema = z.object({
     status: z.string().max(50).default('draft'),
     url: optionalString,
     body: optionalString,
-  })).optional(),
+  })).max(2000).optional(),
 
   inspiration: z.array(z.object({
     title: z.string().max(500),
@@ -75,19 +75,19 @@ export const syncSchema = z.object({
     score: optionalNumber,
     status: z.string().max(50).default('pending'),
     source: optionalString,
-  })).optional(),
+  })).max(2000).optional(),
 
   context_points: z.array(z.object({
     content: z.string().max(2000),
     category: z.string().max(50).default('general'),
     importance: optionalNumber.pipe(z.number().min(1).max(10).default(5)),
     session_date: optionalString,
-  })).optional(),
+  })).max(5000).optional(),
 
   context_threads: z.array(z.object({
     name: z.string().max(255),
     summary: optionalString,
-  })).optional(),
+  })).max(1000).optional(),
 
   handoffs: z.array(z.object({
     session_date: optionalString,
@@ -96,7 +96,7 @@ export const syncSchema = z.object({
     open_tasks: z.any().optional(), // JSON
     mood_notes: optionalString,
     next_priorities: z.any().optional(), // JSON
-  })).optional(),
+  })).max(1000).optional(),
 
   snippets: z.array(z.object({
     name: z.string().max(255),
@@ -104,14 +104,14 @@ export const syncSchema = z.object({
     code: z.string().max(10000),
     language: optionalString,
     tags: z.any().optional(), // JSON
-  })).optional(),
+  })).max(1000).optional(),
 
   relationships: z.array(z.object({
     name: z.string().max(255),
     relationship_type: z.string().max(100).default('contact'),
     description: optionalString,
     source_file: optionalString,
-  })).optional(),
+  })).max(1000).optional(),
 
   capabilities: z.array(z.object({
     name: z.string().max(255),
@@ -120,28 +120,28 @@ export const syncSchema = z.object({
     source_path: optionalString,
     file_count: optionalNumber,
     metadata: z.record(z.any()).nullish(),
-  })).optional(),
+  })).max(1000).optional(),
 
   preferences: z.object({
     observations: z.array(z.object({
       observation: z.string().max(2000),
       category: optionalString,
       importance: optionalNumber,
-    })).optional(),
+    })).max(1000).optional(),
     preferences: z.array(z.object({
       preference: z.string().max(2000),
       category: optionalString,
       confidence: optionalNumber,
-    })).optional(),
+    })).max(1000).optional(),
     moods: z.array(z.object({
       mood: z.string().max(100),
       energy: optionalString,
       notes: optionalString,
-    })).optional(),
+    })).max(1000).optional(),
     approaches: z.array(z.object({
       approach: z.string().max(500),
       context: optionalString,
       success: z.boolean().optional(),
-    })).optional(),
+    })).max(1000).optional(),
   }).optional(),
 });

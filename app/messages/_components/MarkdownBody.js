@@ -19,11 +19,15 @@ const MD_COMPONENTS = {
       {children}
     </pre>
   ),
-  a: ({ href, children }) => (
-    <a href={href} className="text-brand hover:underline" target="_blank" rel="noopener noreferrer">
-      {children}
-    </a>
-  ),
+  a: ({ href, children }) => {
+    const isSafe = href && /^(https?:\/\/|\/)/.test(href);
+    if (!isSafe) return <span className="text-brand">{children}</span>;
+    return (
+      <a href={href} className="text-brand hover:underline" target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    );
+  },
   ul: ({ children }) => <ul className="list-disc list-inside text-sm text-zinc-300 mb-2 space-y-0.5">{children}</ul>,
   ol: ({ children }) => <ol className="list-decimal list-inside text-sm text-zinc-300 mb-2 space-y-0.5">{children}</ol>,
   blockquote: ({ children }) => (

@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../../lib/db.js';
 import { getOrgId } from '../../../lib/org.js';
 import { routePending, checkTimeouts } from '../../../lib/repositories/routing.repository.js';
+import { timingSafeCompare } from '../../../lib/timing-safe.js';
 
 /**
  * POST /api/cron/routing-maintenance — Route pending tasks and check timeouts
@@ -12,6 +13,16 @@ import { routePending, checkTimeouts } from '../../../lib/repositories/routing.r
  */
 export async function POST(request) {
   try {
+    // SECURITY: Require CRON_SECRET — consistent with other cron routes
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
+    }
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !timingSafeCompare(authHeader, `Bearer ${cronSecret}`)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const sql = getSql();
     const orgId = getOrgId(request);
 

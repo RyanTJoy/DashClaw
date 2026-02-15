@@ -75,6 +75,13 @@ Rate limiting (optional):
 - `DASHCLAW_RATE_LIMIT_WINDOW_MS`
 - `DASHCLAW_DISABLE_RATE_LIMIT=true` (dev only)
 
+Security hardening (optional):
+
+- `ENFORCE_AGENT_SIGNATURES` (default: true in prod, false in dev)
+- `DASHCLAW_CLOSED_ENROLLMENT=true` (require pre-registered agents)
+- `TRUST_PROXY=true` (trust x-forwarded-for/x-real-ip for rate limiting)
+- `DASHCLAW_GUARD_FALLBACK=block` (fail-closed when semantic guard LLM unavailable)
+
 OAuth callback URIs (local dev):
 
 - `http://localhost:3000/api/auth/callback/github`

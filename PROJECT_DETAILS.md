@@ -251,7 +251,18 @@ function getSql() {
 
 ### Security Headers
 - Set in both `middleware.js` (API routes) and `next.config.js` (all routes)
-- CSP, HSTS, X-Frame-Options DENY, nosniff, referrer policy
+- CSP, HSTS (with preload), X-Frame-Options DENY, nosniff, referrer policy
+- 2 MB request body size limit enforced in middleware for POST/PUT/PATCH
+- SSE connections capped at 30-minute max duration
+
+### Agent Security
+- **Signature enforcement**: Agent signatures verified by default in production (`ENFORCE_AGENT_SIGNATURES`, default true in prod)
+- **Closed enrollment**: Optional mode requiring agents to be pre-registered (`DASHCLAW_CLOSED_ENROLLMENT=true`)
+- **Cost/token bounds**: Agent-reported cost and token values clamped to safe maximums
+- **Risk score clamping**: Agent-reported risk_score clamped to 0-100 range
+- **SSRF protection**: Routing dispatch/callback URLs validated (HTTPS required, private IPs blocked, DNS resolved)
+- **Guard fallback**: Semantic guard fail-open/closed configurable via `DASHCLAW_GUARD_FALLBACK` (default: allow)
+- **Proxy trust**: `x-forwarded-for` and `x-real-ip` only trusted when `TRUST_PROXY=true`
 
 ### UI/Design System
 - **Dark-only theme** - flat surfaces, no glassmorphism or gradients
@@ -756,6 +767,11 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 | `GOOGLE_SECRET` | Production | Yes |
 | `RESEND_API_KEY` | Production (optional) | Yes |
 | `CRON_SECRET` | Production | Yes |
+| `ENCRYPTION_KEY` | Production | Yes |
+| `ENFORCE_AGENT_SIGNATURES` | Production (default: true in prod) | No |
+| `DASHCLAW_CLOSED_ENROLLMENT` | Production (optional) | No |
+| `TRUST_PROXY` | Production (optional) | No |
+| `DASHCLAW_GUARD_FALLBACK` | Production (optional) | No |
 
 ### Deploy Commands
 ```bash

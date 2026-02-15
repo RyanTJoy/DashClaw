@@ -1,0 +1,32 @@
+# Secrets and environment
+.env
+.env.*
+.env.local
+.env.development
+.env.production
+.env.staging
+*.env
+!.env.example
+
+# Build artifacts
+.next/
+node_modules/
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
+
+# Keys and certs
+*.pem
+*.key
+*.crt
+secrets/

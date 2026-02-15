@@ -3,17 +3,38 @@ import GoogleProvider from 'next-auth/providers/google';
 import crypto from 'crypto';
 import { getSql } from './db.js';
 
+// SECURITY: In production, require real OAuth credentials — do not fall through to mocks
+const isProd = process.env.NODE_ENV === 'production';
+if (isProd && (!process.env.GITHUB_ID || !process.env.GITHUB_SECRET) && (!process.env.GOOGLE_ID || !process.env.GOOGLE_SECRET)) {
+  console.error('[AUTH] FATAL: At least one OAuth provider (GITHUB_ID/GITHUB_SECRET or GOOGLE_ID/GOOGLE_SECRET) must be configured in production');
+}
+
+const providers = [];
+if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+  providers.push(GitHubProvider({
+    clientId: process.env.GITHUB_ID,
+    clientSecret: process.env.GITHUB_SECRET,
+  }));
+} else if (!isProd) {
+  providers.push(GitHubProvider({
+    clientId: 'mock_github_id',
+    clientSecret: 'mock_github_secret',
+  }));
+}
+if (process.env.GOOGLE_ID && process.env.GOOGLE_SECRET) {
+  providers.push(GoogleProvider({
+    clientId: process.env.GOOGLE_ID,
+    clientSecret: process.env.GOOGLE_SECRET,
+  }));
+} else if (!isProd) {
+  providers.push(GoogleProvider({
+    clientId: 'mock_google_id',
+    clientSecret: 'mock_google_secret',
+  }));
+}
+
 export const authOptions = {
-  providers: [
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID || 'mock_github_id',
-      clientSecret: process.env.GITHUB_SECRET || 'mock_github_secret',
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_ID || 'mock_google_id',
-      clientSecret: process.env.GOOGLE_SECRET || 'mock_google_secret',
-    }),
-  ],
+  providers,
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   callbacks: {

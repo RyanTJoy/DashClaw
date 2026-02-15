@@ -8,6 +8,7 @@ import { sendSignalAlertEmail } from '../../../lib/notifications.js';
 import { logActivity } from '../../../lib/audit.js';
 import { getSql } from '../../../lib/db.js';
 import crypto from 'crypto';
+import { timingSafeCompare } from '../../../lib/timing-safe.js';
 
 /**
  * Hash a signal into a stable identifier for deduplication.
@@ -33,7 +34,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 503 });
     }
     const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!authHeader || !timingSafeCompare(authHeader, `Bearer ${cronSecret}`)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
