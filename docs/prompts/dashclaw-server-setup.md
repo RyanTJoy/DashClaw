@@ -1,4 +1,4 @@
-# DashClaw: One-Clipboard Setup (Dashboard Server Machine)
+# DashClaw: One-Command Setup (Dashboard Server Machine)
 
 You are helping a non-technical user self-host the DashClaw dashboard. The user wants the easiest path possible.
 
@@ -29,69 +29,64 @@ Ensure:
 
 If missing, instruct the user to install Node.js LTS from `https://nodejs.org`.
 
-## Step 2: Get a Postgres Database (Pick One)
-
-Option A: Local Postgres (Docker — fastest for local dev)
-- Install Docker Desktop if not already installed
-- Run:
-  - `docker compose up -d db`
-- Use:
-  - `DATABASE_URL=postgresql://dashclaw:dashclaw@localhost:5432/dashclaw`
-
-Option B: Neon (hosted Postgres — best for cloud/Vercel deployment)
-- User creates a free Neon project at https://neon.tech and gets a `postgresql://...` connection string.
-- Neon's serverless driver is optimized for Vercel's edge functions.
-
-## Step 3: Install DashClaw
-
-In a new folder, the user runs:
+## Step 2: Get DashClaw
 
 ```bash
 git clone https://github.com/ucsandman/DashClaw.git
 cd DashClaw
 ```
 
-Fastest: run the installer (it writes `.env.local` and generates secrets):
+## Step 3: Run the Interactive Setup
 
-Windows:
+One command handles everything — database choice, secrets, dependencies, migrations, and build:
+
 ```bash
-./install-windows.bat
+node scripts/setup.mjs
 ```
 
-Mac/Linux:
-```bash
-bash ./install-mac.sh
-```
+The setup script will:
+1. Ask for a database (Docker local, Neon cloud, or custom Postgres URL)
+2. Ask about deployment mode (local or cloud/Vercel)
+3. Auto-generate all secrets (API key, auth secret, encryption key)
+4. Install dependencies
+5. Run all database migrations (with progress spinners)
+6. Build the Next.js app
 
-The installer will prompt for `DATABASE_URL` if `.env.local` doesn't exist.
+For cloud deployments, it prints all the Vercel env vars ready to copy-paste.
 
-## Step 4: Start the Dashboard
+Platform-specific wrappers (check for Node.js first):
+- Windows: `./install-windows.bat`
+- Mac/Linux: `bash ./install-mac.sh`
+
+## Step 4: Set Up OAuth
+
+The dashboard requires GitHub or Google OAuth for login.
+
+1. Go to https://github.com/settings/developers → New OAuth App
+2. Callback URL:
+   - Local: `http://localhost:3000/api/auth/callback/github`
+   - Cloud: `https://your-app.vercel.app/api/auth/callback/github`
+3. Add `GITHUB_ID` and `GITHUB_SECRET` to `.env.local`
+
+## Step 5: Start the Dashboard
 
 ```bash
 npm run dev
 ```
 
-Open:
-- `http://localhost:3000`
+Open `http://localhost:3000` — redirects to login. Sign in with GitHub.
 
-## Step 5: Capture The Two Values Agents Need
+## Step 6: Capture The Two Values Agents Need
 
-On the server machine, the generated `.env.local` contains:
-- `DASHCLAW_API_KEY=...` (this is what agents use)
-- `NEXTAUTH_URL=...` (this becomes the default `DASHCLAW_BASE_URL` for agents)
-
-If you can run commands, print just those two values (do not print the whole file):
-- Read `.env.local` and extract `NEXTAUTH_URL` and `DASHCLAW_API_KEY`.
-
-Then produce this snippet for the user (fill in real values):
+The setup script prints these at the end, but you can also find them in `.env.local`:
 
 ```bash
-# Put these on each agent machine (NOT on the database host)
-DASHCLAW_BASE_URL=http://localhost:3000
+# Put these on each agent machine
+DASHCLAW_BASE_URL=http://localhost:3000  # or https://your-app.vercel.app
 DASHCLAW_API_KEY=oc_live_...
 ```
 
-## Step 6: Sanity Check (No Code)
+## Step 7: Sanity Check
 
 From any machine that can reach the dashboard host:
 - `GET {DASHCLAW_BASE_URL}/api/health` should return healthy JSON.
@@ -99,4 +94,3 @@ From any machine that can reach the dashboard host:
 If the dashboard is deployed publicly:
 - Ensure `DASHCLAW_API_KEY` is set on the server.
 - Never expose `DATABASE_URL` to agents.
-
