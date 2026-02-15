@@ -46,7 +46,7 @@ This file contains detailed technical information about the DashClaw project, mo
 
 ```
 app/
-├── page.js                    # Public landing page (waitlist signup)
+├── page.js                    # Public landing page (marketing on dashclaw.io, homepage on self-hosted)
 ├── layout.js                  # Root layout (Inter font, SessionWrapper)
 ├── globals.css                # Design tokens (CSS custom properties) + Tailwind
 ├── dashboard/page.js          # Authenticated dashboard (fixed widget grid)
