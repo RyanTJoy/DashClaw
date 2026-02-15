@@ -592,6 +592,21 @@ class DashClaw:
         payload = {"agent_id": self.agent_id, "connections": formatted}
         return self._request("/api/agents/connections", method="POST", body=payload)
 
+    def report_token_usage(self, tokens_in, tokens_out, **kwargs):
+        """Report a token usage snapshot."""
+        payload = {"tokens_in": tokens_in, "tokens_out": tokens_out, "agent_id": self.agent_id, **kwargs}
+        return self._request("/api/tokens", method="POST", body=payload)
+
+    def create_calendar_event(self, summary, start_time, **kwargs):
+        """Create a calendar event."""
+        payload = {"summary": summary, "start_time": start_time, **kwargs}
+        return self._request("/api/calendar", method="POST", body=payload)
+
+    def record_idea(self, title, **kwargs):
+        """Record an idea/inspiration."""
+        payload = {"title": title, **kwargs}
+        return self._request("/api/inspiration", method="POST", body=payload)
+
     def report_memory_health(self, health, entities=None, topics=None):
         if isinstance(health, dict) and "health" in health and entities is None and topics is None:
             payload = health
@@ -678,6 +693,66 @@ class DashClaw:
     def delete_snippet(self, snippet_id):
         snippet_id = urllib.parse.quote(str(snippet_id), safe="")
         return self._request(f"/api/snippets?id={snippet_id}", method="DELETE")
+
+    # --- Category 8: User Preferences ---
+
+    def log_observation(self, observation, **kwargs):
+        """Log a user observation."""
+        payload = {"type": "observation", "agent_id": self.agent_id, "observation": observation, **kwargs}
+        return self._request("/api/preferences", method="POST", body=payload)
+
+    def set_preference(self, preference, **kwargs):
+        """Set a learned user preference."""
+        payload = {"type": "preference", "agent_id": self.agent_id, "preference": preference, **kwargs}
+        return self._request("/api/preferences", method="POST", body=payload)
+
+    def log_mood(self, mood, **kwargs):
+        """Log user mood/energy for a session."""
+        payload = {"type": "mood", "agent_id": self.agent_id, "mood": mood, **kwargs}
+        return self._request("/api/preferences", method="POST", body=payload)
+
+    def track_approach(self, approach, **kwargs):
+        """Track an approach and whether it succeeded or failed."""
+        payload = {"type": "approach", "agent_id": self.agent_id, "approach": approach, **kwargs}
+        return self._request("/api/preferences", method="POST", body=payload)
+
+    def get_preference_summary(self):
+        """Get a summary of all user preference data."""
+        return self._request(f"/api/preferences?type=summary&agent_id={self.agent_id}")
+
+    def get_approaches(self, limit=None):
+        """Get tracked approaches with success/fail counts."""
+        params = {"type": "approaches", "agent_id": self.agent_id}
+        if limit is not None:
+            params["limit"] = limit
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/preferences?{query}")
+
+    # --- Category 9: Daily Digest ---
+
+    def get_daily_digest(self, date=None):
+        """Get a daily activity digest aggregated from all data sources."""
+        params = {"agent_id": self.agent_id}
+        if date is not None:
+            params["date"] = date
+        query = urllib.parse.urlencode(params)
+        return self._request(f"/api/digest?{query}")
+
+    # --- Category 10: Security Scanning ---
+
+    def scan_content(self, text, destination=None):
+        """Scan text for sensitive data. Returns findings and redacted text."""
+        payload = {"text": text, "agent_id": self.agent_id, "store": False}
+        if destination is not None:
+            payload["destination"] = destination
+        return self._request("/api/security/scan", method="POST", body=payload)
+
+    def report_security_finding(self, text, destination=None):
+        """Scan text and store finding metadata for audit trails."""
+        payload = {"text": text, "agent_id": self.agent_id, "store": True}
+        if destination is not None:
+            payload["destination"] = destination
+        return self._request("/api/security/scan", method="POST", body=payload)
 
     # --- Category 11: Agent Messaging ---
 
@@ -921,6 +996,81 @@ class DashClaw:
     def get_routing_health(self):
         """Get routing system health status."""
         return self._request("/api/routing/health")
+
+    # --- Agent Pairing ---
+
+    def create_pairing(self, public_key_pem, algorithm="RSASSA-PKCS1-v1_5", agent_name=None):
+        """Create an agent pairing request."""
+        payload = {
+            "agent_id": self.agent_id,
+            "agent_name": agent_name or self.agent_name,
+            "public_key": public_key_pem,
+            "algorithm": algorithm,
+        }
+        return self._request("/api/pairings", method="POST", body=payload)
+
+    def wait_for_pairing(self, pairing_id, timeout=300, interval=2):
+        """Poll a pairing until it is approved or expired."""
+        pairing_id_enc = urllib.parse.quote(str(pairing_id), safe="")
+        start = time.time()
+        while (time.time() - start) < timeout:
+            res = self._request(f"/api/pairings/{pairing_id_enc}")
+            pairing = res.get("pairing", {})
+            if pairing.get("status") == "approved":
+                return pairing
+            if pairing.get("status") == "expired":
+                raise DashClawError("Pairing expired")
+            time.sleep(interval)
+        raise TimeoutError("Timed out waiting for pairing approval")
+
+    def get_pairing(self, pairing_id):
+        """Get a pairing request by ID."""
+        pairing_id_enc = urllib.parse.quote(str(pairing_id), safe="")
+        return self._request(f"/api/pairings/{pairing_id_enc}")
+
+    # --- Identity Binding ---
+
+    def register_identity(self, agent_id, public_key, algorithm="RSASSA-PKCS1-v1_5"):
+        """Register or update an agent's public key. Requires admin API key."""
+        payload = {"agent_id": agent_id, "public_key": public_key, "algorithm": algorithm}
+        return self._request("/api/identities", method="POST", body=payload)
+
+    def get_identities(self):
+        """List all registered agent identities for this org."""
+        return self._request("/api/identities")
+
+    # --- Organization Management ---
+
+    def get_org(self):
+        """Get the current organization's details. Requires admin API key."""
+        return self._request("/api/orgs")
+
+    def create_org(self, name, slug):
+        """Create a new organization with an initial admin API key."""
+        return self._request("/api/orgs", method="POST", body={"name": name, "slug": slug})
+
+    def get_org_by_id(self, org_id):
+        """Get organization details by ID. Requires admin API key."""
+        org_id_enc = urllib.parse.quote(str(org_id), safe="")
+        return self._request(f"/api/orgs/{org_id_enc}")
+
+    def update_org(self, org_id, **updates):
+        """Update organization details. Requires admin API key."""
+        org_id_enc = urllib.parse.quote(str(org_id), safe="")
+        return self._request(f"/api/orgs/{org_id_enc}", method="PATCH", body=updates)
+
+    def get_org_keys(self, org_id):
+        """List API keys for an organization. Requires admin API key."""
+        org_id_enc = urllib.parse.quote(str(org_id), safe="")
+        return self._request(f"/api/orgs/{org_id_enc}/keys")
+
+    # --- Activity Logs ---
+
+    def get_activity_logs(self, **filters):
+        """Get activity/audit logs for the organization."""
+        query = urllib.parse.urlencode({k: v for k, v in filters.items() if v is not None})
+        path = f"/api/activity?{query}" if query else "/api/activity"
+        return self._request(path)
 
     # --- Bulk Sync ---
 
