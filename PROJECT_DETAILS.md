@@ -49,7 +49,7 @@ app/
 ├── page.js                    # Public landing page (marketing on dashclaw.io, homepage on self-hosted)
 ├── layout.js                  # Root layout (Inter font, SessionWrapper)
 ├── globals.css                # Design tokens (CSS custom properties) + Tailwind
-├── dashboard/page.js          # Authenticated dashboard (fixed widget grid)
+├── dashboard/page.js          # Authenticated dashboard (draggable/resizable widget grid)
 ├── lib/validate.js            # Input validation helpers
 ├── lib/db.js                  # Shared database connection utility (production-safe)
 ├── lib/security.js            # DLP / Sensitive data scanning engine
@@ -71,7 +71,7 @@ app/
 │   ├── Sidebar.js             # Persistent sidebar navigation (links to /dashboard)
 │   ├── PageLayout.js          # Shared page layout (breadcrumbs, title, actions)
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
-│   ├── DraggableDashboard.js  # Fixed 4-column widget grid (+ onboarding checklist)
+│   ├── DraggableDashboard.js  # Draggable/resizable 4-column widget grid (react-grid-layout v2, + onboarding checklist)
 │   ├── OnboardingChecklist.js # 4-step guided onboarding (workspace, key, SDK, first action)
 │   ├── ConnectAgentButton.js  # One-click copy-paste agent connect prompt generator
 │   ├── WaitlistForm.js        # Email capture form (client component)
@@ -258,7 +258,7 @@ function getSql() {
 - **Agent filter**: `AgentFilterContext.js` provides global agent filter; `AgentFilterDropdown.js` renders in PageLayout header. `AgentFilterProvider` is in `SessionWrapper.js` (global - persists across all pages). All data pages (Content, Goals, Learning, Relationships, Workflows, Security) pass `?agent_id=X` when filter is active.
 - **Agent colors**: `app/lib/colors.js` - `getAgentColor(agentId)` returns consistent hash-based color from 8-color palette
 - **Typography**: Inter font, `text-sm text-zinc-300` body, `text-xs text-zinc-500` labels, `font-mono text-xs` for timestamps/IDs, stat numbers max `text-2xl tabular-nums`
-- **Dashboard grid**: Fixed 4-column layout in `DraggableDashboard.js` - no drag/customize mode. Most cards include a "View all →" link that navigates to the corresponding full-page view (e.g. `/actions`, `/goals`, `/security`, `/learning`, `/usage`, `/workspace`, `/relationships`, `/calendar`).
+- **Dashboard grid**: Draggable/resizable 4-column layout in `DraggableDashboard.js` using `react-grid-layout` v2 with `useContainerWidth` (measureBeforeMount). Layout persists to localStorage via `dashboardLayoutState.js`. "Reset Layout" button in page header clears saved positions. Mobile (< 768px) stacks cards in single column with drag/resize disabled. Most cards include a "View all →" link that navigates to the corresponding full-page view (e.g. `/actions`, `/goals`, `/security`, `/learning`, `/usage`, `/workspace`, `/relationships`, `/calendar`).
 - **GoalsChart**: Summary stats (total, active, completed, avg progress) + top 5 goals with progress bars. No Recharts dependency — uses `StatCompact` and `ProgressBar` primitives.
 
 ## Detailed API Routes (POST-enabled)

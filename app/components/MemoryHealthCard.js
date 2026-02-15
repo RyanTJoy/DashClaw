@@ -141,7 +141,7 @@ export default function MemoryHealthCard() {
               <div>
                 <div className="text-xs text-zinc-500 mb-2">Top Entities</div>
                 <div className="flex flex-wrap gap-1">
-                  {data.entities.slice(0, 8).map((entity, i) => {
+                  {data.entities.slice(0, 6).map((entity, i) => {
                     const TypeIcon = getTypeIcon(entity.type);
                     return (
                       <span
@@ -163,7 +163,7 @@ export default function MemoryHealthCard() {
               <div>
                 <div className="text-xs text-zinc-500 mb-2">Topics</div>
                 <div className="flex flex-wrap gap-1">
-                  {data.topics.map((topic, i) => (
+                  {data.topics.slice(0, 8).map((topic, i) => (
                     <span
                       key={i}
                       className="px-2 py-0.5 rounded text-xs bg-brand-subtle text-brand"

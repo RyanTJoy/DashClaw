@@ -1,6 +1,6 @@
 export function Card({ children, className = '', hover = true }) {
   return (
-    <div className={`bg-surface-secondary border border-border rounded-xl ${hover ? 'transition-colors duration-150 hover:border-border-hover' : ''} ${className}`}>
+    <div className={`flex flex-col bg-surface-secondary border border-border rounded-xl ${hover ? 'transition-colors duration-150 hover:border-border-hover' : ''} ${className}`}>
       {children}
     </div>
   );
@@ -28,7 +28,7 @@ export function CardHeader({ title, icon: Icon, action, count, children }) {
 
 export function CardContent({ children, className = '' }) {
   return (
-    <div className={`px-5 pb-5 ${className}`}>
+    <div className={`flex-1 overflow-y-auto min-h-0 px-5 pb-5 ${className}`}>
       {children}
     </div>
   );
