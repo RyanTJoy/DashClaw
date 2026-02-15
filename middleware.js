@@ -1332,9 +1332,9 @@ export async function middleware(request) {
       );
     }
 
-    // Fast path: legacy DASHCLAW_API_KEY matches → org_default
+    // Fast path: DASHCLAW_API_KEY matches → configured org (default: org_default)
     if (timingSafeEqual(apiKey, expectedKey)) {
-      requestHeaders.set('x-org-id', 'org_default');
+      requestHeaders.set('x-org-id', process.env.DASHCLAW_API_KEY_ORG || 'org_default');
       requestHeaders.set('x-org-role', 'admin');
 
       // SECURITY: Enforce readonly semantics for API keys.

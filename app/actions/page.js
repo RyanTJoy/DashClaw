@@ -315,9 +315,12 @@ export default function ActionsTimeline() {
 
                 return (
                   <div key={action.action_id} className="bg-surface-tertiary rounded-lg border border-[rgba(255,255,255,0.04)] overflow-hidden">
-                    <button
+                    <div
                       onClick={() => toggleExpand(action.action_id)}
-                      className="w-full p-4 text-left hover:bg-white/[0.02] transition-colors duration-150"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleExpand(action.action_id); }}
+                      className="w-full p-4 text-left hover:bg-white/[0.02] transition-colors duration-150 cursor-pointer"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -356,7 +359,7 @@ export default function ActionsTimeline() {
                           {isExpanded ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
                         </div>
                       </div>
-                    </button>
+                    </div>
 
                     {isExpanded && (
                       <div className="border-t border-[rgba(255,255,255,0.04)] p-4 bg-surface-secondary space-y-4">

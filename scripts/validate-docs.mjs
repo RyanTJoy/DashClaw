@@ -74,6 +74,10 @@ async function validateLinks(markdownFile, content) {
     const cleanPath = pathPart.split("?")[0];
     if (!cleanPath) continue;
 
+    // Skip absolute route-style links (e.g. /demo, /api/docs/raw) that refer
+    // to Next.js pages or API endpoints, not filesystem resources.
+    if (cleanPath.startsWith("/") && !path.extname(cleanPath)) continue;
+
     const resolved = cleanPath.startsWith("/")
       ? path.join(ROOT, cleanPath.slice(1))
       : path.resolve(fileDir, cleanPath);
