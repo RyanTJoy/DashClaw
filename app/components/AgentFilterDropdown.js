@@ -7,7 +7,7 @@ import { Users } from 'lucide-react';
 export default function AgentFilterDropdown() {
   const { agents, agentId, setAgentId, loading } = useAgentFilter();
 
-  if (loading || agents.length < 2) return null;
+  if (loading || agents.length === 0) return null;
 
   return (
     <div className="flex items-center gap-2">
