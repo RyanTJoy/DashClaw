@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isDemoMode } from '../lib/isDemoMode';
 import {
-  Flame, LayoutDashboard, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
+  Flame, LayoutDashboard, Radar, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
   GitBranch, Settings, Crosshair, Calendar, BarChart3, Coins,
   Clock, Webhook, Bell, FolderKanban, Network, Scale,
@@ -16,6 +16,7 @@ const navGroups = [
   {
     label: 'Overview',
     items: [
+      { href: '/mission-control', icon: Radar, label: 'Mission Control' },
       { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
       { href: '/swarm', icon: Users, label: 'Swarm Intelligence' },
     ],

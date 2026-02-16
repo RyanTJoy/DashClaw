@@ -6,6 +6,7 @@ import AgentFilterDropdown from './AgentFilterDropdown';
 import UserMenu from './UserMenu';
 import RealtimeIndicator from './RealtimeIndicator';
 import DemoBanner from './DemoBanner';
+import SystemStatusBar from './SystemStatusBar';
 
 export default function PageLayout({ title, subtitle, breadcrumbs, actions, children }) {
   return (
@@ -41,6 +42,7 @@ export default function PageLayout({ title, subtitle, breadcrumbs, actions, chil
             </div>
           </div>
         </header>
+        <SystemStatusBar />
         <div className="p-6">{children}</div>
       </main>
     </div>

@@ -1533,6 +1533,8 @@ export const config = {
     '/demo',
     '/dashboard',
     '/dashboard/:path*',
+    '/mission-control',
+    '/mission-control/:path*',
     '/swarm',
     '/swarm/:path*',
     '/approvals',

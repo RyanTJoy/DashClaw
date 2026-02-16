@@ -1,5 +1,5 @@
 const LAYOUT_STORAGE_KEY = 'dashclaw_dashboard_layouts';
-const LAYOUT_VERSION = 1;
+const LAYOUT_VERSION = 2;
 
 export function loadLayouts(storage = globalThis?.localStorage) {
   try {
