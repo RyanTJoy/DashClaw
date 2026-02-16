@@ -136,7 +136,7 @@ The fastest path: Vercel free tier + Neon free tier. Accessible from any device,
    - `DATABASE_URL`: your Neon connection string
    - `NEXTAUTH_URL`: `https://your-app.vercel.app`
    - `NEXTAUTH_SECRET`: from step 4 (encrypts login sessions)
-   - `DASHCLAW_API_KEY`: from step 4 (authenticates your agents; `oc_live_` prefix is required)
+   - `DASHCLAW_API_KEY`: from step 4 (authenticates your agents; `oc_live_` prefix is required). This is the initial bootstrap admin key — you can manage additional keys from the dashboard at `/api-keys` after you sign in
    - `ENCRYPTION_KEY`: from step 4 (encrypts sensitive settings in DB)
    - `CRON_SECRET`: from step 4 (authenticates scheduled jobs)
    - `GITHUB_ID` + `GITHUB_SECRET`: from GitHub OAuth setup (see above)

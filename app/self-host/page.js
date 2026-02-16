@@ -2,22 +2,13 @@ import Link from 'next/link';
 import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github, Download, Sparkles } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
 import CopyMarkdownButton from '../components/CopyMarkdownButton';
+import CopyableCodeBlock from '../components/CopyableCodeBlock';
+import SecretGenerator from '../components/SecretGenerator';
 
 export const metadata = {
   title: 'Get Started with DashClaw',
   description: 'Deploy your own DashClaw dashboard for free with Vercel + Neon, or run locally with Docker.',
 };
-
-function CodeBlock({ title, children }) {
-  return (
-    <div className="rounded-xl bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] overflow-x-auto">
-      {title && (
-        <div className="px-5 py-2.5 border-b border-[rgba(255,255,255,0.06)] text-xs text-zinc-500 font-mono">{title}</div>
-      )}
-      <pre className="p-5 font-mono text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap">{children}</pre>
-    </div>
-  );
-}
 
 function StepCard({ n, title, desc, icon: Icon, children }) {
   return (
@@ -132,26 +123,13 @@ export default function SelfHostPage() {
             <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-1.5 mb-4">
               <li>Fork <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">ucsandman/DashClaw</a> to your GitHub account</li>
               <li>Go to <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">vercel.com/new</a> and import your fork</li>
-              <li>Add these environment variables before deploying:</li>
+              <li>Generate your secrets, then paste them into Vercel&apos;s environment variables:</li>
             </ol>
-            <p className="text-sm text-zinc-400 mb-3">First, generate your secrets. Run this in any terminal (you already have Node.js):</p>
-            <CodeBlock title="Generate secrets (run once, copy the output)">{`node -e "const c=require('crypto');console.log('NEXTAUTH_SECRET='+c.randomBytes(32).toString('base64url'));console.log('DASHCLAW_API_KEY=oc_live_'+c.randomBytes(24).toString('hex'));console.log('ENCRYPTION_KEY='+c.randomBytes(32).toString('base64url').slice(0,32));console.log('CRON_SECRET='+c.randomBytes(32).toString('hex'))"`}</CodeBlock>
-            <p className="text-sm text-zinc-400 mt-4 mb-3">Then paste these into Vercel&apos;s environment variables along with your database URL and OAuth credentials:</p>
-            <CodeBlock title="Required environment variables">{`DATABASE_URL=postgresql://user:pass@ep-xyz.neon.tech/neondb
-NEXTAUTH_URL=https://your-app.vercel.app
-NEXTAUTH_SECRET=<paste from above>
-DASHCLAW_API_KEY=<paste from above>
-ENCRYPTION_KEY=<paste from above>
-CRON_SECRET=<paste from above>
-GITHUB_ID=<from-step-3>
-GITHUB_SECRET=<from-step-3>`}</CodeBlock>
-            <div className="mt-3 text-xs text-zinc-500 space-y-1">
-              <p><code className="font-mono text-zinc-300">NEXTAUTH_SECRET</code> — encrypts login sessions</p>
-              <p><code className="font-mono text-zinc-300">DASHCLAW_API_KEY</code> — authenticates your agents (the <code className="font-mono text-zinc-300">oc_live_</code> prefix is required)</p>
-              <p><code className="font-mono text-zinc-300">ENCRYPTION_KEY</code> — encrypts sensitive settings stored in the database</p>
-              <p><code className="font-mono text-zinc-300">CRON_SECRET</code> — authenticates scheduled job requests (optional but recommended)</p>
-              <p>Tables are created automatically on first request.</p>
+            <SecretGenerator />
+            <div className="mt-3 rounded-lg bg-[rgba(249,115,22,0.05)] border border-brand/10 px-4 py-3 text-xs text-zinc-400">
+              <strong className="text-zinc-300">About the API key:</strong> <code className="font-mono text-zinc-300">DASHCLAW_API_KEY</code> is your bootstrap admin key — it authenticates agents and seeds your first organization. After you sign in, you can create and manage additional API keys from the dashboard at <code className="font-mono text-zinc-300">/api-keys</code>.
             </div>
+            <p className="mt-2 text-xs text-zinc-500">Tables are created automatically on first request.</p>
           </StepCard>
 
           <StepCard
@@ -185,9 +163,9 @@ GITHUB_SECRET=<from-step-3>`}</CodeBlock>
                 rawLabel="View prompt"
               />
             </div>
-            <CodeBlock title="Agent environment (example)">{`DASHCLAW_BASE_URL=https://your-app.vercel.app
+            <CopyableCodeBlock title="Agent environment (example)" copyText={`DASHCLAW_BASE_URL=https://your-app.vercel.app\nDASHCLAW_API_KEY=<your-secret-api-key>\nDASHCLAW_AGENT_ID=cinder`}>{`DASHCLAW_BASE_URL=https://your-app.vercel.app
 DASHCLAW_API_KEY=<your-secret-api-key>
-DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
+DASHCLAW_AGENT_ID=cinder`}</CopyableCodeBlock>
             <p className="mt-3 text-xs text-zinc-500">
               Your Vercel app uses Vercel env vars. Your agent uses its own environment variables.
             </p>
@@ -293,8 +271,8 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
               />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CodeBlock title="Windows (PowerShell)">{`./install-windows.bat`}</CodeBlock>
-              <CodeBlock title="Mac / Linux (bash)">{`bash ./install-mac.sh`}</CodeBlock>
+              <CopyableCodeBlock title="Windows (PowerShell)">{`./install-windows.bat`}</CopyableCodeBlock>
+              <CopyableCodeBlock title="Mac / Linux (bash)">{`bash ./install-mac.sh`}</CopyableCodeBlock>
             </div>
             <p className="mt-3 text-xs text-zinc-500">
               When it finishes, open <span className="font-mono text-zinc-300">http://localhost:3000</span>.
@@ -308,11 +286,11 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
             desc="If you want cryptographic identity binding, your agent generates a keypair and prints a one-click pairing URL. You approve once (or approve-all)."
             icon={Shield}
           >
-            <CodeBlock title="Agent environment (verified mode)">{`# Optional: sign actions with a private key
+            <CopyableCodeBlock title="Agent environment (verified mode)" copyText={`DASHCLAW_PRIVATE_KEY_PATH=./secrets/cinder-private.jwk\nENFORCE_AGENT_SIGNATURES=true`}>{`# Optional: sign actions with a private key
 DASHCLAW_PRIVATE_KEY_PATH=./secrets/cinder-private.jwk
 
 # Optional: server-side enforcement (set on the dashboard host)
-ENFORCE_AGENT_SIGNATURES=true`}</CodeBlock>
+ENFORCE_AGENT_SIGNATURES=true`}</CopyableCodeBlock>
             <p className="mt-3 text-sm text-zinc-400">
               The goal is: no manual public key uploads. Pairing registers the matching public key automatically.
             </p>
