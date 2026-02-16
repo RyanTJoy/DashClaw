@@ -885,7 +885,7 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 4: Dashboard Data (8 methods)
+  // Category 4: Dashboard Data (9 methods)
   // ══════════════════════════════════════════════
 
   /**
@@ -903,6 +903,79 @@ class DashClaw {
       ...usage,
       agent_id: this.agentId
     });
+  }
+
+  /**
+   * Internal: fire-and-forget token report extracted from an LLM response.
+   * @private
+   */
+  async _reportTokenUsageFromLLM({ tokens_in, tokens_out, model }) {
+    if (tokens_in == null && tokens_out == null) return;
+    try {
+      await this._request('/api/tokens', 'POST', {
+        tokens_in: tokens_in || 0,
+        tokens_out: tokens_out || 0,
+        model: model || undefined,
+        agent_id: this.agentId,
+      });
+    } catch (_) {
+      // fire-and-forget: never let telemetry break the caller
+    }
+  }
+
+  /**
+   * Wrap an Anthropic or OpenAI client to auto-report token usage after each call.
+   * Returns the same client instance (mutated) for fluent usage.
+   *
+   * @param {Object} llmClient - An Anthropic or OpenAI SDK client instance
+   * @param {Object} [options]
+   * @param {'anthropic'|'openai'} [options.provider] - Force provider detection
+   * @returns {Object} The wrapped client
+   *
+   * @example
+   * const anthropic = claw.wrapClient(new Anthropic());
+   * const msg = await anthropic.messages.create({ model: 'claude-sonnet-4-20250514', max_tokens: 1024, messages: [...] });
+   * // Token usage is auto-reported to DashClaw
+   */
+  wrapClient(llmClient, { provider } = {}) {
+    if (llmClient._dashclawWrapped) return llmClient;
+
+    const detected = provider
+      || (llmClient.messages?.create ? 'anthropic' : null)
+      || (llmClient.chat?.completions?.create ? 'openai' : null);
+
+    if (!detected) {
+      throw new Error(
+        'DashClaw.wrapClient: unable to detect provider. Pass { provider: "anthropic" } or { provider: "openai" }.'
+      );
+    }
+
+    if (detected === 'anthropic') {
+      const original = llmClient.messages.create.bind(llmClient.messages);
+      llmClient.messages.create = async (...args) => {
+        const response = await original(...args);
+        this._reportTokenUsageFromLLM({
+          tokens_in: response?.usage?.input_tokens ?? null,
+          tokens_out: response?.usage?.output_tokens ?? null,
+          model: response?.model ?? null,
+        });
+        return response;
+      };
+    } else if (detected === 'openai') {
+      const original = llmClient.chat.completions.create.bind(llmClient.chat.completions);
+      llmClient.chat.completions.create = async (...args) => {
+        const response = await original(...args);
+        this._reportTokenUsageFromLLM({
+          tokens_in: response?.usage?.prompt_tokens ?? null,
+          tokens_out: response?.usage?.completion_tokens ?? null,
+          model: response?.model ?? null,
+        });
+        return response;
+      };
+    }
+
+    llmClient._dashclawWrapped = true;
+    return llmClient;
   }
 
   /**

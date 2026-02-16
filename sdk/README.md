@@ -558,6 +558,46 @@ Report a token usage snapshot for this agent.
 
 **Returns:** `Promise<{snapshot: Object}>`
 
+### claw.wrapClient(llmClient, options?)
+Wrap an Anthropic or OpenAI client to auto-report token usage after every call. Returns the same client instance for fluent usage. Streaming calls (where response lacks `.usage`) are safely ignored.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| llmClient | Object | Yes | An Anthropic or OpenAI SDK client instance |
+| options.provider | string | No | Force `'anthropic'` or `'openai'` if auto-detect fails |
+
+**Returns:** The wrapped client (same instance)
+
+**Example (Anthropic):**
+```javascript
+import Anthropic from '@anthropic-ai/sdk';
+import { DashClaw } from 'dashclaw';
+
+const claw = new DashClaw({ baseUrl: 'http://localhost:3000', agentId: 'my-agent', apiKey: '...' });
+const anthropic = claw.wrapClient(new Anthropic());
+
+const msg = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+// Token usage auto-reported to DashClaw
+```
+
+**Example (OpenAI):**
+```javascript
+import OpenAI from 'openai';
+
+const openai = claw.wrapClient(new OpenAI());
+
+const chat = await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+// Token usage auto-reported to DashClaw
+```
+
 ### claw.recordDecision(entry)
 Record a decision for the learning database. Track what your agent decides and why.
 

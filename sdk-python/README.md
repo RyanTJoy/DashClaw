@@ -675,10 +675,45 @@ claw.report_memory_health(health="healthy", entities=42, topics=8)
 | Method | Description |
 |--------|-------------|
 | `report_token_usage(tokens_in, tokens_out, **kwargs)` | Report a token usage snapshot. Optional: model, session_id |
+| `wrap_client(llm_client, provider=None)` | Auto-report tokens from Anthropic/OpenAI clients. See below |
 | `create_calendar_event(summary, start_time, **kwargs)` | Create a calendar event. Optional: end_time, description |
 | `record_idea(title, **kwargs)` | Record an idea/inspiration. Optional: category, body |
 | `report_connections(connections)` | Report external service connections. Each entry: provider, auth_type, status |
 | `report_memory_health(health, entities=None, topics=None)` | Report memory/knowledge graph health |
+
+### Auto Token Tracking with `wrap_client()`
+
+Wrap your Anthropic or OpenAI client so token usage is automatically reported after every call:
+
+```python
+from anthropic import Anthropic
+from dashclaw import DashClaw
+
+claw = DashClaw(base_url="http://localhost:3000", agent_id="my-agent", api_key="...")
+anthropic = claw.wrap_client(Anthropic())
+
+msg = anthropic.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Hello"}],
+)
+# Token usage auto-reported to DashClaw
+```
+
+**OpenAI:**
+```python
+from openai import OpenAI
+
+openai_client = claw.wrap_client(OpenAI())
+
+chat = openai_client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+# Token usage auto-reported to DashClaw
+```
+
+Streaming calls (where the response lacks `.usage`) are safely ignored — no errors, just no reporting.
 
 ## User Preferences
 

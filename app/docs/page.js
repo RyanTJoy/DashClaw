@@ -122,6 +122,7 @@ const navItems = [
   { href: '#getGuardDecisions', label: 'getGuardDecisions', indent: true },
   { href: '#dashboard-data', label: 'Dashboard Data' },
   { href: '#reportTokenUsage', label: 'reportTokenUsage', indent: true },
+  { href: '#wrapClient', label: 'wrapClient', indent: true },
   { href: '#recordDecision', label: 'recordDecision', indent: true },
   { href: '#createGoal', label: 'createGoal', indent: true },
   { href: '#recordContent', label: 'recordContent', indent: true },
@@ -834,6 +835,26 @@ console.log(\`\${stats.blocks_24h} blocks in last 24h\`);`}
   context_max: 128000,
   model: 'gpt-4o',
 });`}
+            />
+
+            <MethodEntry
+              id="wrapClient"
+              signature="claw.wrapClient(llmClient, options?)"
+              description="Wrap an Anthropic or OpenAI client to auto-report token usage after every call. Returns the same client instance. Streaming calls are safely ignored."
+              params={[
+                { name: 'llmClient', type: 'Object', required: true, desc: 'An Anthropic or OpenAI SDK client instance' },
+                { name: 'options.provider', type: 'string', required: false, desc: "Force 'anthropic' or 'openai' if auto-detect fails" },
+              ]}
+              returns="Object (the wrapped client)"
+              example={`import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = claw.wrapClient(new Anthropic());
+const msg = await anthropic.messages.create({
+  model: 'claude-sonnet-4-20250514',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Hello' }],
+});
+// Token usage auto-reported to DashClaw`}
             />
 
             <MethodEntry
