@@ -6,8 +6,8 @@ import {
   Webhook, Clock, Compass, Building2, Terminal, BarChart3,
   Scale, Network, FileCheck,
 } from 'lucide-react';
+import Image from 'next/image';
 import PublicNavbar from './components/PublicNavbar';
-import ImageCarousel from './components/ImageCarousel';
 
 /* ─── data ─── */
 
@@ -161,16 +161,17 @@ export default function LandingPage() {
             <span className="text-brand">and why</span>.
           </h1>
           <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Open-source decision infrastructure: policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents.
-            Guard what they do before they do it.
+            Your agents are making decisions right now. Can you prove what they decided,
+            what they assumed, and whether they followed policy? Guard what they do before they do it.
           </p>
+          <p className="mt-3 text-sm text-zinc-500">Open-source. Self-hosted. Built for teams shipping AI agents to production.</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">95+ SDK methods</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Policy enforcement</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Compliance engine</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Task routing</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Policy guard</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Decision audit trail</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Risk signals</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Compliance mapping</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Assumption tracking</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Human-in-the-loop</span>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
@@ -178,9 +179,6 @@ export default function LandingPage() {
             </Link>
             <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
               <Terminal size={16} /> Get Started
-            </Link>
-            <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.06)] text-zinc-300 text-sm font-medium hover:bg-[#181818] hover:text-white transition-colors inline-flex items-center gap-2">
-              <BookOpen size={16} /> Docs
             </Link>
           </div>
         </div>
@@ -203,23 +201,16 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="lg:col-span-3">
-              <ImageCarousel
-                items={[
-                  { src: '/images/screenshots/dash1.png', title: 'Dashboard', description: 'Fleet-wide overview: live actions, risk, and governance.' },
-                  { src: '/images/screenshots/swarm-intelligence.png', title: 'Swarm Intelligence', description: 'Multi-agent communication map + agent context.' },
-                  { src: '/images/screenshots/approval.png', title: 'Approval Queue', description: 'Human-in-the-loop approvals for high-risk operations.' },
-                  { src: '/images/screenshots/policies.png', title: 'Policies', description: 'Behavior governance: allow, warn, block, or require approval.' },
-                  { src: '/images/screenshots/messages.png', title: 'Messages', description: 'Agent-to-agent messaging plus shared docs.' },
-                  { src: '/images/screenshots/workflows.png', title: 'Workflows', description: 'Automations, schedules, and execution history.' },
-                  { src: '/images/screenshots/learning.png', title: 'Learning', description: 'Lessons, recommendations, and effectiveness metrics.' },
-                ]}
-                autoRotateMs={4500}
-                aspectClassName="aspect-[16/10]"
-                sizes="(max-width: 1024px) 100vw, 60vw"
-                priority
-                imageClassName="object-cover"
-                className="shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_90px_rgba(0,0,0,0.55)]"
-              />
+              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_90px_rgba(0,0,0,0.55)]">
+                <Image
+                  src="/images/screenshots/Mission Control.png"
+                  alt="DashClaw Mission Control - strategic overview of your agent fleet"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  priority
+                  className="object-cover"
+                />
+              </div>
               <div className="mt-3 text-right">
                 <Link href="/gallery" className="text-xs text-zinc-500 hover:text-zinc-200 transition-colors">
                   View full gallery →
