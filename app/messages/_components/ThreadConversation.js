@@ -1,17 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Hash, Send, MessageSquare, AlertCircle } from 'lucide-react';
+import { Hash, Send, MessageSquare, AlertCircle, Copy, Paperclip, X } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { getAgentColor } from '../../lib/colors';
 import { isDemoMode } from '../../lib/isDemoMode';
-import { timeAgo, TYPE_VARIANTS } from './helpers';
+import { timeAgo, TYPE_VARIANTS, copyToClipboard, formatDateGroup } from './helpers';
 import MarkdownBody from './MarkdownBody';
+import AttachmentChips from './AttachmentChips';
 
-export default function ThreadConversation({ thread, filterAgentId, onNewMessage }) {
+export default function ThreadConversation({ thread, filterAgentId, onNewMessage, fullWidth }) {
   const isDemo = isDemoMode();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [replyBody, setReplyBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+  const [replyAttachments, setReplyAttachments] = useState([]);
+  const replyFileRef = useRef(null);
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -80,6 +84,23 @@ export default function ThreadConversation({ thread, filterAgentId, onNewMessage
     }
   }, [addMessage, onNewMessage]);
 
+  async function addReplyFiles(files) {
+    const ALLOWED = ['image/png','image/jpeg','image/gif','image/webp','application/pdf','text/plain','text/markdown','text/csv','application/json'];
+    const MAX_SIZE = 5 * 1024 * 1024;
+    const remaining = 3 - replyAttachments.length;
+    const toAdd = Array.from(files).slice(0, remaining);
+    for (const file of toAdd) {
+      if (!ALLOWED.includes(file.type) || file.size > MAX_SIZE) continue;
+      const data = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result.split(',')[1]);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      setReplyAttachments(prev => [...prev, { filename: file.name, mime_type: file.type, data, size: file.size }]);
+    }
+  }
+
   async function handleSendReply() {
     if (!replyBody.trim() || isDemo) return;
     setSending(true);
@@ -90,6 +111,11 @@ export default function ThreadConversation({ thread, filterAgentId, onNewMessage
         message_type: 'info',
         thread_id: thread.id,
       };
+      if (replyAttachments.length > 0) {
+        payload.attachments = replyAttachments.map(a => ({
+          filename: a.filename, mime_type: a.mime_type, data: a.data,
+        }));
+      }
 
       // Optimistic update
       const optimistic = {
@@ -99,8 +125,10 @@ export default function ThreadConversation({ thread, filterAgentId, onNewMessage
         status: 'sent',
         _optimistic: true,
       };
+      delete optimistic.attachments;
       setMessages(prev => [...prev, optimistic]);
       setReplyBody('');
+      setReplyAttachments([]);
 
       const res = await fetch('/api/messages', {
         method: 'POST',
@@ -109,15 +137,12 @@ export default function ThreadConversation({ thread, filterAgentId, onNewMessage
       });
 
       if (!res.ok) {
-        // Remove optimistic message on failure
         setMessages(prev => prev.filter(m => m.id !== optimistic.id));
         return;
       }
 
-      // Re-fetch to get the real message and dedup
       fetchThreadMessages();
     } catch {
-      // Remove optimistic
       setMessages(prev => prev.filter(m => !m._optimistic));
     } finally {
       setSending(false);
@@ -151,42 +176,77 @@ export default function ThreadConversation({ thread, filterAgentId, onNewMessage
       </div>
 
       {/* Messages timeline */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto space-y-3 min-h-0 max-h-[500px] pr-1">
+      <div ref={containerRef} className={`flex-1 overflow-y-auto space-y-3 min-h-0 pr-1 ${fullWidth ? 'max-h-[calc(100vh-340px)]' : 'max-h-[500px]'}`}>
         {loading ? (
           <div className="text-center text-zinc-500 py-8 text-sm">Loading conversation...</div>
         ) : messages.length === 0 ? (
           <div className="text-center text-zinc-500 py-8 text-sm">No messages in this thread yet.</div>
         ) : (
-          messages.map(msg => {
+          messages.map((msg, idx) => {
             const agentColor = getAgentColor(msg.from_agent_id);
             const isDashboard = msg.from_agent_id === 'dashboard' || msg.from_agent_id === (filterAgentId || 'dashboard');
+            const prevDate = idx > 0 ? formatDateGroup(messages[idx - 1].created_at) : null;
+            const curDate = formatDateGroup(msg.created_at);
+            const showDateSep = curDate && curDate !== prevDate;
             return (
-              <div key={msg.id} className={`flex gap-2 ${isDashboard ? 'flex-row-reverse' : ''}`}>
-                <div
-                  className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 border ${agentColor}`}
-                >
-                  <MessageSquare size={12} />
-                </div>
-                <div className={`flex-1 min-w-0 max-w-[85%] ${isDashboard ? 'text-right' : ''}`}>
-                  <div className={`flex items-center gap-1.5 mb-0.5 ${isDashboard ? 'justify-end' : ''}`}>
-                    <span className="text-xs font-medium text-zinc-300">{msg.from_agent_id}</span>
-                    <Badge variant={TYPE_VARIANTS[msg.message_type] || 'default'} size="xs">
-                      {msg.message_type}
-                    </Badge>
-                    {msg.urgent && <AlertCircle size={10} className="text-red-400" />}
-                    <span className="text-xs text-zinc-600">{timeAgo(msg.created_at)}</span>
+              <div key={msg.id}>
+                {showDateSep && (
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
+                    <span className="text-xs text-zinc-500 font-medium">{curDate}</span>
+                    <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
                   </div>
-                  <div className={`rounded-lg p-2.5 ${
-                    isDashboard
-                      ? 'bg-brand/10 border border-brand/20'
-                      : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'
-                  } ${msg._optimistic ? 'opacity-60' : ''}`}>
-                    <MarkdownBody content={msg.body} />
+                )}
+                <div className={`group flex gap-2 ${isDashboard ? 'flex-row-reverse' : ''}`}>
+                  <div
+                    className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 border ${agentColor}`}
+                  >
+                    <MessageSquare size={12} />
+                  </div>
+                  <div className={`flex-1 min-w-0 ${fullWidth ? 'max-w-[75%]' : 'max-w-[85%]'} ${isDashboard ? 'text-right' : ''}`}>
+                    <div className={`flex items-center gap-1.5 mb-0.5 ${isDashboard ? 'justify-end' : ''}`}>
+                      <span className="text-xs font-medium text-zinc-300">{msg.from_agent_id}</span>
+                      <Badge variant={TYPE_VARIANTS[msg.message_type] || 'default'} size="xs">
+                        {msg.message_type}
+                      </Badge>
+                      {msg.urgent && <AlertCircle size={10} className="text-red-400" />}
+                      <span className="text-xs text-zinc-600">{timeAgo(msg.created_at)}</span>
+                    </div>
+                    <div className={`relative rounded-lg p-2.5 ${
+                      isDashboard
+                        ? 'bg-brand/10 border border-brand/20'
+                        : 'bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]'
+                    } ${msg._optimistic ? 'opacity-60' : ''}`}>
+                      <MarkdownBody content={msg.body} />
+                      <AttachmentChips attachments={msg.attachments} compact />
+                      {!msg._optimistic && (
+                        <button
+                          onClick={async () => {
+                            const ok = await copyToClipboard(msg.body);
+                            if (ok) { setCopiedId(msg.id); setTimeout(() => setCopiedId(null), 2000); }
+                          }}
+                          className={`absolute top-1.5 ${isDashboard ? 'left-1.5' : 'right-1.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded bg-[rgba(0,0,0,0.3)] text-zinc-400 hover:text-zinc-200`}
+                          title="Copy message"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      )}
+                      {copiedId === msg.id && (
+                        <span className={`absolute top-1.5 ${isDashboard ? 'left-8' : 'right-8'} text-xs text-emerald-400`}>
+                          Copied!
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })
+        )}
+        {thread.status === 'resolved' && (
+          <div className="flex items-center gap-2 py-2 px-3 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+            Thread resolved
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -196,28 +256,60 @@ export default function ThreadConversation({ thread, filterAgentId, onNewMessage
         {isDemo ? (
           <div className="text-xs text-zinc-500 text-center py-2">Reply is disabled in demo mode</div>
         ) : (
-          <div className="flex gap-2">
-            <textarea
-              value={replyBody}
-              onChange={e => setReplyBody(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendReply();
-                }
-              }}
-              placeholder="Reply to thread..."
-              maxLength={2000}
-              rows={2}
-              className="flex-1 px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200 placeholder:text-zinc-600 resize-none"
-            />
-            <button
-              onClick={handleSendReply}
-              disabled={!replyBody.trim() || sending}
-              className="px-3 py-2 rounded-md bg-brand text-white hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
-            >
-              <Send size={14} />
-            </button>
+          <div>
+            <div className="flex gap-2">
+              <textarea
+                value={replyBody}
+                onChange={e => setReplyBody(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendReply();
+                  }
+                }}
+                placeholder="Reply to thread..."
+                maxLength={2000}
+                rows={2}
+                className="flex-1 px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200 placeholder:text-zinc-600 resize-none"
+              />
+              <div className="flex flex-col gap-1 self-end">
+                <button
+                  onClick={() => replyFileRef.current?.click()}
+                  disabled={replyAttachments.length >= 3}
+                  className="px-2 py-2 rounded-md bg-[rgba(255,255,255,0.06)] text-zinc-400 hover:text-zinc-200 disabled:opacity-40 transition-colors"
+                  title="Attach file"
+                >
+                  <Paperclip size={14} />
+                </button>
+                <input
+                  ref={replyFileRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={e => { if (e.target.files.length) addReplyFiles(e.target.files); e.target.value = ''; }}
+                />
+                <button
+                  onClick={handleSendReply}
+                  disabled={!replyBody.trim() || sending}
+                  className="px-2 py-2 rounded-md bg-brand text-white hover:bg-brand/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+            {replyAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {replyAttachments.map((att, idx) => (
+                  <span key={idx} className="flex items-center gap-1 px-2 py-0.5 rounded bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-zinc-300">
+                    <Paperclip size={9} className="text-zinc-400" />
+                    <span className="truncate max-w-[80px]">{att.filename}</span>
+                    <button onClick={() => setReplyAttachments(prev => prev.filter((_, i) => i !== idx))} className="text-zinc-500 hover:text-red-400">
+                      <X size={9} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

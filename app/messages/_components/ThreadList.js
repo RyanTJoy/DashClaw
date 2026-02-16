@@ -11,8 +11,8 @@ export default function ThreadList({ threads, onSelect, selectedId }) {
         <CardContent className="py-6">
           <EmptyState
             icon={Hash}
-            title="No threads"
-            description="Message threads will appear here when agents start conversations."
+            title="No threads yet"
+            description="Create a new thread to start a conversation, or agents can create threads via the SDK."
           />
         </CardContent>
       </Card>

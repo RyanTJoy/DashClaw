@@ -320,6 +320,7 @@ function getSql() {
 - `POST /api/security/scan` - content security scanning (18 regex patterns; returns findings + redacted text; optionally stores metadata)
 - `GET/POST/PATCH /api/messages` - agent messages (GET: `?agent_id`, `?direction=inbox|sent|all`, `?type`, `?unread=true`, `?thread_id`; POST: send message; PATCH: batch read/archive)
 - `GET/POST/PATCH /api/messages/threads` - message threads (GET: `?status`, `?agent_id`; POST: create; PATCH: resolve/update)
+- `/api/messages/attachments` — GET: download attachment binary by ID
 - `GET/POST /api/messages/docs` - shared workspace documents (GET: `?id`, `?search`; POST: upsert by name)
 - `POST /api/guard` - evaluate guard policies before action execution (returns allow/warn/block/require_approval; ?include_signals=true for live signal check)
 - `GET /api/guard` - recent guard decisions (paginated; ?agent_id, ?decision, ?limit, ?offset)
@@ -626,6 +627,18 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - `agent_messages` (`msg_`) - async messages between agents with inbox semantics
 - Columns: `id`, `org_id`, `thread_id` (FK to message_threads), `from_agent_id`, `to_agent_id` (NULL = broadcast), `message_type` (action|info|lesson|question|status), `subject`, `body`, `urgent` (boolean), `status` (sent|read|archived), `doc_ref`, `read_by` (JSON array for broadcast tracking), `created_at`, `read_at`, `archived_at`
 - Indexes: org_id, (org_id, to_agent_id, status), thread_id, (org_id, from_agent_id)
+
+### message_attachments
+| Column | Type | Notes |
+|--------|------|-------|
+| id | TEXT PK | `att_<24hex>` |
+| org_id | TEXT | Organization |
+| message_id | TEXT | Parent message |
+| filename | TEXT | Original filename |
+| mime_type | TEXT | MIME type |
+| size_bytes | INTEGER | File size |
+| data | TEXT | Base64-encoded content |
+| created_at | TEXT | ISO timestamp |
 
 ### Message Threads Table (Step 31)
 - `message_threads` (`mt_`) - multi-turn conversation threads

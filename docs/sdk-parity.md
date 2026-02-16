@@ -104,7 +104,7 @@ Current shared contract cases covered by the harness:
 | User Preferences | 6 | 6 | Full parity |
 | Daily Digest | 1 | 1 | Full parity |
 | Security Scanning | 2 | 2 | Full parity |
-| Agent Messaging | 9 | 9 | Full parity |
+| Agent Messaging | 11 | 11 | Full parity |
 | Behavior Guard | 2 | 2 | Full parity |
 | Agent Pairing | 3 | 3 | Full parity |
 | Identity Binding | 2 | 2 | Full parity |

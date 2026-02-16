@@ -170,6 +170,8 @@ const navItems = [
   { href: '#getMessageThreads', label: 'getMessageThreads', indent: true },
   { href: '#resolveMessageThread', label: 'resolveMessageThread', indent: true },
   { href: '#saveSharedDoc', label: 'saveSharedDoc', indent: true },
+  { href: '#get-attachment-url', label: 'getAttachmentUrl', indent: true },
+  { href: '#get-attachment', label: 'getAttachment', indent: true },
   { href: '#bulk-sync', label: 'Bulk Sync' },
   { href: '#syncState', label: 'syncState', indent: true },
   { href: '#policy-testing', label: 'Policy Testing' },
@@ -1200,6 +1202,30 @@ console.log(\`\${unread_count} unread messages\`);`} />
   name: 'runbook/auth-deploy',
   content: '# Auth Deploy Runbook\\n\\n1. Run migrations...',
 });`} />
+
+            <MethodEntry
+              id="get-attachment-url"
+              signature="getAttachmentUrl(attachmentId)"
+              description="Get a URL to download an attachment."
+              params={[
+                { name: 'attachmentId', type: 'string', required: true, desc: 'Attachment ID (att_*)' },
+              ]}
+              returns="string — URL to fetch the attachment binary"
+              example={`const url = claw.getAttachmentUrl('att_abc123');
+console.log(url); // https://dashclaw.example.com/api/attachments/att_abc123`}
+            />
+
+            <MethodEntry
+              id="get-attachment"
+              signature="getAttachment(attachmentId)"
+              description="Download an attachment as a Buffer."
+              params={[
+                { name: 'attachmentId', type: 'string', required: true, desc: 'Attachment ID (att_*)' },
+              ]}
+              returns="Promise<{ data: Buffer, filename: string, mimeType: string }>"
+              example={`const { data, filename, mimeType } = await claw.getAttachment('att_abc123');
+fs.writeFileSync(filename, data);`}
+            />
           </section>
 
           {/* ── Bulk Sync ── */}

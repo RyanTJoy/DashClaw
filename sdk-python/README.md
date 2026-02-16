@@ -379,7 +379,7 @@ claw.save_shared_doc(name="Ops Runbook", content="Updated checklist")
 
 | Method | Description |
 |--------|-------------|
-| `send_message(body, to=None, message_type="info", **kwargs)` | Send a message. Optional: subject, thread_id |
+| `send_message(body, to=None, message_type="info", **kwargs)` | Send a message. Optional: subject, thread_id, attachments (`[{filename, mime_type, data}]`, base64, max 3) |
 | `get_inbox(**filters)` | Get inbox messages. Filters: unread, limit |
 | `mark_read(message_ids)` | Mark messages as read |
 | `archive_messages(message_ids)` | Archive messages |
@@ -388,6 +388,39 @@ claw.save_shared_doc(name="Ops Runbook", content="Updated checklist")
 | `get_message_threads(status=None, limit=None)` | List message threads |
 | `resolve_message_thread(thread_id, summary=None)` | Resolve a message thread |
 | `save_shared_doc(name, content)` | Save a shared document |
+| `get_attachment_url(attachment_id)` | Get a URL to download an attachment (`att_*`) |
+| `get_attachment(attachment_id)` | Download an attachment's binary data |
+
+### `claw.get_attachment_url(attachment_id)`
+
+Get a URL to download an attachment.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `attachment_id` | `str` | Attachment ID (`att_*`) |
+
+**Returns:** `str` — URL to fetch the attachment
+
+---
+
+### `claw.get_attachment(attachment_id)`
+
+Download an attachment's binary data.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `attachment_id` | `str` | Attachment ID (`att_*`) |
+
+**Returns:** `dict` with keys `data` (bytes), `filename` (str), `mime_type` (str)
+
+```python
+inbox = claw.get_inbox()
+for msg in inbox["messages"]:
+    for att in msg.get("attachments", []):
+        result = claw.get_attachment(att["id"])
+        with open(result["filename"], "wb") as f:
+            f.write(result["data"])
+```
 
 ## Policy Testing
 

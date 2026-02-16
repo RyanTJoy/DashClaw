@@ -1,5 +1,21 @@
-import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Paperclip } from 'lucide-react';
+
+const ALLOWED_MIME_TYPES = [
+  'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+  'application/pdf', 'text/plain', 'text/markdown', 'text/csv', 'application/json',
+];
+const MAX_SIZE = 5 * 1024 * 1024;
+const MAX_FILES = 3;
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function ComposeModal({ show, onClose, agents, threads, filterAgentId, isDemo, onSend, prefill }) {
   const [to, setTo] = useState('');
@@ -9,6 +25,10 @@ export default function ComposeModal({ show, onClose, agents, threads, filterAge
   const [urgent, setUrgent] = useState(false);
   const [threadId, setThreadId] = useState('');
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [attachError, setAttachError] = useState(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (show && prefill) {
@@ -19,7 +39,56 @@ export default function ComposeModal({ show, onClose, agents, threads, filterAge
     }
   }, [show, prefill]);
 
+  useEffect(() => {
+    if (!show) {
+      setAttachments([]);
+      setAttachError(null);
+      setDragging(false);
+    }
+  }, [show]);
+
   if (!show) return null;
+
+  async function addFiles(files) {
+    setAttachError(null);
+    const remaining = MAX_FILES - attachments.length;
+    if (remaining <= 0) {
+      setAttachError(`Maximum ${MAX_FILES} attachments`);
+      return;
+    }
+    const toAdd = Array.from(files).slice(0, remaining);
+    for (const file of toAdd) {
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        setAttachError(`Unsupported file type: ${file.type}`);
+        continue;
+      }
+      if (file.size > MAX_SIZE) {
+        setAttachError(`"${file.name}" exceeds 5MB limit`);
+        continue;
+      }
+      const data = await readFileAsBase64(file);
+      setAttachments(prev => [...prev, { filename: file.name, mime_type: file.type, data, size: file.size }]);
+    }
+  }
+
+  function removeAttachment(idx) {
+    setAttachments(prev => prev.filter((_, i) => i !== idx));
+    setAttachError(null);
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    setDragging(true);
+  }
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setDragging(false);
+  }
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+  }
 
   async function handleSend() {
     if (!body.trim()) return;
@@ -34,6 +103,13 @@ export default function ComposeModal({ show, onClose, agents, threads, filterAge
       if (subject) payload.subject = subject;
       if (urgent) payload.urgent = true;
       if (threadId) payload.thread_id = threadId;
+      if (attachments.length > 0) {
+        payload.attachments = attachments.map(a => ({
+          filename: a.filename,
+          mime_type: a.mime_type,
+          data: a.data,
+        }));
+      }
 
       await onSend(payload);
       setBody('');
@@ -41,6 +117,7 @@ export default function ComposeModal({ show, onClose, agents, threads, filterAge
       setTo('');
       setUrgent(false);
       setThreadId('');
+      setAttachments([]);
       onClose();
     } catch {
       // Error handled by parent
@@ -50,6 +127,12 @@ export default function ComposeModal({ show, onClose, agents, threads, filterAge
   }
 
   const openThreads = threads.filter(t => t.status === 'open');
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
@@ -113,18 +196,65 @@ export default function ComposeModal({ show, onClose, agents, threads, filterAge
               className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200 placeholder:text-zinc-600"
             />
           </div>
-          <div>
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <label className="text-xs text-zinc-500 mb-1 block">Body</label>
             <textarea
               value={body}
               onChange={e => setBody(e.target.value)}
-              placeholder="Message body..."
+              placeholder="Message body... (drag & drop files here)"
               maxLength={2000}
               rows={5}
-              className="w-full px-3 py-2 text-sm bg-surface-primary border border-[rgba(255,255,255,0.06)] rounded-md text-zinc-200 placeholder:text-zinc-600 resize-none"
+              className={`w-full px-3 py-2 text-sm bg-surface-primary border rounded-md text-zinc-200 placeholder:text-zinc-600 resize-none transition-colors ${
+                dragging ? 'border-brand bg-brand/5' : 'border-[rgba(255,255,255,0.06)]'
+              }`}
             />
-            <div className="text-right text-xs text-zinc-600 mt-1">{body.length}/2000</div>
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={attachments.length >= MAX_FILES}
+                  className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-40 transition-colors"
+                >
+                  <Paperclip size={12} /> Attach file
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept={ALLOWED_MIME_TYPES.join(',')}
+                  className="hidden"
+                  onChange={e => { if (e.target.files.length) addFiles(e.target.files); e.target.value = ''; }}
+                />
+              </div>
+              <span className="text-xs text-zinc-600">{body.length}/2000</span>
+            </div>
           </div>
+
+          {/* Attachment chips */}
+          {attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((att, idx) => (
+                <span key={idx} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.06)] text-xs text-zinc-300">
+                  <Paperclip size={10} className="text-zinc-400" />
+                  <span className="truncate max-w-[100px]">{att.filename}</span>
+                  <span className="text-zinc-500">{formatSize(att.size)}</span>
+                  <button onClick={() => removeAttachment(idx)} className="text-zinc-500 hover:text-red-400 ml-0.5">
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {attachError && (
+            <div className="text-xs text-red-400">{attachError}</div>
+          )}
+
           {openThreads.length > 0 && (
             <div>
               <label className="text-xs text-zinc-500 mb-1 block">Thread (optional)</label>

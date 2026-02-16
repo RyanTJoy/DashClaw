@@ -1953,6 +1953,47 @@
         "x-api-maturity": "stable"
       }
     },
+    "/api/messages/attachments": {
+      "get": {
+        "operationId": "get_api_messages_attachments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "400": {
+            "description": "Validation or request error"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "summary": "GET /api/messages/attachments",
+        "tags": [
+          "messages"
+        ],
+        "x-api-maturity": "stable"
+      }
+    },
     "/api/messages/docs": {
       "get": {
         "operationId": "get_api_messages_docs",

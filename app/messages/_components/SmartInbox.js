@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { MessageCircleQuestion, AlertTriangle, Inbox, ChevronDown, ChevronRight, MessageSquare, AlertCircle, Users, Reply } from 'lucide-react';
+import { MessageCircleQuestion, AlertTriangle, Inbox, ChevronDown, ChevronRight, MessageSquare, AlertCircle, Users, Paperclip } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getAgentColor } from '../../lib/colors';
 import { timeAgo, TYPE_VARIANTS } from './helpers';
+import MessageActionMenu from './MessageActionMenu';
 
-function MessageRow({ msg, onSelect, selectedId, onReply }) {
+function MessageRow({ msg, onSelect, selectedId, onReply, onMarkRead, onArchive }) {
   const agentColor = getAgentColor(msg.from_agent_id);
   const isUnread = msg.status === 'sent';
   return (
     <div
       onClick={() => onSelect(msg)}
       className={`group flex items-start gap-3 py-2.5 px-1 cursor-pointer transition-colors rounded-sm ${
+        isUnread ? 'border-l-2 border-brand' : 'border-l-2 border-transparent'
+      } ${
         msg.id === selectedId ? 'bg-[rgba(255,255,255,0.04)]' : 'hover:bg-[rgba(255,255,255,0.02)]'
       }`}
     >
@@ -34,21 +37,21 @@ function MessageRow({ msg, onSelect, selectedId, onReply }) {
               <Users size={10} className="mr-0.5" /> broadcast
             </Badge>
           )}
+          {msg.attachments?.length > 0 && (
+            <Paperclip size={10} className="text-zinc-500 flex-shrink-0" />
+          )}
         </div>
         {msg.subject && <div className="text-sm text-zinc-200 truncate mt-0.5">{msg.subject}</div>}
         <div className="text-xs text-zinc-500 truncate mt-0.5">{msg.body}</div>
       </div>
       <div className="flex flex-col items-end gap-1 flex-shrink-0">
         <span className="text-xs text-zinc-600">{timeAgo(msg.created_at)}</span>
-        {onReply && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onReply(msg); }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-brand"
-            title="Reply"
-          >
-            <Reply size={12} />
-          </button>
-        )}
+        <MessageActionMenu
+          message={msg}
+          onMarkRead={onMarkRead}
+          onArchive={onArchive}
+          onReply={onReply}
+        />
       </div>
     </div>
   );
@@ -75,7 +78,7 @@ function Section({ title, icon: Icon, count, color, defaultOpen, children }) {
   );
 }
 
-export default function SmartInbox({ messages, onSelect, selectedId, onReply }) {
+export default function SmartInbox({ messages, onSelect, selectedId, onReply, onMarkRead, onArchive }) {
   if (messages.length === 0) {
     return (
       <Card hover={false}>
@@ -109,7 +112,7 @@ export default function SmartInbox({ messages, onSelect, selectedId, onReply }) 
           defaultOpen
         >
           {needsInput.map(msg => (
-            <MessageRow key={msg.id} msg={msg} onSelect={onSelect} selectedId={selectedId} onReply={onReply} />
+            <MessageRow key={msg.id} msg={msg} onSelect={onSelect} selectedId={selectedId} onReply={onReply} onMarkRead={onMarkRead} onArchive={onArchive} />
           ))}
         </Section>
 
@@ -121,7 +124,7 @@ export default function SmartInbox({ messages, onSelect, selectedId, onReply }) 
           defaultOpen
         >
           {urgent.map(msg => (
-            <MessageRow key={msg.id} msg={msg} onSelect={onSelect} selectedId={selectedId} onReply={onReply} />
+            <MessageRow key={msg.id} msg={msg} onSelect={onSelect} selectedId={selectedId} onReply={onReply} onMarkRead={onMarkRead} onArchive={onArchive} />
           ))}
         </Section>
 
@@ -133,7 +136,7 @@ export default function SmartInbox({ messages, onSelect, selectedId, onReply }) 
           defaultOpen={!hasTriaged}
         >
           {rest.map(msg => (
-            <MessageRow key={msg.id} msg={msg} onSelect={onSelect} selectedId={selectedId} onReply={onReply} />
+            <MessageRow key={msg.id} msg={msg} onSelect={onSelect} selectedId={selectedId} onReply={onReply} onMarkRead={onMarkRead} onArchive={onArchive} />
           ))}
         </Section>
       </CardContent>

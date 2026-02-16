@@ -1,13 +1,25 @@
-import { MessageSquare, AlertCircle, Eye, Archive, Reply, Hash } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquare, AlertCircle, Eye, Archive, Reply, Hash, Copy, FileType } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { getAgentColor } from '../../lib/colors';
 import { isDemoMode } from '../../lib/isDemoMode';
-import { timeAgo, TYPE_VARIANTS } from './helpers';
+import { timeAgo, TYPE_VARIANTS, stripMarkdown, copyToClipboard } from './helpers';
 import MarkdownBody from './MarkdownBody';
+import AttachmentChips from './AttachmentChips';
 
 export default function MessageDetail({ message, onMarkRead, onArchive, onReply, onViewThread }) {
   const isDemo = isDemoMode();
   const agentColor = getAgentColor(message.from_agent_id);
+  const [copyState, setCopyState] = useState(null);
+
+  async function handleCopy(mode) {
+    const text = mode === 'markdown' ? message.body : stripMarkdown(message.body);
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      setCopyState(mode);
+      setTimeout(() => setCopyState(null), 2000);
+    }
+  }
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
@@ -30,6 +42,21 @@ export default function MessageDetail({ message, onMarkRead, onArchive, onReply,
       )}
       <div className="mb-3 bg-[rgba(255,255,255,0.02)] rounded-md p-3">
         <MarkdownBody content={message.body} />
+      </div>
+      <AttachmentChips attachments={message.attachments} />
+      <div className="flex gap-1.5 mb-3 mt-2">
+        <button
+          onClick={() => handleCopy('markdown')}
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[rgba(255,255,255,0.04)] text-zinc-400 hover:text-zinc-200 hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+        >
+          <Copy size={10} /> {copyState === 'markdown' ? 'Copied!' : 'Copy Markdown'}
+        </button>
+        <button
+          onClick={() => handleCopy('plain')}
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[rgba(255,255,255,0.04)] text-zinc-400 hover:text-zinc-200 hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+        >
+          <FileType size={10} /> {copyState === 'plain' ? 'Copied!' : 'Copy Plain Text'}
+        </button>
       </div>
       <div className="text-xs text-zinc-600 mb-3">
         {new Date(message.created_at).toLocaleString()}

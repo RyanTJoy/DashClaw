@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Plus, Archive, CheckCheck, X,
+  Plus, Archive, CheckCheck, X, ArrowLeft,
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent } from '../components/ui/Card';
@@ -20,6 +20,7 @@ import DocDetail from './_components/DocDetail';
 import ComposeModal from './_components/ComposeModal';
 import ThreadConversation from './_components/ThreadConversation';
 import SmartInbox from './_components/SmartInbox';
+import CreateThreadForm from './_components/CreateThreadForm';
 
 export default function MessagesPage() {
   const { agentId: filterAgentId } = useAgentFilter();
@@ -37,6 +38,7 @@ export default function MessagesPage() {
   const [composePrefill, setComposePrefill] = useState(null);
   const [agents, setAgents] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [showCreateThread, setShowCreateThread] = useState(false);
   const threadConvRef = useRef({ current: null });
 
   // ── Data fetching ─────────────────────────────────────────────
@@ -379,6 +381,11 @@ export default function MessagesPage() {
                   {stats.unread}
                 </span>
               )}
+              {t.key === 'threads' && stats.activeThreads > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400">
+                  {stats.activeThreads}
+                </span>
+              )}
             </button>
           );
         })}
@@ -400,6 +407,16 @@ export default function MessagesPage() {
             </button>
           </div>
         )}
+        {tab === 'threads' && !isDemo && (
+          <div className="ml-auto">
+            <button
+              onClick={() => setShowCreateThread(prev => !prev)}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md bg-brand/10 text-brand hover:bg-brand/20 transition-colors"
+            >
+              <Plus size={12} /> New Thread
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -413,6 +430,24 @@ export default function MessagesPage() {
 
       {loading ? (
         <div className="text-center text-zinc-500 py-12 text-sm">Loading messages...</div>
+      ) : selectedType === 'thread' && selected ? (
+        /* Full-width thread conversation view */
+        <Card hover={false}>
+          <CardContent className="pt-4">
+            <button
+              onClick={() => { setSelected(null); setSelectedType(null); setSelectedIndex(-1); }}
+              className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200 mb-3 transition-colors"
+            >
+              <ArrowLeft size={14} /> Back to Threads
+            </button>
+            <ThreadConversation
+              thread={selected}
+              filterAgentId={filterAgentId}
+              onNewMessage={threadConvRef}
+              fullWidth
+            />
+          </CardContent>
+        </Card>
       ) : (
         <div className="flex gap-4">
           {/* Main list */}
@@ -423,6 +458,8 @@ export default function MessagesPage() {
                 onSelect={handleMessageClick}
                 selectedId={selectedType === 'message' ? selected?.id : null}
                 onReply={handleReply}
+                onMarkRead={handleMarkRead}
+                onArchive={handleArchive}
               />
             ) : tab === 'sent' ? (
               <MessageList
@@ -432,11 +469,24 @@ export default function MessagesPage() {
                 isSent
               />
             ) : tab === 'threads' ? (
-              <ThreadList
-                threads={threads}
-                onSelect={(t) => selectItem(t, 'thread')}
-                selectedId={selectedType === 'thread' ? selected?.id : null}
-              />
+              <div>
+                {showCreateThread && (
+                  <CreateThreadForm
+                    filterAgentId={filterAgentId}
+                    onCreated={(thread) => {
+                      setShowCreateThread(false);
+                      setThreads(prev => [thread, ...prev]);
+                      selectItem(thread, 'thread');
+                    }}
+                    onCancel={() => setShowCreateThread(false)}
+                  />
+                )}
+                <ThreadList
+                  threads={threads}
+                  onSelect={(t) => selectItem(t, 'thread')}
+                  selectedId={selectedType === 'thread' ? selected?.id : null}
+                />
+              </div>
             ) : (
               <DocList
                 docs={docs}
@@ -447,13 +497,13 @@ export default function MessagesPage() {
           </div>
 
           {/* Detail panel */}
-          {selected && (
+          {selected && selectedType !== 'thread' && (
             <div className="w-full md:w-1/3 min-w-[300px]">
               <Card hover={false}>
                 <CardContent className="pt-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs text-zinc-500 uppercase tracking-wide">
-                      {selectedType === 'message' ? 'Message' : selectedType === 'thread' ? 'Thread' : 'Document'}
+                      {selectedType === 'message' ? 'Message' : 'Document'}
                     </span>
                     <button onClick={() => { setSelected(null); setSelectedIndex(-1); }} className="text-zinc-500 hover:text-zinc-300">
                       <X size={14} />
@@ -467,13 +517,6 @@ export default function MessagesPage() {
                       onArchive={handleArchive}
                       onReply={handleReply}
                       onViewThread={handleViewThread}
-                    />
-                  )}
-                  {selectedType === 'thread' && (
-                    <ThreadConversation
-                      thread={selected}
-                      filterAgentId={filterAgentId}
-                      onNewMessage={threadConvRef}
                     />
                   )}
                   {selectedType === 'doc' && <DocDetail doc={selected} />}
