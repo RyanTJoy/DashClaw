@@ -65,7 +65,7 @@ export default function InspirationCard() {
             description="Capture ideas via POST /api/inspiration"
           />
         ) : (
-          <div className="space-y-2 max-h-80 overflow-y-auto">
+          <div className="space-y-2">
             {ideas.map((idea) => (
               <div
                 key={idea.id}

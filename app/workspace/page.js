@@ -6,7 +6,7 @@ import {
   BarChart3, Layers, ArrowRightLeft, Code2, UserCog, Brain,
   RefreshCw, ChevronDown, ChevronUp, Copy, Check, Plus,
   ArrowLeft, X, Clock, Zap, BookOpen, FileText, Lightbulb,
-  Users, Target, MessageSquare, ShieldAlert,
+  Users, Target, MessageSquare, ShieldAlert, CalendarClock,
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
@@ -45,6 +45,18 @@ function safeParseJson(str) {
   try { return JSON.parse(str); } catch { return []; }
 }
 
+function cronToHuman(expr) {
+  if (!expr) return expr;
+  const parts = expr.split(/\s+/);
+  if (parts.length < 5) return expr;
+  const [min, hour, dom, mon, dow] = parts;
+  if (min === '0' && hour.startsWith('*/')) return `Every ${hour.slice(2)} hours`;
+  if (min.startsWith('*/')) return `Every ${min.slice(2)} minutes`;
+  if (hour === '*' && min !== '*') return `Every hour at :${min.padStart(2, '0')}`;
+  if (dom === '*' && mon === '*' && dow === '*' && hour !== '*' && min !== '*') return `Daily at ${hour}:${min.padStart(2, '0')}`;
+  return expr;
+}
+
 const CATEGORY_VARIANTS = {
   decision: 'info', task: 'warning', insight: 'success',
   question: 'brand', general: 'default',
@@ -64,21 +76,30 @@ const TABS = [
 // ============================================================
 
 function OverviewTab({ agentId, dense }) {
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(''); // empty = recent (no date filter)
   const [digest, setDigest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [schedules, setSchedules] = useState([]);
 
   const fetchDigest = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ date });
+      const params = new URLSearchParams();
+      if (date) params.set('date', date);
       if (agentId) params.set('agent_id', agentId);
-      const res = await fetch(`/api/digest?${params}`);
-      if (!res.ok) throw new Error('Failed to fetch digest');
-      const data = await res.json();
+      const [digestRes, schedRes] = await Promise.all([
+        fetch(`/api/digest?${params}`),
+        fetch(`/api/agent-schedules${agentId ? `?agent_id=${encodeURIComponent(agentId)}` : ''}`),
+      ]);
+      if (!digestRes.ok) throw new Error('Failed to fetch digest');
+      const data = await digestRes.json();
       setDigest(data);
+      if (schedRes.ok) {
+        const schedData = await schedRes.json();
+        setSchedules(schedData.schedules || []);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -90,44 +111,80 @@ function OverviewTab({ agentId, dense }) {
 
   if (loading) return <ListSkeleton rows={5} />;
   if (error) return <div className="text-red-400 text-sm py-4">{error}</div>;
-  if (!digest) return <EmptyState icon={BarChart3} title="No digest data" description="No activity recorded for this date" />;
+  if (!digest) return <EmptyState icon={BarChart3} title="No digest data" description="No activity recorded" />;
 
+  const d = digest.digest || {};
   const stats = [
-    { label: 'Actions', value: digest.actions?.length || 0, color: 'text-brand' },
-    { label: 'Decisions', value: digest.decisions?.length || 0, color: 'text-blue-400' },
-    { label: 'Lessons', value: digest.lessons?.length || 0, color: 'text-emerald-400' },
-    { label: 'Content', value: digest.content?.length || 0, color: 'text-purple-400' },
-    { label: 'Ideas', value: digest.ideas?.length || 0, color: 'text-yellow-400' },
-    { label: 'Interactions', value: digest.interactions?.length || 0, color: 'text-cyan-400' },
-    { label: 'Goals', value: digest.goals?.length || 0, color: 'text-rose-400' },
+    { label: 'Actions', value: d.actions?.total || 0, color: 'text-brand' },
+    { label: 'Decisions', value: d.decisions?.total || 0, color: 'text-blue-400' },
+    { label: 'Lessons', value: d.lessons?.total || 0, color: 'text-emerald-400' },
+    { label: 'Content', value: d.content?.total || 0, color: 'text-purple-400' },
+    { label: 'Ideas', value: d.ideas?.total || 0, color: 'text-yellow-400' },
+    { label: 'Interactions', value: d.interactions?.total || 0, color: 'text-cyan-400' },
+    { label: 'Goals', value: d.goals?.total || 0, color: 'text-rose-400' },
   ];
 
   const sections = [
-    { key: 'actions', label: 'Actions', icon: Zap, items: digest.actions, variant: 'warning',
-      render: (a) => <span>{a.action_type || a.type}: {a.goal || a.description || a.action_id}</span> },
-    { key: 'decisions', label: 'Decisions', icon: BookOpen, items: digest.decisions, variant: 'info',
-      render: (d) => <span>{d.title || d.decision || d.content}</span> },
-    { key: 'lessons', label: 'Lessons', icon: BookOpen, items: digest.lessons, variant: 'success',
-      render: (l) => <span>{l.title || l.lesson || l.content}</span> },
-    { key: 'content', label: 'Content', icon: FileText, items: digest.content, variant: 'brand',
-      render: (c) => <span>{c.title || c.content_type}: {c.description || c.url || ''}</span> },
-    { key: 'ideas', label: 'Ideas', icon: Lightbulb, items: digest.ideas, variant: 'warning',
-      render: (i) => <span>{i.title || i.idea || i.content}</span> },
-    { key: 'interactions', label: 'Interactions', icon: Users, items: digest.interactions, variant: 'default',
-      render: (i) => <span>{i.contact_name || i.type}: {i.summary || i.notes || ''}</span> },
-    { key: 'goals', label: 'Goals', icon: Target, items: digest.goals, variant: 'success',
-      render: (g) => <span>{g.title || g.goal}: {g.status || ''}</span> },
+    { key: 'actions', label: 'Actions', icon: Zap, items: d.actions?.items || [], total: d.actions?.total || 0, variant: 'warning',
+      render: (a) => <span>{a.action_type || a.type}: {a.declared_goal || a.goal || a.description || a.action_id}</span>,
+      time: (a) => a.timestamp_start },
+    { key: 'decisions', label: 'Decisions', icon: BookOpen, items: d.decisions?.items || [], total: d.decisions?.total || 0, variant: 'info',
+      render: (d) => <span>{d.title || d.decision || d.content}</span>,
+      time: (d) => d.timestamp },
+    { key: 'lessons', label: 'Lessons', icon: BookOpen, items: d.lessons?.items || [], total: d.lessons?.total || 0, variant: 'success',
+      render: (l) => <span>{l.title || l.lesson || l.content}</span>,
+      time: (l) => l.timestamp },
+    { key: 'content', label: 'Content', icon: FileText, items: d.content?.items || [], total: d.content?.total || 0, variant: 'brand',
+      render: (c) => <span>{c.title || c.content_type}: {c.description || c.url || ''}</span>,
+      time: (c) => c.created_at },
+    { key: 'ideas', label: 'Ideas', icon: Lightbulb, items: d.ideas?.items || [], total: d.ideas?.total || 0, variant: 'warning',
+      render: (i) => <span>{i.title || i.idea || i.content}</span>,
+      time: (i) => i.captured_at },
+    { key: 'interactions', label: 'Interactions', icon: Users, items: d.interactions?.items || [], total: d.interactions?.total || 0, variant: 'default',
+      render: (i) => <span>{i.contact_name || i.direction || i.type}: {i.summary || i.notes || ''}</span>,
+      time: (i) => i.created_at },
+    { key: 'goals', label: 'Goals', icon: Target, items: d.goals?.items || [], total: d.goals?.total || 0, variant: 'success',
+      render: (g) => <span>{g.title || g.goal}: {g.status || ''}</span>,
+      time: (g) => g.created_at },
   ];
+
+  const isFiltered = !!date;
 
   return (
     <div>
       <div className="flex items-center gap-3 mb-4">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="px-3 py-1.5 text-sm rounded-md bg-surface-secondary border border-border text-zinc-200 [color-scheme:dark]"
-        />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDate('')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md border transition-colors ${
+              !isFiltered
+                ? 'bg-brand/10 border-brand text-brand'
+                : 'bg-surface-secondary border-border text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            Recent
+          </button>
+          <div className="flex items-center gap-1.5">
+            <Clock size={14} className="text-zinc-500" />
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="px-3 py-1.5 text-sm rounded-md bg-surface-secondary border border-border text-zinc-200 [color-scheme:dark]"
+            />
+          </div>
+        </div>
+        {isFiltered && (
+          <button
+            onClick={() => setDate('')}
+            className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <X size={12} /> Clear filter
+          </button>
+        )}
+        <span className="text-xs text-zinc-500 ml-auto">
+          {isFiltered ? `Showing ${formatDate(date)}` : 'Showing recent activity'}
+        </span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
@@ -141,29 +198,55 @@ function OverviewTab({ agentId, dense }) {
       </div>
 
       <div className="space-y-4">
-        {sections.filter(s => s.items?.length > 0).map(section => (
+        {sections.filter(s => s.items.length > 0).map(section => (
           <Card key={section.key} hover={false}>
-            <CardHeader title={section.label} icon={section.icon} count={section.items.length} />
+            <CardHeader title={section.label} icon={section.icon} count={section.total} />
             <CardContent className={dense ? "pt-2 pb-2" : ""}>
               <div className={dense ? "space-y-1" : "space-y-2"}>
                 {section.items.slice(0, 10).map((item, idx) => (
                   <div key={item.id || idx} className="flex items-start gap-2 text-sm text-zinc-300">
                     <Badge variant={section.variant} size="xs">{section.key}</Badge>
                     <span className="flex-1 min-w-0 truncate">{section.render(item)}</span>
+                    {!isFiltered && section.time(item) && (
+                      <span className="text-[10px] text-zinc-500 whitespace-nowrap shrink-0">{timeAgo(section.time(item))}</span>
+                    )}
                   </div>
                 ))}
-                {section.items.length > 10 && (
-                  <div className="text-xs text-zinc-500">+{section.items.length - 10} more</div>
+                {section.total > 10 && (
+                  <div className="text-xs text-zinc-500">+{section.total - Math.min(section.items.length, 10)} more</div>
                 )}
               </div>
             </CardContent>
           </Card>
         ))}
 
-        {sections.every(s => !s.items?.length) && (
-          <EmptyState icon={BarChart3} title="No activity" description={`No data recorded for ${formatDate(date)}`} />
+        {sections.every(s => s.items.length === 0) && (
+          <EmptyState icon={BarChart3} title="No activity" description={isFiltered ? `No data recorded for ${formatDate(date)}` : 'No activity recorded yet'} />
         )}
       </div>
+
+      {/* Scheduled Activities */}
+      {schedules.length > 0 && (
+        <Card hover={false} className="mt-6">
+          <CardHeader title="Scheduled Activities" icon={CalendarClock} count={schedules.length} />
+          <CardContent className={dense ? "pt-2 pb-2" : ""}>
+            <div className={dense ? "space-y-1" : "space-y-2"}>
+              {schedules.map(s => (
+                <div key={s.id} className="flex items-center gap-3 text-sm">
+                  <Badge variant={s.enabled ? 'success' : 'default'} size="xs">
+                    {s.agent_id}
+                  </Badge>
+                  <span className="text-zinc-300 flex-1 min-w-0 truncate">{s.name}</span>
+                  <span className="text-xs text-zinc-500 shrink-0">{cronToHuman(s.cron_expression)}</span>
+                  {s.last_run && (
+                    <span className="text-[10px] text-zinc-600 shrink-0">Last: {timeAgo(s.last_run)}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex gap-3 mt-6">
         <Link href="/messages" className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-brand transition-colors">

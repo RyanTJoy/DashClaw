@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import { getSql as getDbSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
 import { estimateCost } from '../../lib/billing.js';
+import {
+  getLatestSnapshot,
+  getTodayTotals,
+  getHistory,
+  getRecentSnapshots,
+  getPerAgentLatestSnapshots,
+  insertSnapshot,
+  insertOrgAggregateSnapshot,
+  upsertDailyTotals,
+} from '../../lib/repositories/tokens.repository.js';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -20,62 +30,24 @@ export async function GET(request) {
   const agentId = searchParams.get('agent_id');
 
   try {
-    let latestSnapshot, todayTotals, history, recentSnapshots;
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    if (agentId) {
-      // Per-agent queries
-      latestSnapshot = await sql`
-        SELECT * FROM token_snapshots
-        WHERE org_id = ${orgId} AND agent_id = ${agentId}
-        ORDER BY timestamp DESC
-        LIMIT 1
-      `;
-      todayTotals = await sql`
-        SELECT * FROM daily_totals
-        WHERE date = ${today} AND org_id = ${orgId} AND agent_id = ${agentId}
-      `;
-      history = await sql`
-        SELECT * FROM daily_totals
-        WHERE org_id = ${orgId} AND agent_id = ${agentId}
-        ORDER BY date DESC
-        LIMIT 7
-      `;
-      recentSnapshots = await sql`
-        SELECT timestamp, tokens_in, tokens_out, context_pct, hourly_pct_left, weekly_pct_left
-        FROM token_snapshots
-        WHERE timestamp > ${yesterday} AND org_id = ${orgId} AND agent_id = ${agentId}
-        ORDER BY timestamp ASC
-      `;
-    } else {
-      // Org-wide queries (agent_id IS NULL = aggregated rows)
-      latestSnapshot = await sql`
-        SELECT * FROM token_snapshots
-        WHERE org_id = ${orgId} AND agent_id IS NULL
-        ORDER BY timestamp DESC
-        LIMIT 1
-      `;
-      todayTotals = await sql`
-        SELECT * FROM daily_totals
-        WHERE date = ${today} AND org_id = ${orgId} AND agent_id IS NULL
-      `;
-      history = await sql`
-        SELECT * FROM daily_totals
-        WHERE org_id = ${orgId} AND agent_id IS NULL
-        ORDER BY date DESC
-        LIMIT 7
-      `;
-      recentSnapshots = await sql`
-        SELECT timestamp, tokens_in, tokens_out, context_pct, hourly_pct_left, weekly_pct_left
-        FROM token_snapshots
-        WHERE timestamp > ${yesterday} AND org_id = ${orgId} AND agent_id IS NULL
-        ORDER BY timestamp ASC
-      `;
-    }
+    const [latestSnapshot, todayTotals, history, recentSnapshots] = await Promise.all([
+      getLatestSnapshot(sql, orgId, agentId),
+      getTodayTotals(sql, orgId, agentId, today),
+      getHistory(sql, orgId, agentId),
+      getRecentSnapshots(sql, orgId, agentId, yesterday),
+    ]);
 
     const latest = latestSnapshot[0] || null;
     const todayData = todayTotals[0] || null;
+
+    // For All Agents view, also fetch per-agent context snapshots
+    let agentContexts = [];
+    if (!agentId) {
+      agentContexts = await getPerAgentLatestSnapshots(sql, orgId);
+    }
 
     return NextResponse.json({
       current: latest ? {
@@ -120,6 +92,14 @@ export async function GET(request) {
         hourlyLeft: s.hourly_pct_left,
         weeklyLeft: s.weekly_pct_left
       })),
+      agentContexts: agentContexts.map(s => ({
+        agentId: s.agent_id,
+        contextUsed: s.context_used,
+        contextMax: s.context_max,
+        contextPct: s.context_pct,
+        model: s.model,
+        updatedAt: s.timestamp
+      })),
       lastUpdated: new Date().toISOString()
     });
   } catch (error) {
@@ -130,6 +110,7 @@ export async function GET(request) {
       today: null,
       history: [],
       timeline: [],
+      agentContexts: [],
       lastUpdated: new Date().toISOString(),
       error: 'An error occurred while fetching token data'
     }, { status: 500 });
@@ -161,61 +142,23 @@ export async function POST(request) {
     const agentId = agent_id || null;
 
     // Insert per-agent snapshot
-    const result = await sql`
-      INSERT INTO token_snapshots (
-        org_id, agent_id, tokens_in, tokens_out, context_used, context_max, context_pct,
-        hourly_pct_left, weekly_pct_left, compactions, model, session_key, timestamp
-      ) VALUES (
-        ${orgId}, ${agentId}, ${tokensIn}, ${tokensOut}, ${contextUsed}, ${contextMax}, ${contextPct},
-        ${hourly_pct_left || 100}, ${weekly_pct_left || 100}, ${compactions || 0},
-        ${model || 'unknown'}, ${session_key || agent_id || 'sdk'}, ${now}
-      )
-      RETURNING *
-    `;
+    const result = await insertSnapshot(sql, orgId, {
+      agentId, tokensIn, tokensOut, contextUsed, contextMax, contextPct,
+      hourly_pct_left, weekly_pct_left, compactions, model, session_key, now
+    });
 
-    // Also insert org-wide aggregate snapshot (agent_id = NULL) if this is a per-agent report
+    // Insert real aggregated org-wide snapshot if this is a per-agent report
     if (agentId) {
-      await sql`
-        INSERT INTO token_snapshots (
-          org_id, agent_id, tokens_in, tokens_out, context_used, context_max, context_pct,
-          hourly_pct_left, weekly_pct_left, compactions, model, session_key, timestamp
-        ) VALUES (
-          ${orgId}, ${null}, ${tokensIn}, ${tokensOut}, ${contextUsed}, ${contextMax}, ${contextPct},
-          ${hourly_pct_left || 100}, ${weekly_pct_left || 100}, ${compactions || 0},
-          ${model || 'unknown'}, ${session_key || agent_id || 'sdk'}, ${now}
-        )
-      `;
+      await insertOrgAggregateSnapshot(sql, orgId, { now });
     }
 
     // Upsert per-agent daily totals (or org-wide if no agent_id)
     const today = now.split('T')[0];
-    await sql.query(
-      `INSERT INTO daily_totals (org_id, agent_id, date, total_tokens_in, total_tokens_out, total_tokens, peak_context_pct, snapshots_count)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 1)
-       ON CONFLICT (org_id, COALESCE(agent_id, ''), date)
-       DO UPDATE SET
-         total_tokens_in = daily_totals.total_tokens_in + $4,
-         total_tokens_out = daily_totals.total_tokens_out + $5,
-         total_tokens = daily_totals.total_tokens + $6,
-         peak_context_pct = GREATEST(daily_totals.peak_context_pct, $7),
-         snapshots_count = daily_totals.snapshots_count + 1`,
-      [orgId, agentId, today, tokensIn, tokensOut, tokensIn + tokensOut, contextPct]
-    );
+    await upsertDailyTotals(sql, orgId, agentId, today, tokensIn, tokensOut, contextPct);
 
     // Also upsert org-wide aggregate daily totals if this is a per-agent report
     if (agentId) {
-      await sql.query(
-        `INSERT INTO daily_totals (org_id, agent_id, date, total_tokens_in, total_tokens_out, total_tokens, peak_context_pct, snapshots_count)
-         VALUES ($1, NULL, $2, $3, $4, $5, $6, 1)
-         ON CONFLICT (org_id, COALESCE(agent_id, ''), date)
-         DO UPDATE SET
-           total_tokens_in = daily_totals.total_tokens_in + $3,
-           total_tokens_out = daily_totals.total_tokens_out + $4,
-           total_tokens = daily_totals.total_tokens + $5,
-           peak_context_pct = GREATEST(daily_totals.peak_context_pct, $6),
-           snapshots_count = daily_totals.snapshots_count + 1`,
-        [orgId, today, tokensIn, tokensOut, tokensIn + tokensOut, contextPct]
-      );
+      await upsertDailyTotals(sql, orgId, null, today, tokensIn, tokensOut, contextPct);
     }
 
     return NextResponse.json({ snapshot: result[0] }, { status: 201 });

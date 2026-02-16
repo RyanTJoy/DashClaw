@@ -169,7 +169,7 @@ export default function RecentActionsCard() {
       <CardHeader title="Recent Actions" icon={Zap} count={actions.length} action={viewAllLink} />
 
       <CardContent>
-        <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
+        <div className="space-y-2">
           {actions.length === 0 ? (
             <EmptyState
               icon={Inbox}
