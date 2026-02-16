@@ -12,6 +12,7 @@ import { StatCompact } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 const LOOP_TYPE_ICONS = {
   followup: ClipboardList,
@@ -37,6 +38,7 @@ export default function OpenLoopsCard() {
   const [resolving, setResolving] = useState(null);
   const [resolutionText, setResolutionText] = useState('');
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   useEffect(() => {
     async function fetchLoops() {
@@ -90,6 +92,12 @@ export default function OpenLoopsCard() {
   const highCount = parseInt(stats.high_open || '0', 10);
   const resolvedCount = parseInt(stats.resolved_count || '0', 10);
 
+  const LOOP_ITEM_H = 52;
+  const STATS_H = 70;
+  const maxVisibleLoops = tileHeight > 0 ? fitItems(tileHeight, LOOP_ITEM_H, STATS_H) : 3;
+  const visibleLoops = loops.slice(0, maxVisibleLoops);
+  const loopOverflow = loops.length - visibleLoops.length;
+
   const viewAllLink = (
     <Link href="/actions" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
       View all <ArrowRight size={12} />
@@ -108,8 +116,9 @@ export default function OpenLoopsCard() {
       </CardHeader>
 
       <CardContent>
+        <div ref={sizeRef} className="flex flex-col h-full min-h-0">
         {/* Summary stats */}
-        <div className="bg-surface-tertiary rounded-lg px-3 py-2.5 mb-4">
+        <div className="bg-surface-tertiary rounded-lg px-3 py-2.5 mb-4 flex-shrink-0">
           <div className="grid grid-cols-3 gap-2">
             <StatCompact label="Open" value={openCount} color="text-white" />
             <StatCompact label="High" value={highCount} color="text-amber-400" />
@@ -117,8 +126,8 @@ export default function OpenLoopsCard() {
           </div>
         </div>
 
-        <div className="space-y-2">
-          {loops.length === 0 ? (
+        <div className="flex-1 min-h-0 space-y-2">
+          {visibleLoops.length === 0 ? (
             <EmptyState
               icon={CheckCircle2}
               title="No open loops"
@@ -202,6 +211,12 @@ export default function OpenLoopsCard() {
               );
             })
           )}
+        </div>
+        {loopOverflow > 0 && (
+          <Link href="/actions" className="mt-2 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
+            +{loopOverflow} more <ArrowRight size={12} />
+          </Link>
+        )}
         </div>
       </CardContent>
     </Card>

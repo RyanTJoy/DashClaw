@@ -17,6 +17,7 @@ import { CardSkeleton } from './ui/Skeleton';
 import { getAgentColor } from '../lib/colors';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import { useRealtime } from '../hooks/useRealtime';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 const TYPE_ICONS = {
   build: Hammer,
@@ -61,6 +62,7 @@ export default function RecentActionsCard() {
   const [actions, setActions] = useState([]);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   useRealtime((event, payload) => {
     if (event === 'action.created') {
@@ -153,6 +155,11 @@ export default function RecentActionsCard() {
     );
   }
 
+  const ITEM_H = 56;
+  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H) : 5;
+  const visibleActions = actions.slice(0, maxVisible);
+  const overflow = actions.length - visibleActions.length;
+
   const completed = actions.filter(a => a.status === 'completed').length;
   const running = actions.filter(a => a.status === 'in-progress').length;
   const pending = actions.filter(a => a.status === 'pending').length;
@@ -169,7 +176,8 @@ export default function RecentActionsCard() {
       <CardHeader title="Decision Ledger" icon={Zap} count={actions.length} action={viewAllLink} />
 
       <CardContent>
-        <div className="space-y-2">
+        <div ref={sizeRef} className="flex flex-col h-full min-h-0">
+        <div className="flex-1 min-h-0 space-y-2">
           {actions.length === 0 ? (
             <EmptyState
               icon={Inbox}
@@ -177,7 +185,7 @@ export default function RecentActionsCard() {
               description="Use the SDK's createAction() or POST /api/actions to record governed decisions"
             />
           ) : (
-            actions.map((action) => {
+            visibleActions.map((action) => {
               const { time, date } = formatTimestamp(action.timestamp);
               // Fallback for unknown types
               const TypeIcon = TYPE_ICONS[action.type] || Zap;
@@ -235,6 +243,12 @@ export default function RecentActionsCard() {
               );
             })
           )}
+        </div>
+        {overflow > 0 && (
+          <Link href="/actions" className="mt-2 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
+            +{overflow} more <ArrowRight size={12} />
+          </Link>
+        )}
         </div>
       </CardContent>
     </Card>

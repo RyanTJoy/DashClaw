@@ -8,11 +8,13 @@ import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
 import { ListSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 export default function FollowUpsCard() {
   const [followUps, setFollowUps] = useState([]);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   useEffect(() => {
     async function fetchData() {
@@ -65,6 +67,11 @@ export default function FollowUpsCard() {
     return 'text-green-400';
   };
 
+  const ITEM_H = 80;
+  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H) : 3;
+  const visibleFollowUps = followUps.slice(0, maxVisible);
+  const followUpOverflow = followUps.length - visibleFollowUps.length;
+
   const viewAllLink = (
     <Link href="/relationships" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
       View all <ArrowRight size={12} />
@@ -84,27 +91,34 @@ export default function FollowUpsCard() {
             description="No pending follow-ups"
           />
         ) : (
-          <div className="space-y-2">
-            {followUps.map((followUp) => (
-              <div
-                key={followUp.id}
-                className="bg-surface-tertiary rounded-lg p-3 transition-colors duration-150"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-white truncate mr-2">{followUp.name}</span>
-                  <Badge variant={getTempVariant(followUp.temperature)} size="xs">
-                    {followUp.temperature}
-                  </Badge>
+          <div ref={sizeRef} className="flex flex-col h-full min-h-0">
+            <div className="flex-1 min-h-0 space-y-2">
+              {visibleFollowUps.map((followUp) => (
+                <div
+                  key={followUp.id}
+                  className="bg-surface-tertiary rounded-lg p-3 transition-colors duration-150"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm font-medium text-white truncate mr-2">{followUp.name}</span>
+                    <Badge variant={getTempVariant(followUp.temperature)} size="xs">
+                      {followUp.temperature}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-zinc-400 mb-1.5">{followUp.type}</div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-zinc-500">Due: {followUp.dueDate}</span>
+                    <span className={`font-medium ${getDaysColor(followUp.daysLeft)}`}>
+                      {followUp.daysLeft}d left
+                    </span>
+                  </div>
                 </div>
-                <div className="text-xs text-zinc-400 mb-1.5">{followUp.type}</div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-500">Due: {followUp.dueDate}</span>
-                  <span className={`font-medium ${getDaysColor(followUp.daysLeft)}`}>
-                    {followUp.daysLeft}d left
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {followUpOverflow > 0 && (
+              <Link href="/relationships" className="mt-2 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
+                +{followUpOverflow} more <ArrowRight size={12} />
+              </Link>
+            )}
           </div>
         )}
       </CardContent>
