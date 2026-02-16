@@ -150,7 +150,7 @@ app/
     └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (78+ methods, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (95+ methods across 21+ categories, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -167,6 +167,7 @@ sdk-python/
 scripts/
 ├── security-scan.js           # Pre-deploy security audit
 ├── test-actions.mjs           # Integration test suite (~175 assertions, 19 phases)
+├── test-full-api.mjs          # Full API test suite (~186 assertions, 15 phases, all remaining routes)
 ├── migrate-multi-tenant.mjs   # Multi-tenant migration (idempotent)
 ├── create-org.mjs             # CLI: create org + admin API key
 ├── report-tokens.mjs          # CLI: parse Claude Code /status and POST to /api/tokens (disabled)
@@ -386,8 +387,9 @@ function getSql() {
   - `GET/POST /api/actions/loops` - list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` - single loop + resolve/cancel
   - `GET /api/actions/signals` - 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/dashclaw.js` - 78+ methods across 16 categories (see `docs/client-setup-guide.md` for current method reference)
-- Tests: `scripts/test-actions.mjs` - ~95 assertions across 11 phases
+- SDK: `sdk/dashclaw.js` - 95+ methods across 21+ categories with full Node/Python parity (see `docs/client-setup-guide.md` for current method reference)
+- Tests: `scripts/test-actions.mjs` - ~219 assertions across 19 phases (core actions/SDK)
+- Tests: `scripts/test-full-api.mjs` - ~186 assertions across 15 phases (all remaining API routes)
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
 - `timestamp_start` is TEXT (ISO string), not native TIMESTAMP
 
@@ -539,8 +541,8 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 
 ## SDK Documentation Page (Implemented)
 - Route: `/docs` - public server component (no auth required, not in middleware matcher)
-- Full reference for all 22 active SDK methods organized into 4 categories
-- Categories: Action Recording (6), Loops & Assumptions (7), Signals (1), Dashboard Data (8)
+- Full reference for 95+ SDK methods organized into 21+ categories
+- Categories: Action Recording (7), Loops & Assumptions (7), Signals (1), Dashboard Data (9), Session Handoffs (3), Context Manager (7), Automation Snippets (4), User Preferences (6), Daily Digest (1), Security Scanning (2), Agent Messaging (9), Behavior Guard (2), Bulk Sync (1), Policy Testing (3), Compliance Engine (5), Task Routing (10), Agent Pairing (3), Identity Binding (2), Organization Management (5), Activity Logs (1), Webhooks (5)
 - Each method: signature, description, parameter table, return type, code example
 - Sticky side navigation with anchor links to all sections
 - Quick Start section (3 steps: copy SDK, init client, record first action)
@@ -791,7 +793,7 @@ const claw = new DashClaw({
 ```
 Agents do NOT need `DATABASE_URL` - the API handles the database connection server-side.
 
-### DashClaw SDK (npm package - 78+ methods)
+### DashClaw SDK (npm package - 95+ methods across 21+ categories)
 
 The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
 
@@ -866,6 +868,16 @@ const claw = new DashClaw({
 **Compliance Engine (5)**: `getComplianceMap()`, `getComplianceGaps()`, `getComplianceReport()`, `getComplianceFrameworks()`, `getComplianceEvidence()`
 
 **Task Routing (10)**: `listRoutingAgents()`, `registerRoutingAgent()`, `getRoutingAgent()`, `updateRoutingAgent()`, `deleteRoutingAgent()`, `listRoutingTasks()`, `submitRoutingTask()`, `completeRoutingTask()`, `getRoutingStats()`, `getRoutingHealth()`
+
+**Agent Pairing (3)**: `createPairing()`, `createPairingFromPrivateJwk()`, `waitForPairing()`
+
+**Identity Binding (2)**: `registerIdentity()`, `getIdentities()`
+
+**Organization Management (5)**: `getOrg()`, `createOrg()`, `getOrgById()`, `updateOrg()`, `getOrgKeys()`
+
+**Activity Logs (1)**: `getActivityLogs()`
+
+**Webhooks (5)**: `getWebhooks()`, `createWebhook()`, `deleteWebhook()`, `testWebhook()`, `getWebhookDeliveries()`
 
 **Error Classes**: `GuardBlockedError` - thrown when `guardMode: 'enforce'` and guard blocks an action
 

@@ -767,6 +767,29 @@ async function hashApiKey(key) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// In-memory cache for org existence verification (5-min TTL)
+const orgExistsCache = new Map();
+const ORG_EXISTS_CACHE_TTL = 5 * 60 * 1000;
+
+async function verifyOrgExists(orgId) {
+  const now = Date.now();
+  const cached = orgExistsCache.get(orgId);
+  if (cached && now - cached.timestamp < ORG_EXISTS_CACHE_TTL) {
+    return cached.exists;
+  }
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const rows = await sql`SELECT 1 FROM organizations WHERE id = ${orgId} LIMIT 1`;
+    const exists = rows.length > 0;
+    orgExistsCache.set(orgId, { timestamp: now, exists });
+    return exists;
+  } catch (err) {
+    console.error('[MIDDLEWARE] Failed to verify org existence:', err.message);
+    // On DB error, don't cache — fail open for availability but log loudly
+    return true;
+  }
+}
+
 // In-memory cache for API key -> org resolution (5-min TTL)
 const apiKeyCache = new Map();
 const API_KEY_CACHE_TTL = 5 * 60 * 1000;
@@ -1437,7 +1460,19 @@ export async function middleware(request) {
 
     // Fast path: DASHCLAW_API_KEY matches → configured org (default: org_default)
     if (timingSafeEqual(apiKey, expectedKey)) {
-      requestHeaders.set('x-org-id', process.env.DASHCLAW_API_KEY_ORG || 'org_default');
+      const configuredOrgId = process.env.DASHCLAW_API_KEY_ORG || 'org_default';
+
+      // Validate that the configured org actually exists in the database (cached).
+      const orgExists = await verifyOrgExists(configuredOrgId);
+      if (!orgExists) {
+        console.error(`[SECURITY] DASHCLAW_API_KEY_ORG="${configuredOrgId}" does not exist in organizations table. Run migrations or create the org.`);
+        return NextResponse.json(
+          { error: `Server misconfigured: DASHCLAW_API_KEY_ORG references org "${configuredOrgId}" which does not exist. Run migrations or create the org via POST /api/orgs.` },
+          { status: 503 }
+        );
+      }
+
+      requestHeaders.set('x-org-id', configuredOrgId);
       requestHeaders.set('x-org-role', 'admin');
 
       // SECURITY: Enforce readonly semantics for API keys.
