@@ -1,0 +1,270 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const { mockDeliverGuardWebhook, mockCheckSemantic, mockIsEmbeddingsEnabled, mockGenerateEmbedding, mockScanSensitiveData } = vi.hoisted(() => ({
+  mockDeliverGuardWebhook: vi.fn(),
+  mockCheckSemantic: vi.fn(),
+  mockIsEmbeddingsEnabled: vi.fn(() => false),
+  mockGenerateEmbedding: vi.fn(),
+  mockScanSensitiveData: vi.fn((text) => ({ findings: [], redacted: text, clean: true })),
+}));
+
+vi.mock('@/lib/webhooks.js', () => ({ deliverGuardWebhook: mockDeliverGuardWebhook }));
+vi.mock('@/lib/llm.js', () => ({ checkSemanticGuardrail: mockCheckSemantic }));
+vi.mock('@/lib/embeddings.js', () => ({ isEmbeddingsEnabled: mockIsEmbeddingsEnabled, generateActionEmbedding: mockGenerateEmbedding }));
+vi.mock('@/lib/security.js', () => ({ scanSensitiveData: mockScanSensitiveData }));
+
+import { evaluateGuard } from '@/lib/guard.js';
+import { createSqlMock } from '../helpers.js';
+
+function makeSql(policies) {
+  return createSqlMock({ taggedResponses: [policies] });
+}
+
+function makePolicy(type, rules, overrides = {}) {
+  return {
+    id: `gp_${type}`,
+    name: `Policy ${type}`,
+    policy_type: type,
+    rules: JSON.stringify(rules),
+    ...overrides,
+  };
+}
+
+describe('evaluateGuard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockScanSensitiveData.mockImplementation((text) => ({ findings: [], redacted: text, clean: true }));
+  });
+
+  // --- risk_threshold ---
+
+  it('blocks when risk_score >= threshold', async () => {
+    const sql = makeSql([makePolicy('risk_threshold', { threshold: 80 })]);
+    const result = await evaluateGuard('org_1', { risk_score: 85 }, sql);
+    expect(result.decision).toBe('block');
+    expect(result.reasons[0]).toContain('Risk score 85 >= threshold 80');
+  });
+
+  it('allows when risk_score < threshold', async () => {
+    const sql = makeSql([makePolicy('risk_threshold', { threshold: 80 })]);
+    const result = await evaluateGuard('org_1', { risk_score: 50 }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  it('uses default threshold of 80', async () => {
+    const sql = makeSql([makePolicy('risk_threshold', {})]);
+    const result = await evaluateGuard('org_1', { risk_score: 80 }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  it('clamps risk_score to 0-100', async () => {
+    const sql = makeSql([makePolicy('risk_threshold', { threshold: 80 })]);
+    const result = await evaluateGuard('org_1', { risk_score: 150 }, sql);
+    expect(result.decision).toBe('block');
+    expect(result.reasons[0]).toContain('Risk score 100');
+  });
+
+  it('treats negative risk_score as 0', async () => {
+    const sql = makeSql([makePolicy('risk_threshold', { threshold: 1 })]);
+    const result = await evaluateGuard('org_1', { risk_score: -50 }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- require_approval ---
+
+  it('requires approval for matching action_type', async () => {
+    const sql = makeSql([makePolicy('require_approval', { action_types: ['deploy', 'migrate'] })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('require_approval');
+  });
+
+  it('allows non-matching action_type for require_approval', async () => {
+    const sql = makeSql([makePolicy('require_approval', { action_types: ['deploy'] })]);
+    const result = await evaluateGuard('org_1', { action_type: 'read' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- block_action_type ---
+
+  it('blocks matching action_type', async () => {
+    const sql = makeSql([makePolicy('block_action_type', { action_types: ['delete'] })]);
+    const result = await evaluateGuard('org_1', { action_type: 'delete' }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  it('allows non-matching action_type for block', async () => {
+    const sql = makeSql([makePolicy('block_action_type', { action_types: ['delete'] })]);
+    const result = await evaluateGuard('org_1', { action_type: 'read' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- rate_limit ---
+
+  it('warns when rate limit exceeded', async () => {
+    const sql = createSqlMock({
+      taggedResponses: [[makePolicy('rate_limit', { max_actions: 5, window_minutes: 60 })]],
+      queryResponses: [[{ cnt: '6' }]],
+    });
+    const result = await evaluateGuard('org_1', { agent_id: 'a1', action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('warn');
+  });
+
+  it('allows under rate limit', async () => {
+    const sql = createSqlMock({
+      taggedResponses: [[makePolicy('rate_limit', { max_actions: 10, window_minutes: 60 })]],
+      queryResponses: [[{ cnt: '3' }]],
+    });
+    const result = await evaluateGuard('org_1', { agent_id: 'a1', action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  it('skips rate_limit without agent_id', async () => {
+    const sql = createSqlMock({
+      taggedResponses: [[makePolicy('rate_limit', { max_actions: 1, window_minutes: 1 })]],
+    });
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- semantic_check ---
+
+  it('blocks on semantic check violation', async () => {
+    mockCheckSemantic.mockResolvedValue({ allowed: false, reason: 'Violates safety policy' });
+    const sql = makeSql([makePolicy('semantic_check', { instruction: 'Check safety' })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('block');
+    expect(result.reasons[0]).toContain('Semantic Violation');
+  });
+
+  it('allows on semantic check pass', async () => {
+    mockCheckSemantic.mockResolvedValue({ allowed: true, reason: 'OK' });
+    const sql = makeSql([makePolicy('semantic_check', { instruction: 'Check safety' })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  it('falls back to allow when semantic check fails (default fail-open)', async () => {
+    mockCheckSemantic.mockResolvedValue(null);
+    const sql = makeSql([makePolicy('semantic_check', { instruction: 'Check' })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  it('falls back to block when semantic check fails and fallback=block', async () => {
+    mockCheckSemantic.mockResolvedValue(null);
+    const sql = makeSql([makePolicy('semantic_check', { instruction: 'Check', fallback: 'block' })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  // --- behavioral_anomaly ---
+
+  it('skips behavioral_anomaly when embeddings disabled', async () => {
+    mockIsEmbeddingsEnabled.mockReturnValue(false);
+    const sql = makeSql([makePolicy('behavioral_anomaly', { similarity_threshold: 0.75 })]);
+    const result = await evaluateGuard('org_1', { agent_id: 'a1', action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- webhook_check ---
+
+  it('escalates decision on webhook response', async () => {
+    mockDeliverGuardWebhook.mockResolvedValue({
+      success: true,
+      response: { decision: 'block', reasons: ['Blocked by webhook'], warnings: [] },
+    });
+    const sql = makeSql([makePolicy('webhook_check', { url: 'https://example.com/hook', timeout_ms: 5000 })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  it('does not downgrade decision from webhook', async () => {
+    mockDeliverGuardWebhook.mockResolvedValue({
+      success: true,
+      response: { decision: 'allow', reasons: [], warnings: [] },
+    });
+    const sql = createSqlMock({
+      taggedResponses: [[
+        makePolicy('block_action_type', { action_types: ['deploy'] }),
+        makePolicy('webhook_check', { url: 'https://example.com/hook' }),
+      ]],
+    });
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  it('applies on_timeout=block when webhook times out', async () => {
+    mockDeliverGuardWebhook.mockResolvedValue({ success: false, response: null });
+    const sql = makeSql([makePolicy('webhook_check', { url: 'https://example.com', on_timeout: 'block' })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  it('applies on_timeout=allow (fail-open) when webhook times out', async () => {
+    mockDeliverGuardWebhook.mockResolvedValue({ success: false, response: null });
+    const sql = makeSql([makePolicy('webhook_check', { url: 'https://example.com', on_timeout: 'allow' })]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- Severity escalation ---
+
+  it('highest severity wins across multiple policies', async () => {
+    const sql = makeSql([
+      makePolicy('require_approval', { action_types: ['deploy'] }),
+      makePolicy('block_action_type', { action_types: ['deploy'] }),
+    ]);
+    const result = await evaluateGuard('org_1', { action_type: 'deploy' }, sql);
+    expect(result.decision).toBe('block');
+  });
+
+  // --- Redaction ---
+
+  it('redacts sensitive data from logged context', async () => {
+    mockScanSensitiveData.mockImplementation((text) => {
+      if (typeof text === 'string' && text.includes('secret')) {
+        return { findings: [{ pattern: 'api_key_generic', category: 'api_key', severity: 'critical', preview: 'sec***' }], redacted: '[REDACTED]', clean: false };
+      }
+      return { findings: [], redacted: text, clean: true };
+    });
+    const sql = makeSql([]);
+    const result = await evaluateGuard('org_1', { declared_goal: 'secret_key_here' }, sql);
+    expect(result.decision).toBe('allow');
+    expect(mockScanSensitiveData).toHaveBeenCalled();
+  });
+
+  // --- Malformed rules ---
+
+  it('skips policies with malformed JSON rules', async () => {
+    const sql = createSqlMock({
+      taggedResponses: [[{ id: 'gp_bad', name: 'Bad', policy_type: 'risk_threshold', rules: 'not{json' }]],
+    });
+    const result = await evaluateGuard('org_1', { risk_score: 99 }, sql);
+    expect(result.decision).toBe('allow');
+  });
+
+  // --- Signal integration ---
+
+  it('includes signal warnings when includeSignals is true', async () => {
+    const sql = makeSql([]);
+    const mockCompute = vi.fn().mockResolvedValue([{ type: 'autonomy_spike', label: 'Too fast' }]);
+    const result = await evaluateGuard('org_1', { agent_id: 'a1' }, sql, {
+      includeSignals: true,
+      computeSignals: mockCompute,
+    });
+    expect(result.warnings.some(w => w.includes('autonomy_spike'))).toBe(true);
+  });
+
+  // --- Return shape ---
+
+  it('returns correct result shape', async () => {
+    const sql = makeSql([]);
+    const result = await evaluateGuard('org_1', { action_type: 'read' }, sql);
+    expect(result).toHaveProperty('decision');
+    expect(result).toHaveProperty('reasons');
+    expect(result).toHaveProperty('warnings');
+    expect(result).toHaveProperty('matched_policies');
+    expect(result).toHaveProperty('evaluated_at');
+    expect(result.risk_score).toBeNull();
+  });
+});

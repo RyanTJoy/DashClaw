@@ -17,7 +17,7 @@ export function analyzeGaps(complianceMap) {
 
   const prioritizedGaps = [...gaps, ...partials].sort((a, b) => {
     const relevanceOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-    return (relevanceOrder[a.agent_relevance] || 3) - (relevanceOrder[b.agent_relevance] || 3);
+    return (relevanceOrder[a.agent_relevance] ?? 3) - (relevanceOrder[b.agent_relevance] ?? 3);
   });
 
   const remediationPlan = prioritizedGaps.map((control, index) => ({
