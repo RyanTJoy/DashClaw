@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import {
   CheckCircle2, XCircle, Clock, Zap, Target, BarChart3, HelpCircle,
   RefreshCw, MapPin, Microscope, IdCard, Rocket, Search, ArrowUp,
-  Link2, AlertTriangle
+  Link2, AlertTriangle, ShieldCheck, ShieldAlert
 } from 'lucide-react';
 import PageLayout from '../../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../../components/ui/Card';
@@ -319,6 +319,17 @@ export default function ActionPostMortem() {
         </Card>
       </div>
 
+      {/* Fragile Logic Warning */}
+      {assumptions.some(a => !a.validated && !a.invalidated) && (
+        <div className="mb-6 px-4 py-3 rounded-lg border border-amber-500/30 bg-amber-500/5 flex items-center gap-3">
+          <AlertTriangle size={18} className="text-amber-400 flex-shrink-0" />
+          <div>
+            <div className="text-sm font-medium text-amber-300">Fragile Logic</div>
+            <div className="text-xs text-zinc-400">This decision was made on {assumptions.filter(a => !a.validated && !a.invalidated).length} unverified assumption{assumptions.filter(a => !a.validated && !a.invalidated).length !== 1 ? 's' : ''}. Validate or invalidate them to strengthen the decision basis.</div>
+          </div>
+        </div>
+      )}
+
       {/* Trace Graph Visualization */}
       {trace && (
         <AssumptionGraph
@@ -424,11 +435,11 @@ export default function ActionPostMortem() {
         <div className="lg:col-span-2 space-y-6">
           {/* Intent */}
           <Card hover={false}>
-            <CardHeader title="Intent" icon={Target} />
+            <CardHeader title="Decision Intent" icon={Target} />
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <div className="text-xs text-zinc-500 uppercase mb-1">Goal</div>
+                  <div className="text-xs text-zinc-500 uppercase mb-1">Declared Goal</div>
                   <div className="text-sm text-zinc-200">{action.declared_goal}</div>
                 </div>
                 {action.reasoning && (
@@ -459,67 +470,10 @@ export default function ActionPostMortem() {
             </CardContent>
           </Card>
 
-          {/* Outcome */}
-          <Card hover={false}>
-            <CardHeader title="Outcome" icon={BarChart3} />
-            <CardContent>
-              <div className="space-y-4">
-                {action.output_summary && (
-                  <div>
-                    <div className="text-xs text-zinc-500 uppercase mb-1">Output</div>
-                    <div className="text-sm text-zinc-300 bg-surface-tertiary p-3 rounded-lg">{action.output_summary}</div>
-                  </div>
-                )}
-                {action.error_message && (
-                  <div>
-                    <div className="text-xs text-zinc-500 uppercase mb-1">Error</div>
-                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">{action.error_message}</div>
-                  </div>
-                )}
-                {sideEffects.length > 0 && (
-                  <div>
-                    <div className="text-xs text-zinc-500 uppercase mb-1">Side Effects ({sideEffects.length})</div>
-                    <div className="space-y-1">
-                      {sideEffects.map((se, i) => (
-                        <div key={i} className="px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-300">
-                          {se}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {artifacts.length > 0 && (
-                  <div>
-                    <div className="text-xs text-zinc-500 uppercase mb-1">Artifacts ({artifacts.length})</div>
-                    <div className="flex flex-wrap gap-2">
-                      {artifacts.map((a, i) => (
-                        <span key={i} className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-300 font-mono">
-                          {a}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {systems.length > 0 && (
-                  <div>
-                    <div className="text-xs text-zinc-500 uppercase mb-1">Systems Touched</div>
-                    <div className="flex flex-wrap gap-2">
-                      {systems.map((s, i) => (
-                        <span key={i} className="px-2 py-1 bg-zinc-500/10 border border-zinc-500/20 rounded text-xs text-zinc-300">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Interactive Assumptions */}
+          {/* Decision Basis (Assumptions) — shown before Outcome */}
           {assumptions.length > 0 && (
             <Card hover={false}>
-              <CardHeader title="Assumptions" icon={HelpCircle} count={assumptions.length} />
+              <CardHeader title="Decision Basis" icon={HelpCircle} count={assumptions.length} />
               <CardContent>
                 <div className="space-y-3">
                   {assumptions.map(asm => {
@@ -609,10 +563,67 @@ export default function ActionPostMortem() {
             </Card>
           )}
 
+          {/* Decision Outcome */}
+          <Card hover={false}>
+            <CardHeader title="Decision Outcome" icon={BarChart3} />
+            <CardContent>
+              <div className="space-y-4">
+                {action.output_summary && (
+                  <div>
+                    <div className="text-xs text-zinc-500 uppercase mb-1">Output</div>
+                    <div className="text-sm text-zinc-300 bg-surface-tertiary p-3 rounded-lg">{action.output_summary}</div>
+                  </div>
+                )}
+                {action.error_message && (
+                  <div>
+                    <div className="text-xs text-zinc-500 uppercase mb-1">Error</div>
+                    <div className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-lg">{action.error_message}</div>
+                  </div>
+                )}
+                {sideEffects.length > 0 && (
+                  <div>
+                    <div className="text-xs text-zinc-500 uppercase mb-1">Side Effects ({sideEffects.length})</div>
+                    <div className="space-y-1">
+                      {sideEffects.map((se, i) => (
+                        <div key={i} className="px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-300">
+                          {se}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {artifacts.length > 0 && (
+                  <div>
+                    <div className="text-xs text-zinc-500 uppercase mb-1">Artifacts ({artifacts.length})</div>
+                    <div className="flex flex-wrap gap-2">
+                      {artifacts.map((a, i) => (
+                        <span key={i} className="px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-300 font-mono">
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {systems.length > 0 && (
+                  <div>
+                    <div className="text-xs text-zinc-500 uppercase mb-1">Systems Touched</div>
+                    <div className="flex flex-wrap gap-2">
+                      {systems.map((s, i) => (
+                        <span key={i} className="px-2 py-1 bg-zinc-500/10 border border-zinc-500/20 rounded text-xs text-zinc-300">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Interactive Open Loops */}
           {loops.length > 0 && (
             <Card hover={false}>
-              <CardHeader title="Open Loops" icon={RefreshCw} count={loops.length} />
+              <CardHeader title="Unresolved Dependencies" icon={RefreshCw} count={loops.length} />
               <CardContent>
                 {openLoops.length > 0 && (
                   <div className="mb-4">
@@ -755,6 +766,15 @@ export default function ActionPostMortem() {
                 <div>
                   <div className="text-xs text-zinc-500 uppercase">Agent</div>
                   <div className="text-sm text-zinc-300">{action.agent_name || '--'} ({action.agent_id})</div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500 uppercase">Verified Identity</div>
+                  <div className="flex items-center gap-1.5 text-sm">
+                    {action.verified
+                      ? <><ShieldCheck size={14} className="text-green-400" /><span className="text-green-400">Verified</span></>
+                      : <><ShieldAlert size={14} className="text-zinc-500" /><span className="text-zinc-500">Unverified</span></>
+                    }
+                  </div>
                 </div>
                 {action.swarm_id && (
                   <div>

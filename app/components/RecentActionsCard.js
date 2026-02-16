@@ -147,7 +147,7 @@ export default function RecentActionsCard() {
   if (loading) {
     return (
       <Card className="h-full animate-pulse">
-        <CardHeader title="Recent Actions" icon={Zap} />
+        <CardHeader title="Decision Ledger" icon={Zap} />
         <CardContent className="h-80 bg-zinc-900/50 rounded-lg" />
       </Card>
     );
@@ -166,7 +166,7 @@ export default function RecentActionsCard() {
 
   return (
     <Card className="h-full">
-      <CardHeader title="Recent Actions" icon={Zap} count={actions.length} action={viewAllLink} />
+      <CardHeader title="Decision Ledger" icon={Zap} count={actions.length} action={viewAllLink} />
 
       <CardContent>
         <div className="space-y-2">
@@ -174,7 +174,7 @@ export default function RecentActionsCard() {
             <EmptyState
               icon={Inbox}
               title="No recent actions"
-              description="Use the SDK's createAction() or POST /api/actions to report agent activity"
+              description="Use the SDK's createAction() or POST /api/actions to record governed decisions"
             />
           ) : (
             actions.map((action) => {
