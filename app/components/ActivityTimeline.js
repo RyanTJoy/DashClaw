@@ -199,7 +199,7 @@ export default function ActivityTimeline() {
             description="Actions, open loops, and learning events will appear here chronologically"
           />
         ) : (
-          <div className="max-h-[480px] overflow-y-auto pr-1 -mr-1">
+          <div>
             {grouped.map(([dayLabel, dayEvents]) => (
               <div key={dayLabel} className="mb-4 last:mb-0">
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2 sticky top-0 bg-surface-secondary py-1 z-[1]">

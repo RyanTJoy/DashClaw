@@ -128,7 +128,7 @@ export default function ProjectsCard() {
       <CardHeader title="Active Projects" icon={FolderKanban} count={projects.length} />
 
       <CardContent>
-        <div className="space-y-1 max-h-80 overflow-y-auto">
+        <div className="space-y-1">
           {projects.map((project, index) => (
             <div
               key={index}

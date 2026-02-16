@@ -35,7 +35,7 @@ const screenshots = [
   { title: 'Pairings', file: 'pairings.png', desc: 'One-click pairing and device enrollment flows.' },
   { title: 'API Keys', file: 'api-keys.png', desc: 'Create and manage scoped API keys.' },
   { title: 'Usage', file: 'usage.png', desc: 'Usage and quota visibility.' },
-  { title: 'Bounty Hunter', file: 'bounty-hunter.png', desc: 'Track bounties and reward workflows.' },
+  { title: 'Bug Hunter', file: 'bug-hunter.png', desc: 'Automated platform quality scanner.' },
 ];
 
 export default function GalleryPage() {

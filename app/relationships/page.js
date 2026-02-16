@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Contact, MessageSquare, Zap, Flame, Calendar, Search, ArrowUpRight, ArrowDownLeft, RotateCw } from 'lucide-react';
+import { Users, Contact, MessageSquare, Zap, Flame, Calendar, Search, ArrowUpRight, ArrowDownLeft, RotateCw, X } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -13,6 +13,12 @@ export default function RelationshipsDashboard() {
   const [interactions, setInteractions] = useState([]);
   const [stats, setStats] = useState({ total: 0, hot: 0, warm: 0, cold: 0, followUpsDue: 0 });
   const [lastUpdated, setLastUpdated] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tempFilter, setTempFilter] = useState('All');
+  const [showDueOnly, setShowDueOnly] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', platform: 'GitHub', temperature: 'WARM', context: '', followUpDate: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -69,19 +75,62 @@ export default function RelationshipsDashboard() {
     return 'text-green-400';
   };
 
+  const handleAddContact = async () => {
+    if (!addForm.name.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/relationships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addForm),
+      });
+      if (res.ok) {
+        setShowAddModal(false);
+        setAddForm({ name: '', platform: 'GitHub', temperature: 'WARM', context: '', followUpDate: '' });
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Failed to add contact:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredContacts = contacts.filter(c => {
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      if (!c.name?.toLowerCase().includes(q) && !c.context?.toLowerCase().includes(q) && !c.platform?.toLowerCase().includes(q)) return false;
+    }
+    if (tempFilter !== 'All' && c.temperature !== tempFilter) return false;
+    if (showDueOnly) {
+      const days = getDaysUntil(c.followUpDate);
+      if (days === null || days > 0) return false;
+    }
+    return true;
+  });
+
   return (
     <PageLayout
-      title="Relationship Tracker"
-      subtitle={`CRM & Follow-up Management${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
-      breadcrumbs={['Dashboard', 'Relationships']}
+      title="Contacts"
+      subtitle={`Contact Management & Follow-ups${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
+      breadcrumbs={['Dashboard', 'Contacts']}
       actions={
-        <button
-          onClick={fetchData}
-          className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
-        >
-          <RotateCw size={14} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-3 py-1.5 text-sm text-white bg-brand hover:bg-brand-hover rounded-lg transition-colors duration-150 flex items-center gap-1.5 font-medium"
+          >
+            <Contact size={14} />
+            Add Contact
+          </button>
+          <button
+            onClick={fetchData}
+            className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+          >
+            <RotateCw size={14} />
+            Refresh
+          </button>
+        </div>
       }
     >
       {/* Stats Overview */}
@@ -122,10 +171,59 @@ export default function RelationshipsDashboard() {
         {/* Contacts List */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader title="Contacts" icon={Contact} count={contacts.length} />
+            <CardHeader title="Contacts" icon={Contact} count={filteredContacts.length} />
             <CardContent>
+              {/* Search & Filters */}
+              <div className="mb-4 space-y-3">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, context, or platform..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-brand"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  {['All', 'HOT', 'WARM', 'COLD'].map((temp) => (
+                    <button
+                      key={temp}
+                      onClick={() => setTempFilter(temp)}
+                      className={`px-3 py-1 text-xs rounded-md font-medium transition-colors duration-150 ${
+                        tempFilter === temp
+                          ? temp === 'HOT' ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                            : temp === 'WARM' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/40'
+                            : temp === 'COLD' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                            : 'bg-white/10 text-white border border-[rgba(255,255,255,0.2)]'
+                          : 'bg-surface-tertiary text-zinc-400 border border-[rgba(255,255,255,0.06)] hover:text-white hover:border-[rgba(255,255,255,0.12)]'
+                      }`}
+                    >
+                      {temp === 'All' ? 'All' : temp}
+                    </button>
+                  ))}
+                  <div className="w-px h-5 bg-[rgba(255,255,255,0.08)] mx-1" />
+                  <button
+                    onClick={() => setShowDueOnly(!showDueOnly)}
+                    className={`px-3 py-1 text-xs rounded-md font-medium transition-colors duration-150 flex items-center gap-1.5 ${
+                      showDueOnly
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                        : 'bg-surface-tertiary text-zinc-400 border border-[rgba(255,255,255,0.06)] hover:text-white hover:border-[rgba(255,255,255,0.12)]'
+                    }`}
+                  >
+                    <Calendar size={12} />
+                    Overdue Only
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                {contacts.map((contact) => {
+                {filteredContacts.length === 0 && (
+                  <div className="text-center text-sm text-zinc-500 py-8">
+                    No contacts match the current filters.
+                  </div>
+                )}
+                {filteredContacts.map((contact) => {
                   const daysUntil = getDaysUntil(contact.followUpDate);
                   return (
                     <div key={contact.id} className={`bg-surface-tertiary rounded-lg p-4 border-l-4 ${getTempBorderColor(contact.temperature)}`}>
@@ -193,53 +291,93 @@ export default function RelationshipsDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card className="mt-6">
-        <CardHeader title="Quick Actions" icon={Zap} />
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText('cd tools/relationship-tracker && python tracker.py list --hot');
-                alert('Command copied! Paste in terminal.');
-              }}
-              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
-            >
-              <div className="text-sm font-medium text-red-400 flex items-center gap-1.5">
-                <Flame size={14} />
-                View Hot Leads
+      {/* Add Contact Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-surface-secondary border border-[rgba(255,255,255,0.1)] rounded-xl p-6 w-full max-w-md shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">Add Contact</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-zinc-400 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Contact name"
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-brand"
+                />
               </div>
-              <div className="text-xs text-zinc-500 mt-1">Filter by temperature</div>
-            </button>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText('cd tools/relationship-tracker && python tracker.py due');
-                alert('Command copied! Paste in terminal.');
-              }}
-              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
-            >
-              <div className="text-sm font-medium text-yellow-400 flex items-center gap-1.5">
-                <Calendar size={14} />
-                Due Follow-ups
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Platform</label>
+                <select
+                  value={addForm.platform}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, platform: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                >
+                  <option value="GitHub">GitHub</option>
+                  <option value="Twitter">Twitter</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Discord">Discord</option>
+                  <option value="Slack">Slack</option>
+                  <option value="Email">Email</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
-              <div className="text-xs text-zinc-500 mt-1">Check what needs attention</div>
-            </button>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText('cd tools/relationship-tracker && python tracker.py search ""');
-                alert('Command copied! Add your search term and paste in terminal.');
-              }}
-              className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
-            >
-              <div className="text-sm font-medium text-blue-400 flex items-center gap-1.5">
-                <Search size={14} />
-                Search Contacts
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Temperature</label>
+                <select
+                  value={addForm.temperature}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, temperature: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                >
+                  <option value="HOT">HOT</option>
+                  <option value="WARM">WARM</option>
+                  <option value="COLD">COLD</option>
+                </select>
               </div>
-              <div className="text-xs text-zinc-500 mt-1">Find specific people</div>
-            </button>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Context</label>
+                <textarea
+                  value={addForm.context}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, context: e.target.value }))}
+                  placeholder="How do you know this contact?"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-brand resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Follow-up Date</label>
+                <input
+                  type="date"
+                  value={addForm.followUpDate}
+                  onChange={(e) => setAddForm(prev => ({ ...prev, followUpDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddContact}
+                disabled={submitting || !addForm.name.trim()}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                {submitting ? 'Adding...' : 'Add Contact'}
+              </button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </PageLayout>
   );
 }

@@ -117,7 +117,7 @@ export default function OpenLoopsCard() {
           </div>
         </div>
 
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-2">
           {loops.length === 0 ? (
             <EmptyState
               icon={CheckCircle2}

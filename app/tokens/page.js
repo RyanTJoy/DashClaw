@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Gauge, BarChart3, DollarSign, AlertTriangle, Inbox, RotateCw } from 'lucide-react';
+import { Gauge, BarChart3, DollarSign, AlertTriangle, Inbox, RotateCw, Settings } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -9,17 +9,22 @@ import { ProgressBar } from '../components/ui/ProgressBar';
 import { Stat } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 
+const DEFAULT_BUDGET = { daily_limit: 18000, weekly_limit: 126000, monthly_limit: 540000 };
+
 export default function TokensDashboard() {
   const [tokenData, setTokenData] = useState({
     dailyUsed: 0,
-    dailyLimit: 18000,
+    dailyLimit: DEFAULT_BUDGET.daily_limit,
     weeklyUsed: 0,
-    weeklyLimit: 126000,
+    weeklyLimit: DEFAULT_BUDGET.weekly_limit,
     monthlyUsed: 0,
-    monthlyLimit: 540000
+    monthlyLimit: DEFAULT_BUDGET.monthly_limit,
   });
   const [lastUpdated, setLastUpdated] = useState('');
   const [operations, setOperations] = useState([]);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({ ...DEFAULT_BUDGET });
+  const [savingBudget, setSavingBudget] = useState(false);
 
   const costGuide = [
     { operation: 'LinkedIn snapshot', tokens: 50000, cost: '$0.75', risk: 'HIGH' },
@@ -33,8 +38,16 @@ export default function TokensDashboard() {
 
   const fetchTokenData = async () => {
     try {
-      const res = await fetch('/api/tokens');
+      const [res, budgetRes] = await Promise.all([
+        fetch('/api/tokens'),
+        fetch('/api/tokens/budget'),
+      ]);
       const data = await res.json();
+      let budget = DEFAULT_BUDGET;
+      try {
+        const budgetData = await budgetRes.json();
+        if (budgetData.budget) budget = budgetData.budget;
+      } catch { /* use defaults */ }
 
       const todayIn = data?.stats?.today?.tokens_in || 0;
       const todayOut = data?.stats?.today?.tokens_out || 0;
@@ -46,11 +59,16 @@ export default function TokensDashboard() {
 
       setTokenData({
         dailyUsed: dailyUsed,
-        dailyLimit: 18000,
+        dailyLimit: budget.daily_limit || DEFAULT_BUDGET.daily_limit,
         weeklyUsed: totalUsed,
-        weeklyLimit: 126000,
+        weeklyLimit: budget.weekly_limit || DEFAULT_BUDGET.weekly_limit,
         monthlyUsed: totalUsed,
-        monthlyLimit: 540000
+        monthlyLimit: budget.monthly_limit || DEFAULT_BUDGET.monthly_limit,
+      });
+      setBudgetForm({
+        daily_limit: budget.daily_limit || DEFAULT_BUDGET.daily_limit,
+        weekly_limit: budget.weekly_limit || DEFAULT_BUDGET.weekly_limit,
+        monthly_limit: budget.monthly_limit || DEFAULT_BUDGET.monthly_limit,
       });
 
       if (data?.usage && Array.isArray(data.usage)) {
@@ -124,6 +142,28 @@ export default function TokensDashboard() {
     </Badge>
   );
 
+  const handleSaveBudget = async () => {
+    setSavingBudget(true);
+    try {
+      await fetch('/api/tokens/budget', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(budgetForm),
+      });
+      setTokenData(prev => ({
+        ...prev,
+        dailyLimit: budgetForm.daily_limit,
+        weeklyLimit: budgetForm.weekly_limit,
+        monthlyLimit: budgetForm.monthly_limit,
+      }));
+      setShowBudgetModal(false);
+    } catch (err) {
+      console.error('Failed to save budget:', err);
+    } finally {
+      setSavingBudget(false);
+    }
+  };
+
   const refreshButton = (
     <button
       onClick={fetchTokenData}
@@ -139,7 +179,19 @@ export default function TokensDashboard() {
       title="Token Efficiency"
       subtitle={`Real-time Cost Monitoring${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Tokens']}
-      actions={<>{refreshButton}{statusBadge}</>}
+      actions={
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBudgetModal(true)}
+            className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+          >
+            <Settings size={14} />
+            Configure Budgets
+          </button>
+          {refreshButton}
+          {statusBadge}
+        </div>
+      }
     >
       {/* Budget Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -268,6 +320,47 @@ export default function TokensDashboard() {
           </div>
         </CardContent>
       </Card>
+      {/* Budget Configuration Modal */}
+      {showBudgetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-surface-secondary border border-[rgba(255,255,255,0.1)] rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="text-lg font-semibold text-white mb-4">Configure Token Budgets</h3>
+            <div className="space-y-4">
+              {[
+                { key: 'daily_limit', label: 'Daily Limit' },
+                { key: 'weekly_limit', label: 'Weekly Limit' },
+                { key: 'monthly_limit', label: 'Monthly Limit' },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs text-zinc-400 mb-1">{label}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={budgetForm[key]}
+                    onChange={(e) => setBudgetForm(prev => ({ ...prev, [key]: parseInt(e.target.value, 10) || 0 }))}
+                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowBudgetModal(false)}
+                className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveBudget}
+                disabled={savingBudget}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                {savingBudget ? 'Saving...' : 'Save Budgets'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 }

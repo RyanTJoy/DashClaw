@@ -59,6 +59,8 @@ export default function SwarmIntelligencePage() {
 
   useEffect(() => {
     fetchGraph();
+    const interval = setInterval(fetchGraph, 30000);
+    return () => clearInterval(interval);
   }, [fetchGraph]);
 
   // Give the graph some "life" (safe: purely visual). In demo we always animate; in real mode we only animate if there is data.

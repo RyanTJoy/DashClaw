@@ -134,6 +134,32 @@ export async function insertOrgAggregateSnapshot(sql, orgId, data) {
   `;
 }
 
+// --- Budget queries ---
+
+export async function getTokenBudget(sql, orgId, agentId = null) {
+  try {
+    const rows = agentId
+      ? await sql`SELECT * FROM token_budgets WHERE org_id = ${orgId} AND agent_id = ${agentId}`
+      : await sql`SELECT * FROM token_budgets WHERE org_id = ${orgId} AND agent_id IS NULL`;
+    return rows[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function upsertTokenBudget(sql, orgId, agentId, limits) {
+  const { daily_limit, weekly_limit, monthly_limit } = limits;
+  const now = new Date().toISOString();
+  const rows = await sql`
+    INSERT INTO token_budgets (org_id, agent_id, daily_limit, weekly_limit, monthly_limit, updated_at)
+    VALUES (${orgId}, ${agentId || null}, ${daily_limit}, ${weekly_limit}, ${monthly_limit}, ${now})
+    ON CONFLICT (org_id, COALESCE(agent_id, ''))
+    DO UPDATE SET daily_limit = ${daily_limit}, weekly_limit = ${weekly_limit}, monthly_limit = ${monthly_limit}, updated_at = ${now}
+    RETURNING *
+  `;
+  return rows[0] || null;
+}
+
 export async function upsertDailyTotals(sql, orgId, agentId, today, tokensIn, tokensOut, contextPct) {
   await sql.query(
     `INSERT INTO daily_totals (org_id, agent_id, date, total_tokens_in, total_tokens_out, total_tokens, peak_context_pct, snapshots_count)

@@ -71,7 +71,7 @@ export default function RiskSignalsCard() {
       </CardHeader>
 
       <CardContent>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
+        <div className="space-y-2">
           {filteredSignals.length === 0 ? (
             <EmptyState
               icon={ShieldCheck}

@@ -93,9 +93,12 @@ function OverviewTab({ agentId, dense }) {
         fetch(`/api/digest?${params}`),
         fetch(`/api/agent-schedules${agentId ? `?agent_id=${encodeURIComponent(agentId)}` : ''}`),
       ]);
-      if (!digestRes.ok) throw new Error('Failed to fetch digest');
-      const data = await digestRes.json();
-      setDigest(data);
+      if (!digestRes.ok) {
+        setDigest({ digest: { actions: { total: 0, items: [] }, decisions: { total: 0, items: [] }, lessons: { total: 0, items: [] }, stats: {} } });
+      } else {
+        const data = await digestRes.json();
+        setDigest(data);
+      }
       if (schedRes.ok) {
         const schedData = await schedRes.json();
         setSchedules(schedData.schedules || []);

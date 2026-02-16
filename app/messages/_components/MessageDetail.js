@@ -68,7 +68,7 @@ export default function MessageDetail({ message, onMarkRead, onArchive, onReply,
         )}
       </div>
       <div className="flex gap-2 flex-wrap">
-        {message.status === 'sent' && (
+        {!message.is_read && message.status === 'sent' && (
           <>
             <button
               onClick={() => onMarkRead(message.id)}

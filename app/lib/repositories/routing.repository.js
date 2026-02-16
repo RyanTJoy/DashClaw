@@ -7,4 +7,4 @@
 
 // Re-export from the routing lib modules so route files import from repositories
 export { registerAgent, getAgent, listAgents, updateAgentStatus, unregisterAgent, getAgentMetrics } from '../routing/registry.js';
-export { submitTask, routeTask, completeTask, listTasks, getTask, routePending, checkTimeouts, getRoutingStats } from '../routing/router.js';
+export { submitTask, routeTask, completeTask, deleteTask, listTasks, getTask, routePending, checkTimeouts, getRoutingStats } from '../routing/router.js';

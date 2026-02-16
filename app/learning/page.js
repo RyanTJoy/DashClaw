@@ -18,6 +18,12 @@ export default function LearningDashboard() {
   const [updatingRecommendationId, setUpdatingRecommendationId] = useState('');
   const [stats, setStats] = useState({ totalDecisions: 0, totalLessons: 0, successRate: 0, patterns: 0 });
   const [lastUpdated, setLastUpdated] = useState('');
+  const [showPatterns, setShowPatterns] = useState(false);
+  const [showDecisionModal, setShowDecisionModal] = useState(false);
+  const [showLessonModal, setShowLessonModal] = useState(false);
+  const [decisionForm, setDecisionForm] = useState({ decision: '', category: 'general', context: '', outcome: 'pending' });
+  const [lessonForm, setLessonForm] = useState({ lesson: '', category: 'general', confidence: 80, tags: '' });
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -154,6 +160,42 @@ export default function LearningDashboard() {
       setRecommendationError(error.message || 'Failed to update recommendation state');
     } finally {
       setUpdatingRecommendationId('');
+    }
+  };
+
+  const handleLogDecision = async () => {
+    setSubmitting(true);
+    try {
+      await fetch('/api/learning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'decision', ...decisionForm }),
+      });
+      setShowDecisionModal(false);
+      setDecisionForm({ decision: '', category: 'general', context: '', outcome: 'pending' });
+      fetchData();
+    } catch (err) {
+      console.error('Failed to log decision:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAddLesson = async () => {
+    setSubmitting(true);
+    try {
+      await fetch('/api/learning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'lesson', ...lessonForm, tags: lessonForm.tags.split(',').map(t => t.trim()).filter(Boolean) }),
+      });
+      setShowLessonModal(false);
+      setLessonForm({ lesson: '', category: 'general', confidence: 80, tags: '' });
+      fetchData();
+    } catch (err) {
+      console.error('Failed to add lesson:', err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -413,10 +455,7 @@ export default function LearningDashboard() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <button
-              onClick={() => {
-                navigator.clipboard.writeText('cd tools/learning-database && python learner.py patterns');
-                alert('Command copied!');
-              }}
+              onClick={() => setShowPatterns((prev) => !prev)}
               className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
             >
               <div className="text-sm font-medium text-purple-400 flex items-center gap-1.5">
@@ -426,10 +465,7 @@ export default function LearningDashboard() {
               <div className="text-xs text-zinc-500 mt-1">Analyze decision patterns</div>
             </button>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText('cd tools/learning-database && python learner.py log "decision" --context "context"');
-                alert('Command copied! Edit and paste.');
-              }}
+              onClick={() => setShowDecisionModal(true)}
               className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
             >
               <div className="text-sm font-medium text-blue-400 flex items-center gap-1.5">
@@ -439,10 +475,7 @@ export default function LearningDashboard() {
               <div className="text-xs text-zinc-500 mt-1">Record a new decision</div>
             </button>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText('cd tools/learning-database && python learner.py lesson "learned X" --confidence 80');
-                alert('Command copied! Edit and paste.');
-              }}
+              onClick={() => setShowLessonModal(true)}
               className="bg-surface-tertiary rounded-lg p-4 text-left hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
             >
               <div className="text-sm font-medium text-yellow-400 flex items-center gap-1.5">
@@ -452,8 +485,225 @@ export default function LearningDashboard() {
               <div className="text-xs text-zinc-500 mt-1">Capture a new lesson</div>
             </button>
           </div>
+
+          {/* Inline Patterns Panel */}
+          {showPatterns && (
+            <div className="mt-4 bg-surface-tertiary rounded-lg p-4 border border-[rgba(255,255,255,0.06)]">
+              <div className="text-sm font-medium text-purple-400 mb-3 flex items-center gap-1.5">
+                <Sparkles size={14} />
+                Pattern Summary
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                <div className="bg-[#111] rounded-lg p-3">
+                  <div className="text-xs text-zinc-500">Patterns Found</div>
+                  <div className="text-lg font-semibold text-white tabular-nums">{stats.patterns}</div>
+                </div>
+                <div className="bg-[#111] rounded-lg p-3">
+                  <div className="text-xs text-zinc-500">Decisions Tracked</div>
+                  <div className="text-lg font-semibold text-white tabular-nums">{stats.totalDecisions}</div>
+                </div>
+                <div className="bg-[#111] rounded-lg p-3">
+                  <div className="text-xs text-zinc-500">Success Rate</div>
+                  <div className="text-lg font-semibold text-white tabular-nums">{stats.successRate}%</div>
+                </div>
+                <div className="bg-[#111] rounded-lg p-3">
+                  <div className="text-xs text-zinc-500">Lessons Learned</div>
+                  <div className="text-lg font-semibold text-white tabular-nums">{stats.totalLessons}</div>
+                </div>
+              </div>
+              {decisions.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="text-xs text-zinc-500 uppercase tracking-wide">Decision Categories</div>
+                  {(() => {
+                    const categories = {};
+                    decisions.forEach((d) => {
+                      const cat = d.category || 'general';
+                      if (!categories[cat]) categories[cat] = { total: 0, success: 0 };
+                      categories[cat].total++;
+                      if (d.outcome === 'success') categories[cat].success++;
+                    });
+                    return Object.entries(categories).map(([cat, data]) => (
+                      <div key={cat} className="flex items-center justify-between bg-[#111] rounded-md px-3 py-2">
+                        <span className="text-sm text-zinc-300 capitalize">{cat}</span>
+                        <span className="text-xs text-zinc-500">
+                          {data.total} decision{data.total !== 1 ? 's' : ''} | {data.total > 0 ? Math.round((data.success / data.total) * 100) : 0}% success
+                        </span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              ) : (
+                <div className="text-sm text-zinc-500">No decisions logged yet. Patterns will appear as decisions are tracked.</div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Log Decision Modal */}
+      {showDecisionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowDecisionModal(false)}>
+          <div className="bg-surface-secondary border border-[rgba(255,255,255,0.1)] rounded-xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <FileText size={18} className="text-blue-400" />
+              Log Decision
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Decision</label>
+                <input
+                  type="text"
+                  value={decisionForm.decision}
+                  onChange={(e) => setDecisionForm((prev) => ({ ...prev, decision: e.target.value }))}
+                  placeholder="What was decided?"
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Category</label>
+                <select
+                  value={decisionForm.category}
+                  onChange={(e) => setDecisionForm((prev) => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                >
+                  <option value="general">General</option>
+                  <option value="technical">Technical</option>
+                  <option value="business">Business</option>
+                  <option value="security">Security</option>
+                  <option value="performance">Performance</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Context</label>
+                <textarea
+                  value={decisionForm.context}
+                  onChange={(e) => setDecisionForm((prev) => ({ ...prev, context: e.target.value }))}
+                  placeholder="Why was this decision made?"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Outcome</label>
+                <select
+                  value={decisionForm.outcome}
+                  onChange={(e) => setDecisionForm((prev) => ({ ...prev, outcome: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="success">Success</option>
+                  <option value="failure">Failure</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowDecisionModal(false)}
+                className="px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogDecision}
+                disabled={submitting || !decisionForm.decision.trim()}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                {submitting ? 'Saving...' : 'Log Decision'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lesson Modal */}
+      {showLessonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowLessonModal(false)}>
+          <div className="bg-surface-secondary border border-[rgba(255,255,255,0.1)] rounded-xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Lightbulb size={18} className="text-yellow-400" />
+              Add Lesson
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Lesson</label>
+                <textarea
+                  value={lessonForm.lesson}
+                  onChange={(e) => setLessonForm((prev) => ({ ...prev, lesson: e.target.value }))}
+                  placeholder="What was learned?"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Category</label>
+                <select
+                  value={lessonForm.category}
+                  onChange={(e) => setLessonForm((prev) => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                >
+                  <option value="general">General</option>
+                  <option value="technical">Technical</option>
+                  <option value="business">Business</option>
+                  <option value="security">Security</option>
+                  <option value="performance">Performance</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Confidence: {lessonForm.confidence}%</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={lessonForm.confidence}
+                  onChange={(e) => setLessonForm((prev) => ({ ...prev, confidence: Number(e.target.value) }))}
+                  className="w-full accent-brand"
+                />
+                <div className="flex justify-between text-xs text-zinc-600 mt-1">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  value={lessonForm.tags}
+                  onChange={(e) => setLessonForm((prev) => ({ ...prev, tags: e.target.value }))}
+                  placeholder="e.g. optimization, caching, api"
+                  className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowLessonModal(false)}
+                className="px-4 py-2 rounded-lg text-sm text-zinc-400 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddLesson}
+                disabled={submitting || !lessonForm.lesson.trim()}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                {submitting ? 'Saving...' : 'Add Lesson'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 }

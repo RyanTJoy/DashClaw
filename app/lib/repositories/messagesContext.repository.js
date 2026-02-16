@@ -59,16 +59,26 @@ export async function listMessages(sql, orgId, filters = {}) {
 }
 
 export async function getUnreadMessageCount(sql, orgId, agentId = null) {
+  const readerId = agentId || 'dashboard';
   if (agentId) {
     const countResult = await sql.query(
-      `SELECT COUNT(*)::int as count FROM agent_messages WHERE org_id = $1 AND (to_agent_id = $2 OR to_agent_id IS NULL) AND from_agent_id != $2 AND status = 'sent'`,
-      [orgId, agentId]
+      `SELECT COUNT(*)::int as count FROM agent_messages
+       WHERE org_id = $1
+         AND (to_agent_id = $2 OR to_agent_id IS NULL)
+         AND from_agent_id != $2
+         AND status = 'sent'
+         AND (to_agent_id IS NOT NULL OR read_by IS NULL OR NOT (read_by::text LIKE '%' || $3 || '%'))`,
+      [orgId, agentId, `"${readerId}"`]
     );
     return countResult[0]?.count || 0;
   }
 
+  const likePattern = `%"${readerId}"%`;
   const countResult = await sql`
-    SELECT COUNT(*)::int as count FROM agent_messages WHERE org_id = ${orgId} AND status = 'sent'
+    SELECT COUNT(*)::int as count FROM agent_messages
+    WHERE org_id = ${orgId}
+      AND status = 'sent'
+      AND (to_agent_id IS NOT NULL OR read_by IS NULL OR NOT (read_by::text LIKE ${likePattern}))
   `;
   return countResult[0]?.count || 0;
 }
@@ -118,8 +128,8 @@ export async function updateMessageReadBy(sql, messageId, readBy) {
   await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId}`;
 }
 
-export async function markBroadcastRead(sql, messageId, readBy, now) {
-  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)}, status = 'read', read_at = ${now} WHERE id = ${messageId}`;
+export async function markBroadcastRead(sql, messageId, readBy) {
+  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId}`;
 }
 
 export async function markMessageRead(sql, messageId, now) {

@@ -35,6 +35,48 @@ const DECISION_ACTIONS = [
   { value: 'require_approval', label: 'Require Approval' },
 ];
 
+const PACK_PREVIEWS = {
+  'enterprise-strict': {
+    name: 'Enterprise Strict',
+    description: 'Maximum security — all external actions blocked or gated, zero autonomous risk',
+    policies: [
+      { name: 'Every external communication requires human approval with no exceptions', type: 'require_approval' },
+      { name: 'All destructive operations are blocked with no exceptions', type: 'block_action_type' },
+      { name: 'Shell command execution is completely blocked', type: 'block_action_type' },
+      { name: 'Content containing secrets, PII, or sensitive data must be blocked', type: 'block_action_type' },
+      { name: 'Any data export or download operation requires approval', type: 'require_approval' },
+    ],
+  },
+  'smb-safe': {
+    name: 'SMB Safe',
+    description: 'Balanced protection for small-to-medium teams — blocks destructive ops, gates external comms',
+    policies: [
+      { name: 'All external communications require human approval', type: 'require_approval' },
+      { name: 'File deletion and destructive commands are blocked', type: 'block_action_type' },
+      { name: 'Shell commands restricted to safe operations only', type: 'block_action_type' },
+      { name: 'Web requests limited to approved domains', type: 'block_action_type' },
+    ],
+  },
+  'startup-growth': {
+    name: 'Startup Growth',
+    description: 'Permissive with guardrails — gates customer-facing comms, allows internal messaging',
+    policies: [
+      { name: 'External communications to customers require approval', type: 'require_approval' },
+      { name: 'Destructive operations require approval instead of being blocked', type: 'require_approval' },
+      { name: 'Internal Slack messages are allowed without approval', type: 'block_action_type' },
+      { name: 'Content containing secrets or API keys must be blocked', type: 'block_action_type' },
+    ],
+  },
+  'development': {
+    name: 'Development',
+    description: 'Minimal guardrails for dev environments — warns on destructive ops, blocks production access',
+    policies: [
+      { name: 'Warn on destructive file and database operations', type: 'require_approval' },
+      { name: 'Block any access to production databases or APIs', type: 'block_action_type' },
+    ],
+  },
+};
+
 const DECISION_COLORS = {
   allow: 'success',
   warn: 'warning',
@@ -140,7 +182,7 @@ export default function PoliciesPage() {
     let rules;
     switch (formType) {
       case 'risk_threshold':
-        rules = JSON.stringify({ threshold: formThreshold, action: formAction });
+        rules = JSON.stringify({ threshold: Number(formThreshold) || 0, action: formAction });
         break;
       case 'require_approval':
         rules = JSON.stringify({ action_types: formActionTypes, action: 'require_approval' });
@@ -261,16 +303,16 @@ export default function PoliciesPage() {
     setProofReport('');
     try {
       const res = await fetch(`/api/policies/proof?format=${proofFormat}`);
-      const text = await res.text();
+      const json = await res.json();
       if (res.ok) {
-        setProofReport(text);
-      } else {
-        try {
-          const json = JSON.parse(text);
-          setError(json.error || 'Failed to generate proof');
-        } catch {
-          setError('Failed to generate proof');
+        if (proofFormat === 'json') {
+          try { setProofReport(JSON.stringify(JSON.parse(json.report), null, 2)); }
+          catch { setProofReport(json.report); }
+        } else {
+          setProofReport(json.report);
         }
+      } else {
+        setError(json.error || 'Failed to generate proof');
       }
     } catch {
       setError('Failed to generate proof');
@@ -385,7 +427,7 @@ export default function PoliciesPage() {
                     min="0"
                     max="100"
                     value={formThreshold}
-                    onChange={(e) => setFormThreshold(parseInt(e.target.value, 10) || 0)}
+                    onChange={(e) => setFormThreshold(e.target.value === '' ? '' : Math.max(0, Math.min(100, parseInt(e.target.value, 10) || 0)))}
                     className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
                   />
                 </div>
@@ -665,18 +707,41 @@ export default function PoliciesPage() {
               </div>
 
               {importMode === 'pack' ? (
-                <div>
-                  <label className="block text-xs text-zinc-400 mb-1">Policy Pack</label>
-                  <select
-                    value={importPack}
-                    onChange={(e) => setImportPack(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
-                  >
-                    <option value="enterprise-strict">Enterprise Strict</option>
-                    <option value="smb-safe">SMB Safe</option>
-                    <option value="startup-growth">Startup Growth</option>
-                    <option value="development">Development</option>
-                  </select>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-zinc-400 mb-1">Policy Pack</label>
+                    <select
+                      value={importPack}
+                      onChange={(e) => setImportPack(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.1)] text-sm text-white focus:outline-none focus:border-brand"
+                    >
+                      <option value="enterprise-strict">Enterprise Strict</option>
+                      <option value="smb-safe">SMB Safe</option>
+                      <option value="startup-growth">Startup Growth</option>
+                      <option value="development">Development</option>
+                    </select>
+                  </div>
+
+                  {/* Pack preview */}
+                  {PACK_PREVIEWS[importPack] && (
+                    <div className="rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-white">{PACK_PREVIEWS[importPack].name}</span>
+                        <Badge variant="info">{PACK_PREVIEWS[importPack].policies.length} policies</Badge>
+                      </div>
+                      <p className="text-[10px] text-zinc-500 mb-3">{PACK_PREVIEWS[importPack].description}</p>
+                      <div className="space-y-1.5">
+                        {PACK_PREVIEWS[importPack].policies.map((p, i) => (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            <Badge variant={p.type === 'require_approval' ? 'warning' : 'error'} size="xs">
+                              {p.type === 'require_approval' ? 'approval' : 'block'}
+                            </Badge>
+                            <span className="text-zinc-300">{p.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>
@@ -745,8 +810,8 @@ export default function PoliciesPage() {
                 <span className="text-xs text-zinc-400">
                   {testResults.totalPolicies ?? 0} policies, {testResults.totalTests ?? 0} tests
                 </span>
-                <Badge variant={testResults.failed === 0 ? 'success' : 'error'}>
-                  {testResults.failed === 0 ? 'ALL PASS' : `${testResults.failed} FAILURES`}
+                <Badge variant={(testResults.failed ?? 0) === 0 ? 'success' : 'error'}>
+                  {(testResults.totalPolicies ?? 0) === 0 ? 'No policies to test' : (testResults.failed ?? 0) === 0 ? 'ALL PASS' : `${testResults.failed} FAILURES`}
                 </Badge>
                 <span className="text-xs text-zinc-500">
                   {testResults.passed ?? 0} passed, {testResults.failed ?? 0} failed
