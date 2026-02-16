@@ -4,7 +4,7 @@ description: Prove what your AI agents decided and why. Open-source decision inf
 
 Agent Decision Infrastructure
 
-# Prove what your AI agents decided — and why.
+# Prove what your AI agents decided and why.
 
 Open-source decision infrastructure: policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents. Guard what they do before they do it.
 
@@ -73,7 +73,7 @@ Every action recorded with reasoning, assumptions, and policy compliance. A live
 
 ### Enforce Policies Before Agents Act
 
-Semantic guard policies intercept intent before execution. Natural language rules evaluated in real time — no hard-coded checks to maintain.
+Semantic guard policies intercept intent before execution. Natural language rules evaluated in real time. No hard-coded checks to maintain.
 
 ### Attribute Every Dollar to a Decision
 
@@ -143,7 +143,7 @@ Node and Python SDKs, CLI toolkit, parity test suites, and docs/CI governance.
 
 **The only agent platform with built-in compliance**
 
-Most platforms stop at logging. DashClaw ships decision enforcement, regulatory compliance mapping, and intelligent task routing — all auditable, all testable, all live in the demo.
+Most platforms stop at logging. DashClaw ships decision enforcement, regulatory compliance mapping, and intelligent task routing. All auditable, all testable, all live in the demo.
 
 ### Compliance Engine
 
@@ -172,7 +172,7 @@ Most platforms stop at logging. DashClaw ships decision enforcement, regulatory 
 
 [Explore Task Routing →](/demo)
 
-Every feature works in the demo — no signup required. [Launch Demo →](/demo)
+Every feature works in the demo. No signup required. [Launch Demo →](/demo)
 
 95+ methods across 21+ categories
 
@@ -278,7 +278,7 @@ Actions stuck in running state for over 4 hours
 
 ## Production-ready operations
 
-Team management, audit trails, webhooks, and more — built in from day one.
+Team management, audit trails, webhooks, and more. Built in from day one.
 
 ### Team Management
 
@@ -290,7 +290,7 @@ HMAC-signed webhooks and email alerts fire when decision integrity signals breac
 
 ### Full Audit Trail
 
-Every action is logged. Know who did what, when, and why — for compliance and debugging alike.
+Every action is logged with actor, timestamp, and reasoning: ready for compliance audits and debugging.
 
 ### Ship in 10 Minutes
 
@@ -906,7 +906,7 @@ console.log(drift_summary);
 
 ## Signals
 
-Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns — no configuration required.
+Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns. No configuration required.
 
 ### claw.getSignals()
 
@@ -1493,7 +1493,7 @@ await claw.logMood({ mood: 'focused', energy: 'high' });
 
 ### trackApproach(entry)
 
-Track an approach and whether it worked. Upserts — repeated calls update success/fail counts.
+Track an approach and whether it worked. Upserts on repeated calls, updating success/fail counts.
 
 | Parameter | Type    | Required | Description                   |
 | --------- | ------- | -------- | ----------------------------- |
@@ -1527,7 +1527,7 @@ const { approaches } = await claw.getApproaches({ limit: 10 });
 
 ## Daily Digest
 
-Aggregated daily summary from all data sources — no new storage needed.
+Aggregated daily summary from all data sources. No new storage needed.
 
 ### getDailyDigest(date?)
 
@@ -1544,7 +1544,7 @@ console.log(`Today: ${summary.action_count} actions, ${summary.decision_count} d
 
 ## Security Scanning
 
-Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored — only metadata.
+Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored; only metadata is retained.
 
 ### scanContent(text, destination?)
 
@@ -1707,7 +1707,7 @@ await claw.resolveMessageThread('mt_abc123', 'Migration completed successfully.'
 
 ### saveSharedDoc({ name, content })
 
-Create or update a shared workspace document. Upserts by name — updates increment the version.
+Create or update a shared workspace document. Upserts by name; updates increment the version.
 
 | Parameter | Type   | Required | Description                    |
 | --------- | ------ | -------- | ------------------------------ |
@@ -1977,7 +1977,7 @@ Returns: `Promise<{ schedule: Object }>`
 
 ## Bulk Sync
 
-Push multiple data categories in a single request. Ideal for bootstrapping agent state or periodic state snapshots. Every key is optional — only provided categories are processed. Each category is independent; partial failures in one category don't block others.
+Push multiple data categories in a single request. Ideal for bootstrapping agent state or periodic state snapshots. Every key is optional. Only provided categories are processed. Each category is independent; partial failures in one category don't block others.
 
 ### syncState(state)
 
@@ -2039,7 +2039,7 @@ try {
   if (err.status === 401) {
     console.error('Invalid API key');
   } else if (err.status === 429) {
-    console.error('Rate limited — slow down');
+    console.error('Rate limited. Slow down.');
   } else {
     console.error(`Action failed: ${err.message}`);
   }

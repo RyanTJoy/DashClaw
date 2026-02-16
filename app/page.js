@@ -20,7 +20,7 @@ const coreFeatures = [
   {
     icon: Shield,
     title: 'Enforce Policies Before Agents Act',
-    description: 'Semantic guard policies intercept intent before execution. Natural language rules evaluated in real time — no hard-coded checks to maintain.',
+    description: 'Semantic guard policies intercept intent before execution. Natural language rules evaluated in real time. No hard-coded checks to maintain.',
   },
   {
     icon: BarChart3,
@@ -48,7 +48,7 @@ const platformFeatures = [
 const operationalFeatures = [
   { icon: UsersRound, title: 'Team Management', description: 'Invite your team in seconds. Role-based access keeps operators in control and agents accountable.' },
   { icon: Webhook, title: 'Decision Risk Notifications', description: 'HMAC-signed webhooks and email alerts fire when decision integrity signals breach thresholds. No more checking dashboards.' },
-  { icon: Clock, title: 'Full Audit Trail', description: 'Every action is logged. Know who did what, when, and why — for compliance and debugging alike.' },
+  { icon: Clock, title: 'Full Audit Trail', description: 'Every action is logged with actor, timestamp, and reasoning: ready for compliance audits and debugging.' },
   { icon: Compass, title: 'Ship in 10 Minutes', description: 'Four steps: create workspace, generate key, install SDK, send first action. That\'s it.' },
   { icon: Building2, title: 'Built for Multi-Tenant', description: 'Full org isolation out of the box. Each team gets their own agents, keys, and settings.' },
   { icon: Terminal, title: '20+ CLI Tools', description: 'Run agent ops locally with Python CLI tools. Push results to the dashboard when you\'re ready.' },
@@ -158,7 +158,7 @@ export default function LandingPage() {
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             Prove what your AI agents decided{' '}
-            <span className="text-brand">&mdash; and why</span>.
+            <span className="text-brand">and why</span>.
           </h1>
           <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
             Open-source decision infrastructure: policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents.
@@ -262,7 +262,7 @@ export default function LandingPage() {
             <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Built for teams running autonomous AI agents in production.</p>
           </div>
 
-          {/* Core features — 2 col, larger */}
+          {/* Core features: 2 col, larger */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
             {coreFeatures.map((feature) => {
               const Icon = feature.icon;
@@ -278,7 +278,7 @@ export default function LandingPage() {
             })}
           </div>
 
-          {/* Platform features — 4 col, smaller */}
+          {/* Platform features: 4 col, smaller */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {platformFeatures.map((feature) => {
               const Icon = feature.icon;
@@ -360,7 +360,7 @@ export default function LandingPage() {
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">The only agent platform with built-in compliance</h2>
               <p className="mt-3 text-zinc-400 max-w-2xl mx-auto leading-relaxed">
                 Most platforms stop at logging. DashClaw ships decision enforcement,
-                regulatory compliance mapping, and intelligent task routing &mdash; all auditable,
+                regulatory compliance mapping, and intelligent task routing. All auditable,
                 all testable, all live in the demo.
               </p>
             </div>
@@ -419,7 +419,7 @@ export default function LandingPage() {
             </div>
 
             <div className="text-center">
-              <p className="text-sm text-zinc-400 mb-4">Every feature works in the demo &mdash; no signup required.</p>
+              <p className="text-sm text-zinc-400 mb-4">Every feature works in the demo. No signup required.</p>
               <Link href="/demo" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
                 Launch Demo <ArrowRight size={14} />
               </Link>
@@ -564,7 +564,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Production-ready operations</h2>
-            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Team management, audit trails, webhooks, and more — built in from day one.</p>
+            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Team management, audit trails, webhooks, and more. Built in from day one.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {operationalFeatures.map((feature) => {
