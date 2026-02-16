@@ -128,14 +128,20 @@ The fastest path: Vercel free tier + Neon free tier. Accessible from any device,
 1. Create a free database at [neon.tech](https://neon.tech) and copy the connection string
 2. Fork this repo to your GitHub account
 3. Go to [vercel.com/new](https://vercel.com/new) and import your fork
-4. Add environment variables:
+4. Generate your secrets (run once in any terminal, copy the output):
+   ```bash
+   node -e "const c=require('crypto');console.log('NEXTAUTH_SECRET='+c.randomBytes(32).toString('base64url'));console.log('DASHCLAW_API_KEY=oc_live_'+c.randomBytes(24).toString('hex'));console.log('ENCRYPTION_KEY='+c.randomBytes(32).toString('base64url').slice(0,32));console.log('CRON_SECRET='+c.randomBytes(32).toString('hex'))"
+   ```
+5. Add environment variables in Vercel:
    - `DATABASE_URL`: your Neon connection string
    - `NEXTAUTH_URL`: `https://your-app.vercel.app`
-   - `NEXTAUTH_SECRET`: generate with `openssl rand -base64 32`
-   - `DASHCLAW_API_KEY`: generate with `openssl rand -base64 32`
+   - `NEXTAUTH_SECRET`: from step 4 (encrypts login sessions)
+   - `DASHCLAW_API_KEY`: from step 4 (authenticates your agents; `oc_live_` prefix is required)
+   - `ENCRYPTION_KEY`: from step 4 (encrypts sensitive settings in DB)
+   - `CRON_SECRET`: from step 4 (authenticates scheduled jobs)
    - `GITHUB_ID` + `GITHUB_SECRET`: from GitHub OAuth setup (see above)
-5. Deploy. Tables are created automatically on first request
-6. Visit `your-app.vercel.app` → click **Dashboard** → sign in with GitHub
+6. Deploy. Tables are created automatically on first request
+7. Visit `your-app.vercel.app` → click **Dashboard** → sign in with GitHub
 
 **Do not** set `DASHCLAW_MODE=demo` on your deployment. That is only for dashclaw.io. The default (`self_host`) is what you want.
 
