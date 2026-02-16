@@ -179,6 +179,12 @@ scripts/
 ├── bootstrap-agent.mjs        # CLI: scan agent workspace + push state to API
 └── bootstrap-prompt.md        # Prompt file: agent self-discovery (paste to agent)
 
+.claude/skills/                # Claude Code skills for platform operations
+└── dashclaw-platform-intelligence/
+    ├── SKILL.md               # Skill definition (6 workflows, broad trigger conditions)
+    ├── references/             # Progressive-disclosure docs (platform, API surface, troubleshooting)
+    └── scripts/                # validate-integration.mjs, diagnose.mjs, bootstrap-agent-quick.mjs
+
 agent-tools/                   # Python CLI tools for local agent ops (memory, security, learning, etc.)
 ├── tools/                     # Individual tool directories
 │   ├── _shared/               # Shared push module (dashclaw_push.py)

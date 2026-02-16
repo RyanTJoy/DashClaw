@@ -95,6 +95,12 @@ If you see "redirect_uri is not associated with this application", your OAuth ap
 - Org context headers (`x-org-id`, `x-org-role`, `x-user-id`) must never be accepted from clients; middleware injects trusted values.
 - Route SQL guardrail: do not introduce new direct SQL usage inside `app/api/**/route.js` handlers. Put query logic in repositories (see `app/lib/repositories/*`). CI blocks new route-level SQL (`npm run route-sql:check`).
 
+## Claude Code Skills
+
+The project includes a Claude Code skill for platform-level operations:
+
+- `.claude/skills/dashclaw-platform-intelligence/` -- DashClaw platform expert skill. Handles agent instrumentation, troubleshooting, API route scaffolding, SDK client generation, policy design, and agent bootstrapping. Includes companion scripts for integration validation and diagnostics.
+
 ## Where To Look First
 
 - `PROJECT_DETAILS.md` - system map, route list, schema, invariants

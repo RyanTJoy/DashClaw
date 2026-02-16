@@ -1319,6 +1319,26 @@ await claw.reportTokenUsage({
 
 ## 16. CLI Tools
 
+### Claude Code Skill: Platform Intelligence
+
+If you use Claude Code, the `dashclaw-platform-intelligence` skill provides guided workflows for agent instrumentation, troubleshooting, SDK generation, and more. It activates automatically when you mention DashClaw-related tasks.
+
+The skill also includes companion scripts:
+
+```bash
+# Validate an agent's DashClaw integration
+node .claude/skills/dashclaw-platform-intelligence/scripts/validate-integration.mjs \
+  --base-url http://localhost:3000 --api-key $DASHCLAW_API_KEY --full
+
+# Diagnose connection or auth issues
+node .claude/skills/dashclaw-platform-intelligence/scripts/diagnose.mjs \
+  --base-url http://localhost:3000 --api-key $DASHCLAW_API_KEY --error "403"
+
+# Quick-bootstrap an agent workspace
+node .claude/skills/dashclaw-platform-intelligence/scripts/bootstrap-agent-quick.mjs \
+  --dir "/path/to/agent" --agent-id "my-agent" --validate
+```
+
 ### Report an Action (from terminal)
 
 ```bash
