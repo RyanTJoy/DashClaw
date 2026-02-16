@@ -1,8 +1,10 @@
-# DashClaw SDK Reference (Full)
+# DashClaw SDK — Agent Decision Infrastructure
 
 Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
 
-Install, configure, and instrument your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, context management, session handoffs, security scanning, agent messaging, agent pairing, identity binding, organization management, webhooks, policy testing, compliance, task routing, and more.
+DashClaw treats every agent action as a governed decision. The SDK provides decision recording, policy enforcement, assumption tracking, and compliance mapping — proving what your agents decided and why.
+
+Install, configure, and govern your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, context management, session handoffs, security scanning, agent messaging, agent pairing, identity binding, organization management, webhooks, policy testing, compliance, task routing, and more.
 
 ---
 
@@ -115,7 +117,7 @@ try {
 
 ## Action Recording
 
-Create, update, and query action records. Every agent action gets a full audit trail.
+Create, update, and query action records. Every agent action is a governed decision with a full audit trail — capturing intent, reasoning, and outcome for compliance and review.
 
 ### claw.createAction(action)
 Create a new action record. The agent's agentId, agentName, and swarmId are automatically attached.
@@ -425,7 +427,7 @@ Get current risk signals across all agents. Returns 7 signal types: autonomy_spi
 
 ## Behavior Guard
 
-Check org-level policies before executing risky actions. Returns allow, warn, block, or require_approval based on configured guard policies.
+Guard is the heart of DashClaw — every action can be checked against policies before execution. Returns allow, warn, block, or require_approval based on configured guard policies.
 
 ### claw.guard(context, options?)
 Evaluate guard policies for a proposed action. Call this before risky operations to get a go/no-go decision. The agent_id is auto-attached from the SDK constructor.
