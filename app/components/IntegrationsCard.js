@@ -113,9 +113,9 @@ export default function IntegrationsCard() {
     </Link>
   );
 
-  // Each grid row is ~68px, stat header ~40px, status footer ~24px
-  const GRID_ROW_H = 68;
-  const RESERVED_H = 70;
+  // Each grid row ~72px, stat header ~56px, status footer ~28px
+  const GRID_ROW_H = 72;
+  const RESERVED_H = 90;
   const maxGridRows = tileHeight > 0 ? fitItems(tileHeight, GRID_ROW_H, RESERVED_H) : 3;
   const maxGridItems = maxGridRows * 4;
   const visibleIntegrations = deduped.slice(0, maxGridItems);
@@ -144,7 +144,7 @@ export default function IntegrationsCard() {
             <Stat label="Connected" value={`${connected + agentConnected}/${total}`} />
 
             {/* Integration grid */}
-            <div className="flex-1 min-h-0 grid grid-cols-4 gap-2 content-start">
+            <div className="grid grid-cols-4 gap-2 auto-rows-min">
               {visibleIntegrations.map((integration, idx) => (
                 <div
                   key={idx}
