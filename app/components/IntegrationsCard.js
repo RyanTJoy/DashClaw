@@ -9,11 +9,13 @@ import { Stat } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 export default function IntegrationsCard() {
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   const fetchIntegrations = useCallback(async () => {
     try {
@@ -111,6 +113,14 @@ export default function IntegrationsCard() {
     </Link>
   );
 
+  // Each grid row is ~68px, stat header ~40px, status footer ~24px
+  const GRID_ROW_H = 68;
+  const RESERVED_H = 70;
+  const maxGridRows = tileHeight > 0 ? fitItems(tileHeight, GRID_ROW_H, RESERVED_H) : 3;
+  const maxGridItems = maxGridRows * 4;
+  const visibleIntegrations = deduped.slice(0, maxGridItems);
+  const integrationOverflow = deduped.length - visibleIntegrations.length;
+
   return (
     <Card className="h-full">
       <CardHeader title="Integrations" icon={Plug} action={total > 0 ? viewAllLink : undefined}>
@@ -129,13 +139,13 @@ export default function IntegrationsCard() {
             description="Integrations are managed in agent configs. Visit /integrations to add dashboard-level keys."
           />
         ) : (
-          <div className="space-y-4">
+          <div ref={sizeRef} className="flex flex-col h-full min-h-0 space-y-4">
             {/* Connected count */}
             <Stat label="Connected" value={`${connected + agentConnected}/${total}`} />
 
             {/* Integration grid */}
-            <div className="grid grid-cols-4 gap-2">
-              {deduped.map((integration, idx) => (
+            <div className="flex-1 min-h-0 grid grid-cols-4 gap-2 content-start">
+              {visibleIntegrations.map((integration, idx) => (
                 <div
                   key={idx}
                   className={`bg-surface-tertiary p-2 rounded-lg flex flex-col items-center gap-1 border transition-colors duration-150 ${
@@ -158,8 +168,14 @@ export default function IntegrationsCard() {
               ))}
             </div>
 
+            {integrationOverflow > 0 && (
+              <Link href="/integrations" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+                +{integrationOverflow} more
+              </Link>
+            )}
+
             {/* Bottom status line */}
-            <div className="flex items-center justify-between text-xs text-zinc-500">
+            <div className="flex items-center justify-between text-xs text-zinc-500 flex-shrink-0">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
                 {connected} connected

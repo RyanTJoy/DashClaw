@@ -12,6 +12,7 @@ import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import { useRealtime } from '../hooks/useRealtime';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 function getEventIcon(event) {
   switch (event.category) {
@@ -89,6 +90,7 @@ export default function ActivityTimeline() {
   const { agentId } = useAgentFilter();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   const fetchAll = useCallback(async () => {
     try {
@@ -183,7 +185,12 @@ export default function ActivityTimeline() {
 
   if (loading) return <CardSkeleton />;
 
-  const grouped = groupByDay(events);
+  const ITEM_H = 44;
+  const DAY_HEADER_H = 28;
+  const maxVisibleEvents = tileHeight > 0 ? fitItems(tileHeight, ITEM_H, DAY_HEADER_H) : 8;
+  const visibleEvents = events.slice(0, maxVisibleEvents);
+  const eventOverflow = events.length - visibleEvents.length;
+  const grouped = groupByDay(visibleEvents);
 
   return (
     <Card className="h-full">
@@ -192,17 +199,18 @@ export default function ActivityTimeline() {
       </CardHeader>
 
       <CardContent>
+        <div ref={sizeRef} className="flex flex-col h-full min-h-0">
         {events.length === 0 ? (
           <EmptyState
             icon={Clock}
             title="No activity yet"
             description="Decisions, open loops, and learning events will appear here chronologically"
           />
-        ) : (
-          <div>
+        ) : (<>
+          <div className="flex-1 min-h-0">
             {grouped.map(([dayLabel, dayEvents]) => (
               <div key={dayLabel} className="mb-4 last:mb-0">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2 sticky top-0 bg-surface-secondary py-1 z-[1]">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-600 mb-2 bg-surface-secondary py-1 z-[1]">
                   {dayLabel}
                 </div>
                 <div className="relative">
@@ -255,7 +263,13 @@ export default function ActivityTimeline() {
               </div>
             ))}
           </div>
-        )}
+          {eventOverflow > 0 && (
+            <span className="mt-2 text-xs text-brand inline-flex items-center gap-1 flex-shrink-0">
+              +{eventOverflow} more events
+            </span>
+          )}
+        </>)}
+        </div>
       </CardContent>
     </Card>
   );

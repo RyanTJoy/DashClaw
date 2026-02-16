@@ -10,6 +10,7 @@ import { StatCompact } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 export default function ContextCard() {
   const [contextData, setContextData] = useState({
@@ -19,6 +20,7 @@ export default function ContextCard() {
   });
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   useEffect(() => {
     async function fetchContext() {
@@ -92,6 +94,15 @@ export default function ContextCard() {
     return <CardSkeleton />;
   }
 
+  const DECISION_ITEM_H = 90;
+  const STATS_ROW_H = 80;
+  const SECTION_HEADER_H = 30;
+  const hasStats = contextData.stats.successRate !== undefined;
+  const reserved = (hasStats ? STATS_ROW_H : 0) + SECTION_HEADER_H;
+  const maxVisibleDecisions = tileHeight > 0 ? fitItems(tileHeight, DECISION_ITEM_H, reserved) : 3;
+  const visibleDecisions = contextData.recentPoints.slice(0, maxVisibleDecisions);
+  const decisionOverflow = contextData.recentPoints.length - visibleDecisions.length;
+
   const viewAllLink = (
     <Link href="/learning" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
       View all <ArrowRight size={12} />
@@ -114,10 +125,10 @@ export default function ContextCard() {
             description="Record decisions via the SDK's recordDecision() or POST /api/learning"
           />
         ) : (
-          <div className="space-y-4">
+          <div ref={sizeRef} className="flex flex-col h-full min-h-0 space-y-4">
             {/* Stats Row */}
-            {contextData.stats.successRate !== undefined && (
-              <div className="grid grid-cols-3 gap-2 bg-surface-tertiary rounded-lg p-3">
+            {hasStats && (
+              <div className="grid grid-cols-3 gap-2 bg-surface-tertiary rounded-lg p-3 flex-shrink-0">
                 <StatCompact label="Success" value={`${contextData.stats.successRate}%`} color="text-green-400" />
                 <StatCompact label="Decisions" value={contextData.stats.totalDecisions || 0} />
                 <StatCompact label="Patterns" value={contextData.stats.patterns || 0} color="text-purple-400" />
@@ -125,10 +136,10 @@ export default function ContextCard() {
             )}
 
             {/* Recent Decisions */}
-            <div>
+            <div className="flex-1 min-h-0">
               <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Decisions</div>
               <div className="space-y-2">
-                {contextData.recentPoints.map((point) => {
+                {visibleDecisions.map((point) => {
                   const IconComponent = getCategoryIcon(point.category);
                   return (
                     <div key={point.id} className="bg-surface-tertiary rounded-lg p-3">
@@ -150,6 +161,11 @@ export default function ContextCard() {
                 })}
               </div>
             </div>
+            {decisionOverflow > 0 && (
+              <Link href="/learning" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
+                +{decisionOverflow} more <ArrowRight size={12} />
+              </Link>
+            )}
           </div>
         )}
       </CardContent>

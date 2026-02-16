@@ -8,6 +8,7 @@ import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 function getSignalHash(signal) {
   return `${signal.type || signal.signal_type || ''}:${signal.agent_id || ''}:${signal.action_id || ''}:${signal.loop_id || ''}:${signal.assumption_id || ''}`;
@@ -17,6 +18,7 @@ export default function RiskSignalsCard() {
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   useEffect(() => {
     async function fetchSignals() {
@@ -47,6 +49,10 @@ export default function RiskSignalsCard() {
   } catch { /* ignore */ }
 
   const filteredSignals = signals.filter(s => !dismissed.has(getSignalHash(s)));
+  const ITEM_H = 52;
+  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H) : 5;
+  const visibleSignals = filteredSignals.slice(0, maxVisible);
+  const overflow = filteredSignals.length - visibleSignals.length;
   const redCount = filteredSignals.filter(s => s.severity === 'red').length;
   const amberCount = filteredSignals.filter(s => s.severity === 'amber').length;
 
@@ -71,7 +77,8 @@ export default function RiskSignalsCard() {
       </CardHeader>
 
       <CardContent>
-        <div className="space-y-2">
+        <div ref={sizeRef} className="flex flex-col h-full min-h-0">
+        <div className="flex-1 min-h-0 space-y-2">
           {filteredSignals.length === 0 ? (
             <EmptyState
               icon={ShieldCheck}
@@ -79,7 +86,7 @@ export default function RiskSignalsCard() {
               description="All clear - no active risk signals"
             />
           ) : (
-            filteredSignals.map((signal, idx) => {
+            visibleSignals.map((signal, idx) => {
               const dotColor = signal.severity === 'red' ? 'bg-red-500' : 'bg-amber-500';
               const titleColor = signal.severity === 'red' ? 'text-red-400' : 'text-amber-400';
 
@@ -97,6 +104,12 @@ export default function RiskSignalsCard() {
               );
             })
           )}
+        </div>
+        {overflow > 0 && (
+          <Link href="/security" className="mt-2 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
+            +{overflow} more <ArrowRight size={12} />
+          </Link>
+        )}
         </div>
       </CardContent>
     </Card>

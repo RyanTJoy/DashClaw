@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FolderKanban } from 'lucide-react';
+import Link from 'next/link';
+import { FolderKanban, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
@@ -9,6 +10,7 @@ import { ProgressBar } from './ui/ProgressBar';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 function getStatusVariant(status) {
   switch (status) {
@@ -34,6 +36,7 @@ export default function ProjectsCard() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   useEffect(() => {
     async function fetchProjects() {
@@ -119,6 +122,12 @@ export default function ProjectsCard() {
     );
   }
 
+  const ITEM_H = 40;
+  const FOOTER_H = 60;
+  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H, FOOTER_H) : 5;
+  const visibleProjects = projects.slice(0, maxVisible);
+  const overflow = projects.length - visibleProjects.length;
+
   const activeCount = projects.filter(p => p.status === 'active').length;
   const buildingCount = projects.filter(p => p.status === 'building').length;
   const maintainingCount = projects.filter(p => p.status === 'maintaining').length;
@@ -128,8 +137,9 @@ export default function ProjectsCard() {
       <CardHeader title="Active Projects" icon={FolderKanban} count={projects.length} />
 
       <CardContent>
-        <div className="space-y-1">
-          {projects.map((project, index) => (
+        <div ref={sizeRef} className="flex flex-col h-full min-h-0">
+        <div className="flex-1 min-h-0 space-y-1">
+          {visibleProjects.map((project, index) => (
             <div
               key={index}
               className="flex items-center gap-3 px-2 py-2 rounded-lg transition-colors duration-150 hover:bg-white/[0.03]"
@@ -156,13 +166,19 @@ export default function ProjectsCard() {
             </div>
           ))}
         </div>
+        {overflow > 0 && (
+          <Link href="/actions" className="mt-1 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
+            +{overflow} more <ArrowRight size={12} />
+          </Link>
+        )}
 
-        <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)]">
+        <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)] flex-shrink-0">
           <div className="grid grid-cols-3 gap-2">
             <StatCompact label="Active" value={activeCount} color="text-green-400" />
             <StatCompact label="Building" value={buildingCount} color="text-yellow-400" />
             <StatCompact label="Maintaining" value={maintainingCount} color="text-blue-400" />
           </div>
+        </div>
         </div>
       </CardContent>
     </Card>
