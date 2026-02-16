@@ -816,7 +816,7 @@ View and configure integration credentials. Supports per-agent overrides. Shows 
 
 ### API Keys (`/api-keys`)
 
-Manage API keys for your workspace. Admins can generate and revoke keys. The **Copy Agent Prompt** button generates a markdown prompt you can paste into any AI agent session (Claude Code, Cursor, etc.) to self-configure a connection to your dashboard — the API key is never included in the prompt.
+Manage API keys for your workspace. Admins can generate and revoke keys. The **Copy Agent Prompt** button generates a markdown prompt you can paste into any AI agent session (Claude Code, Cursor, etc.) to self-configure a connection to your dashboard. The API key is never included in the prompt.
 
 ### Team (`/team`)
 
@@ -1191,7 +1191,7 @@ The scanner detects:
 
 ### Option C: Copy Agent Prompt (One-Click)
 
-On the **API Keys** page or the onboarding checklist, click **Copy Agent Prompt**. This copies a markdown prompt to your clipboard that you can paste into any AI agent session (Claude Code, Cursor, etc.). The prompt includes your dashboard URL, SDK install instructions, and a smoke test — but never your API key. The agent will ask you to set `DASHCLAW_API_KEY` in your environment.
+On the **API Keys** page or the onboarding checklist, click **Copy Agent Prompt**. This copies a markdown prompt to your clipboard that you can paste into any AI agent session (Claude Code, Cursor, etc.). The prompt includes your dashboard URL, SDK install instructions, and a smoke test. It never includes your API key. The agent will ask you to set `DASHCLAW_API_KEY` in your environment.
 
 ### Option D: Self-Discovery Prompt
 

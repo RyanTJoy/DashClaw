@@ -1,6 +1,6 @@
-# DashClaw Python SDK — Agent Decision Infrastructure
+# DashClaw Python SDK: Agent Decision Infrastructure
 
-Full-featured decision governance toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform — 95+ methods across 21+ categories. Zero dependencies, requires Python 3.7+.
+Full-featured decision governance toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform. 95+ methods across 21+ categories. Zero dependencies, requires Python 3.7+.
 
 DashClaw treats every agent action as a governed decision. The SDK provides decision recording, policy enforcement, assumption tracking, and compliance mapping.
 
@@ -72,7 +72,7 @@ signals = claw.get_signals()
 
 ## Loops & Assumptions
 
-Decision integrity primitives — track open loops, register assumptions, and detect drift:
+Decision integrity primitives: track open loops, register assumptions, and detect drift.
 
 ```python
 # Register an open loop
@@ -204,7 +204,7 @@ pending = claw.get_pending_approvals(limit=25)
 
 ## Behavior Guard
 
-Guard is the heart of DashClaw — every action is checked against policies before execution.
+Guard is the heart of DashClaw. Every action is checked against policies before execution.
 
 Check actions against policies and fetch guard audit history:
 
@@ -228,7 +228,7 @@ decisions = claw.get_guard_decisions(decision="block", limit=50)
 
 DashClaw's guard + action recording pipeline maps directly to compliance controls.
 
-**SOC 2 CC6.1 — Logical Access Controls**
+**SOC 2 CC6.1: Logical Access Controls**
 ```python
 # Before any high-risk operation, enforce policy
 guard_result = claw.guard({
@@ -244,7 +244,7 @@ if guard_result["decision"] == "block":
     print("Policy blocked:", guard_result.get("reasons"))
     return
 
-# Decision is governed — record with full lineage
+# Decision is governed. Record with full lineage
 result = claw.create_action(
     action_type="database_write",
     declared_goal="Drop legacy user table",
@@ -262,7 +262,7 @@ claw.register_assumption(
 )
 ```
 
-**EU AI Act Article 14 — Human Oversight**
+**EU AI Act Article 14: Human Oversight**
 ```python
 # require_approval forces human-in-the-loop
 result = claw.guard({
@@ -281,7 +281,7 @@ if result["decision"] == "require_approval":
     # Approval queue at /approvals shows this to operators
 ```
 
-**ISO 42001 — AI Decision Accountability**
+**ISO 42001: AI Decision Accountability**
 ```python
 # Full decision lineage: guard → action → assumptions → outcome
 result = claw.create_action(
@@ -485,7 +485,7 @@ Get a URL to download an attachment.
 |---|---|---|
 | `attachment_id` | `str` | Attachment ID (`att_*`) |
 
-**Returns:** `str` — URL to fetch the attachment
+**Returns:** `str`: URL to fetch the attachment
 
 ---
 
@@ -517,7 +517,7 @@ Run guardrails tests, generate compliance proof reports, and import policy packs
 report = claw.test_policies()
 print(f"{report['passed']}/{report['total']} policies passed")
 for r in [r for r in report["results"] if not r["passed"]]:
-    print(f"FAIL: {r['policy']} — {r['reason']}")
+    print(f"FAIL: {r['policy']}: {r['reason']}")
 
 # Generate compliance proof report
 proof = claw.get_proof_report(format="md")
@@ -546,7 +546,7 @@ Map policies to regulatory frameworks, run gap analysis, and generate compliance
 mapping = claw.map_compliance("soc2")
 print(f"SOC 2 coverage: {mapping['coverage_pct']}%")
 for ctrl in [c for c in mapping["controls"] if not c["covered"]]:
-    print(f"Gap: {ctrl['id']} — {ctrl['name']}")
+    print(f"Gap: {ctrl['id']}: {ctrl['name']}")
 
 # Run gap analysis with remediation plan
 gaps = claw.analyze_gaps("soc2")

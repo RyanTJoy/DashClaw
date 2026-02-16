@@ -1,5 +1,5 @@
 /**
- * Shared signal computation — extracted from /api/actions/signals/route.js
+ * Shared signal computation. Extracted from /api/actions/signals/route.js
  * Used by both the API route and the cron job.
  */
 
@@ -95,7 +95,7 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'autonomy_spike',
       severity: parseInt(spike.action_count, 10) > 20 ? 'red' : 'amber',
-      label: `Governance alert: ${spike.agent_name || spike.agent_id} — ${spike.action_count} ungoverned decisions/hr`,
+      label: `Governance alert: ${spike.agent_name || spike.agent_id} (${spike.action_count} ungoverned decisions/hr)`,
       detail: `This agent made ${spike.action_count} decisions in the last hour without proportional oversight, exceeding the governance threshold of 10.`,
       help: 'High decision frequency without oversight may indicate ungoverned autonomy. Review recent decisions and enforce policy throttling.',
       agent_id: spike.agent_id
@@ -118,7 +118,7 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'repeated_failures',
       severity: parseInt(fail.failure_count, 10) > 5 ? 'red' : 'amber',
-      label: `Decision reliability degraded: ${fail.agent_name || fail.agent_id} — ${fail.failure_count} failures in 24h`,
+      label: `Decision reliability degraded: ${fail.agent_name || fail.agent_id} (${fail.failure_count} failures in 24h)`,
       detail: `This agent's decision reliability has degraded with ${fail.failure_count} failures in the last 24 hours, exceeding the integrity threshold of 3.`,
       help: 'Repeated decision failures indicate degraded reliability. Review decision rationale and underlying assumptions.',
       agent_id: fail.agent_id
@@ -142,7 +142,7 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'assumption_drift',
       severity: parseInt(drift.invalidation_count, 10) >= 4 ? 'red' : 'amber',
-      label: `Decision basis degrading: ${drift.agent_name || drift.agent_id} — ${drift.invalidation_count} assumptions invalidated`,
+      label: `Decision basis degrading: ${drift.agent_name || drift.agent_id} (${drift.invalidation_count} assumptions invalidated)`,
       detail: `${drift.invalidation_count} assumptions invalidated in the last 7 days, indicating the decision basis for this agent is eroding.`,
       help: 'Frequent assumption invalidations degrade the decision basis. Review and re-validate the foundational assumptions.',
       agent_id: drift.agent_id

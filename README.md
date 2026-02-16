@@ -48,7 +48,7 @@ DashClaw runs anywhere Node.js runs. Pick the setup that fits your needs:
 | **Hosting** | Your machine (`localhost:3000`) | Vercel free tier (`your-app.vercel.app`) |
 | **Cost** | Free | Free |
 
-You can also mix and match — run Vercel with a self-hosted Postgres, or run locally with a Neon database. DashClaw auto-detects your database type and uses the optimal driver.
+You can also mix and match: run Vercel with a self-hosted Postgres, or run locally with a Neon database. DashClaw auto-detects your database type and uses the optimal driver.
 
 ---
 
@@ -64,12 +64,12 @@ node scripts/setup.mjs
 
 That's it. The setup script handles everything interactively:
 
-1. **Database** — choose Docker (local), Neon (cloud), or paste any Postgres URL
-2. **Deployment** — local only or cloud (Vercel/Railway/etc.)
-3. **Secrets** — auto-generates API key, auth secrets, encryption key
-4. **Dependencies** — runs `npm install`
-5. **Migrations** — creates all database tables (with progress spinners)
-6. **Build** — builds the Next.js app
+1. **Database**: choose Docker (local), Neon (cloud), or paste any Postgres URL
+2. **Deployment**: local only or cloud (Vercel/Railway/etc.)
+3. **Secrets**: auto-generates API key, auth secrets, encryption key
+4. **Dependencies**: runs `npm install`
+5. **Migrations**: creates all database tables (with progress spinners)
+6. **Build**: builds the Next.js app
 
 When it finishes, it prints your agent connection snippet and (for cloud deployments) the exact Vercel env vars to copy-paste.
 
@@ -121,25 +121,25 @@ If you see "redirect_uri is not associated with this application", your OAuth ap
 
 ---
 
-## Deploy to Cloud (Vercel + Neon) — Recommended
+## Deploy to Cloud (Vercel + Neon): Recommended
 
 The fastest path: Vercel free tier + Neon free tier. Accessible from any device, auto-HTTPS.
 
-1. Create a free database at [neon.tech](https://neon.tech) — copy the connection string
+1. Create a free database at [neon.tech](https://neon.tech) and copy the connection string
 2. Fork this repo to your GitHub account
 3. Go to [vercel.com/new](https://vercel.com/new) and import your fork
 4. Add environment variables:
-   - `DATABASE_URL` — your Neon connection string
-   - `NEXTAUTH_URL` — `https://your-app.vercel.app`
-   - `NEXTAUTH_SECRET` — generate with `openssl rand -base64 32`
-   - `DASHCLAW_API_KEY` — generate with `openssl rand -base64 32`
-   - `GITHUB_ID` + `GITHUB_SECRET` — from GitHub OAuth setup (see above)
-5. Deploy — tables are created automatically on first request
+   - `DATABASE_URL`: your Neon connection string
+   - `NEXTAUTH_URL`: `https://your-app.vercel.app`
+   - `NEXTAUTH_SECRET`: generate with `openssl rand -base64 32`
+   - `DASHCLAW_API_KEY`: generate with `openssl rand -base64 32`
+   - `GITHUB_ID` + `GITHUB_SECRET`: from GitHub OAuth setup (see above)
+5. Deploy. Tables are created automatically on first request
 6. Visit `your-app.vercel.app` → click **Dashboard** → sign in with GitHub
 
-**Do not** set `DASHCLAW_MODE=demo` on your deployment — that's only for dashclaw.io. The default (`self_host`) is what you want.
+**Do not** set `DASHCLAW_MODE=demo` on your deployment. That is only for dashclaw.io. The default (`self_host`) is what you want.
 
-Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work — DashClaw is a standard Next.js app.
+Other cloud hosts (Railway, Fly.io, Render, your own VPS) also work. DashClaw is a standard Next.js app.
 
 ---
 
@@ -158,7 +158,7 @@ node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --
 node scripts/bootstrap-agent.mjs --dir "/path/to/agent" --agent-id "my-agent" --base-url "https://your-app.vercel.app" --api-key "oc_live_..."
 ```
 
-The adaptive scanner auto-discovers and classifies files — identity, skills, tools, relationships, config, creative works, and more. No hardcoded paths needed.
+The adaptive scanner auto-discovers and classifies files: identity, skills, tools, relationships, config, creative works, and more. No hardcoded paths needed.
 
 More details: `docs/agent-bootstrap.md`.
 

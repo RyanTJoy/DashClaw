@@ -681,7 +681,7 @@ console.log(drift_summary);
               <h2 className="text-2xl font-bold tracking-tight">Signals</h2>
             </div>
             <p className="text-sm text-zinc-400 mb-4">
-              Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns — no configuration required.
+              Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns. No configuration required.
             </p>
 
             <MethodEntry
@@ -1133,7 +1133,7 @@ console.log(snippet.name, snippet.language);`} />
 
             <MethodEntry id="logMood" signature="logMood(entry)" description="Log user mood and energy level." params={[{ name: 'mood', type: 'string', required: true, desc: 'Mood (e.g., focused, frustrated)' }, { name: 'energy', type: 'string', required: false, desc: 'Energy level (high, low)' }, { name: 'notes', type: 'string', required: false, desc: 'Additional notes' }]} returns="Promise<{mood: Object}>" example={`await claw.logMood({ mood: 'focused', energy: 'high' });`} />
 
-            <MethodEntry id="trackApproach" signature="trackApproach(entry)" description="Track an approach and whether it worked. Upserts — repeated calls update success/fail counts." params={[{ name: 'approach', type: 'string', required: true, desc: 'Approach description' }, { name: 'context', type: 'string', required: false, desc: 'When to use this' }, { name: 'success', type: 'boolean', required: false, desc: 'true = worked, false = failed' }]} returns="Promise<{approach: Object}>" example={`await claw.trackApproach({ approach: 'Show code before explanation', success: true });`} />
+            <MethodEntry id="trackApproach" signature="trackApproach(entry)" description="Track an approach and whether it worked. Upserts on repeated calls, updating success/fail counts." params={[{ name: 'approach', type: 'string', required: true, desc: 'Approach description' }, { name: 'context', type: 'string', required: false, desc: 'When to use this' }, { name: 'success', type: 'boolean', required: false, desc: 'true = worked, false = failed' }]} returns="Promise<{approach: Object}>" example={`await claw.trackApproach({ approach: 'Show code before explanation', success: true });`} />
 
             <MethodEntry id="getPreferenceSummary" signature="getPreferenceSummary()" description="Get a summary of all user preference data for this agent." returns="Promise<{summary: Object}>" example={`const { summary } = await claw.getPreferenceSummary();`} />
 
@@ -1143,7 +1143,7 @@ console.log(snippet.name, snippet.language);`} />
           {/* ── Daily Digest ── */}
           <section id="daily-digest" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
             <h2 className="text-2xl font-bold tracking-tight mb-2">Daily Digest</h2>
-            <p className="text-sm text-zinc-400 mb-6">Aggregated daily summary from all data sources — no new storage needed.</p>
+            <p className="text-sm text-zinc-400 mb-6">Aggregated daily summary from all data sources. No new storage needed.</p>
 
             <MethodEntry id="getDailyDigest" signature="getDailyDigest(date?)" description="Get a daily activity digest aggregated from actions, decisions, lessons, content, ideas, interactions, and goals." params={[{ name: 'date', type: 'string', required: false, desc: 'YYYY-MM-DD (defaults to today)' }]} returns="Promise<{date: string, digest: Object, summary: Object}>" example={`const { digest, summary } = await claw.getDailyDigest();
 console.log(\`Today: \${summary.action_count} actions, \${summary.decision_count} decisions\`);`} />
@@ -1152,7 +1152,7 @@ console.log(\`Today: \${summary.action_count} actions, \${summary.decision_count
           {/* ── Security Scanning ── */}
           <section id="security-scanning" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
             <h2 className="text-2xl font-bold tracking-tight mb-2">Security Scanning</h2>
-            <p className="text-sm text-zinc-400 mb-6">Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored — only metadata.</p>
+            <p className="text-sm text-zinc-400 mb-6">Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored; only metadata is retained.</p>
 
             <MethodEntry id="scanContent" signature="scanContent(text, destination?)" description="Scan text for sensitive data. Returns findings and redacted text. Does not store anything." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan' }, { name: 'destination', type: 'string', required: false, desc: 'Where text is headed (context)' }]} returns="Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>" example={`const result = await claw.scanContent(messageText, 'slack');
 if (!result.clean) {
@@ -1198,7 +1198,7 @@ console.log(\`\${unread_count} unread messages\`);`} />
 
             <MethodEntry id="resolveMessageThread" signature="resolveMessageThread(threadId, summary?)" description="Close a conversation thread with an optional summary." params={[{ name: 'threadId', type: 'string', required: true, desc: 'Thread ID' }, { name: 'summary', type: 'string', required: false, desc: 'Resolution summary' }]} returns="Promise<{thread: Object}>" example={`await claw.resolveMessageThread('mt_abc123', 'Migration completed successfully.');`} />
 
-            <MethodEntry id="saveSharedDoc" signature={`saveSharedDoc({ name, content })`} description="Create or update a shared workspace document. Upserts by name — updates increment the version." params={[{ name: 'name', type: 'string', required: true, desc: 'Document name (unique per org)' }, { name: 'content', type: 'string', required: true, desc: 'Document content' }]} returns="Promise<{doc: Object, doc_id: string}>" example={`await claw.saveSharedDoc({
+            <MethodEntry id="saveSharedDoc" signature={`saveSharedDoc({ name, content })`} description="Create or update a shared workspace document. Upserts by name; updates increment the version." params={[{ name: 'name', type: 'string', required: true, desc: 'Document name (unique per org)' }, { name: 'content', type: 'string', required: true, desc: 'Document content' }]} returns="Promise<{doc: Object, doc_id: string}>" example={`await claw.saveSharedDoc({
   name: 'runbook/auth-deploy',
   content: '# Auth Deploy Runbook\\n\\n1. Run migrations...',
 });`} />
@@ -1210,7 +1210,7 @@ console.log(\`\${unread_count} unread messages\`);`} />
               params={[
                 { name: 'attachmentId', type: 'string', required: true, desc: 'Attachment ID (att_*)' },
               ]}
-              returns="string — URL to fetch the attachment binary"
+              returns="string: URL to fetch the attachment binary"
               example={`const url = claw.getAttachmentUrl('att_abc123');
 console.log(url); // https://dashclaw.example.com/api/attachments/att_abc123`}
             />
@@ -1233,7 +1233,7 @@ fs.writeFileSync(filename, data);`}
             <h2 className="text-2xl font-bold tracking-tight mb-2">Bulk Sync</h2>
             <p className="text-sm text-zinc-400 mb-8">
               Push multiple data categories in a single request. Ideal for bootstrapping agent state or periodic state snapshots.
-              Every key is optional &mdash; only provided categories are processed. Each category is independent; partial failures
+              Every key is optional. Only provided categories are processed. Each category is independent; partial failures
               in one category don&apos;t block others.
             </p>
 
@@ -1850,7 +1850,7 @@ schedules.forEach(s => console.log(s.name, s.cron_expression));`}
   if (err.status === 401) {
     console.error('Invalid API key');
   } else if (err.status === 429) {
-    console.error('Rate limited — slow down');
+    console.error('Rate limited. Slow down.');
   } else {
     console.error(\`Action failed: \${err.message}\`);
   }
