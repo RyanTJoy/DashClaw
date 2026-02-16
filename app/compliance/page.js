@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Scale, ChevronDown, ChevronRight, AlertTriangle,
-  FileDown, Copy, Shield, AlertCircle, CheckCircle,
+  FileDown, Copy, Shield, AlertCircle, CheckCircle, ShieldAlert,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent } from '../components/ui/Card';
@@ -35,6 +36,16 @@ const EFFORT_VARIANTS = {
   high: 'error',
 };
 
+const SIGNAL_CONTROL_MAP = {
+  autonomy_spike: ['SOC 2 CC6.1 (Logical Access)', 'ISO 42001 A.4 (Human Oversight)'],
+  high_impact_low_oversight: ['EU AI Act Art. 14 (Human Oversight)', 'SOC 2 CC6.6 (Boundary Protection)'],
+  repeated_failures: ['ISO 27001 A.12.4 (Logging)', 'NIST AI RMF MAP 3 (Risk Assessment)'],
+  stale_loop: ['SOC 2 CC7.2 (Anomaly Detection)', 'ISO 42001 A.6 (Lifecycle)'],
+  assumption_drift: ['ISO 42001 A.5 (Data Governance)', 'NIST AI RMF MEASURE 2 (Performance)'],
+  stale_assumption: ['ISO 42001 A.5 (Data Governance)', 'EU AI Act Art. 9 (Risk Management)'],
+  stale_running_action: ['SOC 2 CC7.2 (Anomaly Detection)', 'ISO 27001 A.12.4 (Logging)'],
+};
+
 export default function CompliancePage() {
   const { data: session } = useSession();
   const isDemo = isDemoMode();
@@ -45,6 +56,8 @@ export default function CompliancePage() {
   const [controlMap, setControlMap] = useState(null);
   const [gapAnalysis, setGapAnalysis] = useState(null);
   const [evidence, setEvidence] = useState(null);
+  const [signals, setSignals] = useState([]);
+  const [signalsLoading, setSignalsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -79,17 +92,24 @@ export default function CompliancePage() {
   const fetchFrameworkData = useCallback(async () => {
     if (!selectedFramework) return;
     try {
-      const [mapRes, gapRes, evidenceRes] = await Promise.all([
+      const [mapRes, gapRes, evidenceRes, signalsRes] = await Promise.all([
         fetch(`/api/compliance/map?framework=${selectedFramework}`),
         fetch(`/api/compliance/gaps?framework=${selectedFramework}`),
         fetch('/api/compliance/evidence'),
+        fetch('/api/actions/signals'),
       ]);
 
       if (mapRes.ok) setControlMap(await mapRes.json());
       if (gapRes.ok) setGapAnalysis(await gapRes.json());
       if (evidenceRes.ok) setEvidence(await evidenceRes.json());
+      if (signalsRes.ok) {
+        const signalsData = await signalsRes.json();
+        setSignals(signalsData.signals || []);
+      }
     } catch {
       setError('Failed to load compliance data');
+    } finally {
+      setSignalsLoading(false);
     }
   }, [selectedFramework]);
 
@@ -382,6 +402,55 @@ export default function CompliancePage() {
                     <div className="text-lg font-semibold text-blue-400 tabular-nums">{evidence.actions_recorded ?? 0}</div>
                     <div className="text-[10px] text-zinc-500">Actions Recorded</div>
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Live Integrity Signals */}
+          <Card>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(255,255,255,0.06)]">
+              <h2 className="text-sm font-medium text-white flex items-center gap-2">
+                <ShieldAlert size={14} className="text-amber-400" />
+                Live Integrity Signals
+              </h2>
+            </div>
+            <CardContent>
+              {signalsLoading ? (
+                <ListSkeleton rows={2} />
+              ) : signals.length === 0 ? (
+                <div className="flex items-center gap-2 py-2">
+                  <CheckCircle size={14} className="text-green-400" />
+                  <span className="text-xs text-green-400">All clear — no active integrity signals</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {signals.map((signal, i) => {
+                    const controls = SIGNAL_CONTROL_MAP[signal.type] || [];
+                    return (
+                      <div key={i} className="py-2 border-b border-[rgba(255,255,255,0.04)] last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            signal.severity === 'red' ? 'bg-red-500' : 'bg-amber-500'
+                          }`} />
+                          <span className="text-sm text-white">{signal.label || signal.type.replace(/_/g, ' ')}</span>
+                        </div>
+                        {controls.length > 0 && (
+                          <div className="ml-4 mt-1 flex flex-wrap gap-1">
+                            <span className="text-[10px] text-zinc-500">Affects:</span>
+                            {controls.map((c, j) => (
+                              <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <Link href="/security" className="text-xs text-brand hover:text-brand/80 mt-1 inline-block">
+                    View all signals →
+                  </Link>
                 </div>
               )}
             </CardContent>

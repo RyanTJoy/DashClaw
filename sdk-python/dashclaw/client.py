@@ -272,7 +272,7 @@ class DashClaw:
             },
         }
 
-    # --- Category 1: Action Recording ---
+    # --- Category 1: Decision Recording ---
 
     def _sign_payload(self, payload):
         """Sign payload using RSASSA-PKCS1-v1_5 (PKCS#1 v1.5) + SHA-256."""
@@ -299,6 +299,7 @@ class DashClaw:
             return None
 
     def create_action(self, action_type, declared_goal, **kwargs):
+        """Record a governed decision with full audit trail — goal, reasoning, assumptions, and policy compliance."""
         action_def = {
             "action_type": action_type,
             "declared_goal": declared_goal,
@@ -399,9 +400,10 @@ class DashClaw:
                 pass
             raise
 
-    # --- Category 2: Loops & Assumptions ---
+    # --- Category 2: Decision Integrity (Loops & Assumptions) ---
 
     def register_open_loop(self, action_id, loop_type, description, **kwargs):
+        """Register an unresolved dependency for a decision. Open loops track work that must be completed before the decision is fully resolved."""
         payload = {
             "action_id": action_id,
             "loop_type": loop_type,
@@ -420,6 +422,7 @@ class DashClaw:
         return self._request(path)
 
     def register_assumption(self, action_id, assumption, **kwargs):
+        """Register assumptions underlying a decision. Assumptions are the decision basis — validate or invalidate to maintain decision integrity."""
         payload = {
             "action_id": action_id,
             "assumption": assumption,
@@ -441,9 +444,10 @@ class DashClaw:
         query = urllib.parse.urlencode({k: v for k, v in filters.items() if v is not None})
         return self._request(f"/api/actions/assumptions?{query}")
 
-    # --- Category 3: Signals ---
+    # --- Category 3: Decision Integrity Signals ---
 
     def get_signals(self):
+        """Get current decision integrity signals. Returns autonomy breaches, logic drift, and governance violations."""
         return self._request("/api/actions/signals")
 
     # --- Category 4: Dashboard Data ---
@@ -844,9 +848,10 @@ class DashClaw:
             filename = match.group(1) if match else attachment_id
             return {"data": data, "filename": filename, "mime_type": content_type}
 
-    # --- Category 13: Behavior Guard ---
+    # --- Category 13: Policy Enforcement (Guard) ---
 
     def guard(self, context, include_signals=False):
+        """Enforce policies before a decision executes. Guard intercepts intent and returns allow/warn/block/require_approval."""
         params = {"include_signals": "true"} if include_signals else {}
         query = urllib.parse.urlencode(params)
         path = f"/api/guard?{query}" if query else "/api/guard"

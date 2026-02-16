@@ -1,8 +1,10 @@
-# DashClaw SDK Reference (Full)
+# DashClaw SDK: Agent Decision Infrastructure
 
 Full reference for the DashClaw SDK (Node.js). For Python, see the [Python SDK docs](../sdk-python/README.md).
 
-Install, configure, and instrument your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, context management, session handoffs, security scanning, agent messaging, agent pairing, identity binding, organization management, webhooks, policy testing, compliance, task routing, and more.
+DashClaw treats every agent action as a governed decision. The SDK provides decision recording, policy enforcement, assumption tracking, and compliance mapping. It proves what your agents decided and why.
+
+Install, configure, and govern your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, context management, session handoffs, security scanning, agent messaging, agent pairing, identity binding, organization management, webhooks, policy testing, compliance, task routing, and more.
 
 ---
 
@@ -111,11 +113,93 @@ try {
 }
 ```
 
+### Compliance & Governance Patterns
+
+DashClaw's guard + action recording pipeline maps directly to compliance controls.
+
+**SOC 2 CC6.1: Logical Access Controls**
+```javascript
+// Before any high-risk operation, enforce policy
+const guardResult = await claw.guard({
+  action_type: 'database_write',
+  risk_score: 85,
+  systems_touched: ['production_db'],
+  reversible: false,
+  declared_goal: 'Drop legacy user table'
+});
+
+if (guardResult.decision === 'block') {
+  // SOC 2 control satisfied: unauthorized action prevented
+  console.log('Policy blocked:', guardResult.reasons);
+  return;
+}
+
+// Decision is governed. Record with full lineage
+const { action_id } = await claw.createAction({
+  action_type: 'database_write',
+  declared_goal: 'Drop legacy user table',
+  risk_score: 85,
+  reversible: false,
+  authorization_scope: 'admin-approved'
+});
+
+// Register the assumption this decision relies on
+await claw.registerAssumption({
+  action_id,
+  assumption: 'Legacy table has zero active references',
+  basis: 'Schema dependency scan completed 2h ago'
+});
+```
+
+**EU AI Act Article 14: Human Oversight**
+```javascript
+// require_approval forces human-in-the-loop
+const result = await claw.guard({
+  action_type: 'customer_communication',
+  risk_score: 60,
+  declared_goal: 'Send pricing update to 500 customers'
+});
+
+if (result.decision === 'require_approval') {
+  // Create action in pending state, wait for human approval
+  const { action_id } = await claw.createAction({
+    action_type: 'customer_communication',
+    declared_goal: 'Send pricing update to 500 customers',
+    status: 'pending'
+  });
+  // Approval queue at /approvals shows this to operators
+}
+```
+
+**ISO 42001: AI Decision Accountability**
+```javascript
+// Full decision lineage: guard → action → assumptions → outcome
+const { action_id } = await claw.createAction({
+  action_type: 'data_processing',
+  declared_goal: 'Rebuild customer segmentation model',
+  risk_score: 45,
+  systems_touched: ['ml-pipeline', 'customer-db']
+});
+
+await claw.registerAssumption({
+  action_id,
+  assumption: 'Customer data is current as of today',
+  basis: 'CRM sync completed at 09:00 UTC'
+});
+
+// Later: validate or invalidate assumptions
+await claw.validateAssumption(assumptionId, true);
+
+// Decision integrity signals auto-detect when assumptions drift
+const signals = await claw.getSignals();
+// → Returns 'assumption_drift' if too many invalidated
+```
+
 ---
 
 ## Action Recording
 
-Create, update, and query action records. Every agent action gets a full audit trail.
+Create, update, and query action records. Every agent action is a governed decision with a full audit trail capturing intent, reasoning, and outcome for compliance and review.
 
 ### claw.createAction(action)
 Create a new action record. The agent's agentId, agentName, and swarmId are automatically attached.
@@ -268,7 +352,7 @@ stream.close();
 
 ### claw.waitForApproval(actionId, { useEvents: true })
 
-SSE-powered approval waiting — resolves instantly when the operator approves/denies instead of polling every 5 seconds.
+SSE-powered approval waiting. Resolves instantly when the operator approves/denies instead of polling every 5 seconds.
 
 ```javascript
 // SSE mode (instant, recommended)
@@ -280,7 +364,7 @@ const { action } = await claw.waitForApproval('act_abc');
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| actionId | string | — | Action ID to watch |
+| actionId | string | Yes | Action ID to watch |
 | options.timeout | number | 300000 | Max wait time (ms) |
 | options.interval | number | 5000 | Poll interval (polling mode only) |
 | options.useEvents | boolean | false | Use SSE instead of polling |
@@ -425,7 +509,7 @@ Get current risk signals across all agents. Returns 7 signal types: autonomy_spi
 
 ## Behavior Guard
 
-Check org-level policies before executing risky actions. Returns allow, warn, block, or require_approval based on configured guard policies.
+Guard is the heart of DashClaw. Every action can be checked against policies before execution. Returns allow, warn, block, or require_approval based on configured guard policies.
 
 ### claw.guard(context, options?)
 Evaluate guard policies for a proposed action. Call this before risky operations to get a go/no-go decision. The agent_id is auto-attached from the SDK constructor.
@@ -1128,7 +1212,7 @@ Get a URL to download an attachment.
 |---|---|---|
 | `attachmentId` | `string` | Attachment ID (`att_*`) |
 
-**Returns:** `string` — URL to fetch the attachment binary
+**Returns:** `string`: URL to fetch the attachment binary
 
 ---
 
@@ -1379,7 +1463,7 @@ Run guardrails tests against all active policies. Returns pass/fail results per 
 const report = await claw.testPolicies();
 console.log(`${report.passed}/${report.total} policies passed`);
 for (const r of report.results.filter(r => !r.passed)) {
-  console.log(`FAIL: ${r.policy} — ${r.reason}`);
+  console.log(`FAIL: ${r.policy}: ${r.reason}`);
 }
 ```
 
@@ -1425,7 +1509,7 @@ Map active policies to framework controls. Returns a control-by-control coverage
 const { controls, coverage_pct } = await claw.mapCompliance('soc2');
 console.log(`SOC 2 coverage: ${coverage_pct}%`);
 for (const ctrl of controls.filter(c => !c.covered)) {
-  console.log(`Gap: ${ctrl.id} — ${ctrl.name}`);
+  console.log(`Gap: ${ctrl.id}: ${ctrl.name}`);
 }
 ```
 

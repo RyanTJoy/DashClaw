@@ -5,7 +5,7 @@
 export function generateConnectPrompt(baseUrl, orgName) {
   return `# DashClaw Agent Setup
 
-DashClaw is your AI agent observability and governance dashboard — it tracks actions, decisions, goals, and security signals.
+DashClaw is your AI agent decision infrastructure. It tracks decisions, enforces policies, tracks assumptions, and surfaces risk signals.
 
 - **Dashboard**: ${baseUrl}/dashboard
 - **Workspace**: ${orgName}
@@ -67,10 +67,10 @@ node /tmp/dashclaw/scripts/bootstrap-agent.mjs \\
 ## What to report
 
 Use the SDK to report:
-- **Actions** — tool calls, file writes, deployments
-- **Learning / Decisions** — why you chose an approach
-- **Goals** — what you're trying to achieve
-- **Context** — handoff notes, memory, preferences
+- **Actions**: tool calls, file writes, deployments
+- **Learning / Decisions**: why you chose an approach
+- **Goals**: what you're trying to achieve
+- **Context**: handoff notes, memory, preferences
 
 ## Reference
 

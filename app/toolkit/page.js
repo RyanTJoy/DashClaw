@@ -93,8 +93,8 @@ export default function ToolkitPage() {
         </div>
 
         <div className="mt-20 p-8 rounded-2xl bg-gradient-to-br from-[#111] to-[#0a0a0a] border border-brand/20 text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to instrument your agent?</h2>
-          <p className="text-zinc-400 mb-8 max-w-xl mx-auto">Install the toolkit and the SDK to get full dashboard observability in minutes.</p>
+          <h2 className="text-2xl font-bold mb-4">Ready to govern your agent?</h2>
+          <p className="text-zinc-400 mb-8 max-w-xl mx-auto">Install the toolkit and the SDK to get full decision governance in minutes.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/docs" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors">
               Install Toolkit

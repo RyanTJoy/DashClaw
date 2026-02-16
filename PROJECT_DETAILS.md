@@ -7,7 +7,7 @@ doc-type: architecture
 
 # DashClaw Project Details
 
-This file contains detailed technical information about the DashClaw project, moved from CLAUDE.md to keep it concise.
+DashClaw is AI agent decision infrastructure. This file contains detailed technical information about the platform, moved from CLAUDE.md to keep it concise.
 
 ## Operational Maturity
 
@@ -72,7 +72,7 @@ app/
 │   ├── Sidebar.js             # Persistent sidebar navigation (links to /dashboard)
 │   ├── PageLayout.js          # Shared page layout (breadcrumbs, title, actions)
 │   ├── NotificationCenter.js  # Alert bell + notification dropdown
-│   ├── SystemStatusBar.js     # Global risk status bar (STABLE/MONITORING/DRIFTING/ELEVATED/ALERT state from signal counts, auto-refreshes 30s)
+│   ├── SystemStatusBar.js     # Global risk status bar (STABLE/REVIEWING/DRIFTING/ELEVATED/ALERT state from signal counts, auto-refreshes 30s)
 │   ├── ActivityTimeline.js    # Chronological merged timeline of actions, open loops, and learning events (dashboard card)
 │   ├── DraggableDashboard.js  # Draggable/resizable 4-column widget grid (react-grid-layout v2, + onboarding checklist)
 │   ├── OnboardingChecklist.js # 4-step guided onboarding (workspace, key, SDK, first action)
@@ -93,7 +93,7 @@ app/
 ├── integrations/              # Integration settings page
 ├── learning/                  # Learning database page
 ├── relationships/             # Mini-CRM page
-├── security/                  # Security monitoring page (signals, high-risk actions)
+├── security/                  # Security dashboard (signals, high-risk decisions)
 ├── policies/                  # Guard policies management page (+ import, test runner, proof report)
 ├── routing/                   # Task routing page (agent registry, task queue, health)
 ├── compliance/                # Compliance mapping page (framework controls, gap analysis, evidence, reports)
@@ -178,6 +178,12 @@ scripts/
 ├── cleanup-actions.mjs        # CLI: delete stale action records from DB
 ├── bootstrap-agent.mjs        # CLI: scan agent workspace + push state to API
 └── bootstrap-prompt.md        # Prompt file: agent self-discovery (paste to agent)
+
+.claude/skills/                # Claude Code skills for platform operations
+└── dashclaw-platform-intelligence/
+    ├── SKILL.md               # Skill definition (6 workflows, broad trigger conditions)
+    ├── references/             # Progressive-disclosure docs (platform, API surface, troubleshooting)
+    └── scripts/                # validate-integration.mjs, diagnose.mjs, bootstrap-agent-quick.mjs
 
 agent-tools/                   # Python CLI tools for local agent ops (memory, security, learning, etc.)
 ├── tools/                     # Individual tool directories
@@ -280,7 +286,7 @@ function getSql() {
 - **Agent colors**: `app/lib/colors.js` - `getAgentColor(agentId)` returns consistent hash-based color from 8-color palette
 - **Typography**: Inter font, `text-sm text-zinc-300` body, `text-xs text-zinc-500` labels, `font-mono text-xs` for timestamps/IDs, stat numbers max `text-2xl tabular-nums`
 - **Dashboard grid**: Draggable/resizable 4-column layout in `DraggableDashboard.js` using `react-grid-layout` v2 with `useContainerWidth` (measureBeforeMount). Layout persists to localStorage via `dashboardLayoutState.js` (layout version 2). "Reset Layout" button in page header clears saved positions. Mobile (< 768px) stacks cards in single column with drag/resize disabled. Most cards include a "View all →" link that navigates to the corresponding full-page view (e.g. `/actions`, `/goals`, `/security`, `/learning`, `/usage`, `/workspace`, `/relationships`, `/calendar`). Includes `ActivityTimeline` card (merged chronological view of actions, open loops, and learning events with real-time SSE updates).
-- **System status bar**: `SystemStatusBar.js` renders below the page header on every dashboard page. Fetches `/api/actions/signals`, computes system state from signal counts (STABLE/MONITORING/DRIFTING/ELEVATED/ALERT), shows red/amber/all-clear indicators. Auto-refreshes every 30 seconds. Respects global agent filter.
+- **System status bar**: `SystemStatusBar.js` renders below the page header on every dashboard page. Fetches `/api/actions/signals`, computes system state from signal counts (STABLE/REVIEWING/DRIFTING/ELEVATED/ALERT), shows red/amber/all-clear indicators. Auto-refreshes every 30 seconds. Respects global agent filter.
 - **GoalsChart**: Summary stats (total, active, completed, avg progress) + top 5 goals with progress bars. No Recharts dependency — uses `StatCompact` and `ProgressBar` primitives.
 
 ## Detailed API Routes (POST-enabled)
@@ -900,7 +906,7 @@ const claw = new DashClaw({
 
 **Error Classes**: `GuardBlockedError` - thrown when `guardMode: 'enforce'` and guard blocks an action
 
-**Cost Analytics**: `reportTokenUsage()` - real-time financial tracking and budget monitoring on the dashboard. TokenBudgetCard includes a "24h Projected" cost line that blends today's burn trajectory with historical daily average.
+**Cost Analytics**: `reportTokenUsage()` - real-time financial tracking and cost accountability on the dashboard. TokenBudgetCard includes a "24h Projected" cost line that blends today's burn trajectory with historical daily average.
 
 ## Agent Bootstrap System
 

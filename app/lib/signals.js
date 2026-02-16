@@ -1,5 +1,5 @@
 /**
- * Shared signal computation — extracted from /api/actions/signals/route.js
+ * Shared signal computation. Extracted from /api/actions/signals/route.js
  * Used by both the API route and the cron job.
  */
 
@@ -95,9 +95,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'autonomy_spike',
       severity: parseInt(spike.action_count, 10) > 20 ? 'red' : 'amber',
-      label: `Autonomy spike: ${spike.agent_name || spike.agent_id} (${spike.action_count} actions/hr)`,
-      detail: `This agent performed ${spike.action_count} actions in the last hour, which is above the threshold of 10.`,
-      help: 'High action frequency may indicate runaway behavior. Review recent actions and consider throttling.',
+      label: `Governance alert: ${spike.agent_name || spike.agent_id} (${spike.action_count} ungoverned decisions/hr)`,
+      detail: `This agent made ${spike.action_count} decisions in the last hour without proportional oversight, exceeding the governance threshold of 10.`,
+      help: 'High decision frequency without oversight may indicate ungoverned autonomy. Review recent decisions and enforce policy throttling.',
       agent_id: spike.agent_id
     });
   }
@@ -106,9 +106,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'high_impact_low_oversight',
       severity: parseInt(action.risk_score, 10) >= 90 ? 'red' : 'amber',
-      label: `Unscoped high-risk action: ${action.declared_goal?.substring(0, 50) || 'Unknown'}`,
-      detail: `${action.agent_name || action.agent_id} is running an irreversible action (risk: ${action.risk_score}) without authorization scope.`,
-      help: 'High-risk irreversible actions should have explicit authorization_scope set. Review and add oversight.',
+      label: `Ungoverned high-risk decision: ${action.declared_goal?.substring(0, 50) || 'Unknown'}`,
+      detail: `${action.agent_name || action.agent_id} is executing an irreversible decision (risk: ${action.risk_score}) without governance authorization.`,
+      help: 'High-risk irreversible decisions must have explicit authorization_scope. Enforce policy compliance before execution.',
       agent_id: action.agent_id,
       action_id: action.action_id
     });
@@ -118,9 +118,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'repeated_failures',
       severity: parseInt(fail.failure_count, 10) > 5 ? 'red' : 'amber',
-      label: `Repeated failures: ${fail.agent_name || fail.agent_id} (${fail.failure_count} in 24h)`,
-      detail: `This agent has failed ${fail.failure_count} times in the last 24 hours, which is above the threshold of 3.`,
-      help: 'Repeated failures suggest a systematic issue. Check error messages and recent code changes.',
+      label: `Decision reliability degraded: ${fail.agent_name || fail.agent_id} (${fail.failure_count} failures in 24h)`,
+      detail: `This agent's decision reliability has degraded with ${fail.failure_count} failures in the last 24 hours, exceeding the integrity threshold of 3.`,
+      help: 'Repeated decision failures indicate degraded reliability. Review decision rationale and underlying assumptions.',
       agent_id: fail.agent_id
     });
   }
@@ -130,9 +130,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'stale_loop',
       severity: hoursOld > 96 ? 'red' : 'amber',
-      label: `Stale open loop (${hoursOld}h): ${loop.description?.substring(0, 50) || 'Unknown'}`,
-      detail: `Open loop for ${loop.agent_name || loop.agent_id || 'unknown agent'} has been unresolved for ${hoursOld} hours.`,
-      help: 'Stale loops indicate blocked work. Resolve or cancel the loop to unblock the agent.',
+      label: `Unresolved dependency (${hoursOld}h): ${loop.description?.substring(0, 50) || 'Unknown'}`,
+      detail: `Unresolved dependency for ${loop.agent_name || loop.agent_id || 'unknown agent'} has been blocking decision completion for ${hoursOld} hours.`,
+      help: 'Unresolved dependencies weaken decision integrity. Resolve or cancel to restore the governance chain.',
       agent_id: loop.agent_id,
       loop_id: loop.loop_id
     });
@@ -142,9 +142,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'assumption_drift',
       severity: parseInt(drift.invalidation_count, 10) >= 4 ? 'red' : 'amber',
-      label: `Assumption drift: ${drift.agent_name || drift.agent_id} (${drift.invalidation_count} invalidated)`,
-      detail: `${drift.invalidation_count} assumptions invalidated in the last 7 days, indicating the agent's model of the environment may be outdated.`,
-      help: 'Frequent assumption invalidations suggest changing conditions. Review agent configuration and data sources.',
+      label: `Decision basis degrading: ${drift.agent_name || drift.agent_id} (${drift.invalidation_count} assumptions invalidated)`,
+      detail: `${drift.invalidation_count} assumptions invalidated in the last 7 days, indicating the decision basis for this agent is eroding.`,
+      help: 'Frequent assumption invalidations degrade the decision basis. Review and re-validate the foundational assumptions.',
       agent_id: drift.agent_id
     });
   }
@@ -154,9 +154,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'stale_assumption',
       severity: daysOld > 30 ? 'red' : 'amber',
-      label: `Stale assumption (${daysOld}d): ${asm.assumption?.substring(0, 50) || 'Unknown'}`,
-      detail: `This assumption has not been validated for ${daysOld} days and may no longer be accurate.`,
-      help: 'Unvalidated assumptions can lead to incorrect decisions. Validate or invalidate to keep the knowledge base current.',
+      label: `Unverified decision basis (${daysOld}d): ${asm.assumption?.substring(0, 50) || 'Unknown'}`,
+      detail: `This assumption has not been verified for ${daysOld} days and may no longer support sound decisions.`,
+      help: 'Unverified assumptions weaken the decision basis. Validate or invalidate to maintain decision integrity.',
       agent_id: asm.agent_id,
       assumption_id: asm.assumption_id
     });
@@ -167,9 +167,9 @@ export async function computeSignals(orgId, filterAgentId, sql) {
     signals.push({
       type: 'stale_running_action',
       severity: hoursRunning > 24 ? 'red' : 'amber',
-      label: `Stale running action (${hoursRunning}h): ${action.declared_goal?.substring(0, 60) || 'Unknown goal'}`,
-      detail: `${action.agent_name || action.agent_id} has had this action running for ${hoursRunning} hours. Consider checking if it's stuck or should be marked as completed/failed.`,
-      help: 'Actions running for extended periods may indicate a stuck process. Check the agent logs or manually update the action status.',
+      label: `Stalled decision (${hoursRunning}h): ${action.declared_goal?.substring(0, 60) || 'Unknown goal'}`,
+      detail: `${action.agent_name || action.agent_id} has had this decision executing for ${hoursRunning} hours without resolution. The governance record is incomplete.`,
+      help: 'Stalled decisions leave the audit trail incomplete. Investigate whether the decision is stuck or should be finalized.',
       agent_id: action.agent_id,
       action_id: action.action_id
     });

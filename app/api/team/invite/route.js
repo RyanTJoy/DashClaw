@@ -6,37 +6,13 @@ import { getOrgId, getOrgRole, getUserId } from '../../../lib/org.js';
 import { checkQuotaFast, getOrgPlan } from '../../../lib/usage.js';
 import { logActivity } from '../../../lib/audit.js';
 import { getSql } from '../../../lib/db.js';
-import crypto from 'crypto';
-
-// Ensure invites table exists (fallback for pre-migration deploys)
-let _tableChecked = false;
-async function ensureTable(sql) {
-  if (_tableChecked) return;
-  try {
-    await sql`
-      CREATE TABLE IF NOT EXISTS invites (
-        id TEXT PRIMARY KEY,
-        org_id TEXT NOT NULL,
-        email TEXT,
-        role TEXT DEFAULT 'member',
-        token TEXT UNIQUE NOT NULL,
-        invited_by TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        accepted_by TEXT,
-        expires_at TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-    `;
-    await sql`CREATE INDEX IF NOT EXISTS idx_invites_token ON invites(token)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_invites_org_id ON invites(org_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS idx_invites_status ON invites(status)`;
-    _tableChecked = true;
-  } catch {
-    _tableChecked = true;
-  }
-}
-
-const VALID_ROLES = ['admin', 'member'];
+import {
+  ensureInvitesTable,
+  createInvite,
+  listPendingInvites,
+  revokeInvite,
+  VALID_ROLES
+} from '../../../lib/repositories/invites.repository.js';
 
 function requireAdmin(request) {
   const orgId = getOrgId(request);
@@ -62,13 +38,8 @@ export async function POST(request) {
     const email = body.email ? String(body.email).trim().toLowerCase() : null;
     const role = body.role && VALID_ROLES.includes(body.role) ? body.role : 'member';
 
-    // Basic email validation if provided
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
-    }
-
     const sql = getSql();
-    await ensureTable(sql);
+    await ensureInvitesTable(sql);
 
     // Quota check: members (fast meter path)
     const plan = await getOrgPlan(orgId, sql);
@@ -80,42 +51,31 @@ export async function POST(request) {
       );
     }
 
-    const inviteId = `inv_${crypto.randomUUID()}`;
-    const token = crypto.randomBytes(32).toString('hex'); // 64 hex chars
-    const now = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
-
-    await sql`
-      INSERT INTO invites (id, org_id, email, role, token, invited_by, status, expires_at, created_at)
-      VALUES (${inviteId}, ${orgId}, ${email}, ${role}, ${token}, ${userId}, 'pending', ${expiresAt}, ${now})
-    `;
+    const invite = await createInvite(sql, { orgId, email, role, invitedBy: userId });
 
     // SECURITY: Use NEXTAUTH_URL as canonical origin to prevent header injection phishing.
     // Falls back to request URL origin only as a last resort.
     const origin = process.env.NEXTAUTH_URL
       ? new URL(process.env.NEXTAUTH_URL).origin
       : new URL(request.url).origin;
-    const inviteUrl = `${origin}/invite/${token}`;
+    const inviteUrl = `${origin}/invite/${invite.token}`;
 
     logActivity({
       orgId, actorId: userId, action: 'invite.created',
-      resourceType: 'invite', resourceId: inviteId,
+      resourceType: 'invite', resourceId: invite.id,
       details: { email, role }, request,
     }, sql);
 
     return NextResponse.json({
       invite: {
-        id: inviteId,
-        token,
-        email,
-        role,
-        expires_at: expiresAt,
+        ...invite,
         invite_url: inviteUrl,
       },
     }, { status: 201 });
   } catch (error) {
     console.error('Team invite POST error:', error);
-    return NextResponse.json({ error: 'Failed to create invite' }, { status: 500 });
+    const status = error.message.includes('Invalid') ? 400 : 500;
+    return NextResponse.json({ error: error.message || 'Failed to create invite' }, { status });
   }
 }
 
@@ -127,16 +87,9 @@ export async function GET(request) {
     const { orgId } = auth;
 
     const sql = getSql();
-    await ensureTable(sql);
+    await ensureInvitesTable(sql);
 
-    const invites = await sql`
-      SELECT id, email, role, status, expires_at, created_at
-      FROM invites
-      WHERE org_id = ${orgId}
-        AND status = 'pending'
-        AND expires_at::timestamptz > NOW()
-      ORDER BY created_at DESC
-    `;
+    const invites = await listPendingInvites(sql, orgId);
 
     return NextResponse.json({ invites });
   } catch (error) {
@@ -155,35 +108,23 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const inviteId = searchParams.get('id');
 
-    if (!inviteId || !inviteId.startsWith('inv_')) {
-      return NextResponse.json({ error: 'Valid invite id is required' }, { status: 400 });
-    }
-
     const sql = getSql();
-    await ensureTable(sql);
+    await ensureInvitesTable(sql);
 
-    const existing = await sql`
-      SELECT id, status FROM invites WHERE id = ${inviteId} AND org_id = ${orgId}
-    `;
-    if (existing.length === 0) {
-      return NextResponse.json({ error: 'Invite not found' }, { status: 404 });
-    }
-    if (existing[0].status !== 'pending') {
-      return NextResponse.json({ error: 'Invite is not pending' }, { status: 409 });
-    }
-
-    await sql`
-      UPDATE invites SET status = 'revoked' WHERE id = ${inviteId} AND org_id = ${orgId}
-    `;
+    const result = await revokeInvite(sql, inviteId, orgId);
 
     logActivity({
       orgId, actorId: auth.userId, action: 'invite.revoked',
       resourceType: 'invite', resourceId: inviteId, request,
     }, sql);
 
-    return NextResponse.json({ success: true, revoked: inviteId });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Team invite DELETE error:', error);
-    return NextResponse.json({ error: 'Failed to revoke invite' }, { status: 500 });
+    let status = 500;
+    if (error.message.includes('not found')) status = 404;
+    else if (error.message.includes('not pending')) status = 409;
+    else if (error.message.includes('required')) status = 400;
+    return NextResponse.json({ error: error.message || 'Failed to revoke invite' }, { status });
   }
 }

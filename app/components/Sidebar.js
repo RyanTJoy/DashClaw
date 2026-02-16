@@ -24,7 +24,7 @@ const navGroups = [
   {
     label: 'Operations',
     items: [
-      { href: '/actions', icon: Zap, label: 'Actions' },
+      { href: '/actions', icon: Zap, label: 'Decisions' },
       { href: '/approvals', icon: Clock, label: 'Approval Queue' },
       { href: '/security', icon: ShieldAlert, label: 'Security' },
       { href: '/policies', icon: Shield, label: 'Policies' },

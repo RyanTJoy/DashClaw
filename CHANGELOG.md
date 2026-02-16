@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - 2026-02-13
 
 ### Added
-- **Swarm Intelligence**: New visual dashboard at `/swarm` for monitoring multi-agent communication maps and operational risk.
+- **Swarm Intelligence**: New visual dashboard at `/swarm` for decision visibility across multi-agent communication maps and operational risk.
 - **Swarm Graph API**: New endpoint `/api/swarm/graph` providing node-link data for large agent swarms (up to 50+ agents).
 - **Communication Topology**: Visual mapping of agent-to-agent message flow with risk-based node highlighting.
 
@@ -130,7 +130,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.3] - 2026-02-13
 
 ### Added
-- **Security Dashboard API**: New endpoint `/api/security/status` for monitoring encryption health and system security score.
+- **Security Dashboard API**: New endpoint `/api/security/status` for verifying encryption health and system security score.
 
 ### Security
 - **Comprehensive Audit**: Full IDOR (Insecure Direct Object Reference) audit of all resource endpoints to ensure strict multi-tenant isolation.
@@ -179,7 +179,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ActionRecord control plane for full action lifecycle tracking.
 - Behavior Guard system with policy evaluation (risk, approval, rate-limiting).
 - Multi-tenant organization support with API key authentication.
-- Real-time risk signals and security monitoring.
+- Real-time decision integrity signals and security enforcement.
 - Agent-to-agent messaging hub and collaborative shared docs.
 
 ### Security
