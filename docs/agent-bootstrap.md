@@ -142,14 +142,14 @@ The scanner runs three phases:
 
 ## 2) Agent Self-Discovery Prompt (`scripts/bootstrap-prompt.md`)
 
-A structured markdown prompt you paste into an agent's session. The agent introspects its own state and outputs a single JSON payload matching the `/api/sync` schema. It includes field constraints (max lengths, allowed values) inline so the agent's output validates on first try.
+A self-contained prompt you paste into any agent session. The agent scans its own workspace files, builds a sync payload covering all 13 categories, adds self-reported semantic data (relationships, reasoning, observations), and pushes everything via `syncState()` — no operator intervention required.
 
-The prompt focuses on **semantic categories** the scanner handles poorly: relationships, reasoning/context behind decisions, communication preferences, observations, and session narratives. It explicitly tells the agent to skip mechanical categories (connections, memory health, snippets, capabilities) that the scanner handles better.
+The agent needs the DashClaw SDK already installed (Node or Python). The prompt includes file scanning instructions, output shapes with max lengths, and the SDK call to push.
 
 Use this:
-- After running the scanner, to fill in semantic gaps
-- When you cannot run the scanner on the same machine as the workspace
-- To capture an agent's self-awareness (personality, values, communication style)
+- As the primary bootstrap method — paste to an agent, it does everything
+- When you want the agent to both scan files AND self-report semantic understanding
+- When you cannot run the CLI scanner on the same machine as the workspace
 
 ## 3) Bulk Sync API (`POST /api/sync`)
 
