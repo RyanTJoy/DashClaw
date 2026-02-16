@@ -1509,6 +1509,49 @@ Get routing system health status and diagnostics.
 
 ---
 
+## Agent Schedules
+
+Define recurring tasks and cron-based schedules for agents.
+
+### claw.listAgentSchedules(filters?)
+List agent schedules, optionally filtered by agent.
+
+```javascript
+const { schedules } = await claw.listAgentSchedules({ agent_id: 'forge' });
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.agent_id | string | No | Filter by agent ID |
+
+**Returns:** `Promise<{ schedules: Object[] }>`
+
+### claw.createAgentSchedule(schedule)
+Create a new agent schedule entry.
+
+```javascript
+const { schedule } = await claw.createAgentSchedule({
+  agent_id: 'forge',
+  name: 'Build projects',
+  cron_expression: '0 */6 * * *',
+  description: 'Check for pending builds every 6 hours'
+});
+```
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| schedule.agent_id | string | Yes | Agent this schedule belongs to |
+| schedule.name | string | Yes | Schedule name |
+| schedule.cron_expression | string | Yes | Cron expression (e.g. `0 */6 * * *`) |
+| schedule.description | string | No | Human-readable description |
+| schedule.enabled | boolean | No | Whether schedule is active (default: true) |
+
+**Returns:** `Promise<{ schedule: Object }>`
+
+---
+
 ## Error Handling
 
 All SDK methods throw on non-2xx responses. Errors include `status` (HTTP code) and `details` (when available).

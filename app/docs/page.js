@@ -191,6 +191,9 @@ const navItems = [
   { href: '#completeRoutingTask', label: 'completeRoutingTask', indent: true },
   { href: '#getRoutingStats', label: 'getRoutingStats', indent: true },
   { href: '#getRoutingHealth', label: 'getRoutingHealth', indent: true },
+  { href: '#agent-schedules', label: 'Agent Schedules' },
+  { href: '#listAgentSchedules', label: 'listAgentSchedules', indent: true },
+  { href: '#createAgentSchedule', label: 'createAgentSchedule', indent: true },
   { href: '#agent-pairing', label: 'Agent Pairing' },
   { href: '#createPairing', label: 'createPairing', indent: true },
   { href: '#createPairingFromPrivateJwk', label: 'createPairingFromPrivateJwk', indent: true },
@@ -1494,6 +1497,48 @@ console.log(\`Tasks: \${stats.tasks.total} (\${stats.tasks.pending} pending)\`);
 console.log('Routing status:', health.status);
 console.log('Available agents:', health.agents.available);
 console.log('Queued tasks:', health.tasks.queued);`}
+            />
+          </section>
+
+          {/* ── Agent Schedules ── */}
+          <section id="agent-schedules" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <CircleDot size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Agent Schedules</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Define recurring tasks and cron-based schedules for agents. Visible in the workspace overview.</p>
+
+            <MethodEntry
+              id="listAgentSchedules"
+              signature="claw.listAgentSchedules(filters?)"
+              description="List agent schedules, optionally filtered by agent."
+              params={[
+                { name: 'filters.agent_id', type: 'string', required: false, desc: 'Filter by agent ID' },
+              ]}
+              returns="Promise<{ schedules: Object[] }>"
+              example={`const { schedules } = await claw.listAgentSchedules({ agent_id: 'forge' });
+schedules.forEach(s => console.log(s.name, s.cron_expression));`}
+            />
+            <MethodEntry
+              id="createAgentSchedule"
+              signature="claw.createAgentSchedule(schedule)"
+              description="Create a new agent schedule entry."
+              params={[
+                { name: 'schedule.agent_id', type: 'string', required: true, desc: 'Agent this schedule belongs to' },
+                { name: 'schedule.name', type: 'string', required: true, desc: 'Schedule name' },
+                { name: 'schedule.cron_expression', type: 'string', required: true, desc: 'Cron expression (e.g. 0 */6 * * *)' },
+                { name: 'schedule.description', type: 'string', required: false, desc: 'Human-readable description' },
+                { name: 'schedule.enabled', type: 'boolean', required: false, desc: 'Whether schedule is active (default: true)' },
+              ]}
+              returns="Promise<{ schedule: Object }>"
+              example={`const { schedule } = await claw.createAgentSchedule({
+  agent_id: 'forge',
+  name: 'Build projects',
+  cron_expression: '0 */6 * * *',
+  description: 'Check for pending builds every 6 hours'
+});`}
             />
           </section>
 

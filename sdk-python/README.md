@@ -499,6 +499,30 @@ health = claw.get_routing_health()
 | `get_routing_stats()` | Get routing statistics |
 | `get_routing_health()` | Get health status |
 
+## Agent Schedules
+
+Define recurring tasks and cron-based schedules for agents:
+
+```python
+# Create a schedule
+schedule = claw.create_agent_schedule(
+    agent_id="forge",
+    name="Build projects",
+    cron_expression="0 */6 * * *",
+    description="Check for pending builds every 6 hours"
+)
+
+# List schedules for an agent
+schedules = claw.list_agent_schedules(agent_id="forge")
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `list_agent_schedules(agent_id=None)` | List agent schedules, optionally filtered by agent |
+| `create_agent_schedule(agent_id, name, cron_expression, **kwargs)` | Create a schedule. Optional: description, enabled |
+
 ## Token Usage & Dashboard Data
 
 Report token consumption, calendar events, ideas, connections, and memory health:

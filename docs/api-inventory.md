@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `93`
+- Total routes: `94`
 - Stable routes: `41`
 - Beta routes: `14`
-- Experimental routes: `38`
+- Experimental routes: `39`
 
 ## Routes
 
@@ -32,6 +32,7 @@ doc-type: architecture
 | `/api/actions/{actionId}/approve` | `POST` | `stable` | `/api/actions` | `app/api/actions/[actionId]/approve/route.js` |
 | `/api/actions/{actionId}/trace` | `GET` | `stable` | `/api/actions` | `app/api/actions/[actionId]/trace/route.js` |
 | `/api/activity` | `GET` | `beta` | `/api/activity` | `app/api/activity/route.js` |
+| `/api/agent-schedules` | `GET, POST` | `experimental` | `(default)` | `app/api/agent-schedules/route.js` |
 | `/api/agents` | `GET` | `experimental` | `/api/agents` | `app/api/agents/route.js` |
 | `/api/agents/connections` | `GET, POST` | `experimental` | `/api/agents` | `app/api/agents/connections/route.js` |
 | `/api/bounties` | `GET` | `experimental` | `/api/bounties` | `app/api/bounties/route.js` |

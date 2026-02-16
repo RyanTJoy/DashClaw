@@ -21,7 +21,7 @@ export default function AgentFilterDropdown() {
         <option value="" className="bg-zinc-900 text-zinc-300">All Agents</option>
         {agents.map((agent) => (
           <option key={agent.agent_id} value={agent.agent_id} className="bg-zinc-900 text-zinc-300">
-            {agent.agent_name || agent.agent_id} ({agent.action_count})
+            {agent.agent_name || agent.agent_id}
           </option>
         ))}
       </select>

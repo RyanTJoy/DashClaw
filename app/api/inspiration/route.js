@@ -53,22 +53,31 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
-    const { title, description, category, score, status, source } = body;
+    const { title, description, category, score, status, source, fun_factor, learning_potential, income_potential } = body;
 
     if (!title) {
       return NextResponse.json({ error: 'title is required' }, { status: 400 });
     }
 
+    const funVal = parseInt(fun_factor || 0, 10);
+    const learnVal = parseInt(learning_potential || 0, 10);
+    const incomeVal = parseInt(income_potential || 0, 10);
+    const hasSubScores = fun_factor !== undefined || learning_potential !== undefined || income_potential !== undefined;
+    const computedScore = score !== undefined ? score : (hasSubScores ? Math.round((funVal + learnVal + incomeVal) / 3) : 50);
+
     const result = await sql`
-      INSERT INTO ideas (org_id, title, description, category, score, status, source, captured_at)
+      INSERT INTO ideas (org_id, title, description, category, score, status, source, fun_factor, learning_potential, income_potential, captured_at)
       VALUES (
         ${orgId},
         ${title},
         ${description || null},
         ${category || null},
-        ${score || 50},
+        ${computedScore},
         ${status || 'pending'},
         ${source || null},
+        ${funVal},
+        ${learnVal},
+        ${incomeVal},
         ${new Date().toISOString()}
       )
       RETURNING *

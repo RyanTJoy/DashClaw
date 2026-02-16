@@ -351,6 +351,8 @@ function getSql() {
 - `POST /api/routing/tasks/:id/complete` - complete routing task [beta]
 - `GET /api/routing/stats` - get routing stats [beta]
 - `GET /api/routing/health` - get routing health [beta]
+- `GET /api/agent-schedules` - list agent schedules (optional `?agent_id`)
+- `POST /api/agent-schedules` - create agent schedule
 - UI: `/routing` page — health indicator, 6-stat bar, two-column layout with task queue (filter pills, submit form, task list) and agent registry (register form, agent cards with status/capabilities/load)
 - Sidebar: Network icon in Operations group (after Workspace)
 - Middleware matcher includes `/routing` and `/routing/:path*`

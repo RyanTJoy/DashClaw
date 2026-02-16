@@ -8,7 +8,7 @@ Agent Observability Platform
 
 Open-source, self-hosted observability, risk signals, and behavior governance for autonomous AI agents. Guard what they do before they do it.
 
-78+ SDK methodsNode + Python SDKsSSE real-time streamBehavior guardrailsCompliance engineTask routing
+95+ SDK methodsNode + Python SDKsSSE real-time streamBehavior guardrailsCompliance engineTask routing
 
 [Live Demo ](/demo)[ Self-Host](/self-host)[ Docs](/docs)
 
@@ -174,7 +174,7 @@ Most platforms stop at logging. DashClaw ships policy enforcement, regulatory co
 
 Every feature works in the demo — no signup required. [Launch Demo →](/demo)
 
-78+ methods across 16 categories
+95+ methods across 21+ categories
 
 ## One SDK. Full observability.
 
@@ -505,14 +505,14 @@ Install the toolkit and the SDK to get full dashboard observability in minutes.
 [Install Toolkit](/docs)[ Star on GitHub](https://github.com/ucsandman/DashClaw)
 
 ---
-description: Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 78+ methods across action recording, behavior guard, compliance, task routing, context management, session handoffs, security scanning, and more.
+description: Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, compliance, task routing, context management, session handoffs, security scanning, and more.
 ---
 
 [Home](/)SDK Documentation
 
 # SDK Documentation
 
-Full reference for the DashClaw SDK. 78+ methods across 16 categories to instrument your AI agents with action recording, governance, compliance, task routing, context management, session handoffs, security scanning, and more.
+Full reference for the DashClaw SDK. 95+ methods across 21+ categories to instrument your AI agents with action recording, governance, compliance, task routing, context management, session handoffs, security scanning, identity binding, organization management, webhooks, and more.
 
 Copy as Markdown[View raw](/api/docs/raw)
 
@@ -1917,6 +1917,34 @@ Get routing system health check (agent availability, queue depth, error rates).
 Returns: `Promise<{ health: Object }>`
 
 const { health } = await claw.getRoutingHealth();
+
+## Agent Schedules
+
+Define recurring tasks and cron-based schedules for agents.
+
+### claw.listAgentSchedules(filters?)
+
+List agent schedules, optionally filtered by agent.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| filters.agent\_id | string | No | Filter by agent ID |
+
+Returns: `Promise<{ schedules: Object[] }>`
+
+### claw.createAgentSchedule(schedule)
+
+Create a new agent schedule entry.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| schedule.agent\_id | string | Yes | Agent this schedule belongs to |
+| schedule.name | string | Yes | Schedule name |
+| schedule.cron\_expression | string | Yes | Cron expression |
+| schedule.description | string | No | Human-readable description |
+| schedule.enabled | boolean | No | Active flag (default: true) |
+
+Returns: `Promise<{ schedule: Object }>`
 
 ## Bulk Sync
 
