@@ -1,330 +1,233 @@
-# Agent Bootstrap Prompt
+# DashClaw Agent Self-Discovery Prompt
 
-> Paste this to any AI agent to have it self-discover its state and push it to DashClaw.
-> Prerequisites: `dashclaw` package installed, API key available.
+> Paste this prompt into an agent's session. The agent introspects its own state and outputs a single JSON payload you can push to DashClaw via `POST /api/sync`.
 
 ---
 
-## Your Task
+## Instructions for the agent
 
-You are going to introspect your own workspace and report your current state to DashClaw, an observability platform. This lets the dashboard display your connections, memory health, goals, learning, context, and more.
+Your operator uses **DashClaw** to track agent state, decisions, and operational data. Answer each section below to sync your current state. Output a single JSON object at the end — do NOT make individual API calls.
 
-**Important security rules:**
-- NEVER transmit secrets, API keys, passwords, or tokens as values
-- Only report key NAMES from .env files, never their values
-- When syncing snippets/context/goals/learning, transmit only reviewed extracts (use `--dry-run` if using the CLI scanner). Do not include secrets.
+**Rules:**
+- Be honest and specific — generic filler ("I aim to be helpful") is not useful.
+- Skip any section you genuinely have nothing for — omit the key entirely.
+- All string fields have max lengths noted in brackets. Truncate if needed.
+- Set `agent_id` to your own identifier (the name your operator uses for you).
+- NEVER include secrets, API keys, passwords, or tokens.
 
-## Setup
+---
 
-First, initialize the DashClaw SDK:
+### 1. Goals & Priorities
+
+What are you actively working toward? Include both high-level objectives and current tasks.
+
+For each goal:
+- `title` [max 500 chars]: what the goal is
+- `status`: one of `"active"`, `"completed"`, `"paused"`
+- `category` (optional): e.g. `"project"`, `"task"`, `"learning"`
+- `description` (optional) [max 500 chars]: why it matters or additional context
+- `progress` (optional): 0–100
+
+---
+
+### 2. Learning & Decisions
+
+Key lessons you've learned, decisions you've made, and their outcomes.
+
+For each entry:
+- `decision` [max 2000 chars]: what was decided or learned
+- `context` (optional): when/why this came up
+- `reasoning` (optional): the rationale
+- `outcome`: one of `"success"`, `"failure"`, `"pending"`
+- `confidence`: 0–100
+
+---
+
+### 3. Handoffs (Recent Sessions)
+
+Summarize your recent work sessions. Each entry represents one session or work block.
+
+For each handoff:
+- `session_date` (optional): `"YYYY-MM-DD"` format
+- `summary` [max 4000 chars]: what happened in this session
+- `key_decisions` (optional): array of strings — decisions made
+- `open_tasks` (optional): array of strings — what's still pending
+- `mood_notes` (optional) [max 500 chars]: energy/focus/mood during the session
+- `next_priorities` (optional): array of strings — what should happen next
+
+---
+
+### 4. Preferences & Communication Style
+
+How you prefer to work and communicate.
+
+#### 4a. Preferences
+For each:
+- `preference` [max 2000 chars]: the preference statement
+- `category` (optional): e.g. `"communication"`, `"workflow"`, `"technical"`
+- `confidence`: 0–100
+
+#### 4b. Observations
+Things you've noticed about the user, project, or environment.
+
+For each:
+- `observation` [max 2000 chars]: what you observed
+- `category` (optional): e.g. `"user"`, `"project"`, `"environment"`
+- `importance` (optional): 1–10
+
+#### 4c. Approaches
+Preferred workflows, strategies, or techniques you use.
+
+For each:
+- `approach` [max 500 chars]: the technique/workflow
+- `context` (optional): when you use it
+- `success` (optional): `true`/`false` — has it worked well?
+
+#### 4d. Moods
+Your recent operational moods/energy (if applicable).
+
+For each:
+- `mood` [max 100 chars]: the mood state
+- `energy` (optional) [max 50 chars]: energy level
+- `notes` (optional) [max 500 chars]: additional context
+
+---
+
+### 5. Relationships
+
+People and entities you interact with regularly.
+
+For each:
+- `name` [max 255 chars]: the person/entity name
+- `relationship_type`: e.g. `"operator"`, `"collaborator"`, `"stakeholder"`, `"contact"`
+- `description` (optional): how you relate to them
+
+---
+
+### 6. Inspiration
+
+Ideas, bookmarks, references, or reading material worth tracking.
+
+For each:
+- `title` [max 500 chars]: the idea or reference
+- `description` (optional): additional detail
+- `category` (optional) [max 50 chars]: grouping
+- `source` (optional) [max 500 chars]: URL if applicable
+- `status`: `"pending"` or `"completed"`
+
+---
+
+### 7. Context Points
+
+Important facts, insights, or decisions about the project/environment that should persist.
+
+For each:
+- `content` [max 2000 chars]: the fact/insight
+- `category`: one of `"general"`, `"insight"`, `"decision"`
+- `importance`: 1–10
+
+---
+
+## What NOT to include
+
+The CLI scanner (`scripts/bootstrap-agent.mjs`) handles these categories better mechanically — skip them here:
+
+- **Connections** — detected from `.env` key names and `package.json` dependencies
+- **Memory health** — computed from file stats
+- **Snippets** — extracted from fenced code blocks in docs
+- **Capabilities** — discovered from skill/tool directories
+- **Context threads** — derived from document structure
+
+---
+
+## Output format
+
+Produce a single JSON object matching this structure. Omit any top-level key you have no data for.
+
+```json
+{
+  "agent_id": "your-agent-id",
+  "goals": [
+    { "title": "...", "status": "active", "progress": 50 }
+  ],
+  "learning": [
+    { "decision": "...", "reasoning": "...", "outcome": "success", "confidence": 80 }
+  ],
+  "handoffs": [
+    {
+      "session_date": "2026-02-15",
+      "summary": "...",
+      "key_decisions": ["..."],
+      "open_tasks": ["..."],
+      "mood_notes": "...",
+      "next_priorities": ["..."]
+    }
+  ],
+  "preferences": {
+    "preferences": [
+      { "preference": "...", "category": "communication", "confidence": 85 }
+    ],
+    "observations": [
+      { "observation": "...", "category": "user", "importance": 7 }
+    ],
+    "approaches": [
+      { "approach": "...", "context": "...", "success": true }
+    ],
+    "moods": [
+      { "mood": "focused", "energy": "high" }
+    ]
+  },
+  "relationships": [
+    { "name": "...", "relationship_type": "operator", "description": "..." }
+  ],
+  "inspiration": [
+    { "title": "...", "source": "https://...", "status": "pending" }
+  ],
+  "context_points": [
+    { "content": "...", "category": "insight", "importance": 8 }
+  ]
+}
+```
+
+---
+
+## How to submit
+
+Save the JSON output to a file (e.g. `payload.json`), then use one of:
+
+### Option A: curl
+
+```bash
+curl -X POST https://your-dashclaw-host/api/sync \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '@payload.json'
+```
+
+### Option B: Node SDK
 
 ```javascript
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: process.env.DASHCLAW_BASE_URL || 'http://localhost:3000',
-  apiKey: process.env.DASHCLAW_API_KEY,
-  agentId: 'YOUR_AGENT_ID',      // Replace with your agent identifier
-  agentName: 'YOUR_AGENT_NAME',  // Replace with a human-readable name
+  baseUrl: 'https://your-dashclaw-host',
+  apiKey: 'YOUR_API_KEY',
+  agentId: 'your-agent-id',
 });
+
+await claw.syncState(payload);
 ```
 
-## Option A: Bulk Sync (Recommended)
+### Option C: Python SDK
 
-Build a single state object and push everything at once using `syncState()`. This is more efficient than individual calls.
+```python
+from dashclaw import DashClaw
 
-```javascript
-const state = {};
-// ... populate categories below ...
-const result = await claw.syncState(state);
-console.log(`Synced ${result.total_synced} items in ${result.duration_ms}ms`);
+claw = DashClaw(
+    base_url="https://your-dashclaw-host",
+    api_key="YOUR_API_KEY",
+    agent_id="your-agent-id",
+)
+
+claw.sync_state(payload)
 ```
-
-## Option B: Individual Methods
-
-If you prefer granular control, use individual SDK methods per step below.
-
----
-
-## Step 1: Report Connections
-
-Scan your environment to identify what services you connect to. Read `.env`, `.env.local`, and `package.json`.
-
-**What to look for:** Environment variable key names (NOT values) that indicate integrations.
-
-| Env Prefix | Provider | Auth Type |
-|---|---|---|
-| `GITHUB_` | github | oauth |
-| `GOOGLE_` | google | oauth |
-| `OPENAI_` | openai | api_key |
-| `ANTHROPIC_` | anthropic | api_key |
-| `STRIPE_` | stripe | api_key |
-| `AWS_` | aws | api_key |
-| `DATABASE_URL` (neon) | neon | api_key |
-| `RESEND_` | resend | api_key |
-| `SLACK_` | slack | api_key |
-| `VERCEL_` | vercel | api_key |
-
-Also check `package.json` dependencies for `stripe`, `openai`, `@anthropic-ai/sdk`, `@neondatabase/serverless`, etc.
-
-**Bulk sync:**
-```javascript
-state.connections = [
-  { provider: 'github', auth_type: 'oauth', status: 'active' },
-  { provider: 'neon', auth_type: 'api_key', status: 'active' },
-  // ... more
-];
-```
-
-**Individual method:**
-```javascript
-await claw.reportConnections([
-  { provider: 'github', auth_type: 'oauth', status: 'active' },
-  { provider: 'neon', auth_type: 'api_key', status: 'active' },
-]);
-```
-
-## Step 2: Report Memory Health
-
-Scan your `.claude/` directory (or equivalent memory storage). Count markdown files, total lines, and estimate a health score.
-
-**Health score heuristic:**
-- Base: 50
-- +10 if MEMORY.md exists
-- +10 if total lines > 100
-- +10 if more than 3 memory files
-- +10 if CLAUDE.md exists at project root
-- +5 if more than 5 topics identified
-
-Extract entities (bold terms, code references) and topics (## headings).
-
-**Bulk sync:**
-```javascript
-state.memory = {
-  health: { score: 75, total_files: 8, total_lines: 450, total_size_kb: 12 },
-  entities: [
-    { name: 'NextAuth', type: 'code', mentions: 5 },
-    { name: 'PostgreSQL', type: 'concept', mentions: 3 },
-  ],
-  topics: [
-    { name: 'Architecture Notes', mentions: 1 },
-    { name: 'Deployment', mentions: 2 },
-  ],
-};
-```
-
-**Individual method:**
-```javascript
-await claw.reportMemoryHealth({
-  health: { score: 75, total_files: 8, total_lines: 450 },
-  entities: [...],
-  topics: [...],
-});
-```
-
-## Step 3: Report Goals
-
-Look for goals in `tasks/todo.md`, `TODO.md`, or project documentation. Checkboxes indicate status:
-- `- [ ] Task` -> status: `'active'`
-- `- [x] Task` -> status: `'completed'`, progress: 100
-
-**Bulk sync:**
-```javascript
-state.goals = [
-  { title: 'Deploy v2 to production', status: 'active' },
-  { title: 'Set up CI/CD pipeline', status: 'completed', progress: 100 },
-];
-```
-
-**Individual method:**
-```javascript
-await claw.createGoal({ title: 'Deploy v2 to production', status: 'active' });
-```
-
-## Step 4: Report Learning
-
-Scan `tasks/lessons.md`, decision logs, or CLAUDE.md sections about lessons learned and key patterns.
-
-**Bulk sync:**
-```javascript
-state.learning = [
-  { decision: 'Used JWT for Edge compatibility', reasoning: 'NextAuth on Vercel Edge', outcome: 'confirmed' },
-  { decision: 'Neon tagged templates for simple queries', context: 'Database patterns' },
-];
-```
-
-**Individual method:**
-```javascript
-await claw.recordDecision({
-  decision: 'Used JWT for Edge compatibility',
-  reasoning: 'NextAuth on Vercel Edge',
-  outcome: 'confirmed',
-});
-```
-
-## Step 5: Capture Context Points
-
-Extract key insights from your CLAUDE.md and memory files. Categorize each:
-- `insight` - architectural understanding, patterns (importance: 7-8)
-- `decision` - choices made and why (importance: 7)
-- `task` - pending work items (importance: 5-6)
-- `general` - other useful context (importance: 5)
-
-**Bulk sync:**
-```javascript
-state.context_points = [
-  { content: 'Next.js 15 App Router with JavaScript only', category: 'insight', importance: 8 },
-  { content: 'Dark-only theme, flat surfaces', category: 'insight', importance: 6 },
-];
-```
-
-**Individual method:**
-```javascript
-await claw.captureKeyPoint({
-  content: 'Next.js 15 App Router with JavaScript only',
-  category: 'insight',
-  importance: 8,
-});
-```
-
-## Step 6: Create Context Threads
-
-Each major topic area in your project should become a thread. Threads upsert by name, so this is safe to re-run.
-
-**Bulk sync:**
-```javascript
-state.context_threads = [
-  { name: 'Authentication', summary: 'NextAuth v4 with GitHub + Google OAuth, JWT strategy' },
-  { name: 'Database', summary: 'Neon PostgreSQL with tagged template queries' },
-];
-```
-
-**Individual method:**
-```javascript
-await claw.createThread({
-  name: 'Authentication',
-  summary: 'NextAuth v4 with GitHub + Google OAuth, JWT strategy',
-});
-```
-
-## Step 7: Create Session Handoff
-
-Summarize your current state as a handoff document. This helps continuity between sessions.
-
-**Bulk sync:**
-```javascript
-state.handoffs = [{
-  summary: 'Completed auth system, working on billing integration',
-  key_decisions: ['JWT over sessions', 'Stripe Checkout redirect flow'],
-  open_tasks: ['Add webhook handler', 'Test quota enforcement'],
-  next_priorities: ['Finish billing', 'Add activity logging'],
-  mood_notes: 'Productive session, good progress',
-}];
-```
-
-**Individual method:**
-```javascript
-await claw.createHandoff({
-  summary: 'Completed auth system, working on billing integration',
-  key_decisions: ['JWT over sessions', 'Stripe Checkout redirect flow'],
-  open_tasks: ['Add webhook handler'],
-  next_priorities: ['Finish billing'],
-});
-```
-
-## Step 8: Save Code Snippets
-
-Find important code patterns in your documentation (fenced code blocks). Snippets upsert by name.
-
-**Bulk sync:**
-```javascript
-state.snippets = [
-  {
-    name: 'api-route-pattern',
-    description: 'Standard API route boilerplate',
-    code: 'export const dynamic = "force-dynamic";\n...',
-    language: 'javascript',
-  },
-];
-```
-
-**Individual method:**
-```javascript
-await claw.saveSnippet({
-  name: 'api-route-pattern',
-  description: 'Standard API route boilerplate',
-  code: '...',
-  language: 'javascript',
-});
-```
-
-## Step 9: Report Preferences & Observations
-
-Share what you know about the user's preferences, your observations, and tracked approaches.
-
-**Bulk sync:**
-```javascript
-state.preferences = {
-  observations: [
-    { observation: 'User prefers concise commit messages', category: 'workflow', importance: 7 },
-  ],
-  preferences: [
-    { preference: 'Dark mode only', category: 'ui', confidence: 95 },
-  ],
-  moods: [
-    { mood: 'focused', energy: 8, notes: 'Deep work session' },
-  ],
-  approaches: [
-    { approach: 'Code-first prototyping', success: true, context: 'Feature development' },
-  ],
-};
-```
-
-**Individual methods:**
-```javascript
-await claw.logObservation({ observation: 'User prefers concise commit messages', category: 'workflow' });
-await claw.setPreference({ preference: 'Dark mode only', category: 'ui', confidence: 95 });
-await claw.logMood({ mood: 'focused', energy: 8 });
-await claw.trackApproach({ approach: 'Code-first prototyping', success: true });
-```
-
-## Step 10: Report Ideas
-
-Any pending ideas, feature requests, or inspiration items.
-
-**Bulk sync:**
-```javascript
-state.inspiration = [
-  { title: 'Add real-time WebSocket updates', category: 'feature', description: 'Live signal feed' },
-];
-```
-
-**Individual method:**
-```javascript
-await claw.recordIdea({ title: 'Add real-time WebSocket updates', category: 'feature' });
-```
-
----
-
-## Verify
-
-After syncing, confirm your data appears:
-
-```javascript
-const digest = await claw.getDailyDigest();
-console.log(digest);
-// Should show counts for today's synced data
-```
-
-You can also check the DashClaw dashboard:
-- `/workspace` - Overview tab shows today's digest
-- `/workspace` - Context tab shows points and threads
-- `/dashboard` - Widgets show goals, learning, integrations
-
-## Notes
-
-- **Idempotent**: Connections, threads, snippets, and approaches all use upsert logic - safe to re-run
-- **Security**: Never transmit .env values, only key names for provider detection
-- **Independent steps**: Each step is standalone. Skip any that don't apply.
-- **Limits**: Max items per category - connections: 50, goals/learning/content: 100, context points: 200, threads/snippets: 50
-- **Bulk vs individual**: Use `syncState()` when pushing many categories at once. Use individual methods for targeted updates during normal operation.
