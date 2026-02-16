@@ -14,44 +14,44 @@ import ImageCarousel from './components/ImageCarousel';
 const coreFeatures = [
   {
     icon: Zap,
-    title: 'Real-Time Flight Recorder',
-    description: 'Watch your agents think and act live. Server-Sent Events (SSE) stream actions, signals, and costs directly to your mission control dashboard.',
+    title: 'Know Exactly What Your Agents Are Doing',
+    description: 'See every decision, tool call, and action as it happens. A live flight recorder streams everything to your dashboard so nothing runs blind.',
   },
   {
     icon: Shield,
-    title: 'Behavioral AI Guardrails',
-    description: 'Advanced anomaly detection using vector embeddings (pgvector). Detect outlier agent behavior that hard-coded rules might miss.',
+    title: 'Catch Dangerous Behavior Before It Ships',
+    description: 'Semantic guardrails detect risky patterns that hard-coded rules miss. Vector embeddings spot outlier behavior automatically.',
   },
   {
     icon: BarChart3,
-    title: 'Token & Cost Analytics',
-    description: 'Real-time financial tracking. See "Cost per Goal" and "Burn Rate" for every model (GPT-4o, Claude 3.5, etc.) instantly.',
+    title: 'Stop Spending Money You Can\'t Explain',
+    description: 'See cost-per-goal and burn rate for every model in real time. Know exactly where your budget is going and project what\'s next.',
   },
   {
     icon: ShieldAlert,
-    title: 'Behavior Governance',
-    description: 'Enforce safety with logic rules (rate limits) or semantic natural language policies ("Never access production secrets").',
+    title: 'Stop Agents Before They Do Something Expensive',
+    description: 'Enforce safety with rate limits or natural language policies like "Never access production secrets." Agents pause and wait for approval.',
   },
 ];
 
 const platformFeatures = [
-  { icon: Package, title: 'Node.js & Python SDKs', description: 'Zero-dependency clients for both ecosystems. Native adapters for CrewAI, AutoGen, and LangChain.' },
-  { icon: ShieldAlert, title: 'HITL Governance', description: 'Real-time Approval Queue. Agents pause and wait for human sign-off on sensitive operations.' },
-  { icon: Shield, title: 'Identity Binding', description: 'Optional RSA signature verification binds actions to an approved agent identity.' },
-  { icon: Brain, title: 'Memory Health', description: 'Proactive maintenance engine identifies stale facts and sends corrective messages to agents.' },
-  { icon: ScanSearch, title: 'DLP & Redaction', description: 'Automatic secret redaction (OpenAI, AWS, GitHub) in messages and handoffs before data is stored.' },
-  { icon: ArrowLeftRight, title: 'Session Handoffs', description: 'Structured handoff documents for continuity between agent sessions.' },
-  { icon: CircleDot, title: 'Open Loop Tracking', description: 'Track unresolved dependencies, pending approvals, and blockers across agents.' },
-  { icon: Eye, title: 'Assumption Monitoring', description: 'Log what agents assume, validate or invalidate, and catch drift early.' },
+  { icon: Package, title: 'Drop-In SDKs', description: 'Connect any agent in minutes. Zero-dependency Node.js and Python clients with native adapters for CrewAI, AutoGen, and LangChain.' },
+  { icon: ShieldAlert, title: 'Human-in-the-Loop Approvals', description: 'Sensitive operations pause until a human signs off. Your agents ask permission, not forgiveness.' },
+  { icon: Shield, title: 'Verified Agent Identity', description: 'Know which agent took which action. RSA signature verification ensures accountability at every step.' },
+  { icon: Brain, title: 'Keep Agent Memory Clean', description: 'Detect stale facts, repetition loops, and context bloat before they cause bad decisions.' },
+  { icon: ScanSearch, title: 'Automatic Secret Redaction', description: 'API keys, tokens, and credentials are stripped from messages before they ever hit storage.' },
+  { icon: ArrowLeftRight, title: 'Seamless Session Handoffs', description: 'Never lose context between agent sessions. Structured handoff documents keep continuity intact.' },
+  { icon: CircleDot, title: 'Nothing Falls Through the Cracks', description: 'Track every unresolved dependency, pending approval, and blocker across your entire agent fleet.' },
+  { icon: Eye, title: 'Catch Assumptions Before They Drift', description: 'Log what agents assume, validate against outcomes, and surface contradictions before they compound.' },
 ];
 
 const operationalFeatures = [
-  { icon: UsersRound, title: 'Team Management', description: 'Invite links, role-based access (admin/member), and workspace isolation.' },
-  { icon: Webhook, title: 'Webhooks & Alerts', description: 'HMAC-signed webhook delivery plus email alerts via Resend for signal notifications.' },
-  { icon: Clock, title: 'Activity Audit Log', description: 'Every admin action logged — key creation, invites, role changes, and usage activity.' },
-  { icon: Compass, title: 'Guided Onboarding', description: '4-step checklist: create workspace, generate key, install SDK, send first action.' },
-  { icon: Building2, title: 'Multi-Tenant', description: 'Full org isolation with API key scoping, per-agent settings, and org management.' },
-  { icon: Terminal, title: 'Agent Tools', description: '20+ Python CLI tools for local ops with optional --push sync to the dashboard.' },
+  { icon: UsersRound, title: 'Team Management', description: 'Invite your team in seconds. Role-based access keeps operators in control and agents accountable.' },
+  { icon: Webhook, title: 'Get Alerted Instantly', description: 'HMAC-signed webhooks and email alerts fire the moment something goes wrong. No more checking dashboards.' },
+  { icon: Clock, title: 'Full Audit Trail', description: 'Every action is logged. Know who did what, when, and why — for compliance and debugging alike.' },
+  { icon: Compass, title: 'Ship in 10 Minutes', description: 'Four steps: create workspace, generate key, install SDK, send first action. That\'s it.' },
+  { icon: Building2, title: 'Built for Multi-Tenant', description: 'Full org isolation out of the box. Each team gets their own agents, keys, and settings.' },
+  { icon: Terminal, title: '20+ CLI Tools', description: 'Run agent ops locally with Python CLI tools. Push results to the dashboard when you\'re ready.' },
 ];
 
 const signals = [
@@ -99,44 +99,44 @@ const platformCoverage = [
 const shippedHighlights = [
   {
     icon: Brain,
-    title: 'Adaptive Learning Loop',
-    description: 'Completed actions are scored into episodes, recommendations are synthesized per agent/action type, telemetry is captured, and effectiveness metrics are computed.',
+    title: 'Agents That Learn From Their Mistakes',
+    description: 'Every completed action is scored and turned into recommendations. Your agents get better without manual retraining.',
     href: '/learning',
   },
   {
     icon: Shield,
-    title: 'Route SQL Guardrails',
-    description: 'Critical data-layer paths are protected by SQL drift checks and repository contract tests in CI.',
+    title: 'Data Layer You Can Trust',
+    description: 'SQL drift checks and contract tests run in CI. No silent regressions reach production.',
     href: '/docs',
   },
   {
     icon: MessageSquare,
-    title: 'API Contract Governance',
-    description: 'OpenAPI drift checks and API inventory maturity gates prevent silent contract regressions.',
+    title: 'APIs That Never Break Silently',
+    description: 'OpenAPI drift checks catch contract changes before they ship. Your integrations stay stable.',
     href: '/docs',
   },
   {
     icon: Package,
-    title: 'Cross-SDK Contract Harness',
-    description: 'Node and Python SDK critical paths are validated against shared contract fixtures.',
+    title: 'SDKs That Stay in Sync',
+    description: 'Node and Python SDKs are tested against the same contract fixtures. Feature parity is enforced, not hoped for.',
     href: '/docs',
   },
   {
     icon: Clock,
-    title: 'Learning Loop Automation',
-    description: 'Backfill and recommendation rebuild cron routes keep adaptive recommendation data fresh.',
+    title: 'Always-Fresh Recommendations',
+    description: 'Automated background jobs keep learning data current. No manual cron jobs to manage.',
     href: '/learning',
   },
   {
     icon: Scale,
-    title: 'Compliance Engine',
-    description: 'Map guardrail policies to SOC 2, ISO 27001, GDPR, NIST AI RMF, and IMDA frameworks with gap analysis and audit-ready reports.',
+    title: 'Compliance Without the Spreadsheets',
+    description: 'Map your guardrails to SOC 2, ISO 27001, GDPR, and NIST AI RMF automatically. Generate audit-ready reports in one click.',
     href: '/docs#compliance-engine',
   },
   {
     icon: Network,
-    title: 'Skill-Based Task Routing',
-    description: 'Auto-route tasks to the best agent based on capability match, load, performance history, and urgency with retry and escalation.',
+    title: 'The Right Agent for Every Task',
+    description: 'Tasks automatically route to the best-fit agent based on skills, load, and track record. Failed tasks retry and escalate.',
     href: '/docs#task-routing',
   },
 ];

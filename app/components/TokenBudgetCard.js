@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Gauge, Clock, CalendarDays, BookOpen, Cpu, ArrowRight, Users } from 'lucide-react';
+import { Gauge, Clock, CalendarDays, BookOpen, Cpu, ArrowRight, Users, TrendingUp } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
@@ -28,6 +28,7 @@ export default function TokenBudgetCard() {
     compactions: 0
   });
   const [agentContexts, setAgentContexts] = useState([]);
+  const [projectedCost, setProjectedCost] = useState(null);
   const [lastUpdated, setLastUpdated] = useState('');
 
   const fetchData = useCallback(async () => {
@@ -38,6 +39,31 @@ export default function TokenBudgetCard() {
 
       // Store per-agent contexts for All Agents view
       setAgentContexts(json.agentContexts || []);
+
+      // Compute 24h cost projection from history + today's partial spend
+      const history = json.history || [];
+      const today = json.today;
+      if (history.length >= 2 || (history.length >= 1 && today)) {
+        // Average daily cost from available history
+        const costs = history.map(d => d.estimatedCost || 0).filter(c => c > 0);
+        if (costs.length > 0) {
+          const avgDailyCost = costs.reduce((a, b) => a + b, 0) / costs.length;
+          // Weight today's partial cost: extrapolate today's spend to full 24h
+          const now = new Date();
+          const hoursElapsed = now.getHours() + now.getMinutes() / 60;
+          const todayCost = today?.estimatedCost || 0;
+          const todayExtrapolated = hoursElapsed > 1 ? (todayCost / hoursElapsed) * 24 : avgDailyCost;
+          // Blend: 60% today's trajectory, 40% historical average
+          const projected = hoursElapsed > 1
+            ? todayExtrapolated * 0.6 + avgDailyCost * 0.4
+            : avgDailyCost;
+          setProjectedCost(projected);
+        } else {
+          setProjectedCost(null);
+        }
+      } else {
+        setProjectedCost(null);
+      }
 
       if (json.current) {
         const current = json.current;
@@ -220,6 +246,17 @@ export default function TokenBudgetCard() {
                   </div>
                 </div>
               </div>
+              {projectedCost !== null && (
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[rgba(255,255,255,0.04)]">
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp size={11} className="text-zinc-500" />
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider">24h Projected</span>
+                  </div>
+                  <span className={`text-sm font-semibold tabular-nums ${projectedCost > data.todayCost * 2 ? 'text-amber-400' : 'text-zinc-300'}`}>
+                    {formatCost(projectedCost)}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Model + Last Updated */}
