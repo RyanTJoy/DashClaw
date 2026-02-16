@@ -1,6 +1,6 @@
 {
   "name": "dashclaw",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "Full-featured agent toolkit for the DashClaw platform. 96+ methods across 22+ categories for action recording, context management, session handoffs, security scanning, behavior guard, compliance, task routing, identity binding, organization management, webhooks, bulk sync, and more.",
   "type": "module",
   "publishConfig": {
