@@ -59,6 +59,7 @@ To get started with the codebase:
 -   `sdk/`: The Node.js DashClaw SDK for instrumenting agents.
 -   `sdk-python/`: The Python DashClaw SDK and parity test suite.
 -   `scripts/`: Utility scripts for migrations, security scanning, and testing.
+-   `.claude/skills/`: Claude Code skills (platform intelligence, diagnostics, integration validation).
 
 ## Documentation Update Protocol
 
