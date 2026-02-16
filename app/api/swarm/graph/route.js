@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getSql } from '../../../lib/db.js';
 import { getOrgId } from '../../../lib/org.js';
+import { listAgentsForOrg } from '../../../lib/repositories/agents.repository.js';
 
 /**
  * GET /api/swarm/graph
@@ -18,12 +19,22 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const swarmId = searchParams.get('swarm_id');
 
-    // 1. Fetch all agents in the org
-    const agentsQuery = swarmId 
-      ? sql`SELECT DISTINCT agent_id, MAX(agent_name) as name FROM action_records WHERE org_id = ${orgId} AND swarm_id = ${swarmId} GROUP BY agent_id`
-      : sql`SELECT DISTINCT agent_id, MAX(agent_name) as name FROM action_records WHERE org_id = ${orgId} GROUP BY agent_id`;
-    
-    const agents = await agentsQuery;
+    // 1. Fetch all agents in the org (broad discovery via repository)
+    let agents;
+    if (swarmId) {
+      // Swarm-scoped: start with action_records for the swarm, then merge broader discovery
+      const swarmAgents = await sql`SELECT DISTINCT agent_id, MAX(agent_name) as name FROM action_records WHERE org_id = ${orgId} AND swarm_id = ${swarmId} GROUP BY agent_id`;
+      const allAgents = await listAgentsForOrg(sql, orgId);
+      const swarmIds = new Set(swarmAgents.map(a => a.agent_id));
+      // Merge any agents not already found via swarm action_records
+      agents = [
+        ...swarmAgents,
+        ...allAgents.filter(a => !swarmIds.has(a.agent_id)).map(a => ({ agent_id: a.agent_id, name: a.agent_name }))
+      ];
+    } else {
+      const allAgents = await listAgentsForOrg(sql, orgId);
+      agents = allAgents.map(a => ({ agent_id: a.agent_id, name: a.agent_name }));
+    }
 
     // 2. Fetch communication links (messages between agents)
     // We aggregate counts to create edge weights
