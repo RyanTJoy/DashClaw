@@ -408,7 +408,7 @@ export default function LandingPage() {
                 <h3 className="text-lg font-semibold text-white mb-3">Intelligent Task Routing</h3>
                 <ul className="space-y-2 text-sm text-zinc-400 mb-4">
                   <li>Skill-based agent matching with scoring</li>
-                  <li>Real-time load balancing and health monitoring</li>
+                  <li>Real-time load balancing and health verification</li>
                   <li>Urgency-aware queue with retry and escalation</li>
                   <li>Full agent registry with capability tracking</li>
                 </ul>

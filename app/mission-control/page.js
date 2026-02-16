@@ -18,7 +18,7 @@ function computeSystemState(redCount, amberCount) {
   if (redCount >= 2) return { label: 'ALERT', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', pulse: true };
   if (redCount === 1) return { label: 'ELEVATED', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', pulse: false };
   if (amberCount >= 3) return { label: 'DRIFTING', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', pulse: false };
-  if (amberCount > 0) return { label: 'MONITORING', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', pulse: false };
+  if (amberCount > 0) return { label: 'REVIEWING', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', pulse: false };
   return { label: 'STABLE', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', pulse: false };
 }
 

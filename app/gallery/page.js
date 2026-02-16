@@ -25,7 +25,7 @@ const screenshots = [
   { title: 'Workflows', file: 'workflows.png', desc: 'Automations, schedules, and execution history.' },
 
   { title: 'Integrations', file: 'integrations.png', desc: 'Connected services and provider configuration.' },
-  { title: 'Security', file: 'security.png', desc: 'Security posture, scanning, and signal monitoring.' },
+  { title: 'Security', file: 'security.png', desc: 'Security posture, scanning, and integrity signals.' },
   { title: 'Relationships', file: 'relationships.png', desc: 'Contacts, follow-ups, and relationship activity.' },
   { title: 'Goals', file: 'goals.png', desc: 'Goal tracking and milestone progress.' },
   { title: 'Learning', file: 'learning.png', desc: 'Lessons, recommendations, and effectiveness metrics.' },

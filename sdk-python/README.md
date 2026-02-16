@@ -133,7 +133,7 @@ Capture session context for seamless handoffs between sessions or agents:
 
 ```python
 # Create a handoff
-claw.create_handoff("Finished data pipeline setup. Next: add monitoring.", context={"pipeline_id": "p_123"})
+claw.create_handoff("Finished data pipeline setup. Next: add signal checks.", context={"pipeline_id": "p_123"})
 
 # Get handoffs
 handoffs = claw.get_handoffs(limit=5)

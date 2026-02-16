@@ -1,7 +1,7 @@
 /**
  * Usage utilities — metering and quota checking.
  *
- * Usage meters provide a fast path for monitoring activity:
+ * Usage meters provide a fast path for tracking activity:
  * - Warm path: reads 1 row from usage_meters (no expensive COUNTs)
  * - Cold start: seeds meters from live COUNTs once per billing period
  * - Increments/decrements are fire-and-forget after mutations

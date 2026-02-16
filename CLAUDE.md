@@ -27,7 +27,7 @@ Both modes use the same landing page and the same "Dashboard" button (`/dashboar
 - `/dashboard` - authenticated operations dashboard (real data)
 - `/workspace` - per-agent workspace (digest, context, handoffs, snippets, preferences, memory)
 - `/security` - security dashboard (signals, guard decisions, findings)
-- `/routing` - task routing (agent registry, task queue, health monitoring)
+- `/routing` - task routing (agent registry, task queue, health status)
 - `/compliance` - compliance mapping (framework controls, gap analysis, evidence, reports)
 
 ## Tech Stack
