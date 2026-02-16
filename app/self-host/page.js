@@ -134,15 +134,24 @@ export default function SelfHostPage() {
               <li>Go to <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">vercel.com/new</a> and import your fork</li>
               <li>Add these environment variables before deploying:</li>
             </ol>
+            <p className="text-sm text-zinc-400 mb-3">First, generate your secrets. Run this in any terminal (you already have Node.js):</p>
+            <CodeBlock title="Generate secrets (run once, copy the output)">{`node -e "const c=require('crypto');console.log('NEXTAUTH_SECRET='+c.randomBytes(32).toString('base64url'));console.log('DASHCLAW_API_KEY=oc_live_'+c.randomBytes(24).toString('hex'));console.log('ENCRYPTION_KEY='+c.randomBytes(32).toString('base64url').slice(0,32));console.log('CRON_SECRET='+c.randomBytes(32).toString('hex'))"`}</CodeBlock>
+            <p className="text-sm text-zinc-400 mt-4 mb-3">Then paste these into Vercel&apos;s environment variables along with your database URL and OAuth credentials:</p>
             <CodeBlock title="Required environment variables">{`DATABASE_URL=postgresql://user:pass@ep-xyz.neon.tech/neondb
 NEXTAUTH_URL=https://your-app.vercel.app
-NEXTAUTH_SECRET=<random-32-char-secret>
-DASHCLAW_API_KEY=<your-secret-api-key>
+NEXTAUTH_SECRET=<paste from above>
+DASHCLAW_API_KEY=<paste from above>
+ENCRYPTION_KEY=<paste from above>
+CRON_SECRET=<paste from above>
 GITHUB_ID=<from-step-3>
 GITHUB_SECRET=<from-step-3>`}</CodeBlock>
-            <p className="mt-3 text-xs text-zinc-500">
-              Generate secrets with <code className="font-mono text-zinc-300">openssl rand -base64 32</code>. Tables are created automatically on first request.
-            </p>
+            <div className="mt-3 text-xs text-zinc-500 space-y-1">
+              <p><code className="font-mono text-zinc-300">NEXTAUTH_SECRET</code> — encrypts login sessions</p>
+              <p><code className="font-mono text-zinc-300">DASHCLAW_API_KEY</code> — authenticates your agents (the <code className="font-mono text-zinc-300">oc_live_</code> prefix is required)</p>
+              <p><code className="font-mono text-zinc-300">ENCRYPTION_KEY</code> — encrypts sensitive settings stored in the database</p>
+              <p><code className="font-mono text-zinc-300">CRON_SECRET</code> — authenticates scheduled job requests (optional but recommended)</p>
+              <p>Tables are created automatically on first request.</p>
+            </div>
           </StepCard>
 
           <StepCard
