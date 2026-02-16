@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
+import { fetchDigestData } from '../../lib/repositories/digest.repository.js';
 
 export async function GET(request) {
   try {
@@ -11,43 +12,17 @@ export async function GET(request) {
     const orgId = getOrgId(request);
     const { searchParams } = new URL(request.url);
     const agentId = searchParams.get('agent_id');
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0];
+    const date = searchParams.get('date'); // null = recent (no date filter)
 
-    // Parallel fetch from multiple tables for the given date
-    const dayStart = `${date}T00:00:00.000Z`;
-    const dayEnd = `${date}T23:59:59.999Z`;
+    const raw = await fetchDigestData(sql, orgId, { agentId, date });
 
-    const isMissingTable = (err) =>
-      String(err?.code || '').includes('42P01') || String(err?.message || '').includes('does not exist');
-
-    const safe = async (promise) => {
-      try {
-        return await promise;
-      } catch (err) {
-        if (isMissingTable(err)) return [];
-        throw err;
-      }
-    };
-
-    const queries = agentId ? [
-      safe(sql`SELECT * FROM action_records WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp_start >= ${dayStart} AND timestamp_start <= ${dayEnd} ORDER BY timestamp_start DESC`),
-      safe(sql`SELECT * FROM decisions WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
-      safe(sql`SELECT * FROM lessons WHERE org_id = ${orgId} AND agent_id = ${agentId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
-      safe(sql`SELECT * FROM content WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
-      safe(sql`SELECT * FROM ideas WHERE org_id = ${orgId} AND captured_at >= ${dayStart} AND captured_at <= ${dayEnd} ORDER BY captured_at DESC`),
-      safe(sql`SELECT * FROM interactions WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
-      safe(sql`SELECT * FROM goals WHERE org_id = ${orgId} AND agent_id = ${agentId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
-    ] : [
-      safe(sql`SELECT * FROM action_records WHERE org_id = ${orgId} AND timestamp_start >= ${dayStart} AND timestamp_start <= ${dayEnd} ORDER BY timestamp_start DESC`),
-      safe(sql`SELECT * FROM decisions WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
-      safe(sql`SELECT * FROM lessons WHERE org_id = ${orgId} AND timestamp >= ${dayStart} AND timestamp <= ${dayEnd} ORDER BY timestamp DESC`),
-      safe(sql`SELECT * FROM content WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
-      safe(sql`SELECT * FROM ideas WHERE org_id = ${orgId} AND captured_at >= ${dayStart} AND captured_at <= ${dayEnd} ORDER BY captured_at DESC`),
-      safe(sql`SELECT * FROM interactions WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
-      safe(sql`SELECT * FROM goals WHERE org_id = ${orgId} AND created_at >= ${dayStart} AND created_at <= ${dayEnd} ORDER BY created_at DESC`),
-    ];
-
-    const [actions, decisions, lessons, content, ideas, interactions, goals] = await Promise.all(queries);
+    const actions = raw.actions;
+    const decisions = raw.decisions;
+    const lessons = raw.lessons;
+    const content = raw.content;
+    const ideas = raw.ideas;
+    const interactions = raw.interactions;
+    const goals = raw.goals;
 
     // Compute stats
     const completedActions = actions.filter(a => a.status === 'completed').length;
@@ -57,7 +32,7 @@ export async function GET(request) {
       : 0;
 
     return NextResponse.json({
-      date,
+      date: date || null,
       agent_id: agentId || null,
       digest: {
         actions: {
@@ -71,6 +46,7 @@ export async function GET(request) {
             declared_goal: a.declared_goal,
             status: a.status,
             risk_score: a.risk_score,
+            timestamp_start: a.timestamp_start,
           })),
         },
         decisions: {
@@ -79,6 +55,7 @@ export async function GET(request) {
             id: d.id,
             decision: d.decision,
             outcome: d.outcome,
+            timestamp: d.timestamp,
           })),
         },
         lessons: {
@@ -86,6 +63,7 @@ export async function GET(request) {
           items: lessons.slice(0, 10).map(l => ({
             id: l.id,
             lesson: l.lesson || l.content,
+            timestamp: l.timestamp,
           })),
         },
         content: {
@@ -95,6 +73,7 @@ export async function GET(request) {
             title: c.title,
             platform: c.platform,
             status: c.status,
+            created_at: c.created_at,
           })),
         },
         ideas: {
@@ -103,6 +82,7 @@ export async function GET(request) {
             id: i.id,
             title: i.title,
             score: i.score,
+            captured_at: i.captured_at,
           })),
         },
         interactions: {
@@ -111,6 +91,7 @@ export async function GET(request) {
             id: i.id,
             summary: i.summary,
             direction: i.direction,
+            created_at: i.created_at,
           })),
         },
         goals: {
@@ -120,6 +101,7 @@ export async function GET(request) {
             title: g.title,
             progress: g.progress,
             status: g.status,
+            created_at: g.created_at,
           })),
         },
       },

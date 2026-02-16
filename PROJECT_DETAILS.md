@@ -150,7 +150,7 @@ app/
     └── messages/              # Agent messaging (messages, threads, shared docs)
 
 sdk/
-├── dashclaw.js                # DashClaw SDK (95+ methods across 21+ categories, zero deps, ESM)
+├── dashclaw.js                # DashClaw SDK (96+ methods across 22+ categories, zero deps, ESM)
 ├── index.cjs                  # CJS compatibility wrapper
 ├── package.json               # npm package config (name: dashclaw)
 ├── LICENSE                    # MIT
@@ -389,7 +389,7 @@ function getSql() {
   - `GET/POST /api/actions/loops` - list + create open loops
   - `GET/PATCH /api/actions/loops/[loopId]` - single loop + resolve/cancel
   - `GET /api/actions/signals` - 7 risk signal types (autonomy_spike, high_impact_low_oversight, repeated_failures, stale_loop, assumption_drift, stale_assumption, stale_running_action)
-- SDK: `sdk/dashclaw.js` - 95+ methods across 21+ categories with full Node/Python parity (see `docs/client-setup-guide.md` for current method reference)
+- SDK: `sdk/dashclaw.js` - 96+ methods across 22+ categories with full Node/Python parity (see `docs/client-setup-guide.md` for current method reference)
 - Tests: `scripts/test-actions.mjs` - ~219 assertions across 19 phases (core actions/SDK)
 - Tests: `scripts/test-full-api.mjs` - ~186 assertions across 15 phases (all remaining API routes)
 - Post-mortem UI: interactive validate/invalidate assumptions, resolve/cancel loops, root-cause analysis
@@ -544,7 +544,7 @@ Token tracking is disabled in the dashboard UI pending a better approach. The AP
 ## SDK Documentation Page (Implemented)
 - Route: `/docs` - public server component (no auth required, not in middleware matcher)
 - Full reference for 95+ SDK methods organized into 21+ categories
-- Categories: Action Recording (7), Loops & Assumptions (7), Signals (1), Dashboard Data (9), Session Handoffs (3), Context Manager (7), Automation Snippets (4), User Preferences (6), Daily Digest (1), Security Scanning (2), Agent Messaging (9), Behavior Guard (2), Bulk Sync (1), Policy Testing (3), Compliance Engine (5), Task Routing (10), Agent Pairing (3), Identity Binding (2), Organization Management (5), Activity Logs (1), Webhooks (5)
+- Categories: Action Recording (7), Loops & Assumptions (7), Signals (1), Dashboard Data (9), Session Handoffs (3), Context Manager (7), Automation Snippets (4), User Preferences (6), Daily Digest (1), Security Scanning (2), Agent Messaging (9), Behavior Guard (2), Bulk Sync (1), Policy Testing (3), Compliance Engine (5), Task Routing (10), Agent Pairing (3), Identity Binding (2), Organization Management (5), Activity Logs (1), Webhooks (5), Real-Time Events (1)
 - Each method: signature, description, parameter table, return type, code example
 - Sticky side navigation with anchor links to all sections
 - Quick Start section (3 steps: copy SDK, init client, record first action)
@@ -728,7 +728,7 @@ DATABASE_URL=... DASHCLAW_API_KEY=... node scripts/migrate-multi-tenant.mjs
 - **Thread Conversation View**: clicking a thread shows chronological chat timeline with agent avatars (using `getAgentColor` as className), inline reply bar with optimistic updates, auto-scroll to bottom
 - **Markdown Rendering**: message bodies and shared docs render markdown via `react-markdown` (bold, code, links, lists, blockquotes) — no innerHTML, XSS-safe by design
 - **Reply Flow**: messages with `thread_id` navigate to thread conversation; non-threaded messages open compose modal with prefilled To/Subject
-- **Real-time SSE**: `MESSAGE_CREATED` event broadcasts new messages instantly via `/api/stream`; 15s polling as fallback
+- **Real-time SSE**: `MESSAGE_CREATED`, `POLICY_UPDATED`, `TASK_ASSIGNED`, `TASK_COMPLETED` events broadcast instantly via `/api/stream`; 15s polling as fallback. SDK `events()` method provides SSE client for agents.
 - **Keyboard Navigation**: `j`/`k` navigate list, `r` reply, `e` archive, `Enter` open thread, `Esc` close detail panel (hint bar on desktop)
 - **Compose Modal**: supports `prefill` prop for reply pre-population (to, subject, type, thread_id)
 - Component architecture: page.js is ~250-line orchestrator importing 10 sub-components from `_components/` folder
@@ -795,7 +795,7 @@ const claw = new DashClaw({
 ```
 Agents do NOT need `DATABASE_URL` - the API handles the database connection server-side.
 
-### DashClaw SDK (npm package - 95+ methods across 21+ categories)
+### DashClaw SDK (npm package - 96+ methods across 22+ categories)
 
 The SDK is published as `dashclaw` on npm. Class name is `DashClaw` (backward-compat alias `OpenClawAgent`).
 

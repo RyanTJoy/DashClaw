@@ -28,6 +28,10 @@ with claw.track(action_type="research", declared_goal="Explore Python SDK capabi
     print("Working...")
 ```
 
+## Real-Time Events
+
+> **Note:** Real-time SSE events are currently available in the Node SDK only. Python SDK support is planned for a future release (requires an SSE client dependency such as `sseclient-py`). In the meantime, use polling via `wait_for_approval()`.
+
 ## Action Recording
 
 Record actions, track outcomes, and query action history:

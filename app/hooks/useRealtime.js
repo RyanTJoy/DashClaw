@@ -43,6 +43,30 @@ function attachListeners(es) {
       console.error('SSE Parse Error:', err);
     }
   });
+
+  es.addEventListener('policy.updated', (e) => {
+    try {
+      broadcast('policy.updated', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('task.assigned', (e) => {
+    try {
+      broadcast('task.assigned', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('task.completed', (e) => {
+    try {
+      broadcast('task.completed', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
 }
 
 function ensureEventSource() {

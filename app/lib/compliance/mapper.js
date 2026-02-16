@@ -6,10 +6,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FRAMEWORKS_DIR = path.resolve(__dirname, 'frameworks');
+const FRAMEWORKS_DIR = path.join(process.cwd(), 'app', 'lib', 'compliance', 'frameworks');
 
 /**
  * Load a regulatory framework definition
@@ -28,6 +26,7 @@ export function loadFramework(frameworkId) {
  * List available frameworks
  */
 export function listFrameworks() {
+  if (!fs.existsSync(FRAMEWORKS_DIR)) return [];
   return fs.readdirSync(FRAMEWORKS_DIR)
     .filter(f => f.endsWith('.json'))
     .map(f => f.replace('.json', ''));

@@ -239,6 +239,54 @@ Stream actions live to the dashboard as they happen.
 
 ---
 
+## Real-Time Events
+
+Subscribe to server-sent events (SSE) for instant push notifications. Eliminates polling for approvals, policy changes, and task assignments.
+
+### claw.events()
+
+Open a persistent SSE connection. Returns a chainable handle with `.on(event, callback)` and `.close()`.
+
+**Supported events:** `action.created`, `action.updated`, `message.created`, `policy.updated`, `task.assigned`, `task.completed`
+
+```javascript
+const stream = claw.events();
+
+stream
+  .on('action.created', (data) => console.log('New action:', data.action_id))
+  .on('action.updated', (data) => {
+    if (data.status === 'running') console.log('Approved:', data.action_id);
+  })
+  .on('policy.updated', (data) => console.log('Policy changed:', data.change_type))
+  .on('task.assigned', (data) => console.log('Task routed:', data.task?.title))
+  .on('task.completed', (data) => console.log('Task done:', data.task?.task_id))
+  .on('error', (err) => console.error('Stream error:', err));
+
+// When done:
+stream.close();
+```
+
+### claw.waitForApproval(actionId, { useEvents: true })
+
+SSE-powered approval waiting — resolves instantly when the operator approves/denies instead of polling every 5 seconds.
+
+```javascript
+// SSE mode (instant, recommended)
+const { action } = await claw.waitForApproval('act_abc', { useEvents: true });
+
+// Polling mode (default, backward-compatible)
+const { action } = await claw.waitForApproval('act_abc');
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| actionId | string | — | Action ID to watch |
+| options.timeout | number | 300000 | Max wait time (ms) |
+| options.interval | number | 5000 | Poll interval (polling mode only) |
+| options.useEvents | boolean | false | Use SSE instead of polling |
+
+---
+
 ## Token & Cost Analytics
 
 Track token usage and estimated costs for every action. DashClaw automatically aggregates these into "Cost per Goal" metrics.

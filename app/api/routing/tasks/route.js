@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../../lib/db.js';
 import { getOrgId } from '../../../lib/org.js';
 import { submitTask, listTasks } from '../../../lib/repositories/routing.repository.js';
+import { EVENTS, publishOrgEvent } from '../../../lib/events.js';
 
 /**
  * GET /api/routing/tasks?status=pending&limit=50 — List tasks
@@ -44,6 +45,9 @@ export async function POST(request) {
     }
 
     const result = await submitTask(sql, orgId, body);
+
+    void publishOrgEvent(EVENTS.TASK_ASSIGNED, { orgId, task: result.task, assigned_to: result.routing?.assigned_to });
+
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error('[ROUTING/TASKS] POST error:', err);
