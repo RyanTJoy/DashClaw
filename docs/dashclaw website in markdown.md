@@ -166,7 +166,7 @@ Most platforms stop at logging. DashClaw ships decision enforcement, regulatory 
 ### Intelligent Task Routing
 
 - Skill-based agent matching with scoring
-- Real-time load balancing and health monitoring
+- Real-time load balancing and health verification
 - Urgency-aware queue with retry and escalation
 - Full agent registry with capability tracking
 

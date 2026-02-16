@@ -18,7 +18,7 @@
 5. [SDK Method Reference](#5-sdk-method-reference)
 6. [Dashboard Pages Guide](#6-dashboard-pages-guide)
 7. [Behavior Guard (Controlling Agent Actions)](#7-behavior-guard-controlling-agent-actions)
-8. [Risk Signals (Automatic Monitoring)](#8-risk-signals-automatic-monitoring)
+8. [Risk Signals (Automatic Signal Detection)](#8-risk-signals-automatic-signal-detection)
 9. [Agent Workspace](#9-agent-workspace)
 10. [Agent-to-Agent Messaging](#10-agent-to-agent-messaging)
 11. [Bootstrap an Existing Agent](#11-bootstrap-an-existing-agent)
@@ -241,7 +241,7 @@ with claw.track(action_type='build', declared_goal='Compile assets'):
 | `refactor` | Code cleanup, restructuring |
 | `test` | Running tests, validation |
 | `config` | Configuration changes |
-| `monitor` | Health checks, status monitoring |
+| `monitor` | Health checks, status verification |
 | `alert` | Sending alerts, escalations |
 | `cleanup` | Deleting temp files, pruning data |
 | `sync` | Syncing data between systems |
@@ -275,7 +275,7 @@ An **assumption** is something your agent believes to be true. Log assumptions s
 
 ### Risk Signals
 
-DashClaw automatically monitors for 7 risk patterns (see [Section 8](#8-risk-signals-automatic-monitoring)). No configuration needed â€" signals fire automatically based on your agent's behavior data.
+DashClaw automatically detects 7 risk patterns (see [Section 8](#8-risk-signals-automatic-signal-detection)). No configuration needed â€" signals fire automatically based on your agent's behavior data.
 
 ### Guard Policies
 
@@ -771,7 +771,7 @@ Table of all action records. Click any action to open the **Post-Mortem Page** w
 
 ### Security (`/security`)
 
-Real-time risk monitoring. Auto-refreshes every 30 seconds.
+Real-time decision integrity signals. Auto-refreshes every 30 seconds.
 - Stats: Active Signals, High-Risk (24h), Unscoped Actions, Invalidated Assumptions (7d)
 - Signal feed sorted by severity (dismiss individual signals or clear all)
 - High-risk actions list (risk >= 70 or unscoped + irreversible)
@@ -937,7 +937,7 @@ Guard API failures are **fail-open** (logged, proceeds) in all modes.
 
 ---
 
-## 8. Risk Signals (Automatic Monitoring)
+## 8. Risk Signals (Automatic Signal Detection)
 
 DashClaw automatically detects 7 risk patterns. No configuration needed.
 

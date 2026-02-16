@@ -128,7 +128,7 @@
       "gap_recommendations": [
         "Enable continuous guard policy evaluation on all agent actions",
         "Add rate limiting to detect abnormal activity patterns",
-        "Enable DashClaw signal detection for safety monitoring",
+        "Enable DashClaw signal detection for safety governance",
         "Review guard logs and signals at least monthly"
       ]
     },

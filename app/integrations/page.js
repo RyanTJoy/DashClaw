@@ -276,7 +276,7 @@ const INTEGRATION_CONFIGS = {
   sentry: {
     name: 'Sentry',
     category: 'Development',
-    description: 'Error tracking & monitoring',
+    description: 'Error detection & reporting',
     fields: [
       { key: 'SENTRY_DSN', label: 'DSN', type: 'password', required: true },
       { key: 'SENTRY_AUTH_TOKEN', label: 'Auth Token', type: 'password', required: false }
