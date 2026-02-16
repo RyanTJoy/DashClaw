@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - None yet.
 
+## [1.8.1] - 2026-02-15
+
+### Added
+- **Real-Time SSE Events**: New `POLICY_UPDATED`, `TASK_ASSIGNED`, `TASK_COMPLETED` event types emitted from policy CRUD and task routing routes.
+- **SDK `events()` method**: SSE client for agents to subscribe to real-time events (Node SDK only, zero dependencies).
+- **SSE-based `waitForApproval()`**: New `useEvents: true` option for instant approval resolution instead of polling.
+- **Client-side SSE listeners**: `useRealtime` hook now handles `policy.updated`, `task.assigned`, `task.completed` events.
+- **Digest repository**: Extracted digest queries from route into `digest.repository.js`.
+
 ## [1.8.0] - 2026-02-15
 
 ### Security
