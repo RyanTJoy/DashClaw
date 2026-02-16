@@ -6,8 +6,8 @@ import {
   Webhook, Clock, Compass, Building2, Terminal, BarChart3,
   Scale, Network, FileCheck,
 } from 'lucide-react';
-import Image from 'next/image';
 import PublicNavbar from './components/PublicNavbar';
+import HeroScreenshot from './components/HeroScreenshot';
 
 /* ─── data ─── */
 
@@ -201,16 +201,11 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="lg:col-span-3">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111] shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_90px_rgba(0,0,0,0.55)]">
-                <Image
-                  src="/images/screenshots/Mission Control.png"
-                  alt="DashClaw Mission Control - strategic overview of your agent fleet"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 60vw"
-                  priority
-                  className="object-cover"
-                />
-              </div>
+              <HeroScreenshot
+                src="/images/screenshots/Mission Control.png"
+                alt="DashClaw Mission Control - strategic overview of your agent fleet"
+                className="shadow-[0_0_0_1px_rgba(255,255,255,0.05),0_30px_90px_rgba(0,0,0,0.55)]"
+              />
               <div className="mt-3 text-right">
                 <Link href="/gallery" className="text-xs text-zinc-500 hover:text-zinc-200 transition-colors">
                   View full gallery →

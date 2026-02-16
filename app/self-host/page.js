@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github } from 'lucide-react';
+import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github, Download, Sparkles } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
 import CopyMarkdownButton from '../components/CopyMarkdownButton';
 
@@ -183,6 +183,76 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
               Your Vercel app uses Vercel env vars. Your agent uses its own environment variables.
             </p>
           </StepCard>
+
+          {/* Claude Code Skill */}
+          <div className="rounded-2xl bg-gradient-to-b from-[rgba(249,115,22,0.06)] to-transparent p-6 sm:p-8 border border-[rgba(249,115,22,0.12)]">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center shrink-0">
+                <Sparkles size={20} className="text-brand" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-zinc-100">Claude Code Skill</h2>
+                <p className="text-sm text-zinc-400 leading-relaxed mt-1">
+                  If you use Claude Code, this skill turns it into a DashClaw platform expert.
+                  It can instrument your agent, scaffold API routes, generate SDK clients, design guard policies,
+                  troubleshoot errors, and bootstrap workspaces — all from your terminal.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <div className="rounded-lg bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-4">
+                <h3 className="text-sm font-semibold text-zinc-200 mb-2">What it does</h3>
+                <ul className="text-sm text-zinc-400 space-y-1.5">
+                  <li>Instruments any agent with DashClaw SDKs (Node.js or Python)</li>
+                  <li>Designs guard policies for cost ceilings, risk thresholds, and action allowlists</li>
+                  <li>Troubleshoots 401, 403, 429, and 503 errors with guided diagnostics</li>
+                  <li>Includes validation scripts to verify your integration end-to-end</li>
+                </ul>
+              </div>
+              <div className="rounded-lg bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-4">
+                <h3 className="text-sm font-semibold text-zinc-200 mb-2">What&apos;s inside</h3>
+                <ul className="text-sm text-zinc-400 space-y-1.5">
+                  <li><code className="text-zinc-300 font-mono text-xs">SKILL.md</code> — skill definition with 5 guided workflows</li>
+                  <li><code className="text-zinc-300 font-mono text-xs">scripts/validate-integration.mjs</code> — end-to-end connectivity test</li>
+                  <li><code className="text-zinc-300 font-mono text-xs">scripts/diagnose.mjs</code> — 5-phase platform diagnostics</li>
+                  <li><code className="text-zinc-300 font-mono text-xs">references/</code> — API surface, architecture, and troubleshooting docs</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-4 mb-5">
+              <h3 className="text-sm font-semibold text-zinc-200 mb-3">Setup</h3>
+              <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-2">
+                <li>Download and extract the zip into your project&apos;s <code className="text-zinc-300 font-mono text-xs">.claude/skills/</code> directory</li>
+                <li>
+                  Verify the structure:
+                  <pre className="mt-1.5 bg-[#0a0a0a] rounded-lg px-3 py-2 text-xs text-zinc-400 font-mono overflow-x-auto">{`.claude/skills/dashclaw-platform-intelligence/
+├── SKILL.md
+├── scripts/
+│   ├── validate-integration.mjs
+│   ├── diagnose.mjs
+│   └── bootstrap-agent-quick.mjs
+└── references/
+    ├── platform-knowledge.md
+    ├── api-surface.md
+    └── troubleshooting.md`}</pre>
+                </li>
+                <li>Open Claude Code in your project and tell it what you need — the skill activates automatically</li>
+              </ol>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="/downloads/dashclaw-platform-intelligence.zip"
+                download
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors"
+              >
+                <Download size={16} /> Download Skill
+              </a>
+              <span className="text-xs text-zinc-500">~22 KB · works with any Claude Code project</span>
+            </div>
+          </div>
 
           {/* Divider */}
           <div className="relative py-6">
