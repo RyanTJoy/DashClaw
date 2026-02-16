@@ -1,12 +1,46 @@
 # Agent Bootstrap
 
-DashClaw supports importing existing agent state (memory, goals, decisions, snippets, preferences) into the dashboard.
+DashClaw supports importing existing agent state (memory, goals, decisions, snippets, preferences, handoffs, inspiration, and more) into the dashboard.
 
 There are three supported paths:
 
-1. CLI scanner: `scripts/bootstrap-agent.mjs` (recommended)
-2. Agent self-discovery prompt: `scripts/bootstrap-prompt.md`
-3. Bulk sync API: `POST /api/sync`
+1. CLI scanner: `scripts/bootstrap-agent.mjs` — mechanical file scanning (best for structured data)
+2. Agent self-discovery prompt: `scripts/bootstrap-prompt.md` — agent introspects and self-reports (best for semantic data)
+3. Bulk sync API: `POST /api/sync` — direct API calls
+
+### Recommended: Hybrid Workflow
+
+Run the scanner first (handles files, connections, snippets, capabilities mechanically), then paste the prompt to the agent (handles semantic understanding — relationships, reasoning, observations).
+
+```powershell
+# Step 1: Scanner — captures file-based data
+node scripts/bootstrap-agent.mjs --dir "C:\path\to\agent" --agent-id "my-agent" --local --dry-run
+# Review the output, then run without --dry-run to push
+
+# Step 2: Prompt — paste scripts/bootstrap-prompt.md to the agent
+# Agent outputs JSON → push via curl or SDK
+```
+
+### What each path covers
+
+| Category | Scanner | Prompt | Notes |
+|---|---|---|---|
+| `connections` | yes | — | Detected from `.env` keys and `package.json` deps |
+| `memory` | yes | — | Computed from file stats, headings, entities |
+| `goals` | yes | yes | Scanner: checkboxes/project files. Prompt: semantic priorities |
+| `learning` | yes | yes | Scanner: decision tables/lessons. Prompt: reasoning context |
+| `content` | yes | — | Creative works from file discovery |
+| `context_points` | yes | yes | Scanner: doc sections. Prompt: key insights |
+| `context_threads` | yes | — | Derived from document structure |
+| `snippets` | yes | — | Fenced code blocks from docs |
+| `relationships` | yes | yes | Scanner: structured files. Prompt: semantic understanding |
+| `capabilities` | yes | — | Skill/tool directories |
+| `handoffs` | yes | yes | Scanner: daily log files. Prompt: session narratives |
+| `inspiration` | yes | yes | Scanner: idea/bookmark files. Prompt: tracked references |
+| `preferences.preferences` | yes | yes | Scanner: MEMORY.md lists. Prompt: communication style |
+| `preferences.observations` | yes | yes | Scanner: observation/pattern headings. Prompt: noticed patterns |
+| `preferences.moods` | yes | yes | Scanner: daily log mood sections. Prompt: operational state |
+| `preferences.approaches` | yes | yes | Scanner: approach/strategy headings. Prompt: workflow preferences |
 
 ## 1) CLI Scanner (`scripts/bootstrap-agent.mjs`)
 
@@ -90,12 +124,15 @@ The scanner runs three phases:
 - `snippets`:
   - fenced code blocks from a small set of high-signal docs (e.g. `TOOLS*.md`, `projects.md`, `MEMORY.md`)
 - `preferences`:
-  - `MEMORY.md` "Active Preferences" bullet list (if present)
-  - Identity-derived preferences (values, traits)
-  - Operational config preferences (guardrails, rules)
-- `relationships` (new): people/contacts extracted from relationship files and structured JSON
-- `capabilities` (new): skills and tools discovered from skill/tool directories and documentation
-- `content` (new): creative works imported from creative/writing directories
+  - `preferences`: `MEMORY.md` "Active Preferences" bullet list, identity-derived values/traits, operational config rules
+  - `observations`: bullets under observation/noticed/pattern headings in `MEMORY.md`, `CLAUDE.md`, `tasks/lessons.md`
+  - `moods`: mood/energy/feeling sections from daily log files
+  - `approaches`: bullets under approach/strategy/technique/method/workflow headings
+- `handoffs`: daily log files (`YYYY-MM-DD*.md`) parsed into session summaries with decisions, open tasks, mood, and priorities (capped at 100 most recent)
+- `inspiration`: `inspiration.md`, `ideas.md`, `bookmarks.md`, `reading-list.md`, `references.md` at root or in `memory/` (capped at 200 items)
+- `relationships`: people/contacts extracted from relationship files and structured JSON
+- `capabilities`: skills and tools discovered from skill/tool directories and documentation
+- `content`: creative works imported from creative/writing directories
 
 ### Security notes
 
@@ -105,9 +142,14 @@ The scanner runs three phases:
 
 ## 2) Agent Self-Discovery Prompt (`scripts/bootstrap-prompt.md`)
 
-This is a markdown prompt you paste to an agent. The agent introspects its own workspace and pushes state via the SDK.
+A structured markdown prompt you paste into an agent's session. The agent introspects its own state and outputs a single JSON payload matching the `/api/sync` schema. It includes field constraints (max lengths, allowed values) inline so the agent's output validates on first try.
 
-Use this when you cannot run `scripts/bootstrap-agent.mjs` on the same machine as the workspace.
+The prompt focuses on **semantic categories** the scanner handles poorly: relationships, reasoning/context behind decisions, communication preferences, observations, and session narratives. It explicitly tells the agent to skip mechanical categories (connections, memory health, snippets, capabilities) that the scanner handles better.
+
+Use this:
+- After running the scanner, to fill in semantic gaps
+- When you cannot run the scanner on the same machine as the workspace
+- To capture an agent's self-awareness (personality, values, communication style)
 
 ## 3) Bulk Sync API (`POST /api/sync`)
 

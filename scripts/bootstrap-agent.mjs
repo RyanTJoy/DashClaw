@@ -622,8 +622,144 @@ function scanLearning(dir) {
   return decisions;
 }
 
+function scanHandoffs(dir) {
+  const handoffs = [];
+
+  // Source: daily log files (YYYY-MM-DD*.md) in memory/ directories
+  const mdFiles = gatherWorkspaceMarkdownSources(dir);
+  const dailyFiles = mdFiles.filter(isDailyMemoryLogPath);
+
+  // Sort by filename descending (most recent first)
+  dailyFiles.sort((a, b) => basename(b).localeCompare(basename(a)));
+
+  for (const filePath of dailyFiles.slice(0, 100)) {
+    const content = safeRead(filePath);
+    if (!content || content.trim().length < 20) continue;
+
+    const base = basename(filePath, '.md');
+    const dateMatch = base.match(/^(\d{4}-\d{2}-\d{2})/);
+    const sessionDate = dateMatch ? dateMatch[1] : null;
+
+    const lines = content.split('\n');
+
+    // Summary: first non-heading, non-empty paragraph (up to 500 chars)
+    let summary = '';
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || /^#{1,6}\s/.test(trimmed) || /^[-*]\s/.test(trimmed)) continue;
+      summary = trimmed.slice(0, 500);
+      break;
+    }
+    if (!summary) summary = lines.filter(l => l.trim()).slice(0, 3).join(' ').slice(0, 500);
+
+    // Parse sections for structured data
+    const sections = extractSections(content);
+    const keyDecisions = [];
+    const openTasks = [];
+    let moodNotes = null;
+    const nextPriorities = [];
+
+    for (const [heading, body] of sections) {
+      const lower = heading.toLowerCase();
+      const bullets = body.split('\n')
+        .map(l => l.match(/^[-*]\s+(.+)/))
+        .filter(Boolean)
+        .map(m => m[1].trim())
+        .filter(t => t.length > 3);
+
+      if (/decision|decided|chose/i.test(lower)) {
+        keyDecisions.push(...bullets.slice(0, 20));
+      } else if (/todo|next step|open|pending/i.test(lower)) {
+        openTasks.push(...bullets.slice(0, 20));
+      } else if (/mood|energy|feeling|reflection/i.test(lower)) {
+        moodNotes = body.trim().slice(0, 500) || null;
+      } else if (/priorit|tomorrow|next session/i.test(lower)) {
+        nextPriorities.push(...bullets.slice(0, 10));
+      }
+    }
+
+    handoffs.push({
+      session_date: sessionDate,
+      summary,
+      key_decisions: keyDecisions.length ? keyDecisions : undefined,
+      open_tasks: openTasks.length ? openTasks : undefined,
+      mood_notes: moodNotes,
+      next_priorities: nextPriorities.length ? nextPriorities : undefined,
+    });
+  }
+
+  return handoffs;
+}
+
+function scanInspiration(dir) {
+  const items = [];
+
+  // Look for inspiration/idea/bookmark files at root or in memory/
+  const candidates = [
+    'inspiration.md', 'ideas.md', 'bookmarks.md', 'reading-list.md', 'references.md',
+  ];
+  const files = [];
+  for (const name of candidates) {
+    const rootPath = join(dir, name);
+    if (existsSync(rootPath)) files.push(rootPath);
+    const memPath = join(dir, 'memory', name);
+    if (existsSync(memPath)) files.push(memPath);
+    const memCapPath = join(dir, 'Memory', name);
+    if (existsSync(memCapPath)) files.push(memCapPath);
+  }
+
+  const urlRegex = /https?:\/\/[^\s)>\]]+/;
+
+  for (const filePath of uniq(files)) {
+    const content = safeRead(filePath);
+    if (!content) continue;
+
+    let currentCategory = null;
+    for (const line of content.split('\n')) {
+      // Track parent headings for category
+      const headingMatch = line.match(/^#{1,3}\s+(.+)/);
+      if (headingMatch) {
+        currentCategory = headingMatch[1].trim();
+        // If the heading itself is an item (non-generic), add it
+        if (currentCategory.length > 3 && !/^(inspiration|ideas|bookmarks|reading list|references)$/i.test(currentCategory)) {
+          // Heading-as-item: look ahead for body
+          // Skip — we'll pick it up as section body bullets instead
+        }
+        continue;
+      }
+
+      // Bullet items
+      const bulletMatch = line.match(/^[-*]\s+(.+)/);
+      if (!bulletMatch) continue;
+
+      const text = bulletMatch[1].trim();
+      if (text.length < 3) continue;
+
+      const sourceMatch = text.match(urlRegex);
+      const isCompleted = /^\[x\]/i.test(text);
+      const cleanText = text.replace(/^\[[ x]\]\s*/i, '').trim();
+
+      items.push({
+        title: cleanText.replace(urlRegex, '').replace(/[[\]()]/g, '').trim().slice(0, 500) || cleanText.slice(0, 500),
+        description: cleanText.length > 60 ? cleanText.slice(60, 560) : undefined,
+        category: currentCategory?.slice(0, 50) || null,
+        source: sourceMatch ? sourceMatch[0].slice(0, 500) : null,
+        status: isCompleted ? 'completed' : 'pending',
+      });
+
+      if (items.length >= 200) break;
+    }
+    if (items.length >= 200) break;
+  }
+
+  return items;
+}
+
 function scanPreferences(dir) {
   const prefs = [];
+  const observations = [];
+  const moods = [];
+  const approaches = [];
 
   // OpenClaw-style: MEMORY.md "Active Preferences" list
   const memIndex = safeRead(join(dir, 'MEMORY.md'));
@@ -647,8 +783,88 @@ function scanPreferences(dir) {
     }
   }
 
-  if (!prefs.length) return null;
-  return { preferences: prefs };
+  // ─── Observations: bullets under observation/noticed/pattern headings ───
+  const observationSources = [
+    join(dir, 'MEMORY.md'),
+    join(dir, 'CLAUDE.md'),
+    join(dir, 'tasks', 'lessons.md'),
+  ].filter(p => existsSync(p));
+
+  for (const filePath of observationSources) {
+    const content = safeRead(filePath);
+    if (!content) continue;
+    const sections = extractSections(content);
+    for (const [heading, body] of sections) {
+      const lower = heading.toLowerCase();
+      if (!/observation|noticed|pattern/i.test(lower)) continue;
+      for (const line of body.split('\n')) {
+        const bullet = line.match(/^[-*]\s+(.+)/);
+        if (!bullet) continue;
+        const text = bullet[1].trim();
+        if (text.length < 5 || isWindowsPathLike(text) || isSecretLike(text)) continue;
+        if (!observations.some(o => o.observation === text)) {
+          observations.push({ observation: text, category: basename(filePath, '.md').toLowerCase() });
+        }
+      }
+    }
+  }
+
+  // ─── Approaches: bullets under approach/strategy/technique/method/workflow headings ───
+  for (const filePath of observationSources) {
+    const content = safeRead(filePath);
+    if (!content) continue;
+    const sections = extractSections(content);
+    for (const [heading, body] of sections) {
+      const lower = heading.toLowerCase();
+      if (!/approach|strateg|technique|method|workflow/i.test(lower)) continue;
+      for (const line of body.split('\n')) {
+        const bullet = line.match(/^[-*]\s+(.+)/);
+        if (!bullet) continue;
+        const text = bullet[1].trim();
+        if (text.length < 5 || isWindowsPathLike(text) || isSecretLike(text)) continue;
+        if (!approaches.some(a => a.approach === text)) {
+          approaches.push({ approach: text.slice(0, 500), context: heading });
+        }
+      }
+    }
+  }
+
+  // ─── Moods: from daily logs, text under mood/energy/feeling headings ───
+  const mdFiles = gatherWorkspaceMarkdownSources(dir);
+  const dailyFiles = mdFiles.filter(isDailyMemoryLogPath);
+  dailyFiles.sort((a, b) => basename(b).localeCompare(basename(a)));
+
+  for (const filePath of dailyFiles.slice(0, 30)) {
+    const content = safeRead(filePath);
+    if (!content) continue;
+    const sections = extractSections(content);
+    for (const [heading, body] of sections) {
+      if (!/mood|energy|feeling/i.test(heading.toLowerCase())) continue;
+      const trimmed = body.trim();
+      if (trimmed.length < 3) continue;
+
+      // Try to extract structured mood/energy
+      const moodLine = trimmed.split('\n')[0].trim().slice(0, 100);
+      const energyMatch = trimmed.match(/energy[:\s]+(\w+)/i);
+
+      if (!moods.some(m => m.mood === moodLine)) {
+        moods.push({
+          mood: moodLine,
+          energy: energyMatch ? energyMatch[1].slice(0, 50) : null,
+          notes: trimmed.length > 100 ? trimmed.slice(0, 500) : null,
+        });
+      }
+    }
+  }
+
+  const result = {};
+  if (prefs.length) result.preferences = prefs;
+  if (observations.length) result.observations = observations;
+  if (moods.length) result.moods = moods;
+  if (approaches.length) result.approaches = approaches;
+
+  if (!Object.keys(result).length) return null;
+  return result;
 }
 
 function scanContextPoints(dir) {
@@ -989,18 +1205,58 @@ async function main() {
     console.error(`  Snippets: ERROR - ${e.message}`);
   }
 
-  // Preferences
+  // Preferences (includes observations, moods, approaches)
   try {
     const preferences = scanPreferences(dir);
     if (preferences) {
       payload.preferences = preferences;
       summary.preferences = preferences.preferences?.length || 0;
       console.log(`  Preferences: ${preferences.preferences?.length || 0} detected`);
+      if (preferences.observations?.length) {
+        summary['  observations'] = preferences.observations.length;
+        console.log(`  Observations: ${preferences.observations.length} detected`);
+      }
+      if (preferences.moods?.length) {
+        summary['  moods'] = preferences.moods.length;
+        console.log(`  Moods: ${preferences.moods.length} detected`);
+      }
+      if (preferences.approaches?.length) {
+        summary['  approaches'] = preferences.approaches.length;
+        console.log(`  Approaches: ${preferences.approaches.length} detected`);
+      }
     } else {
       console.log('  Preferences: none found');
     }
   } catch (e) {
     console.error(`  Preferences: ERROR - ${e.message}`);
+  }
+
+  // Handoffs (from daily logs)
+  try {
+    const handoffs = scanHandoffs(dir);
+    if (handoffs.length) {
+      payload.handoffs = handoffs;
+      summary.handoffs = handoffs.length;
+      console.log(`  Handoffs: ${handoffs.length} sessions`);
+    } else {
+      console.log('  Handoffs: no daily logs found');
+    }
+  } catch (e) {
+    console.error(`  Handoffs: ERROR - ${e.message}`);
+  }
+
+  // Inspiration
+  try {
+    const inspiration = scanInspiration(dir);
+    if (inspiration.length) {
+      payload.inspiration = inspiration;
+      summary.inspiration = inspiration.length;
+      console.log(`  Inspiration: ${inspiration.length} items`);
+    } else {
+      console.log('  Inspiration: no inspiration files found');
+    }
+  } catch (e) {
+    console.error(`  Inspiration: ERROR - ${e.message}`);
   }
 
   // ─── Adaptive Extractors (from discovery) ──────────────────
@@ -1133,6 +1389,9 @@ async function main() {
   // Update summary counts for merged categories
   if (payload.context_points) summary.context_points = payload.context_points.length;
   if (payload.preferences?.preferences) summary.preferences = payload.preferences.preferences.length;
+  if (payload.preferences?.observations) summary['  observations'] = payload.preferences.observations.length;
+  if (payload.preferences?.moods) summary['  moods'] = payload.preferences.moods.length;
+  if (payload.preferences?.approaches) summary['  approaches'] = payload.preferences.approaches.length;
   if (payload.goals) summary.goals = payload.goals.length;
 
   console.log();
@@ -1169,6 +1428,17 @@ async function main() {
     if (preview.content) {
       for (const c of preview.content) {
         if (c.body?.length > 80) c.body = c.body.slice(0, 80) + '...';
+      }
+    }
+    if (preview.handoffs) {
+      for (const h of preview.handoffs) {
+        if (h.summary?.length > 120) h.summary = h.summary.slice(0, 120) + '...';
+        if (h.mood_notes?.length > 80) h.mood_notes = h.mood_notes.slice(0, 80) + '...';
+      }
+    }
+    if (preview.inspiration) {
+      for (const i of preview.inspiration) {
+        if (i.description?.length > 80) i.description = i.description.slice(0, 80) + '...';
       }
     }
     console.log(JSON.stringify(preview, null, 2));

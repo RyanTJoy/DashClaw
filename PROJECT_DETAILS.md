@@ -886,6 +886,10 @@ const claw = new DashClaw({
 ## Agent Bootstrap System
 
 See [`docs/agent-bootstrap.md`](docs/agent-bootstrap.md) for full details on the 3-part hybrid bootstrap system:
-- **CLI Scanner** (`scripts/bootstrap-agent.mjs`) - mechanically scans agent workspace, pushes structured data
-- **Self-Discovery Prompt** (`scripts/bootstrap-prompt.md`) - paste to agent, it introspects and pushes via SDK
-- **Bulk Sync API** (`POST /api/sync`) - single endpoint for all data categories in one request
+- **CLI Scanner** (`scripts/bootstrap-agent.mjs`) — mechanically scans agent workspace, pushes structured data
+- **Self-Discovery Prompt** (`scripts/bootstrap-prompt.md`) — paste to agent, it introspects and outputs a single `/api/sync` JSON payload for semantic categories the scanner handles poorly
+- **Bulk Sync API** (`POST /api/sync`) — single endpoint for all data categories in one request
+
+**Recommended workflow**: Run the scanner first (handles files, connections, snippets, capabilities), then paste the prompt (handles relationships, reasoning, observations, communication style).
+
+The CLI scanner covers all 13 sync categories: `connections`, `memory`, `goals`, `learning`, `content`, `context_points`, `context_threads`, `snippets`, `relationships`, `capabilities`, `handoffs` (from daily logs), `inspiration` (from idea/bookmark files), and `preferences` (including `observations`, `moods`, and `approaches` sub-categories).
