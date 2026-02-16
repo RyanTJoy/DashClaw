@@ -1,6 +1,6 @@
 # DashClaw: Complete Setup & Usage Guide
 
-> **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do - every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
+> **What is DashClaw?** AI agent decision infrastructure. It gives you a control plane to prove what your agents decided, enforce policies before they act, and track every assumption and risk signal. Think of it as the governance layer for your agent fleet.
 >
 > **Live Demo (fake data):** https://dashclaw.io/demo
 > **Your Dashboard (self-host):** http://localhost:3000 (or `https://YOUR_DASHCLAW_HOST`)

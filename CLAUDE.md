@@ -7,7 +7,7 @@ doc-type: handoff
 
 # DashClaw
 
-DashClaw is an AI agent observability and governance platform: a Next.js 15 (JavaScript) app that provides a command center for actions, learning/decisions, goals, guardrails, security signals, messaging, and operator workflows.
+DashClaw is an AI agent decision infrastructure platform: a Next.js 15 (JavaScript) app that provides a control plane for policy enforcement, decision recording, assumption tracking, compliance mapping, security signals, messaging, and operator workflows.
 
 For architecture, API inventory, and schema-level behavior, use `PROJECT_DETAILS.md` as the canonical reference.
 

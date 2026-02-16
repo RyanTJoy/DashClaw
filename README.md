@@ -1,6 +1,6 @@
-# [DashClaw](https://dashclaw.io): AI Agent Observability and Governance Platform
+# [DashClaw](https://dashclaw.io): AI Agent Decision Infrastructure
 
-DashClaw combines a public site, an operator dashboard, and an API control plane so you can monitor what agents do (actions, decisions, risks, messages) and enforce guardrails (approvals, policies, rate limits, webhooks).
+DashClaw is the control plane that proves what your AI agents decided and why. It combines a public site, an operator dashboard, and an API surface so you can enforce policies before agents act, track assumptions, and maintain full decision accountability (approvals, compliance mapping, rate limits, webhooks).
 
 Screenshots live in `public/images/screenshots/`.
 

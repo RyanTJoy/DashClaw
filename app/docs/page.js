@@ -9,7 +9,7 @@ import PublicNavbar from '../components/PublicNavbar';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
-  description: 'Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 95+ methods across 21 categories covering action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, webhooks, identity binding, and more.',
+  description: 'Full reference for the DashClaw SDK. Install, configure, and govern your AI agents with 95+ methods across 21 categories covering action recording, behavior guard, context management, session handoffs, security scanning, policy testing, compliance, task routing, webhooks, identity binding, and more.',
 };
 
 /* ─── helpers ─── */
@@ -246,8 +246,8 @@ export default function DocsPage() {
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">SDK Documentation</h1>
           </div>
           <p className="text-zinc-400 max-w-2xl leading-relaxed">
-            Full reference for the DashClaw SDK. 95+ methods across 21 categories to instrument your AI agents with
-            action recording, governance, context management, session handoffs, security scanning, policy testing, compliance, task routing, webhooks, identity binding, and more.
+            Full reference for the DashClaw SDK. 95+ methods across 21 categories to govern your AI agents with
+            action recording, decision governance, context management, session handoffs, security scanning, policy testing, compliance, task routing, webhooks, identity binding, and more.
           </p>
           <CopyDocsButton />
         </div>
@@ -1403,7 +1403,7 @@ console.log('Coverage:', evidence.coverage_pct + '%');`}
               </div>
               <h2 className="text-2xl font-bold tracking-tight">Task Routing</h2>
             </div>
-            <p className="text-sm text-zinc-400 mb-4">Register agents with capabilities, submit tasks for intelligent routing, and monitor routing health and statistics.</p>
+            <p className="text-sm text-zinc-400 mb-4">Register agents with capabilities, submit tasks for intelligent routing, and track routing health and statistics.</p>
 
             <MethodEntry
               id="listRoutingAgents"

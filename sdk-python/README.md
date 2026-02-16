@@ -1,6 +1,8 @@
-# DashClaw Python SDK
+# DashClaw Python SDK — Agent Decision Infrastructure
 
-Full-featured agent toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform — 95+ methods across 21+ categories. Zero dependencies, requires Python 3.7+.
+Full-featured decision governance toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform — 95+ methods across 21+ categories. Zero dependencies, requires Python 3.7+.
+
+DashClaw treats every agent action as a governed decision. The SDK provides decision recording, policy enforcement, assumption tracking, and compliance mapping.
 
 ## Install
 
@@ -34,7 +36,7 @@ with claw.track(action_type="research", declared_goal="Explore Python SDK capabi
 
 ## Action Recording
 
-Record actions, track outcomes, and query action history:
+Record governed decisions, track outcomes, and query decision history:
 
 ```python
 # Record and auto-track an action with the context manager
@@ -70,7 +72,7 @@ signals = claw.get_signals()
 
 ## Loops & Assumptions
 
-Track open loops, register assumptions, and detect drift:
+Decision integrity primitives — track open loops, register assumptions, and detect drift:
 
 ```python
 # Register an open loop
@@ -201,6 +203,8 @@ pending = claw.get_pending_approvals(limit=25)
 | `get_pending_approvals(limit=20, offset=0)` | Get actions pending human approval |
 
 ## Behavior Guard
+
+Guard is the heart of DashClaw — every action is checked against policies before execution.
 
 Check actions against policies and fetch guard audit history:
 

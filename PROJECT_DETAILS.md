@@ -7,7 +7,7 @@ doc-type: architecture
 
 # DashClaw Project Details
 
-This file contains detailed technical information about the DashClaw project, moved from CLAUDE.md to keep it concise.
+DashClaw is AI agent decision infrastructure. This file contains detailed technical information about the platform, moved from CLAUDE.md to keep it concise.
 
 ## Operational Maturity
 

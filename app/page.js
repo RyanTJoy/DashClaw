@@ -14,23 +14,23 @@ import ImageCarousel from './components/ImageCarousel';
 const coreFeatures = [
   {
     icon: Zap,
-    title: 'Know Exactly What Your Agents Are Doing',
-    description: 'See every decision, tool call, and action as it happens. A live flight recorder streams everything to your dashboard so nothing runs blind.',
+    title: 'Prove Every Decision Your Agents Make',
+    description: 'Every action recorded with reasoning, assumptions, and policy compliance. A live decision ledger streams everything so you can prove why any agent acted.',
   },
   {
     icon: Shield,
-    title: 'Catch Dangerous Behavior Before It Ships',
-    description: 'Semantic guardrails detect risky patterns that hard-coded rules miss. Vector embeddings spot outlier behavior automatically.',
+    title: 'Enforce Policies Before Agents Act',
+    description: 'Semantic guard policies intercept intent before execution. Natural language rules evaluated in real time — no hard-coded checks to maintain.',
   },
   {
     icon: BarChart3,
-    title: 'Stop Spending Money You Can\'t Explain',
-    description: 'See cost-per-goal and burn rate for every model in real time. Know exactly where your budget is going and project what\'s next.',
+    title: 'Attribute Every Dollar to a Decision',
+    description: 'Cost-per-decision and burn rate by goal in real time. Financial accountability for every autonomous operation.',
   },
   {
     icon: ShieldAlert,
-    title: 'Stop Agents Before They Do Something Expensive',
-    description: 'Enforce safety with rate limits or natural language policies like "Never access production secrets." Agents pause and wait for approval.',
+    title: 'Human-in-the-Loop Decision Gates',
+    description: 'Approval workflows pause risky decisions for human review. Agents request permission, not forgiveness.',
   },
 ];
 
@@ -40,14 +40,14 @@ const platformFeatures = [
   { icon: Shield, title: 'Verified Agent Identity', description: 'Know which agent took which action. RSA signature verification ensures accountability at every step.' },
   { icon: Brain, title: 'Keep Agent Memory Clean', description: 'Detect stale facts, repetition loops, and context bloat before they cause bad decisions.' },
   { icon: ScanSearch, title: 'Automatic Secret Redaction', description: 'API keys, tokens, and credentials are stripped from messages before they ever hit storage.' },
-  { icon: ArrowLeftRight, title: 'Seamless Session Handoffs', description: 'Never lose context between agent sessions. Structured handoff documents keep continuity intact.' },
-  { icon: CircleDot, title: 'Nothing Falls Through the Cracks', description: 'Track every unresolved dependency, pending approval, and blocker across your entire agent fleet.' },
+  { icon: ArrowLeftRight, title: 'Seamless Session Handoffs', description: 'Never lose decision continuity between sessions. Structured handoff documents preserve context and reasoning.' },
+  { icon: CircleDot, title: 'Complete Decision Accountability', description: 'Track every unresolved dependency, pending approval, and blocker across your entire agent fleet.' },
   { icon: Eye, title: 'Catch Assumptions Before They Drift', description: 'Log what agents assume, validate against outcomes, and surface contradictions before they compound.' },
 ];
 
 const operationalFeatures = [
   { icon: UsersRound, title: 'Team Management', description: 'Invite your team in seconds. Role-based access keeps operators in control and agents accountable.' },
-  { icon: Webhook, title: 'Get Alerted Instantly', description: 'HMAC-signed webhooks and email alerts fire the moment something goes wrong. No more checking dashboards.' },
+  { icon: Webhook, title: 'Decision Risk Notifications', description: 'HMAC-signed webhooks and email alerts fire when decision integrity signals breach thresholds. No more checking dashboards.' },
   { icon: Clock, title: 'Full Audit Trail', description: 'Every action is logged. Know who did what, when, and why — for compliance and debugging alike.' },
   { icon: Compass, title: 'Ship in 10 Minutes', description: 'Four steps: create workspace, generate key, install SDK, send first action. That\'s it.' },
   { icon: Building2, title: 'Built for Multi-Tenant', description: 'Full org isolation out of the box. Each team gets their own agents, keys, and settings.' },
@@ -154,21 +154,21 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[rgba(249,115,22,0.3)] bg-[rgba(249,115,22,0.08)] text-brand text-xs font-medium mb-6">
             <ShieldAlert size={14} />
-            Agent Observability Platform
+            Agent Decision Infrastructure
           </div>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-            See what your AI agents are{' '}
-            <span className="text-brand">actually doing</span>.
+            Prove what your AI agents decided{' '}
+            <span className="text-brand">&mdash; and why</span>.
           </h1>
           <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Open-source, self-hosted observability, risk signals, and behavior governance for autonomous AI agents.
+            Open-source decision infrastructure: policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents.
             Guard what they do before they do it.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">95+ SDK methods</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Behavior guardrails</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Policy enforcement</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Compliance engine</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Task routing</span>
           </div>
@@ -234,14 +234,14 @@ export default function LandingPage() {
       <section className="py-20 px-6 border-t border-[rgba(255,255,255,0.06)]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Up and running in 5 minutes</h2>
-            <p className="mt-3 text-zinc-400">Three steps from install to full agent observability.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Secure your first agent in 5 minutes</h2>
+            <p className="mt-3 text-zinc-400">Three steps from install to full decision governance.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { step: '1', title: 'Install the SDK', code: 'npm install dashclaw\n# or\npip install dashclaw', desc: 'Zero dependencies. Works with Node.js and Python agents.' },
               { step: '2', title: 'Initialize your agent', code: "const claw = new DashClaw({\n  apiKey: '...',\n  agentId: 'my-agent',\n})", desc: 'One constructor. Your API key scopes all data.' },
-              { step: '3', title: 'See it live', code: "with claw.track(action='deploy'):\n  # ... actions stream to\n  # dashboard in real-time", desc: 'Actions, signals, and costs appear instantly via SSE.' },
+              { step: '3', title: 'Guard it live', code: "with claw.track(action='deploy'):\n  # ... decisions stream to\n  # dashboard in real-time", desc: 'Decisions, policy checks, and signals stream in real-time.' },
             ].map((item) => (
               <div key={item.step} className="p-5 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
                 <span className="w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center mb-3">{item.step}</span>
@@ -359,7 +359,7 @@ export default function LandingPage() {
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">The only agent platform with built-in compliance</h2>
               <p className="mt-3 text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-                Most platforms stop at logging. DashClaw ships policy enforcement,
+                Most platforms stop at logging. DashClaw ships decision enforcement,
                 regulatory compliance mapping, and intelligent task routing &mdash; all auditable,
                 all testable, all live in the demo.
               </p>
@@ -436,10 +436,10 @@ export default function LandingPage() {
                 <Package size={12} />
                 95+ methods across 21+ categories
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full decision governance.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">
                 Install from npm or pip. Zero dependencies. Native adapters for <span className="text-zinc-200 font-semibold">CrewAI</span>, <span className="text-zinc-200 font-semibold">AutoGen</span>, and <span className="text-zinc-200 font-semibold">LangChain</span>.
-                Actions, handoffs, context, snippets, messaging, security scanning, and more.
+                Decision recording, policy enforcement, assumption tracking, handoffs, messaging, and more.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <span className="px-3 py-1 rounded-full bg-[#1a1a1a] border border-[rgba(255,255,255,0.06)] text-xs text-zinc-300">npm package</span>
@@ -452,7 +452,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="rounded-xl bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-5 font-mono text-sm overflow-x-auto">
-              <div className="text-zinc-500 mb-3">{'// instrument your agent'}</div>
+              <div className="text-zinc-500 mb-3">{'// govern your agent'}</div>
               <div>
                 <span className="text-purple-400">import</span>
                 <span className="text-zinc-300">{' { DashClaw } '}</span>
@@ -491,7 +491,7 @@ export default function LandingPage() {
               </div>
               <div className="text-zinc-300">{'})'}</div>
 
-              <div className="mt-4 text-zinc-500">{'// record an action'}</div>
+              <div className="mt-4 text-zinc-500">{'// record a governed decision'}</div>
               <div>
                 <span className="text-purple-400">await</span>
                 <span className="text-zinc-300"> claw.</span>
@@ -537,8 +537,8 @@ export default function LandingPage() {
       <section id="signals" className="py-20 px-6 border-t border-[rgba(255,255,255,0.06)]">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">7 built-in risk signals</h2>
-            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Automatic detection of problematic agent behavior. No configuration required.</p>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">7 Decision Integrity Signals</h2>
+            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">Automatic detection of autonomy breaches and logic drift. Zero configuration.</p>
           </div>
           <div className="space-y-3">
             {signals.map((signal, i) => (
@@ -618,10 +618,10 @@ export default function LandingPage() {
       <section className="py-20 px-6 border-t border-[rgba(255,255,255,0.06)]">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Start monitoring in 5 minutes
+            Govern your first agent in 5 minutes
           </h2>
           <p className="mt-3 text-zinc-400">
-            Install the SDK, send your first action, and see signals on the dashboard. Open-source and self-hosted.
+            Install the SDK, enforce your first policy, and see decision signals on the dashboard. Open-source and self-hosted.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
