@@ -58,7 +58,7 @@ export default function RiskSignalsCard() {
 
   return (
     <Card className="h-full">
-      <CardHeader title="Risk Signals" icon={ShieldAlert} action={viewAllLink}>
+      <CardHeader title="Decision Integrity Signals" icon={ShieldAlert} action={viewAllLink}>
         {redCount > 0 && (
           <Badge variant="error" size="sm">{redCount} Red</Badge>
         )}

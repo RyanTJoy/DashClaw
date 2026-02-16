@@ -85,7 +85,7 @@ export default function Dashboard() {
   return (
     <PageLayout
       title="Dashboard"
-      subtitle="AI Agent Operations, Adaptive Learning, and Reliability Controls"
+      subtitle="AI Agent Governance, Decision Accountability, and Compliance Controls"
       breadcrumbs={['Dashboard']}
       actions={
         <div className="flex items-center gap-2">

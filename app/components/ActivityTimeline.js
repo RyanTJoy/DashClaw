@@ -34,10 +34,10 @@ function getEventIcon(event) {
 
 function getCategoryLabel(category) {
   switch (category) {
-    case 'action': return 'Action';
+    case 'action': return 'Decision';
     case 'loop': return 'Open Loop';
-    case 'learning': return 'Learning';
-    case 'signal': return 'Signal';
+    case 'learning': return 'Lesson';
+    case 'signal': return 'Integrity Signal';
     default: return 'Event';
   }
 }
@@ -187,7 +187,7 @@ export default function ActivityTimeline() {
 
   return (
     <Card className="h-full">
-      <CardHeader title="Activity Timeline" icon={Clock}>
+      <CardHeader title="Decision Timeline" icon={Clock}>
         <Badge variant="default" size="sm">{events.length} events</Badge>
       </CardHeader>
 
@@ -196,7 +196,7 @@ export default function ActivityTimeline() {
           <EmptyState
             icon={Clock}
             title="No activity yet"
-            description="Actions, open loops, and learning events will appear here chronologically"
+            description="Decisions, open loops, and learning events will appear here chronologically"
           />
         ) : (
           <div>

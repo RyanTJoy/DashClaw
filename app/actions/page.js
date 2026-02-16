@@ -209,8 +209,8 @@ export default function ActionsTimeline() {
 
   return (
     <PageLayout
-      title="Action Timeline"
-      subtitle={`Agent Operations Control Plane${lastUpdated ? ` \u00B7 Updated ${lastUpdated}` : ''}`}
+      title="Decision Ledger"
+      subtitle={`Decision Governance Control Plane${lastUpdated ? ` \u00B7 Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Actions']}
       actions={
         <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function ActionsTimeline() {
       <Card hover={false}>
         <div className="px-5 pt-5 pb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium text-zinc-200 uppercase tracking-wider">
-            Actions <span className="text-xs font-normal text-zinc-500 normal-case ml-2">({total} total)</span>
+            Decisions <span className="text-xs font-normal text-zinc-500 normal-case ml-2">({total} total)</span>
           </h2>
           {totalPages > 1 && (
             <div className="flex items-center gap-2 text-sm">
@@ -365,7 +365,7 @@ export default function ActionsTimeline() {
                       <div className="border-t border-[rgba(255,255,255,0.04)] p-4 bg-surface-secondary space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Reasoning</div>
+                            <div className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Decision Rationale</div>
                             <div className="text-sm text-zinc-300">{action.reasoning || 'Not specified'}</div>
                           </div>
                           <div>
@@ -448,7 +448,7 @@ export default function ActionsTimeline() {
 
                         <div className="pt-2">
                           <Link href={`/actions/${action.action_id}`} className="text-sm text-brand hover:text-brand-hover transition-colors duration-150">
-                            View full post-mortem
+                            View full decision record
                           </Link>
                         </div>
                       </div>
