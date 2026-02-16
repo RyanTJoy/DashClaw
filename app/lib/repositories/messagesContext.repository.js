@@ -118,6 +118,10 @@ export async function updateMessageReadBy(sql, messageId, readBy) {
   await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId}`;
 }
 
+export async function markBroadcastRead(sql, messageId, readBy, now) {
+  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)}, status = 'read', read_at = ${now} WHERE id = ${messageId}`;
+}
+
 export async function markMessageRead(sql, messageId, now) {
   await sql`UPDATE agent_messages SET status = 'read', read_at = ${now} WHERE id = ${messageId} AND status = 'sent'`;
 }
@@ -130,6 +134,38 @@ export async function archiveMessage(sql, orgId, messageId, now) {
   `;
   return rows.length > 0;
 }
+
+// ── Attachments ──────────────────────────────────────────────
+
+export async function createAttachment(sql, payload) {
+  const { id, orgId, messageId, filename, mimeType, sizeBytes, data, now } = payload;
+  const rows = await sql`
+    INSERT INTO message_attachments (id, org_id, message_id, filename, mime_type, size_bytes, data, created_at)
+    VALUES (${id}, ${orgId}, ${messageId}, ${filename}, ${mimeType}, ${sizeBytes}, ${data}, ${now})
+    RETURNING id, org_id, message_id, filename, mime_type, size_bytes, created_at
+  `;
+  return rows[0] || null;
+}
+
+export async function getAttachmentsForMessages(sql, orgId, messageIds) {
+  if (!messageIds || messageIds.length === 0) return [];
+  const rows = await sql`
+    SELECT id, org_id, message_id, filename, mime_type, size_bytes, created_at
+    FROM message_attachments
+    WHERE org_id = ${orgId} AND message_id = ANY(${messageIds})
+    ORDER BY created_at ASC
+  `;
+  return rows;
+}
+
+export async function getAttachmentWithData(sql, orgId, attachmentId) {
+  const rows = await sql`
+    SELECT * FROM message_attachments WHERE id = ${attachmentId} AND org_id = ${orgId}
+  `;
+  return rows[0] || null;
+}
+
+// ── Context Threads ──────────────────────────────────────────
 
 export async function listContextThreads(sql, orgId, filters = {}) {
   const { agentId, status, limit = 20 } = filters;

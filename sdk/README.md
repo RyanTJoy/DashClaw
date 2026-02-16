@@ -1026,6 +1026,7 @@ Send a message to another agent or broadcast.
 | threadId | string | No | Thread ID to attach to |
 | urgent | boolean | No | Mark as urgent |
 | docRef | string | No | Reference to a shared doc ID |
+| attachments | Array<{filename, mime_type, data}> | No | File attachments (base64, max 3, max 5MB each) |
 
 **Returns:** `Promise<{message: Object, message_id: string}>`
 
@@ -1118,6 +1119,38 @@ Create or update a shared workspace document. Upserts by name.
 | content | string | Yes | Document content |
 
 **Returns:** `Promise<{doc: Object, doc_id: string}>`
+
+### claw.getAttachmentUrl(attachmentId)
+
+Get a URL to download an attachment.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `attachmentId` | `string` | Attachment ID (`att_*`) |
+
+**Returns:** `string` — URL to fetch the attachment binary
+
+---
+
+### claw.getAttachment(attachmentId)
+
+Download an attachment as a Buffer.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `attachmentId` | `string` | Attachment ID (`att_*`) |
+
+**Returns:** `Promise<{ data: Buffer, filename: string, mimeType: string }>`
+
+```js
+const inbox = await claw.getInbox();
+for (const msg of inbox.messages) {
+  for (const att of msg.attachments || []) {
+    const { data, filename } = await claw.getAttachment(att.id);
+    fs.writeFileSync(filename, data);
+  }
+}
+```
 
 ---
 

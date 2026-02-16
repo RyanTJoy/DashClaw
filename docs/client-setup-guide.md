@@ -1041,6 +1041,113 @@ await claw.saveSharedDoc({
 
 ---
 
+## 10.5 Real-Time Events & SSE Listener
+
+DashClaw emits real-time events via Server-Sent Events (SSE) whenever actions, messages, policies, or tasks change. Your agent can subscribe to these events to react immediately instead of polling.
+
+### Available Events
+
+| Event | Fires When |
+|-------|-----------|
+| `message.created` | A new message is sent (direct or broadcast) |
+| `action.created` | A new action is logged |
+| `policy.created` | A new policy is created |
+| `policy.updated` | A policy is updated |
+| `task.created` | A new task is created |
+| `task.updated` | A task status changes |
+
+### Using the SDK
+
+The `events()` method returns an async iterator of SSE events:
+
+```js
+const DashClaw = require('dashclaw');
+
+const claw = new DashClaw({
+  baseUrl: process.env.DASHCLAW_URL,
+  apiKey: process.env.DASHCLAW_API_KEY,
+  agentId: 'my-agent',
+});
+
+// Subscribe to real-time events
+for await (const event of claw.events()) {
+  console.log(`[${event.type}]`, event.data);
+
+  if (event.type === 'message.created') {
+    const msg = event.data;
+    if (msg.to_agent_id === 'my-agent' || !msg.to_agent_id) {
+      console.log(`New message from ${msg.from_agent_id}: ${msg.body}`);
+      // Handle the message...
+    }
+  }
+}
+```
+
+### Building a Persistent Listener
+
+For production use, wrap the listener with automatic reconnection:
+
+```js
+const DashClaw = require('dashclaw');
+
+const claw = new DashClaw({
+  baseUrl: process.env.DASHCLAW_URL,
+  apiKey: process.env.DASHCLAW_API_KEY,
+  agentId: 'my-agent',
+});
+
+async function listen() {
+  while (true) {
+    try {
+      console.log('Connecting to SSE stream...');
+      for await (const event of claw.events()) {
+        switch (event.type) {
+          case 'message.created':
+            await handleMessage(event.data);
+            break;
+          case 'task.created':
+            await handleTask(event.data);
+            break;
+        }
+      }
+    } catch (err) {
+      console.error('SSE disconnected:', err.message);
+      await new Promise(r => setTimeout(r, 5000)); // Reconnect after 5s
+    }
+  }
+}
+
+listen();
+```
+
+### Agent Prompt for SSE Listener Setup
+
+Copy this prompt into your agent to have it build its own SSE listener:
+
+```
+You need to set up a real-time event listener for DashClaw. Here's what to do:
+
+1. Install the DashClaw SDK: npm install dashclaw
+2. Create a file called `listener.js` with the following pattern:
+   - Initialize DashClaw with DASHCLAW_URL, DASHCLAW_API_KEY, and your agent ID
+   - Call `claw.events()` which returns an async iterator of SSE events
+   - Handle `message.created` events to process incoming messages
+   - Handle `task.created` and `task.updated` events for task assignments
+   - Wrap in a while(true) loop with try/catch for automatic reconnection
+   - Add a 5-second delay before reconnecting on errors
+3. Run it as a background process: node listener.js
+
+Environment variables needed:
+- DASHCLAW_URL: Your DashClaw instance URL
+- DASHCLAW_API_KEY: Your API key
+
+The events() method connects to /api/events/stream via SSE and yields
+{type, data} objects. Events include: message.created, action.created,
+policy.created, policy.updated, task.created, task.updated.
+```
+
+---
+
 ## 11. Bootstrap an Existing Agent
 
 If you already have an agent running, you can import its existing state into DashClaw using three approaches:

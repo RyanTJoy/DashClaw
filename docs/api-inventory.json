@@ -46,8 +46,8 @@
     ]
   },
   "summary": {
-    "total_routes": 94,
-    "stable_routes": 41,
+    "total_routes": 95,
+    "stable_routes": 42,
     "beta_routes": 14,
     "experimental_routes": 39
   },
@@ -501,6 +501,15 @@
       "maturity": "stable",
       "matched_prefix": "/api/messages",
       "file": "app/api/messages/route.js"
+    },
+    {
+      "path": "/api/messages/attachments",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "stable",
+      "matched_prefix": "/api/messages",
+      "file": "app/api/messages/attachments/route.js"
     },
     {
       "path": "/api/messages/docs",

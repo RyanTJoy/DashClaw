@@ -756,7 +756,7 @@ class DashClaw:
 
     # --- Category 11: Agent Messaging ---
 
-    def send_message(self, body, to=None, message_type="info", **kwargs):
+    def send_message(self, body, to=None, message_type="info", attachments=None, **kwargs):
         payload = {
             "from_agent_id": self.agent_id,
             "to_agent_id": to,
@@ -764,6 +764,8 @@ class DashClaw:
             "body": body,
             **kwargs
         }
+        if attachments:
+            payload["attachments"] = attachments
         return self._request("/api/messages", method="POST", body=payload)
 
     def get_inbox(self, **filters):
@@ -824,6 +826,23 @@ class DashClaw:
             "content": content,
             "agent_id": self.agent_id,
         })
+
+    def get_attachment_url(self, attachment_id):
+        """Get the URL to download an attachment."""
+        return f"{self.base_url}/api/messages/attachments?id={urllib.parse.quote(attachment_id)}"
+
+    def get_attachment(self, attachment_id):
+        """Download an attachment's binary data."""
+        url = self.get_attachment_url(attachment_id)
+        req = urllib.request.Request(url, headers={"x-api-key": self.api_key})
+        with urllib.request.urlopen(req) as resp:
+            data = resp.read()
+            content_type = resp.headers.get("Content-Type", "application/octet-stream")
+            cd = resp.headers.get("Content-Disposition", "")
+            import re
+            match = re.search(r'filename="(.+?)"', cd)
+            filename = match.group(1) if match else attachment_id
+            return {"data": data, "filename": filename, "mime_type": content_type}
 
     # --- Category 13: Behavior Guard ---
 

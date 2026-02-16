@@ -8,11 +8,14 @@ import { getSql } from '../../lib/db.js';
 import { scanSensitiveData } from '../../lib/security.js';
 import {
   archiveMessage,
+  createAttachment,
   createMessage,
+  getAttachmentsForMessages,
   getMessageForUpdate,
   getMessageThread,
   getUnreadMessageCount,
   listMessages,
+  markBroadcastRead,
   markMessageRead,
   touchMessageThread,
   updateMessageReadBy,
@@ -21,6 +24,12 @@ import { EVENTS, publishOrgEvent } from '../../lib/events.js';
 import { randomUUID } from 'node:crypto';
 
 const VALID_TYPES = ['action', 'info', 'lesson', 'question', 'status'];
+const ALLOWED_MIME_TYPES = [
+  'image/png', 'image/jpeg', 'image/gif', 'image/webp',
+  'application/pdf', 'text/plain', 'text/markdown', 'text/csv', 'application/json',
+];
+const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_ATTACHMENTS_PER_MESSAGE = 3;
 
 export async function GET(request) {
   try {
@@ -47,7 +56,25 @@ export async function GET(request) {
 
     const unreadCount = await getUnreadMessageCount(sql, orgId, agentId || null);
 
-    return NextResponse.json({ messages: rows, total: rows.length, unread_count: unreadCount });
+    // Batch-fetch attachment metadata for returned messages
+    const messageIds = rows.map(m => m.id);
+    let attachments = [];
+    try {
+      attachments = await getAttachmentsForMessages(sql, orgId, messageIds);
+    } catch {
+      // Table may not exist yet — gracefully degrade
+    }
+    const attachmentsByMsg = {};
+    for (const att of attachments) {
+      if (!attachmentsByMsg[att.message_id]) attachmentsByMsg[att.message_id] = [];
+      attachmentsByMsg[att.message_id].push(att);
+    }
+    const messagesWithAttachments = rows.map(m => ({
+      ...m,
+      attachments: attachmentsByMsg[m.id] || [],
+    }));
+
+    return NextResponse.json({ messages: messagesWithAttachments, total: rows.length, unread_count: unreadCount });
   } catch (error) {
     console.error('Messages GET error:', error);
     return NextResponse.json({ error: 'An error occurred while fetching messages' }, { status: 500 });
@@ -65,7 +92,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Validation failed', details: fieldErrors }, { status: 400 });
     }
 
-    const { from_agent_id, to_agent_id, message_type, subject, body: msgBodyRaw, thread_id, urgent, doc_ref } = body;
+    const { from_agent_id, to_agent_id, message_type, subject, body: msgBodyRaw, thread_id, urgent, doc_ref, attachments: rawAttachments } = body;
 
     if (!msgBodyRaw) {
       return NextResponse.json({ error: 'body is required' }, { status: 400 });
@@ -98,6 +125,24 @@ export async function POST(request) {
       }
     }
 
+    // Validate attachments
+    const attachmentInputs = Array.isArray(rawAttachments) ? rawAttachments : [];
+    if (attachmentInputs.length > MAX_ATTACHMENTS_PER_MESSAGE) {
+      return NextResponse.json({ error: `Maximum ${MAX_ATTACHMENTS_PER_MESSAGE} attachments per message` }, { status: 400 });
+    }
+    for (const att of attachmentInputs) {
+      if (!att.filename || !att.mime_type || !att.data) {
+        return NextResponse.json({ error: 'Each attachment requires filename, mime_type, and data' }, { status: 400 });
+      }
+      if (!ALLOWED_MIME_TYPES.includes(att.mime_type)) {
+        return NextResponse.json({ error: `Unsupported MIME type: ${att.mime_type}. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}` }, { status: 400 });
+      }
+      const sizeBytes = Math.ceil((att.data.length * 3) / 4);
+      if (sizeBytes > MAX_ATTACHMENT_SIZE) {
+        return NextResponse.json({ error: `Attachment "${att.filename}" exceeds 5MB limit` }, { status: 400 });
+      }
+    }
+
     const id = `msg_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const now = new Date().toISOString();
 
@@ -115,17 +160,37 @@ export async function POST(request) {
       now,
     });
 
+    // Create attachments
+    const createdAttachments = [];
+    for (const att of attachmentInputs) {
+      const attId = `att_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+      const sizeBytes = Math.ceil((att.data.length * 3) / 4);
+      const result = await createAttachment(sql, {
+        id: attId,
+        orgId,
+        messageId: id,
+        filename: att.filename,
+        mimeType: att.mime_type,
+        sizeBytes,
+        data: att.data,
+        now,
+      });
+      if (result) createdAttachments.push(result);
+    }
+
     if (thread_id) {
       await touchMessageThread(sql, thread_id, now);
     }
 
+    const messageWithAttachments = { ...created, attachments: createdAttachments };
+
     // Emit real-time event
     void publishOrgEvent(EVENTS.MESSAGE_CREATED, {
       orgId,
-      message: created,
+      message: messageWithAttachments,
     });
 
-    return NextResponse.json({ message: created, message_id: id }, { status: 201 });
+    return NextResponse.json({ message: messageWithAttachments, message_id: id }, { status: 201 });
   } catch (error) {
     console.error('Messages POST error:', error);
     return NextResponse.json({ error: 'An error occurred while sending message' }, { status: 500 });
@@ -167,7 +232,7 @@ export async function PATCH(request) {
 
           if (!readBy.includes(readerId)) {
             readBy.push(readerId);
-            await updateMessageReadBy(sql, msgId, readBy);
+            await markBroadcastRead(sql, msgId, readBy, now);
             updated++;
           }
         } else if (readerId === 'dashboard' || msg.to_agent_id === readerId) {

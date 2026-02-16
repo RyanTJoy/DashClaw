@@ -1495,7 +1495,7 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 11: Agent Messaging (9 methods)
+  // Category 11: Agent Messaging (11 methods)
   // ══════════════════════════════════════════════
 
   /**
@@ -1508,10 +1508,11 @@ class DashClaw {
    * @param {string} [params.threadId] - Thread ID to attach message to
    * @param {boolean} [params.urgent=false] - Mark as urgent
    * @param {string} [params.docRef] - Reference to a shared doc ID
+   * @param {Array<{filename: string, mime_type: string, data: string}>} [params.attachments] - File attachments (base64 data, max 3, max 5MB each)
    * @returns {Promise<{message: Object, message_id: string}>}
    */
-  async sendMessage({ to, type, subject, body, threadId, urgent, docRef }) {
-    return this._request('/api/messages', 'POST', {
+  async sendMessage({ to, type, subject, body, threadId, urgent, docRef, attachments }) {
+    const payload = {
       from_agent_id: this.agentId,
       to_agent_id: to || null,
       message_type: type || 'info',
@@ -1520,7 +1521,9 @@ class DashClaw {
       thread_id: threadId,
       urgent,
       doc_ref: docRef,
-    });
+    };
+    if (attachments?.length) payload.attachments = attachments;
+    return this._request('/api/messages', 'POST', payload);
   }
 
   /**
@@ -1640,6 +1643,39 @@ class DashClaw {
       content,
       agent_id: this.agentId,
     });
+  }
+
+  /**
+   * Get an attachment's download URL or fetch its binary data.
+   * @param {string} attachmentId - Attachment ID (att_*)
+   * @returns {string} URL to fetch the attachment
+   */
+  getAttachmentUrl(attachmentId) {
+    return `${this.baseUrl}/api/messages/attachments?id=${encodeURIComponent(attachmentId)}`;
+  }
+
+  /**
+   * Download an attachment as a Buffer.
+   * @param {string} attachmentId - Attachment ID (att_*)
+   * @returns {Promise<{data: Buffer, filename: string, mimeType: string}>}
+   */
+  async getAttachment(attachmentId) {
+    const url = this.getAttachmentUrl(attachmentId);
+    const res = await fetch(url, {
+      headers: { 'x-api-key': this.apiKey },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Attachment fetch failed: ${res.status}`);
+    }
+    const data = Buffer.from(await res.arrayBuffer());
+    const cd = res.headers.get('content-disposition') || '';
+    const match = cd.match(/filename="(.+?)"/);
+    return {
+      data,
+      filename: match ? match[1] : attachmentId,
+      mimeType: res.headers.get('content-type') || 'application/octet-stream',
+    };
   }
 
   // ══════════════════════════════════════════════
