@@ -76,9 +76,19 @@ export default function MessagesPage() {
         fetchDocs(),
       ]);
 
-      setMessages(tab === 'sent' ? sentData.messages : inboxData.messages);
+      const currentMessages = tab === 'sent' ? sentData.messages : inboxData.messages;
+      setMessages(currentMessages);
       setThreads(threadData.threads);
       setDocs(docData.docs);
+
+      // Sync selected message with fresh server data
+      setSelected(prev => {
+        if (!prev) return prev;
+        const fresh = currentMessages.find(m => m.id === prev.id)
+          || threadData.threads.find(t => t.id === prev.id)
+          || docData.docs.find(d => d.id === prev.id);
+        return fresh || prev;
+      });
 
       const today = new Date().toISOString().split('T')[0];
       const todayCount = [...inboxData.messages, ...sentData.messages].filter(
@@ -161,6 +171,11 @@ export default function MessagesPage() {
   }
 
   async function handleMarkRead(msgId) {
+    // Optimistically update the selected message and message list
+    setSelected(prev => prev?.id === msgId ? { ...prev, status: 'read', read_at: new Date().toISOString() } : prev);
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'read', read_at: new Date().toISOString() } : m));
+    setStats(prev => ({ ...prev, unread: Math.max(0, prev.unread - 1) }));
+
     await fetch('/api/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -182,6 +197,14 @@ export default function MessagesPage() {
   async function handleMarkAllRead() {
     const unread = messages.filter(m => m.status === 'sent');
     if (unread.length === 0) return;
+    const unreadIds = new Set(unread.map(m => m.id));
+    const now = new Date().toISOString();
+
+    // Optimistic update
+    setMessages(prev => prev.map(m => unreadIds.has(m.id) ? { ...m, status: 'read', read_at: now } : m));
+    setSelected(prev => prev && unreadIds.has(prev.id) ? { ...prev, status: 'read', read_at: now } : prev);
+    setStats(prev => ({ ...prev, unread: 0 }));
+
     await fetch('/api/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
