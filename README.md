@@ -1,4 +1,4 @@
-# DashClaw: AI Agent Observability and Governance Platform
+# [DashClaw](https://dashclaw.io): AI Agent Observability and Governance Platform
 
 DashClaw combines a public site, an operator dashboard, and an API control plane so you can monitor what agents do (actions, decisions, risks, messages) and enforce guardrails (approvals, policies, rate limits, webhooks).
 
