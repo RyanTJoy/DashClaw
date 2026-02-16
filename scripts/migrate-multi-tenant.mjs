@@ -129,8 +129,22 @@ async function run() {
   `;
   log('✅', 'org_default exists');
 
+  // Step 3b: Create DASHCLAW_API_KEY_ORG organization if configured and different from org_default
+  const configuredOrgId = process.env.DASHCLAW_API_KEY_ORG;
+  if (configuredOrgId && configuredOrgId !== 'org_default') {
+    console.log(`Step 3b: Ensuring DASHCLAW_API_KEY_ORG (${configuredOrgId}) exists...`);
+    const slug = configuredOrgId.replace(/^org_/, '').replace(/[^a-z0-9-]/g, '-').slice(0, 64);
+    await sql`
+      INSERT INTO organizations (id, name, slug, plan)
+      VALUES (${configuredOrgId}, 'DashClaw Instance', ${slug}, 'pro')
+      ON CONFLICT (id) DO NOTHING
+    `;
+    log('✅', `${configuredOrgId} exists`);
+  }
+
   // Step 4: Seed admin key from DASHCLAW_API_KEY (if set)
   const dashboardKey = process.env.DASHCLAW_API_KEY;
+  const keyTargetOrg = configuredOrgId || 'org_default';
   if (dashboardKey) {
     console.log('Step 4: Seeding admin API key from DASHCLAW_API_KEY...');
     const keyHash = createHash('sha256').update(dashboardKey).digest('hex');
@@ -139,12 +153,13 @@ async function run() {
 
     await sql`
       INSERT INTO api_keys (id, org_id, key_hash, key_prefix, label, role)
-      VALUES (${keyId}, 'org_default', ${keyHash}, ${keyPrefix}, 'Legacy Dashboard Key', 'admin')
+      VALUES (${keyId}, ${keyTargetOrg}, ${keyHash}, ${keyPrefix}, 'Dashboard Admin Key', 'admin')
       ON CONFLICT (id) DO UPDATE SET
+        org_id = ${keyTargetOrg},
         key_hash = EXCLUDED.key_hash,
         key_prefix = EXCLUDED.key_prefix
     `;
-    log('✅', `Admin key seeded (prefix: ${keyPrefix}...)`);
+    log('✅', `Admin key seeded for ${keyTargetOrg} (prefix: ${keyPrefix}...)`);
   } else {
     console.log('Step 4: No DASHCLAW_API_KEY set — skipping admin key seed');
     log('⚠️', 'Set DASHCLAW_API_KEY and re-run to seed admin key');
