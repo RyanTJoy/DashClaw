@@ -1,233 +1,275 @@
-# DashClaw Agent Self-Discovery Prompt
+# DashClaw Full Bootstrap — Agent Self-Service
 
-> Paste this prompt into an agent's session. The agent introspects its own state and outputs a single JSON payload you can push to DashClaw via `POST /api/sync`.
-
----
-
-## Instructions for the agent
-
-Your operator uses **DashClaw** to track agent state, decisions, and operational data. Answer each section below to sync your current state. Output a single JSON object at the end — do NOT make individual API calls.
-
-**Rules:**
-- Be honest and specific — generic filler ("I aim to be helpful") is not useful.
-- Skip any section you genuinely have nothing for — omit the key entirely.
-- All string fields have max lengths noted in brackets. Truncate if needed.
-- Set `agent_id` to your own identifier (the name your operator uses for you).
-- NEVER include secrets, API keys, passwords, or tokens.
+> Paste this entire prompt to an agent that has the DashClaw SDK installed. The agent will scan its own workspace, build a sync payload, and push it — no operator intervention required.
 
 ---
 
-### 1. Goals & Priorities
+## Your task
 
-What are you actively working toward? Include both high-level objectives and current tasks.
+Your operator uses **DashClaw** to track your state. You need to do two things:
 
-For each goal:
-- `title` [max 500 chars]: what the goal is
-- `status`: one of `"active"`, `"completed"`, `"paused"`
-- `category` (optional): e.g. `"project"`, `"task"`, `"learning"`
-- `description` (optional) [max 500 chars]: why it matters or additional context
-- `progress` (optional): 0–100
+1. **Scan your own workspace** — read your files and extract structured data
+2. **Push everything via `syncState()`** — one SDK call with the full payload
 
----
+You already have the DashClaw SDK installed. Use it.
 
-### 2. Learning & Decisions
-
-Key lessons you've learned, decisions you've made, and their outcomes.
-
-For each entry:
-- `decision` [max 2000 chars]: what was decided or learned
-- `context` (optional): when/why this came up
-- `reasoning` (optional): the rationale
-- `outcome`: one of `"success"`, `"failure"`, `"pending"`
-- `confidence`: 0–100
+**Critical rules:**
+- NEVER include secrets, API keys, passwords, or tokens in any field value
+- When scanning `.env` files, only extract key NAMES, never values
+- Be honest and specific — generic filler is useless
+- Omit any category you have no real data for
+- Truncate strings to the max lengths specified
 
 ---
 
-### 3. Handoffs (Recent Sessions)
+## Part 1: Scan your workspace
 
-Summarize your recent work sessions. Each entry represents one session or work block.
+Read the files listed below. Not all will exist — skip missing ones silently.
 
-For each handoff:
-- `session_date` (optional): `"YYYY-MM-DD"` format
-- `summary` [max 4000 chars]: what happened in this session
-- `key_decisions` (optional): array of strings — decisions made
-- `open_tasks` (optional): array of strings — what's still pending
-- `mood_notes` (optional) [max 500 chars]: energy/focus/mood during the session
-- `next_priorities` (optional): array of strings — what should happen next
+### 1a. Connections (from `.env` key names + `package.json` deps)
 
----
+Read `.env`, `.env.local`, `.env.example`, and `package.json`. Extract only key NAMES to detect providers:
 
-### 4. Preferences & Communication Style
+| Env key prefix | Provider | Auth type |
+|---|---|---|
+| `GITHUB_` | github | oauth |
+| `GOOGLE_` | google | oauth |
+| `OPENAI_` | openai | api_key |
+| `ANTHROPIC_` | anthropic | api_key |
+| `STRIPE_` | stripe | api_key |
+| `AWS_` | aws | api_key |
+| `DATABASE_URL` (contains "neon") | neon | api_key |
+| `DATABASE_URL` (other) | postgresql | api_key |
+| `RESEND_` | resend | api_key |
+| `SLACK_` | slack | api_key |
+| `VERCEL_` | vercel | api_key |
+| `REDIS_` | redis | api_key |
+| `SENTRY_` | sentry | api_key |
+| `SUPABASE_` | supabase | api_key |
 
-How you prefer to work and communicate.
+Also check `package.json` dependencies: `stripe`, `openai`, `@anthropic-ai/sdk`, `@neondatabase/serverless`, `redis`, `ioredis`, `@slack/web-api`, `discord.js`, `dashclaw`, etc.
 
-#### 4a. Preferences
-For each:
-- `preference` [max 2000 chars]: the preference statement
-- `category` (optional): e.g. `"communication"`, `"workflow"`, `"technical"`
-- `confidence`: 0–100
-
-#### 4b. Observations
-Things you've noticed about the user, project, or environment.
-
-For each:
-- `observation` [max 2000 chars]: what you observed
-- `category` (optional): e.g. `"user"`, `"project"`, `"environment"`
-- `importance` (optional): 1–10
-
-#### 4c. Approaches
-Preferred workflows, strategies, or techniques you use.
-
-For each:
-- `approach` [max 500 chars]: the technique/workflow
-- `context` (optional): when you use it
-- `success` (optional): `true`/`false` — has it worked well?
-
-#### 4d. Moods
-Your recent operational moods/energy (if applicable).
-
-For each:
-- `mood` [max 100 chars]: the mood state
-- `energy` (optional) [max 50 chars]: energy level
-- `notes` (optional) [max 500 chars]: additional context
-
----
-
-### 5. Relationships
-
-People and entities you interact with regularly.
-
-For each:
-- `name` [max 255 chars]: the person/entity name
-- `relationship_type`: e.g. `"operator"`, `"collaborator"`, `"stakeholder"`, `"contact"`
-- `description` (optional): how you relate to them
-
----
-
-### 6. Inspiration
-
-Ideas, bookmarks, references, or reading material worth tracking.
-
-For each:
-- `title` [max 500 chars]: the idea or reference
-- `description` (optional): additional detail
-- `category` (optional) [max 50 chars]: grouping
-- `source` (optional) [max 500 chars]: URL if applicable
-- `status`: `"pending"` or `"completed"`
-
----
-
-### 7. Context Points
-
-Important facts, insights, or decisions about the project/environment that should persist.
-
-For each:
-- `content` [max 2000 chars]: the fact/insight
-- `category`: one of `"general"`, `"insight"`, `"decision"`
-- `importance`: 1–10
-
----
-
-## What NOT to include
-
-The CLI scanner (`scripts/bootstrap-agent.mjs`) handles these categories better mechanically — skip them here:
-
-- **Connections** — detected from `.env` key names and `package.json` dependencies
-- **Memory health** — computed from file stats
-- **Snippets** — extracted from fenced code blocks in docs
-- **Capabilities** — discovered from skill/tool directories
-- **Context threads** — derived from document structure
-
----
-
-## Output format
-
-Produce a single JSON object matching this structure. Omit any top-level key you have no data for.
-
+**Output shape:**
 ```json
-{
-  "agent_id": "your-agent-id",
-  "goals": [
-    { "title": "...", "status": "active", "progress": 50 }
-  ],
-  "learning": [
-    { "decision": "...", "reasoning": "...", "outcome": "success", "confidence": 80 }
-  ],
-  "handoffs": [
-    {
-      "session_date": "2026-02-15",
-      "summary": "...",
-      "key_decisions": ["..."],
-      "open_tasks": ["..."],
-      "mood_notes": "...",
-      "next_priorities": ["..."]
-    }
-  ],
-  "preferences": {
-    "preferences": [
-      { "preference": "...", "category": "communication", "confidence": 85 }
-    ],
-    "observations": [
-      { "observation": "...", "category": "user", "importance": 7 }
-    ],
-    "approaches": [
-      { "approach": "...", "context": "...", "success": true }
-    ],
-    "moods": [
-      { "mood": "focused", "energy": "high" }
-    ]
-  },
-  "relationships": [
-    { "name": "...", "relationship_type": "operator", "description": "..." }
-  ],
-  "inspiration": [
-    { "title": "...", "source": "https://...", "status": "pending" }
-  ],
-  "context_points": [
-    { "content": "...", "category": "insight", "importance": 8 }
-  ]
+"connections": [{ "provider": "github", "auth_type": "oauth", "status": "active" }]
+```
+
+### 1b. Memory health (from file stats)
+
+Scan your memory/workspace markdown files. Count total files, lines, and size. Extract entities (bold terms, backtick terms) and topics (## headings).
+
+**Health score heuristic:** Start at 50. +15 if `MEMORY.md` exists. +10 if total lines > 100. +10 if > 5 markdown files. +10 if `memory/` directory exists. +5 if > 5 topics. Cap at 100.
+
+**Output shape:**
+```json
+"memory": {
+  "health": { "score": 75, "total_files": 8, "total_lines": 450, "total_size_kb": 12 },
+  "entities": [{ "name": "NextAuth", "type": "code", "mentions": 5 }],
+  "topics": [{ "name": "Architecture", "mentions": 2 }]
 }
 ```
+Max 100 entities, 100 topics.
+
+### 1c. Goals (from task/project files)
+
+Read `tasks/todo.md`, `TODO.md`, `projects.md`, `CLAUDE.md` (goal/todo sections), and `memory/pending-tasks.md`.
+
+- `- [ ] text` → status `"active"`
+- `- [x] text` → status `"completed"`, progress 100
+- Bullet under "Goals"/"Next Steps" heading → status `"active"`
+
+**Output shape:**
+```json
+"goals": [{ "title": "Deploy v2", "status": "active", "category": "project", "progress": 30 }]
+```
+Max 500 chars per title. Max 2000 goals.
+
+### 1d. Learning (from lessons/decisions)
+
+Read `tasks/lessons.md`, `memory/decisions/*.md`, and `CLAUDE.md` (lesson/pattern/convention sections).
+
+- Bullet items from lessons files → decisions with outcome `"success"`, confidence 70
+- Decision table rows (`| Decision | Why | Outcome |`) → parse each column
+
+**Output shape:**
+```json
+"learning": [{ "decision": "Used JWT for edge compat", "reasoning": "NextAuth on Vercel Edge", "outcome": "success", "confidence": 75 }]
+```
+Max 2000 chars per decision. Max 2000 entries.
+
+### 1e. Context points (from CLAUDE.md and MEMORY.md sections)
+
+Each `## heading` section becomes a context point. Categorize:
+- Architecture/tech stack sections → `"insight"`, importance 8
+- Pattern/convention sections → `"insight"`, importance 7
+- Decision/choice sections → `"decision"`, importance 7
+- Command/deploy sections → `"general"`, importance 6
+- Everything else → `"general"`, importance 5
+
+**Output shape:**
+```json
+"context_points": [{ "content": "[Architecture] Next.js 15 App Router...", "category": "insight", "importance": 8 }]
+```
+Max 2000 chars per content. Max 5000 points.
+
+### 1f. Context threads (from CLAUDE.md sections)
+
+Each `## heading` with 3+ lines of body becomes a thread.
+
+**Output shape:**
+```json
+"context_threads": [{ "name": "Authentication", "summary": "NextAuth v4 with GitHub + Google OAuth..." }]
+```
+Max 255 chars per name, 500 chars per summary. Max 1000 threads.
+
+### 1g. Snippets (fenced code blocks from docs)
+
+Scan `CLAUDE.md`, `TOOLS*.md`, `projects.md`, `MEMORY.md` for fenced code blocks (` ```lang ... ``` `). Skip blocks < 2 lines.
+
+**Output shape:**
+```json
+"snippets": [{ "name": "api-route-pattern", "description": "From CLAUDE.md: API Handlers", "code": "...", "language": "javascript" }]
+```
+Max 10000 chars per code block. Max 1000 snippets.
+
+### 1h. Handoffs (from daily log files)
+
+Read daily log files matching `YYYY-MM-DD*.md` in `memory/` or `Memory/` directories. Each file = one handoff. Parse:
+- Summary: first non-heading paragraph (max 4000 chars)
+- `session_date`: from filename
+- `key_decisions`: bullets under headings containing "decision"/"decided"/"chose"
+- `open_tasks`: bullets under headings containing "todo"/"next"/"open"/"pending"
+- `mood_notes`: text under headings containing "mood"/"energy"/"feeling"/"reflection"
+- `next_priorities`: bullets under headings containing "priority"/"tomorrow"/"next session"
+
+**Output shape:**
+```json
+"handoffs": [{
+  "session_date": "2026-02-14",
+  "summary": "Worked on auth system...",
+  "key_decisions": ["Chose JWT over sessions"],
+  "open_tasks": ["Add webhook handler"],
+  "mood_notes": "Productive, high energy",
+  "next_priorities": ["Finish billing"]
+}]
+```
+Max 100 handoffs (most recent). Max 1000 allowed.
+
+### 1i. Inspiration (from idea/bookmark files)
+
+Read `inspiration.md`, `ideas.md`, `bookmarks.md`, `reading-list.md`, `references.md` at root or in `memory/`. Each bullet = one item.
+
+- Extract URLs from text if present
+- `[x]` prefix → status `"completed"`, otherwise `"pending"`
+- Parent heading → category
+
+**Output shape:**
+```json
+"inspiration": [{ "title": "Real-time WebSocket updates", "category": "features", "source": "https://...", "status": "pending" }]
+```
+Max 500 chars per title. Max 200 items.
+
+### 1j. Preferences (from MEMORY.md, CLAUDE.md, tasks/lessons.md, daily logs)
+
+**preferences**: bullets under "Active Preferences" heading in `MEMORY.md`
+```json
+{ "preference": "Always use TypeScript strict mode", "category": "technical", "confidence": 85 }
+```
+
+**observations**: bullets under headings containing "observation"/"noticed"/"pattern"
+```json
+{ "observation": "User prefers minimal commit messages", "category": "user", "importance": 7 }
+```
+
+**approaches**: bullets under headings containing "approach"/"strategy"/"technique"/"method"/"workflow"
+```json
+{ "approach": "Code-first prototyping", "context": "Feature development", "success": true }
+```
+
+**moods**: from daily logs, text under "mood"/"energy"/"feeling" headings
+```json
+{ "mood": "Focused and productive", "energy": "high", "notes": "Deep work session" }
+```
+
+**Output shape:**
+```json
+"preferences": {
+  "preferences": [...],
+  "observations": [...],
+  "approaches": [...],
+  "moods": [...]
+}
+```
+Max 1000 per sub-category.
+
+### 1k. Relationships (from people/relationship files)
+
+Read `people/`, `relationships.json`, or individual `.md` files about people/contacts. Also use your own knowledge — who do you interact with?
+
+**Output shape:**
+```json
+"relationships": [{ "name": "Alex", "relationship_type": "operator", "description": "Primary user, prefers concise output" }]
+```
+Max 255 chars per name. Max 1000.
 
 ---
 
-## How to submit
+## Part 2: Self-reported semantic data
 
-Save the JSON output to a file (e.g. `payload.json`), then use one of:
+After scanning files, add data the scanner can't extract — things you know from your operational context:
 
-### Option A: curl
+- **Relationships** you know about but aren't documented in files
+- **Reasoning** behind decisions (the "why" behind lessons)
+- **Observations** about your operator's preferences and work style
+- **Your own communication preferences** and personality traits
+- **Session handoffs** from recent memory (if no daily log files exist)
+- **Context points** — architectural insights you carry but aren't written down
 
-```bash
-curl -X POST https://your-dashclaw-host/api/sync \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: YOUR_API_KEY" \
-  -d '@payload.json'
-```
+Add these to the same payload — they merge with the file-scanned data.
 
-### Option B: Node SDK
+---
 
+## Part 3: Push via SDK
+
+You already have the DashClaw SDK. Initialize it and call `syncState()`:
+
+### Node.js
 ```javascript
 import { DashClaw } from 'dashclaw';
 
 const claw = new DashClaw({
-  baseUrl: 'https://your-dashclaw-host',
-  apiKey: 'YOUR_API_KEY',
-  agentId: 'your-agent-id',
+  baseUrl: process.env.DASHCLAW_BASE_URL || 'http://localhost:3000',
+  apiKey: process.env.DASHCLAW_API_KEY,
+  agentId: 'YOUR_AGENT_ID',  // Use your actual agent ID
 });
 
-await claw.syncState(payload);
+const result = await claw.syncState(payload);
+console.log(`Synced ${result.total_synced} items in ${result.duration_ms}ms`);
+if (result.total_errors > 0) {
+  console.error('Errors:', JSON.stringify(result.results, null, 2));
+}
 ```
 
-### Option C: Python SDK
-
+### Python
 ```python
 from dashclaw import DashClaw
 
 claw = DashClaw(
-    base_url="https://your-dashclaw-host",
-    api_key="YOUR_API_KEY",
-    agent_id="your-agent-id",
+    base_url=os.environ.get("DASHCLAW_BASE_URL", "http://localhost:3000"),
+    api_key=os.environ["DASHCLAW_API_KEY"],
+    agent_id="YOUR_AGENT_ID",  # Use your actual agent ID
 )
 
-claw.sync_state(payload)
+result = claw.sync_state(payload)
+print(f"Synced {result['total_synced']} items in {result['duration_ms']}ms")
 ```
+
+---
+
+## Checklist before pushing
+
+- [ ] No secrets, API keys, or passwords in any field
+- [ ] All strings within max length limits
+- [ ] agent_id matches your registered ID in DashClaw
+- [ ] Omitted categories you have no data for (don't send empty arrays)
+- [ ] File-scanned data and self-reported data merged into one payload
