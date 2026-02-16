@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { getOrgId, getOrgRole } from '../../lib/org';
 import { validatePolicy } from '../../lib/validate';
 import { getSql } from '../../lib/db.js';
+import { EVENTS, publishOrgEvent } from '../../lib/events.js';
 
 /**
  * GET /api/policies — List guard policies for the org.
@@ -59,6 +60,8 @@ export async function POST(request) {
     `;
 
     const rows = await sql`SELECT * FROM guard_policies WHERE id = ${id}`;
+
+    void publishOrgEvent(EVENTS.POLICY_UPDATED, { orgId, policy: rows[0], change_type: 'created' });
 
     return NextResponse.json({ policy: rows[0], policy_id: id }, { status: 201 });
   } catch (err) {
@@ -137,6 +140,8 @@ export async function PATCH(request) {
       return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
     }
 
+    void publishOrgEvent(EVENTS.POLICY_UPDATED, { orgId, policy: rows[0], change_type: 'updated' });
+
     return NextResponse.json({ policy: rows[0] });
   } catch (err) {
     console.error('[POLICIES] PATCH error:', err);
@@ -172,6 +177,8 @@ export async function DELETE(request) {
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
     }
+
+    void publishOrgEvent(EVENTS.POLICY_UPDATED, { orgId, policy_id: policyId, change_type: 'deleted' });
 
     return NextResponse.json({ deleted: true, id: policyId });
   } catch (err) {

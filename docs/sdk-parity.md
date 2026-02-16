@@ -116,6 +116,7 @@ Current shared contract cases covered by the harness:
 | Compliance Engine | 5 | 5 | Full parity |
 | Task Routing | 10 | 10 | Full parity |
 | Agent Schedules | 2 | 2 | Full parity |
+| Real-Time Events | 1 | 0 | Node only |
 
 ## Confirmed Missing Python Methods
 

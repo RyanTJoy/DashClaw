@@ -753,6 +753,35 @@ Returns: `Promise<{ action: Object, trace: Object }>`
 const { trace } = await claw.getActionTrace('act_abc123');
 // trace includes: assumptions, open_loops, parent_chain, related_actions
 
+## Real-Time Events
+
+Subscribe to server-sent events (SSE) for instant push notifications. Eliminates polling for approvals, policy changes, and task assignments.
+
+### claw.events()
+
+Open a persistent SSE connection. Returns a chainable handle with `.on(event, callback)` and `.close()`.
+
+Supported events: `action.created`, `action.updated`, `message.created`, `policy.updated`, `task.assigned`, `task.completed`
+
+Returns: `{ on(eventType, callback): this, close(): void }`
+
+```javascript
+const stream = claw.events();
+
+stream
+  .on('action.created', (data) => console.log('New action:', data.action_id))
+  .on('action.updated', (data) => {
+    if (data.status === 'running') console.log('Approved:', data.action_id);
+  })
+  .on('policy.updated', (data) => console.log('Policy changed:', data.change_type))
+  .on('task.assigned', (data) => console.log('Task routed:', data.task?.title))
+  .on('task.completed', (data) => console.log('Task done:', data.task?.task_id))
+  .on('error', (err) => console.error('Stream error:', err));
+
+// When done:
+stream.close();
+```
+
 ## Loops & Assumptions
 
 Track unresolved dependencies and log what your agents assume. Catch drift before it causes failures.

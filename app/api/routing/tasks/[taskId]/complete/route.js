@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../../../../lib/db.js';
 import { getOrgId } from '../../../../../lib/org.js';
 import { completeTask } from '../../../../../lib/repositories/routing.repository.js';
+import { EVENTS, publishOrgEvent } from '../../../../../lib/events.js';
 
 /**
  * POST /api/routing/tasks/:taskId/complete — Complete a task
@@ -22,6 +23,8 @@ export async function POST(request, { params }) {
       result: body.result,
       error: body.error,
     });
+
+    void publishOrgEvent(EVENTS.TASK_COMPLETED, { orgId, task: result.task });
 
     return NextResponse.json(result);
   } catch (err) {

@@ -3,7 +3,7 @@
  * Full-featured agent toolkit for the DashClaw platform.
  * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
  *
- * 95+ methods across 21+ categories:
+ * 96+ methods across 22+ categories:
  * - Action Recording (7)
  * - Loops & Assumptions (7)
  * - Signals (1)
@@ -25,6 +25,7 @@
  * - Policy Testing (3)
  * - Compliance Engine (5)
  * - Task Routing (10)
+ * - Real-Time Events (1)
  */
 
 class DashClaw {
@@ -472,30 +473,170 @@ class DashClaw {
 
   /**
    * Poll for human approval of a pending action.
-   * @param {string} actionId 
+   * @param {string} actionId
    * @param {Object} [options]
    * @param {number} [options.timeout=300000] - Max wait time (5 min)
    * @param {number} [options.interval=5000] - Poll interval
+   * @param {boolean} [options.useEvents=false] - Use SSE stream instead of polling
    */
-  async waitForApproval(actionId, { timeout = 300000, interval = 5000 } = {}) {
+  async waitForApproval(actionId, { timeout = 300000, interval = 5000, useEvents = false } = {}) {
+    if (!useEvents) {
+      return this._waitForApprovalPolling(actionId, timeout, interval);
+    }
+
+    return new Promise((resolve, reject) => {
+      const stream = this.events();
+      const timeoutId = setTimeout(() => {
+        stream.close();
+        reject(new Error(`Timed out waiting for approval of action ${actionId}`));
+      }, timeout);
+
+      stream.on('action.updated', (data) => {
+        if (data.action_id !== actionId) return;
+        if (data.status === 'running') {
+          clearTimeout(timeoutId);
+          stream.close();
+          resolve({ action: data, action_id: actionId });
+        } else if (data.status === 'failed' || data.status === 'cancelled') {
+          clearTimeout(timeoutId);
+          stream.close();
+          reject(new ApprovalDeniedError(data.error_message || 'Operator denied the action.'));
+        }
+      });
+
+      stream.on('error', (err) => {
+        clearTimeout(timeoutId);
+        stream.close();
+        reject(err);
+      });
+    });
+  }
+
+  /** @private Polling-based waitForApproval implementation. */
+  async _waitForApprovalPolling(actionId, timeout, interval) {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < timeout) {
       const { action } = await this.getAction(actionId);
-      
+
       if (action.status === 'running') {
         console.log(`[DashClaw] Action ${actionId} approved by operator.`);
         return { action, action_id: actionId };
       }
-      
+
       if (action.status === 'failed' || action.status === 'cancelled') {
         throw new ApprovalDeniedError(action.error_message || 'Operator denied the action.');
       }
-      
+
       await new Promise(r => setTimeout(r, interval));
     }
-    
+
     throw new Error(`[DashClaw] Timed out waiting for approval of action ${actionId}`);
+  }
+
+  // ══════════════════════════════════════════════
+  // Real-Time Events (1 method)
+  // ══════════════════════════════════════════════
+
+  /**
+   * Subscribe to real-time SSE events from the DashClaw server.
+   * Uses fetch-based SSE parsing for Node 18+ compatibility (no native EventSource required).
+   *
+   * @returns {{ on(eventType: string, callback: Function): this, close(): void, _promise: Promise<void> }}
+   *
+   * @example
+   * const stream = client.events();
+   * stream
+   *   .on('action.created', (data) => console.log('New action:', data))
+   *   .on('action.updated', (data) => console.log('Action updated:', data))
+   *   .on('policy.updated', (data) => console.log('Policy changed:', data))
+   *   .on('task.assigned', (data) => console.log('Task assigned:', data))
+   *   .on('task.completed', (data) => console.log('Task done:', data))
+   *   .on('error', (err) => console.error('Stream error:', err));
+   *
+   * // Later:
+   * stream.close();
+   */
+  events() {
+    const url = `${this.baseUrl}/api/stream`;
+    const apiKey = this.apiKey;
+
+    const handlers = new Map();
+    let closed = false;
+    let controller = null;
+
+    const connect = async () => {
+      controller = new AbortController();
+      const res = await fetch(url, {
+        headers: { 'x-api-key': apiKey },
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`SSE connection failed: ${res.status} ${res.statusText}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (!closed) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE frames from buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep incomplete line in buffer
+
+        let currentEvent = null;
+        let currentData = '';
+
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            currentData += line.slice(6);
+          } else if (line === '' && currentEvent) {
+            // End of SSE frame — dispatch
+            const eventHandlers = handlers.get(currentEvent) || [];
+            if (eventHandlers.length > 0 && currentData) {
+              try {
+                const parsed = JSON.parse(currentData);
+                for (const cb of eventHandlers) {
+                  try { cb(parsed); } catch { /* ignore handler errors */ }
+                }
+              } catch { /* ignore parse errors */ }
+            }
+            currentEvent = null;
+            currentData = '';
+          }
+        }
+      }
+    };
+
+    const connectionPromise = connect().catch((err) => {
+      if (closed) return; // Abort is expected on close
+      const errorHandlers = handlers.get('error') || [];
+      for (const cb of errorHandlers) {
+        try { cb(err); } catch { /* ignore */ }
+      }
+    });
+
+    const handle = {
+      on(eventType, callback) {
+        if (!handlers.has(eventType)) handlers.set(eventType, []);
+        handlers.get(eventType).push(callback);
+        return handle;
+      },
+      close() {
+        closed = true;
+        if (controller) controller.abort();
+      },
+      _promise: connectionPromise,
+    };
+
+    return handle;
   }
 
   /**

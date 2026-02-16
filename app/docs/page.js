@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   Flame, ArrowRight, Github, ExternalLink, BookOpen,
   Terminal, Zap, CircleDot, Eye, ShieldAlert, Shield, BarChart3,
-  ChevronRight, Network, FileCheck, Scale,
+  ChevronRight, Network, FileCheck, Scale, Radio,
 } from 'lucide-react';
 import CopyDocsButton from '../components/CopyDocsButton';
 import PublicNavbar from '../components/PublicNavbar';
@@ -97,6 +97,8 @@ function SectionNav({ items }) {
 const navItems = [
   { href: '#quick-start', label: 'Quick Start' },
   { href: '#constructor', label: 'Constructor' },
+  { href: '#real-time-events', label: 'Real-Time Events' },
+  { href: '#events', label: 'events', indent: true },
   { href: '#action-recording', label: 'Action Recording' },
   { href: '#createAction', label: 'createAction', indent: true },
   { href: '#waitForApproval', label: 'waitForApproval', indent: true },
@@ -364,6 +366,38 @@ try {
   }
 }`}</CodeBlock>
             </div>
+          </section>
+
+          {/* ── Real-Time Events ── */}
+          <section id="real-time-events" className="scroll-mt-20 pt-12">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <Radio size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Real-Time Events</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">Subscribe to server-sent events for instant push notifications. Eliminates polling for approvals, policy changes, and task assignments.</p>
+
+            <MethodEntry
+              id="events"
+              signature="claw.events()"
+              description="Open a persistent SSE connection. Returns a chainable handle with .on(event, callback) and .close(). Supported events: action.created, action.updated, message.created, policy.updated, task.assigned, task.completed."
+              returns="{ on(eventType, callback): this, close(): void }"
+              example={`const stream = claw.events();
+
+stream
+  .on('action.created', (data) => console.log('New action:', data.action_id))
+  .on('action.updated', (data) => {
+    if (data.status === 'running') console.log('Approved:', data.action_id);
+  })
+  .on('policy.updated', (data) => console.log('Policy changed:', data.change_type))
+  .on('task.assigned', (data) => console.log('Task routed:', data.task?.title))
+  .on('task.completed', (data) => console.log('Task done:', data.task?.task_id))
+  .on('error', (err) => console.error('Stream error:', err));
+
+// When done:
+stream.close();`}
+            />
           </section>
 
           {/* ── Action Recording ── */}

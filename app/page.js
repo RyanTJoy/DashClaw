@@ -165,7 +165,7 @@ export default function LandingPage() {
             Guard what they do before they do it.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">78+ SDK methods</span>
+            <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">95+ SDK methods</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Node + Python SDKs</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">SSE real-time stream</span>
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Behavior guardrails</span>
@@ -434,7 +434,7 @@ export default function LandingPage() {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(249,115,22,0.08)] border border-[rgba(249,115,22,0.2)] text-brand text-xs font-medium mb-4">
                 <Package size={12} />
-                78+ methods across 16 categories
+                95+ methods across 21+ categories
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">One SDK. Full observability.</h2>
               <p className="mt-3 text-zinc-400 leading-relaxed">

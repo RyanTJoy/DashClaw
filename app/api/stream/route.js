@@ -54,6 +54,12 @@ data: ${JSON.stringify(data)}
       if (envelope.event === EVENTS.MESSAGE_CREATED) {
         return envelope.payload?.message || null;
       }
+      if (envelope.event === EVENTS.POLICY_UPDATED) {
+        return envelope.payload || null;
+      }
+      if (envelope.event === EVENTS.TASK_ASSIGNED || envelope.event === EVENTS.TASK_COMPLETED) {
+        return envelope.payload || null;
+      }
       return envelope.payload || null;
     };
 

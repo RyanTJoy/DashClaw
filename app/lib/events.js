@@ -7,6 +7,9 @@ export const EVENTS = {
   SIGNAL_DETECTED: 'signal.detected',
   TOKEN_USAGE: 'token.usage',
   MESSAGE_CREATED: 'message.created',
+  POLICY_UPDATED: 'policy.updated',
+  TASK_ASSIGNED: 'task.assigned',
+  TASK_COMPLETED: 'task.completed',
 };
 
 const EVENT_VERSION = 'v1';
