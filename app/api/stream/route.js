@@ -116,13 +116,28 @@ data: ${JSON.stringify(data)}
       }
     };
 
+    // Keepalive heartbeat — prevents proxies/load balancers from killing idle connections.
+    // SSE comments (lines starting with ':') are ignored by clients per the spec.
+    const HEARTBEAT_INTERVAL_MS = 15_000; // 15 seconds
+    let heartbeatTimer = null;
+
     // Clean up on close (when the request is aborted by client)
     const cleanup = () => {
       if (isClosed) return;
       isClosed = true;
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
       void unsubscribe();
       writer.close().catch(() => {});
     };
+
+    heartbeatTimer = setInterval(async () => {
+      if (isClosed) { clearInterval(heartbeatTimer); return; }
+      try {
+        await writer.write(encoder.encode(': heartbeat\n\n'));
+      } catch {
+        cleanup();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
 
     request.signal.addEventListener('abort', cleanup);
 

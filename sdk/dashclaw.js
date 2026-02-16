@@ -542,6 +542,10 @@ class DashClaw {
    * Subscribe to real-time SSE events from the DashClaw server.
    * Uses fetch-based SSE parsing for Node 18+ compatibility (no native EventSource required).
    *
+   * @param {Object} [options]
+   * @param {boolean} [options.reconnect=true] - Auto-reconnect on disconnect (resumes from last event ID)
+   * @param {number} [options.maxRetries=Infinity] - Max reconnection attempts before giving up
+   * @param {number} [options.retryInterval=3000] - Milliseconds between reconnection attempts
    * @returns {{ on(eventType: string, callback: Function): this, close(): void, _promise: Promise<void> }}
    *
    * @example
@@ -552,23 +556,36 @@ class DashClaw {
    *   .on('policy.updated', (data) => console.log('Policy changed:', data))
    *   .on('task.assigned', (data) => console.log('Task assigned:', data))
    *   .on('task.completed', (data) => console.log('Task done:', data))
+   *   .on('reconnecting', ({ attempt }) => console.log(`Reconnecting #${attempt}...`))
    *   .on('error', (err) => console.error('Stream error:', err));
    *
    * // Later:
    * stream.close();
    */
-  events() {
+  events({ reconnect = true, maxRetries = Infinity, retryInterval = 3000 } = {}) {
     const url = `${this.baseUrl}/api/stream`;
     const apiKey = this.apiKey;
 
     const handlers = new Map();
     let closed = false;
     let controller = null;
+    let lastEventId = null;
+    let retryCount = 0;
+
+    const emit = (eventType, data) => {
+      const cbs = handlers.get(eventType) || [];
+      for (const cb of cbs) {
+        try { cb(data); } catch { /* ignore handler errors */ }
+      }
+    };
 
     const connect = async () => {
       controller = new AbortController();
+      const headers = { 'x-api-key': apiKey };
+      if (lastEventId) headers['last-event-id'] = lastEventId;
+
       const res = await fetch(url, {
-        headers: { 'x-api-key': apiKey },
+        headers,
         signal: controller.signal,
       });
 
@@ -576,9 +593,14 @@ class DashClaw {
         throw new Error(`SSE connection failed: ${res.status} ${res.statusText}`);
       }
 
+      retryCount = 0; // Reset on successful connection
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      // Persist across reads so frames split across chunks are handled correctly
+      let currentEvent = null;
+      let currentData = '';
 
       while (!closed) {
         const { done, value } = await reader.read();
@@ -589,25 +611,27 @@ class DashClaw {
         const lines = buffer.split('\n');
         buffer = lines.pop(); // Keep incomplete line in buffer
 
-        let currentEvent = null;
-        let currentData = '';
-
         for (const line of lines) {
-          if (line.startsWith('event: ')) {
+          if (line.startsWith('id: ')) {
+            lastEventId = line.slice(4).trim();
+          } else if (line.startsWith('event: ')) {
             currentEvent = line.slice(7).trim();
           } else if (line.startsWith('data: ')) {
             currentData += line.slice(6);
+          } else if (line.startsWith(':')) {
+            // SSE comment (keepalive heartbeat) — ignore
           } else if (line === '' && currentEvent) {
             // End of SSE frame — dispatch
-            const eventHandlers = handlers.get(currentEvent) || [];
-            if (eventHandlers.length > 0 && currentData) {
+            if (currentData) {
               try {
                 const parsed = JSON.parse(currentData);
-                for (const cb of eventHandlers) {
-                  try { cb(parsed); } catch { /* ignore handler errors */ }
-                }
+                emit(currentEvent, parsed);
               } catch { /* ignore parse errors */ }
             }
+            currentEvent = null;
+            currentData = '';
+          } else if (line === '') {
+            // Blank line without a pending event — reset partial state
             currentEvent = null;
             currentData = '';
           }
@@ -615,13 +639,27 @@ class DashClaw {
       }
     };
 
-    const connectionPromise = connect().catch((err) => {
-      if (closed) return; // Abort is expected on close
-      const errorHandlers = handlers.get('error') || [];
-      for (const cb of errorHandlers) {
-        try { cb(err); } catch { /* ignore */ }
+    const connectLoop = async () => {
+      while (!closed) {
+        try {
+          await connect();
+        } catch (err) {
+          if (closed) return;
+          emit('error', err);
+        }
+        // Stream ended (server closed, network drop, etc.)
+        if (closed) return;
+        if (!reconnect || retryCount >= maxRetries) {
+          emit('error', new Error('SSE stream ended'));
+          return;
+        }
+        retryCount++;
+        emit('reconnecting', { attempt: retryCount, maxRetries });
+        await new Promise((r) => setTimeout(r, retryInterval));
       }
-    });
+    };
+
+    const connectionPromise = connectLoop();
 
     const handle = {
       on(eventType, callback) {
