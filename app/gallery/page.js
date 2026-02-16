@@ -8,34 +8,32 @@ import Image from 'next/image';
 import { useMemo, useState } from 'react';
 
 const screenshots = [
-  { title: 'Dashboard', file: 'dash1.png', desc: 'Fleet-wide overview: live actions, risk, and governance.' },
-  { title: 'Dashboard (Signals)', file: 'dash2.png', desc: 'Risk signals, guard decisions, and realtime activity.' },
-  { title: 'Dashboard (Fleet)', file: 'dash3.png', desc: 'System health, rollups, and operational focus views.' },
-
-  { title: 'Swarm Intelligence', file: 'swarm-intelligence.png', desc: 'Visualize multi-agent communication and operational risk.' },
+  { title: 'Mission Control', file: 'Mission Control.png', desc: 'Strategic overview: fleet health, risk signals, cost velocity, and activity timeline.' },
+  { title: 'Dashboard', file: 'Dashboard.png', desc: 'Fleet-wide overview: live actions, risk, governance, and agent context.' },
+  { title: 'Swarm Intelligence', file: 'Swarm Intelligence.png', desc: 'Visualize multi-agent communication and operational risk.' },
   { title: 'Workspace', file: 'workspace.png', desc: 'Daily digest, context threads, snippets, preferences, and memory.' },
   { title: 'Actions', file: 'actions.png', desc: 'Timeline of actions with drill-down, trace, and identity verification.' },
   { title: 'Approval Queue', file: 'approval.png', desc: 'Human-in-the-loop approvals for high-risk operations.' },
   { title: 'Policies', file: 'policies.png', desc: 'Behavior governance: allow, warn, block, or require approval.' },
   { title: 'Messages', file: 'messages.png', desc: 'Agent-to-agent messaging plus shared docs.' },
 
-  { title: 'Team', file: 'team.png', desc: 'Roles, invites, and workspace member management.' },
+  { title: 'Task Routing', file: 'Task Routing.png', desc: 'Skill-based agent matching, load balancing, and queue management.' },
+  { title: 'Compliance', file: 'Compliance.png', desc: 'Framework mapping, gap analysis, and audit-ready reports.' },
+  { title: 'Token Budget', file: 'Token Budget.png', desc: 'Cost-per-decision tracking and burn rate by goal.' },
+  { title: 'Security', file: 'security.png', desc: 'Security posture, scanning, and integrity signals.' },
+
   { title: 'Activity', file: 'activity.png', desc: 'Audit trail of changes across the workspace.' },
   { title: 'Webhooks', file: 'webhooks.png', desc: 'External alerting hooks with delivery logs.' },
   { title: 'Workflows', file: 'workflows.png', desc: 'Automations, schedules, and execution history.' },
+  { title: 'Learning', file: 'learning.png', desc: 'Lessons, recommendations, and effectiveness metrics.' },
 
   { title: 'Integrations', file: 'integrations.png', desc: 'Connected services and provider configuration.' },
-  { title: 'Security', file: 'security.png', desc: 'Security posture, scanning, and integrity signals.' },
   { title: 'Relationships', file: 'relationships.png', desc: 'Contacts, follow-ups, and relationship activity.' },
   { title: 'Goals', file: 'goals.png', desc: 'Goal tracking and milestone progress.' },
-  { title: 'Learning', file: 'learning.png', desc: 'Lessons, recommendations, and effectiveness metrics.' },
   { title: 'Content', file: 'content.png', desc: 'Content tracker for multi-agent publishing workflows.' },
   { title: 'Calendar', file: 'calendar.png', desc: 'Events and schedule visibility.' },
-  { title: 'Notifications', file: 'notifications.png', desc: 'Inbound notifications and alerts.' },
-  { title: 'Pairings', file: 'pairings.png', desc: 'One-click pairing and device enrollment flows.' },
   { title: 'API Keys', file: 'api-keys.png', desc: 'Create and manage scoped API keys.' },
-  { title: 'Usage', file: 'usage.png', desc: 'Usage and quota visibility.' },
-  { title: 'Bug Hunter', file: 'bug-hunter.png', desc: 'Automated platform quality scanner.' },
+  { title: 'Bug Hunter', file: 'Bug Hunter.png', desc: 'Automated platform quality scanner.' },
 ];
 
 export default function GalleryPage() {
