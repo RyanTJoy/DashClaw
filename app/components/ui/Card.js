@@ -1,6 +1,9 @@
 export function Card({ children, className = '', hover = true }) {
   return (
-    <div className={`flex flex-col bg-surface-secondary border border-border rounded-xl ${hover ? 'transition-colors duration-150 hover:border-border-hover' : ''} ${className}`}>
+    <div
+      className={`group/card flex flex-col bg-surface-secondary border border-border rounded-xl outline-none ${hover ? 'transition-colors duration-150 hover:border-border-hover' : ''} ${className}`}
+      tabIndex={0}
+    >
       {children}
     </div>
   );
@@ -28,7 +31,7 @@ export function CardHeader({ title, icon: Icon, action, count, children }) {
 
 export function CardContent({ children, className = '' }) {
   return (
-    <div className={`flex-1 overflow-hidden px-5 pb-5 ${className}`}>
+    <div className={`flex-1 overflow-hidden group-focus-within/card:overflow-y-auto px-5 pb-5 ${className}`}>
       {children}
     </div>
   );

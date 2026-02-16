@@ -6,10 +6,12 @@ import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { EmptyState } from './ui/EmptyState';
 import { ListSkeleton } from './ui/Skeleton';
+import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 export default function InspirationCard() {
   const [ideas, setIdeas] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { ref: sizeRef, height: tileHeight } = useTileSize();
 
   const fetchData = async () => {
     try {
@@ -52,6 +54,10 @@ export default function InspirationCard() {
     return 'error';
   };
 
+  const ITEM_H = 90;
+  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H) : 3;
+  const visibleIdeas = ideas.slice(0, maxVisible);
+
   return (
     <Card className="h-full">
       <CardHeader title="Inspiration" icon={Lightbulb} count={ideas.length} />
@@ -65,8 +71,9 @@ export default function InspirationCard() {
             description="Capture ideas via POST /api/inspiration"
           />
         ) : (
-          <div className="space-y-2">
-            {ideas.map((idea) => (
+          <div ref={sizeRef} className="flex flex-col h-full min-h-0">
+            <div className="flex-1 min-h-0 space-y-2">
+            {visibleIdeas.map((idea) => (
               <div
                 key={idea.id}
                 className="bg-surface-tertiary rounded-lg p-3 transition-colors duration-150"
@@ -101,6 +108,7 @@ export default function InspirationCard() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
         )}
       </CardContent>

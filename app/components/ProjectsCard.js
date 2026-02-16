@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { FolderKanban, ArrowRight } from 'lucide-react';
+import { FolderKanban } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
@@ -123,10 +122,9 @@ export default function ProjectsCard() {
   }
 
   const ITEM_H = 40;
-  const FOOTER_H = 60;
+  const FOOTER_H = 80;
   const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H, FOOTER_H) : 5;
   const visibleProjects = projects.slice(0, maxVisible);
-  const overflow = projects.length - visibleProjects.length;
 
   const activeCount = projects.filter(p => p.status === 'active').length;
   const buildingCount = projects.filter(p => p.status === 'building').length;
@@ -166,12 +164,6 @@ export default function ProjectsCard() {
             </div>
           ))}
         </div>
-        {overflow > 0 && (
-          <Link href="/actions" className="mt-1 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
-            +{overflow} more <ArrowRight size={12} />
-          </Link>
-        )}
-
         <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)] flex-shrink-0">
           <div className="grid grid-cols-3 gap-2">
             <StatCompact label="Active" value={activeCount} color="text-green-400" />

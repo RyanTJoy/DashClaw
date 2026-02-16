@@ -161,11 +161,6 @@ export default function ContextCard() {
                 })}
               </div>
             </div>
-            {decisionOverflow > 0 && (
-              <Link href="/learning" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
-                +{decisionOverflow} more <ArrowRight size={12} />
-              </Link>
-            )}
           </div>
         )}
       </CardContent>
