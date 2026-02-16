@@ -76,14 +76,13 @@ export default function SecurityDashboard() {
     setScanning(true);
     setScanResults(null);
     try {
-      const res = await fetch('/api/security/scan', { method: 'POST' });
+      const res = await fetch('/api/security/status');
       const data = await res.json();
-      if (res.ok) {
-        setScanResults(data);
-        fetchData(); // refresh signals after scan
-      }
+      setScanResults(res.ok ? data : { error: data.error || `Security check failed (${res.status})` });
+      if (res.ok) fetchData();
     } catch (err) {
       console.error('Security scan failed:', err);
+      setScanResults({ error: 'Network error — could not reach security status endpoint.' });
     } finally {
       setScanning(false);
     }
@@ -223,22 +222,31 @@ export default function SecurityDashboard() {
             <button onClick={() => setScanResults(null)} className="text-zinc-500 hover:text-white"><XIcon size={14} /></button>
           </div>
           <CardContent>
-            <div className="space-y-2">
-              {scanResults.findings?.length > 0 ? (
-                scanResults.findings.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs">
-                    <Badge variant={f.severity === 'critical' ? 'error' : f.severity === 'high' ? 'warning' : 'info'} size="xs">
-                      {f.severity}
-                    </Badge>
-                    <span className="text-zinc-300">{f.title || f.description || f.message}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-green-400 flex items-center gap-1.5">
-                  <ShieldCheck size={14} /> No issues found
-                </p>
-              )}
-            </div>
+            {scanResults.error ? (
+              <p className="text-xs text-red-400 flex items-center gap-1.5">
+                <ShieldX size={14} /> {scanResults.error}
+              </p>
+            ) : scanResults.score === 100 ? (
+              <p className="text-xs text-green-400 flex items-center gap-1.5">
+                <ShieldCheck size={14} /> All security checks passed — score 100/100
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-zinc-400 mb-2">Score: {scanResults.score}/100</p>
+                {(scanResults.checks || []).map((check) => {
+                  const Icon = getStatusIcon(check.status);
+                  return (
+                    <div key={check.id} className="flex items-start gap-2 text-xs">
+                      <Icon size={14} className={`mt-0.5 shrink-0 ${getStatusColor(check.status)}`} />
+                      <Badge variant={check.status === 'critical' ? 'error' : check.status === 'warning' ? 'warning' : 'success'} size="xs">
+                        {check.status}
+                      </Badge>
+                      <span className="text-zinc-300">{check.label}{check.detail ? ` — ${check.detail}` : ''}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
