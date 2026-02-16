@@ -13,6 +13,39 @@ import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { isDemoMode } from '../lib/isDemoMode';
 
+const WEBHOOK_TEMPLATES = [
+  {
+    name: 'Slack',
+    description: 'Send notifications to a Slack channel via Incoming Webhook',
+    urlPlaceholder: 'https://hooks.slack.com/services/T.../B.../...',
+    defaultEvents: ['all'],
+  },
+  {
+    name: 'Discord',
+    description: 'Post alerts to a Discord channel via webhook URL',
+    urlPlaceholder: 'https://discord.com/api/webhooks/...',
+    defaultEvents: ['all'],
+  },
+  {
+    name: 'PagerDuty',
+    description: 'Trigger PagerDuty incidents for critical security signals',
+    urlPlaceholder: 'https://events.pagerduty.com/v2/enqueue',
+    defaultEvents: ['autonomy_spike', 'high_impact_low_oversight', 'repeated_failures'],
+  },
+  {
+    name: 'Microsoft Teams',
+    description: 'Post adaptive cards to a Teams channel via connector URL',
+    urlPlaceholder: 'https://outlook.office.com/webhook/...',
+    defaultEvents: ['all'],
+  },
+  {
+    name: 'Generic REST',
+    description: 'Send JSON payloads to any HTTPS endpoint',
+    urlPlaceholder: 'https://your-api.example.com/webhook',
+    defaultEvents: ['all'],
+  },
+];
+
 const EVENT_TYPES = [
   { value: 'all', label: 'All Events' },
   { value: 'autonomy_spike', label: 'Autonomy Spike' },
@@ -293,6 +326,27 @@ export default function WebhooksPage() {
         <Card className="mb-6">
           <CardContent className="py-5">
             <div className="space-y-4">
+              {/* Template selector */}
+              <div>
+                <label className="block text-xs text-zinc-500 mb-2">Start from Template</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {WEBHOOK_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.name}
+                      type="button"
+                      onClick={() => {
+                        setUrl(tpl.urlPlaceholder);
+                        setSelectedEvents(tpl.defaultEvents);
+                      }}
+                      className="text-left p-3 rounded-lg bg-surface-tertiary border border-[rgba(255,255,255,0.06)] hover:border-brand/50 transition-colors group"
+                    >
+                      <div className="text-xs font-medium text-zinc-200 group-hover:text-white">{tpl.name}</div>
+                      <div className="text-[10px] text-zinc-500 mt-1 line-clamp-2">{tpl.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs text-zinc-500 mb-2">Webhook URL</label>
                 <input

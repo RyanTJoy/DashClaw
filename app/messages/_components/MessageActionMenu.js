@@ -33,10 +33,10 @@ export default function MessageActionMenu({ message, onMarkRead, onArchive, onRe
   }
 
   const items = [];
-  if (message.status === 'sent' && onMarkRead) {
+  if (!message.is_read && message.status === 'sent' && onMarkRead) {
     items.push({ icon: Eye, label: 'Mark Read', onClick: () => { onMarkRead(message.id); setOpen(false); } });
   }
-  if (message.status === 'sent' && onArchive) {
+  if (!message.is_read && message.status === 'sent' && onArchive) {
     items.push({ icon: Archive, label: 'Archive', onClick: () => { onArchive(message.id); setOpen(false); } });
   }
   if (onReply) {

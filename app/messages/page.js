@@ -172,8 +172,9 @@ export default function MessagesPage() {
 
   async function handleMarkRead(msgId) {
     // Optimistically update the selected message and message list
-    setSelected(prev => prev?.id === msgId ? { ...prev, status: 'read', read_at: new Date().toISOString() } : prev);
-    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'read', read_at: new Date().toISOString() } : m));
+    const now = new Date().toISOString();
+    setSelected(prev => prev?.id === msgId ? { ...prev, is_read: true, status: prev.to_agent_id === null ? prev.status : 'read', read_at: now } : prev);
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_read: true, status: m.to_agent_id === null ? m.status : 'read', read_at: now } : m));
     setStats(prev => ({ ...prev, unread: Math.max(0, prev.unread - 1) }));
 
     await fetch('/api/messages', {
@@ -195,14 +196,14 @@ export default function MessagesPage() {
   }, [filterAgentId, fetchAll]);
 
   async function handleMarkAllRead() {
-    const unread = messages.filter(m => m.status === 'sent');
+    const unread = messages.filter(m => !m.is_read && m.status === 'sent');
     if (unread.length === 0) return;
     const unreadIds = new Set(unread.map(m => m.id));
     const now = new Date().toISOString();
 
     // Optimistic update
-    setMessages(prev => prev.map(m => unreadIds.has(m.id) ? { ...m, status: 'read', read_at: now } : m));
-    setSelected(prev => prev && unreadIds.has(prev.id) ? { ...prev, status: 'read', read_at: now } : prev);
+    setMessages(prev => prev.map(m => unreadIds.has(m.id) ? { ...m, is_read: true, status: m.to_agent_id === null ? m.status : 'read', read_at: now } : m));
+    setSelected(prev => prev && unreadIds.has(prev.id) ? { ...prev, is_read: true, status: prev.to_agent_id === null ? prev.status : 'read', read_at: now } : prev);
     setStats(prev => ({ ...prev, unread: 0 }));
 
     await fetch('/api/messages', {

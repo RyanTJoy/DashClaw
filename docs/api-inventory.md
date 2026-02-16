@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `95`
+- Total routes: `98`
 - Stable routes: `42`
 - Beta routes: `14`
-- Experimental routes: `39`
+- Experimental routes: `42`
 
 ## Routes
 
@@ -36,6 +36,7 @@ doc-type: architecture
 | `/api/agents` | `GET` | `experimental` | `/api/agents` | `app/api/agents/route.js` |
 | `/api/agents/connections` | `GET, POST` | `experimental` | `/api/agents` | `app/api/agents/connections/route.js` |
 | `/api/bounties` | `GET` | `experimental` | `/api/bounties` | `app/api/bounties/route.js` |
+| `/api/bug-hunter` | `GET, POST` | `experimental` | `(default)` | `app/api/bug-hunter/route.js` |
 | `/api/calendar` | `GET, POST` | `experimental` | `/api/calendar` | `app/api/calendar/route.js` |
 | `/api/compliance/evidence` | `GET` | `experimental` | `(default)` | `app/api/compliance/evidence/route.js` |
 | `/api/compliance/frameworks` | `GET` | `experimental` | `(default)` | `app/api/compliance/frameworks/route.js` |
@@ -95,6 +96,7 @@ doc-type: architecture
 | `/api/routing/health` | `GET` | `experimental` | `(default)` | `app/api/routing/health/route.js` |
 | `/api/routing/stats` | `GET` | `experimental` | `(default)` | `app/api/routing/stats/route.js` |
 | `/api/routing/tasks` | `GET, POST` | `experimental` | `(default)` | `app/api/routing/tasks/route.js` |
+| `/api/routing/tasks/{taskId}` | `DELETE, GET` | `experimental` | `(default)` | `app/api/routing/tasks/[taskId]/route.js` |
 | `/api/routing/tasks/{taskId}/complete` | `POST` | `experimental` | `(default)` | `app/api/routing/tasks/[taskId]/complete/route.js` |
 | `/api/schedules` | `GET` | `experimental` | `/api/schedules` | `app/api/schedules/route.js` |
 | `/api/security/scan` | `POST` | `beta` | `/api/security` | `app/api/security/scan/route.js` |
@@ -112,6 +114,7 @@ doc-type: architecture
 | `/api/team/invite` | `DELETE, GET, POST` | `stable` | `/api/team` | `app/api/team/invite/route.js` |
 | `/api/team/{userId}` | `DELETE, PATCH` | `stable` | `/api/team` | `app/api/team/[userId]/route.js` |
 | `/api/tokens` | `GET, POST` | `experimental` | `/api/tokens` | `app/api/tokens/route.js` |
+| `/api/tokens/budget` | `GET, PUT` | `experimental` | `/api/tokens` | `app/api/tokens/budget/route.js` |
 | `/api/usage` | `GET` | `stable` | `/api/usage` | `app/api/usage/route.js` |
 | `/api/webhooks` | `DELETE, GET, POST` | `stable` | `/api/webhooks` | `app/api/webhooks/route.js` |
 | `/api/webhooks/{webhookId}/deliveries` | `GET` | `stable` | `/api/webhooks` | `app/api/webhooks/[webhookId]/deliveries/route.js` |

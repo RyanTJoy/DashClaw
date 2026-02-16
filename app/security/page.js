@@ -69,6 +69,25 @@ export default function SecurityDashboard() {
   // Detail panel state
   const [panelItem, setPanelItem] = useState(null);
   const [panelType, setPanelType] = useState(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanResults, setScanResults] = useState(null);
+
+  const handleRunScan = async () => {
+    setScanning(true);
+    setScanResults(null);
+    try {
+      const res = await fetch('/api/security/scan', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setScanResults(data);
+        fetchData(); // refresh signals after scan
+      }
+    } catch (err) {
+      console.error('Security scan failed:', err);
+    } finally {
+      setScanning(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -177,15 +196,53 @@ export default function SecurityDashboard() {
       subtitle={`Risk Signals & Agent Oversight${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Security']}
       actions={
-        <button
-          onClick={fetchData}
-          className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
-        >
-          <RotateCw size={14} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRunScan}
+            disabled={scanning}
+            className="px-3 py-1.5 text-sm text-white bg-brand hover:bg-brand-hover border border-brand rounded-lg transition-colors duration-150 flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <ShieldAlert size={14} />
+            {scanning ? 'Scanning...' : 'Run Security Check'}
+          </button>
+          <button
+            onClick={fetchData}
+            className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+          >
+            <RotateCw size={14} />
+            Refresh
+          </button>
+        </div>
       }
     >
+      {/* Scan Results */}
+      {scanResults && (
+        <Card className="mb-6" hover={false}>
+          <div className="px-5 py-3 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+            <h3 className="text-sm font-medium text-white">Scan Results</h3>
+            <button onClick={() => setScanResults(null)} className="text-zinc-500 hover:text-white"><XIcon size={14} /></button>
+          </div>
+          <CardContent>
+            <div className="space-y-2">
+              {scanResults.findings?.length > 0 ? (
+                scanResults.findings.map((f, i) => (
+                  <div key={i} className="flex items-start gap-2 text-xs">
+                    <Badge variant={f.severity === 'critical' ? 'error' : f.severity === 'high' ? 'warning' : 'info'} size="xs">
+                      {f.severity}
+                    </Badge>
+                    <span className="text-zinc-300">{f.title || f.description || f.message}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-green-400 flex items-center gap-1.5">
+                  <ShieldCheck size={14} /> No issues found
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Security Health Score Bar */}
       {securityStatus && (
         <Card className="mb-6 border-l-4 border-l-emerald-500 overflow-hidden" hover={false}>

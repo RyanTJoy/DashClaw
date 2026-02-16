@@ -1,20 +1,47 @@
 import { useState } from 'react';
-import { Download, Copy } from 'lucide-react';
+import { Download, Copy, ChevronDown, FileText, FileSpreadsheet } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { timeAgo, copyToClipboard } from './helpers';
 import MarkdownBody from './MarkdownBody';
 
+const EXPORT_FORMATS = [
+  { id: 'md', label: 'Markdown (.md)', icon: FileText },
+  { id: 'pdf', label: 'PDF (.pdf)', icon: Download },
+  { id: 'docx', label: 'Word (.docx)', icon: FileText },
+  { id: 'xlsx', label: 'Excel (.xlsx)', icon: FileSpreadsheet },
+];
+
 export default function DocDetail({ doc }) {
   const [copied, setCopied] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
-  function handleDownload() {
-    const blob = new Blob([doc.content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${doc.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const safeFilename = doc.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  async function handleExport(format) {
+    setShowExportMenu(false);
+    if (format === 'md') {
+      const blob = new Blob([doc.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeFilename}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const { exportToPdf, exportToWord, exportToExcel } = await import('../../lib/docExport');
+      if (format === 'pdf') await exportToPdf(doc.content, safeFilename);
+      else if (format === 'docx') await exportToWord(doc.content, safeFilename);
+      else if (format === 'xlsx') await exportToExcel(doc.content, safeFilename);
+    } catch (err) {
+      console.error('Export failed:', err);
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function handleCopy() {
@@ -33,12 +60,31 @@ export default function DocDetail({ doc }) {
         <MarkdownBody content={doc.content} />
       </div>
       <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={handleDownload}
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[rgba(255,255,255,0.04)] text-zinc-400 hover:text-zinc-200 hover:bg-[rgba(255,255,255,0.08)] transition-colors"
-        >
-          <Download size={10} /> Download .md
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setShowExportMenu(!showExportMenu)}
+            disabled={exporting}
+            className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[rgba(255,255,255,0.04)] text-zinc-400 hover:text-zinc-200 hover:bg-[rgba(255,255,255,0.08)] transition-colors disabled:opacity-50"
+          >
+            <Download size={10} />
+            {exporting ? 'Exporting...' : 'Download'}
+            <ChevronDown size={10} />
+          </button>
+          {showExportMenu && (
+            <div className="absolute left-0 top-full mt-1 w-44 bg-surface-secondary border border-[rgba(255,255,255,0.1)] rounded-lg shadow-xl z-50 py-1">
+              {EXPORT_FORMATS.map(fmt => (
+                <button
+                  key={fmt.id}
+                  onClick={() => handleExport(fmt.id)}
+                  className="w-full text-left px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/5 transition-colors flex items-center gap-2"
+                >
+                  <fmt.icon size={12} className="text-zinc-500" />
+                  {fmt.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
           onClick={handleCopy}
           className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-[rgba(255,255,255,0.04)] text-zinc-400 hover:text-zinc-200 hover:bg-[rgba(255,255,255,0.08)] transition-colors"

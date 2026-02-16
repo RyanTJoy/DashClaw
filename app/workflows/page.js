@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { GitBranch, ClipboardList, ScrollText, Clock, CheckCircle2, XCircle, Loader2, HelpCircle, Play, Inbox, RotateCw } from 'lucide-react';
+import { GitBranch, ClipboardList, ScrollText, Clock, CheckCircle2, XCircle, Loader2, HelpCircle, Play, Inbox, RotateCw, Plus } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -9,6 +9,59 @@ import { Stat } from '../components/ui/Stat';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+
+const WORKFLOW_TEMPLATES = [
+  {
+    name: 'Daily Agent Digest',
+    description: 'Compile and distribute a daily summary of agent activity, decisions, and key metrics',
+    steps: [
+      { name: 'Collect Agent Metrics', tool: 'api.get', args: { endpoint: '/api/tokens' } },
+      { name: 'Gather Recent Decisions', tool: 'api.get', args: { endpoint: '/api/learning/decisions' } },
+      { name: 'Compile Digest', tool: 'report.generate', args: { format: 'markdown' } },
+      { name: 'Send Digest', tool: 'message.broadcast', args: { type: 'digest' } },
+    ],
+  },
+  {
+    name: 'Weekly Compliance Report',
+    description: 'Generate weekly compliance status report with gap analysis and evidence collection',
+    steps: [
+      { name: 'Fetch Compliance Status', tool: 'api.get', args: { endpoint: '/api/compliance' } },
+      { name: 'Run Gap Analysis', tool: 'compliance.analyze', args: {} },
+      { name: 'Collect Evidence', tool: 'compliance.evidence', args: {} },
+      { name: 'Generate Report', tool: 'report.generate', args: { format: 'markdown', type: 'compliance' } },
+    ],
+  },
+  {
+    name: 'High-Risk Alert Escalation',
+    description: 'Monitor for high-risk actions and escalate through approval chain with notifications',
+    steps: [
+      { name: 'Monitor Risk Signals', tool: 'api.get', args: { endpoint: '/api/security/signals' } },
+      { name: 'Evaluate Threshold', tool: 'guard.check', args: { threshold: 80 } },
+      { name: 'Send Alert', tool: 'webhook.fire', args: { event: 'high_risk_alert' } },
+      { name: 'Create Approval', tool: 'api.post', args: { endpoint: '/api/approvals' } },
+    ],
+  },
+  {
+    name: 'Agent Onboarding Checklist',
+    description: 'Automated setup sequence for new agents: register, configure policies, assign initial tasks',
+    steps: [
+      { name: 'Register Agent', tool: 'api.post', args: { endpoint: '/api/agents' } },
+      { name: 'Apply Default Policies', tool: 'api.post', args: { endpoint: '/api/policies/import' } },
+      { name: 'Set Token Budget', tool: 'api.post', args: { endpoint: '/api/tokens/budget' } },
+      { name: 'Send Welcome Message', tool: 'message.send', args: { type: 'onboarding' } },
+    ],
+  },
+  {
+    name: 'Budget Threshold Alert',
+    description: 'Check token usage against budget limits and alert when thresholds are exceeded',
+    steps: [
+      { name: 'Fetch Token Usage', tool: 'api.get', args: { endpoint: '/api/tokens' } },
+      { name: 'Fetch Budget Limits', tool: 'api.get', args: { endpoint: '/api/tokens/budget' } },
+      { name: 'Compare Thresholds', tool: 'budget.check', args: { warn_at: 80, block_at: 100 } },
+      { name: 'Send Alert', tool: 'webhook.fire', args: { event: 'budget_threshold' } },
+    ],
+  },
+];
 
 export default function WorkflowsDashboard() {
   const { agentId } = useAgentFilter();
@@ -18,6 +71,8 @@ export default function WorkflowsDashboard() {
   const [stats, setStats] = useState({ totalWorkflows: 0, enabled: 0, totalRuns: 0, recentExecutions: 0 });
   const [lastUpdated, setLastUpdated] = useState('');
   const [runningWorkflow, setRunningWorkflow] = useState(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [creatingFromTemplate, setCreatingFromTemplate] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -60,12 +115,50 @@ export default function WorkflowsDashboard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const runWorkflow = async (name) => {
-    setRunningWorkflow(name);
-    const command = `python tools/workflow-orchestrator/orchestrator.py run ${name}`;
-    navigator.clipboard.writeText(command);
-    alert(`Command copied to clipboard!\n\n${command}\n\nPaste in terminal to run.`);
-    setRunningWorkflow(null);
+  const runWorkflow = async (workflowId) => {
+    setRunningWorkflow(workflowId);
+    try {
+      const res = await fetch(`/api/workflows/${workflowId}/execute`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        await fetchData();
+      } else {
+        const json = await res.json();
+        console.error('Workflow execution failed:', json.error);
+      }
+    } catch (err) {
+      console.error('Failed to run workflow:', err);
+    } finally {
+      setRunningWorkflow(null);
+    }
+  };
+
+  const createFromTemplate = async (template) => {
+    setCreatingFromTemplate(template.name);
+    try {
+      const res = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: template.name,
+          description: template.description,
+          steps: JSON.stringify(template.steps),
+          enabled: 1,
+        }),
+      });
+      if (res.ok) {
+        await fetchData();
+        setShowTemplateModal(false);
+      } else {
+        const json = await res.json();
+        console.error('Failed to create workflow from template:', json.error);
+      }
+    } catch (err) {
+      console.error('Failed to create workflow from template:', err);
+    } finally {
+      setCreatingFromTemplate(null);
+    }
   };
 
   const getStatusVariant = (status) => {
@@ -103,14 +196,23 @@ export default function WorkflowsDashboard() {
     return [];
   };
 
-  const refreshButton = (
-    <button
-      onClick={fetchData}
-      className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
-    >
-      <RotateCw size={14} />
-      Refresh
-    </button>
+  const actionButtons = (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => setShowTemplateModal(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-brand rounded-lg hover:bg-brand/90 transition-colors"
+      >
+        <Plus size={14} />
+        New from Template
+      </button>
+      <button
+        onClick={fetchData}
+        className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5"
+      >
+        <RotateCw size={14} />
+        Refresh
+      </button>
+    </div>
   );
 
   return (
@@ -118,8 +220,62 @@ export default function WorkflowsDashboard() {
       title="Workflow Orchestrator"
       subtitle={`Automated Tool Chains${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Workflows']}
-      actions={refreshButton}
+      actions={actionButtons}
     >
+      {/* Template Selection Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <Card hover={false} className="w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+            <CardHeader title="New from Template" icon={Plus} />
+            <CardContent className="overflow-y-auto">
+              <div className="space-y-3">
+                {WORKFLOW_TEMPLATES.map((template) => (
+                  <div
+                    key={template.name}
+                    className="bg-surface-tertiary rounded-lg p-4 border border-[rgba(255,255,255,0.06)]"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white">{template.name}</div>
+                        <div className="text-sm text-zinc-400 mt-1">{template.description}</div>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {template.steps.map((step, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-white/5 rounded text-xs text-zinc-300">
+                              {step.name}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-xs text-zinc-500 mt-2">{template.steps.length} steps</div>
+                      </div>
+                      <button
+                        onClick={() => createFromTemplate(template)}
+                        disabled={creatingFromTemplate === template.name}
+                        className="flex-shrink-0 px-3 py-1.5 text-sm text-white bg-brand rounded-lg hover:bg-brand/90 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        {creatingFromTemplate === template.name ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <Plus size={14} />
+                        )}
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setShowTemplateModal(false)}
+                  className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150"
+                >
+                  Cancel
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Card hover={false}>
@@ -171,11 +327,11 @@ export default function WorkflowsDashboard() {
                           )}
                         </div>
                         <button
-                          onClick={() => runWorkflow(workflow.name)}
-                          disabled={runningWorkflow === workflow.name}
+                          onClick={() => runWorkflow(workflow.id)}
+                          disabled={runningWorkflow === workflow.id}
                           className="px-3 py-1.5 text-sm text-zinc-400 hover:text-white bg-surface-tertiary border border-[rgba(255,255,255,0.06)] rounded-lg hover:border-[rgba(255,255,255,0.12)] transition-colors duration-150 flex items-center gap-1.5 disabled:opacity-50"
                         >
-                          {runningWorkflow === workflow.name ? (
+                          {runningWorkflow === workflow.id ? (
                             <Loader2 size={14} className="animate-spin" />
                           ) : (
                             <Play size={14} />

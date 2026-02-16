@@ -230,6 +230,13 @@ export async function getTask(sql, orgId, taskId) {
   return rows[0] ? formatTask(rows[0]) : null;
 }
 
+export async function deleteTask(sql, orgId, taskId) {
+  const rows = await sql`
+    DELETE FROM routing_tasks WHERE id = ${taskId} AND org_id = ${orgId} RETURNING id
+  `;
+  return rows.length > 0;
+}
+
 /**
  * Route all pending tasks
  */

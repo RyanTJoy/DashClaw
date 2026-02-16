@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
-import { loadLayouts, saveLayouts } from '../lib/dashboardLayoutState';
+import { loadLayouts, saveLayouts, loadNamedLayouts, saveNamedLayout, deleteNamedLayout } from '../lib/dashboardLayoutState';
 
 import RiskSignalsCard from './RiskSignalsCard';
 import OpenLoopsCard from './OpenLoopsCard';
@@ -96,17 +96,103 @@ const DEFAULT_LAYOUTS = {
   ],
 };
 
+const PRESET_LAYOUTS = {
+  'Operations Focus': {
+    lg: [
+      { i: 'risk-signals',      x: 0, y: 0,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'recent-actions',    x: 2, y: 0,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'follow-ups',        x: 0, y: 3,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'open-loops',        x: 2, y: 3,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'activity-timeline', x: 0, y: 6,  w: 2, h: 4, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'projects',          x: 2, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'goals',             x: 0, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'learning',          x: 1, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'calendar',          x: 2, y: 9,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'context',           x: 3, y: 9,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'token-budget',      x: 0, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'memory-health',     x: 1, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'token-chart',       x: 2, y: 12, w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'integrations',      x: 0, y: 16, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'inspiration',       x: 1, y: 16, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    ],
+  },
+  'Analytics Focus': {
+    lg: [
+      { i: 'token-chart',       x: 0, y: 0,  w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'activity-timeline', x: 2, y: 0,  w: 2, h: 4, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'goals',             x: 0, y: 3,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'learning',          x: 0, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'token-budget',      x: 2, y: 4,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'risk-signals',      x: 0, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'open-loops',        x: 1, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'recent-actions',    x: 2, y: 7,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'projects',          x: 0, y: 11, w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'follow-ups',        x: 2, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'calendar',          x: 3, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'context',           x: 0, y: 14, w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'memory-health',     x: 2, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'integrations',      x: 3, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'inspiration',       x: 0, y: 17, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    ],
+  },
+  'Compact Overview': {
+    lg: [
+      { i: 'risk-signals',      x: 0, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'open-loops',        x: 1, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'recent-actions',    x: 2, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'follow-ups',        x: 3, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'goals',             x: 0, y: 2,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'learning',          x: 1, y: 2,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'token-budget',      x: 2, y: 2,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'memory-health',     x: 3, y: 2,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'projects',          x: 0, y: 4,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'calendar',          x: 1, y: 4,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'integrations',      x: 2, y: 4,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'context',           x: 3, y: 4,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'activity-timeline', x: 0, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'token-chart',       x: 2, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'inspiration',       x: 0, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    ],
+  },
+  'Developer': {
+    lg: [
+      { i: 'integrations',      x: 0, y: 0,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'context',           x: 2, y: 0,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'memory-health',     x: 0, y: 3,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'recent-actions',    x: 2, y: 3,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'token-chart',       x: 0, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'activity-timeline', x: 2, y: 6,  w: 2, h: 4, ...SHARED_CONSTRAINTS, minW: 2 },
+      { i: 'risk-signals',      x: 0, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'open-loops',        x: 1, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'projects',          x: 0, y: 11, w: 2, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'goals',             x: 2, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'learning',          x: 3, y: 10, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'follow-ups',        x: 0, y: 14, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'calendar',          x: 1, y: 14, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'token-budget',      x: 2, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'inspiration',       x: 3, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    ],
+  },
+};
+
 const BREAKPOINTS = { lg: 1200, md: 768, sm: 0 };
 const COLS = { lg: 4, md: 2, sm: 1 };
 const ROW_HEIGHT = 80;
 
-export default function DraggableDashboard() {
+export { PRESET_LAYOUTS };
+
+export default function DraggableDashboard({ activePreset, onPresetApplied }) {
   const { width, mounted, containerRef } = useContainerWidth({ measureBeforeMount: true });
+  const [layoutKey, setLayoutKey] = useState(0);
 
   const initialLayouts = useMemo(() => {
+    if (activePreset && PRESET_LAYOUTS[activePreset]) {
+      return PRESET_LAYOUTS[activePreset];
+    }
     const saved = loadLayouts();
     return saved || DEFAULT_LAYOUTS;
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutKey, activePreset]);
 
   const handleLayoutChange = useCallback((_currentLayout, allLayouts) => {
     saveLayouts(allLayouts);
@@ -124,6 +210,7 @@ export default function DraggableDashboard() {
       <div ref={containerRef}>
         {mounted ? (
           <ResponsiveGridLayout
+            key={`grid-${layoutKey}-${activePreset || 'custom'}`}
             layouts={initialLayouts}
             breakpoints={BREAKPOINTS}
             cols={COLS}

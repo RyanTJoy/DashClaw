@@ -9,7 +9,7 @@ import MessageActionMenu from './MessageActionMenu';
 
 function MessageRow({ msg, onSelect, selectedId, onReply, onMarkRead, onArchive }) {
   const agentColor = getAgentColor(msg.from_agent_id);
-  const isUnread = msg.status === 'sent';
+  const isUnread = !msg.is_read && msg.status === 'sent';
   return (
     <div
       onClick={() => onSelect(msg)}

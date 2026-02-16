@@ -69,10 +69,17 @@ export async function GET(request) {
       if (!attachmentsByMsg[att.message_id]) attachmentsByMsg[att.message_id] = [];
       attachmentsByMsg[att.message_id].push(att);
     }
-    const messagesWithAttachments = rows.map(m => ({
-      ...m,
-      attachments: attachmentsByMsg[m.id] || [],
-    }));
+    const readerId = agentId || 'dashboard';
+    const messagesWithAttachments = rows.map(m => {
+      let isRead = m.status === 'read' || m.status === 'archived';
+      if (!isRead && m.to_agent_id === null && m.read_by) {
+        try {
+          const readBy = typeof m.read_by === 'string' ? JSON.parse(m.read_by) : m.read_by;
+          isRead = Array.isArray(readBy) && readBy.includes(readerId);
+        } catch { /* ignore */ }
+      }
+      return { ...m, attachments: attachmentsByMsg[m.id] || [], is_read: isRead };
+    });
 
     return NextResponse.json({ messages: messagesWithAttachments, total: rows.length, unread_count: unreadCount });
   } catch (error) {
@@ -232,7 +239,7 @@ export async function PATCH(request) {
 
           if (!readBy.includes(readerId)) {
             readBy.push(readerId);
-            await markBroadcastRead(sql, msgId, readBy, now);
+            await markBroadcastRead(sql, msgId, readBy);
             updated++;
           }
         } else if (readerId === 'dashboard' || msg.to_agent_id === readerId) {

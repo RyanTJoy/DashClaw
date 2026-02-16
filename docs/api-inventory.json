@@ -46,10 +46,10 @@
     ]
   },
   "summary": {
-    "total_routes": 95,
+    "total_routes": 98,
     "stable_routes": 42,
     "beta_routes": 14,
-    "experimental_routes": 39
+    "experimental_routes": 42
   },
   "routes": [
     {
@@ -186,6 +186,16 @@
       "maturity": "experimental",
       "matched_prefix": "/api/bounties",
       "file": "app/api/bounties/route.js"
+    },
+    {
+      "path": "/api/bug-hunter",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/bug-hunter/route.js"
     },
     {
       "path": "/api/calendar",
@@ -755,6 +765,16 @@
       "file": "app/api/routing/tasks/route.js"
     },
     {
+      "path": "/api/routing/tasks/{taskId}",
+      "methods": [
+        "DELETE",
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/routing/tasks/[taskId]/route.js"
+    },
+    {
       "path": "/api/routing/tasks/{taskId}/complete",
       "methods": [
         "POST"
@@ -914,6 +934,16 @@
       "maturity": "experimental",
       "matched_prefix": "/api/tokens",
       "file": "app/api/tokens/route.js"
+    },
+    {
+      "path": "/api/tokens/budget",
+      "methods": [
+        "GET",
+        "PUT"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/tokens",
+      "file": "app/api/tokens/budget/route.js"
     },
     {
       "path": "/api/usage",

@@ -25,7 +25,7 @@ export default function MessageList({ messages, onSelect, selectedId, isSent, on
       <CardContent className="pt-0 divide-y divide-[rgba(255,255,255,0.04)]">
         {messages.map(msg => {
           const agentColor = getAgentColor(isSent ? msg.to_agent_id || 'broadcast' : msg.from_agent_id);
-          const isUnread = msg.status === 'sent' && !isSent;
+          const isUnread = !msg.is_read && msg.status === 'sent' && !isSent;
           return (
             <div
               key={msg.id}

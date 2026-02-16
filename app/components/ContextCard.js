@@ -127,7 +127,7 @@ export default function ContextCard() {
             {/* Recent Decisions */}
             <div>
               <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Decisions</div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2">
                 {contextData.recentPoints.map((point) => {
                   const IconComponent = getCategoryIcon(point.category);
                   return (

@@ -100,16 +100,16 @@ export default function CompliancePage() {
     setReport('');
     try {
       const res = await fetch(`/api/compliance/report?framework=${selectedFramework}&format=${reportFormat}`);
-      const text = await res.text();
+      const json = await res.json();
       if (res.ok) {
-        setReport(text);
-      } else {
-        try {
-          const json = JSON.parse(text);
-          setError(json.error || 'Failed to generate report');
-        } catch {
-          setError('Failed to generate report');
+        if (reportFormat === 'json') {
+          try { setReport(JSON.stringify(JSON.parse(json.report), null, 2)); }
+          catch { setReport(json.report); }
+        } else {
+          setReport(json.report);
         }
+      } else {
+        setError(json.error || 'Failed to generate report');
       }
     } catch {
       setError('Failed to generate report');
@@ -236,13 +236,14 @@ export default function CompliancePage() {
               ) : (
                 <div className="max-h-[600px] overflow-y-auto divide-y divide-[rgba(255,255,255,0.04)]">
                   {controls.map(control => {
-                    const isExpanded = expandedControls[control.id];
+                    const cid = control.control_id || control.id;
+                    const isExpanded = expandedControls[cid];
                     const policies = control.matched_policies || control.policies || [];
                     const recs = control.recommendations || [];
                     return (
-                      <div key={control.id} className="py-2.5">
+                      <div key={cid} className="py-2.5">
                         <button
-                          onClick={() => toggleControl(control.id)}
+                          onClick={() => toggleControl(cid)}
                           className="w-full flex items-center gap-2 text-left"
                         >
                           {isExpanded ? <ChevronDown size={14} className="text-zinc-500 flex-shrink-0" /> : <ChevronRight size={14} className="text-zinc-500 flex-shrink-0" />}

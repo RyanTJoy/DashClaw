@@ -192,6 +192,14 @@ export default function TaskRoutingPage() {
     } catch { /* ignore */ }
   };
 
+  const handleDeleteTask = async (taskId) => {
+    if (!confirm('Delete this task?')) return;
+    try {
+      const res = await fetch(`/api/routing/tasks/${taskId}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch { /* ignore */ }
+  };
+
   const filteredTasks = taskFilter === 'all' ? tasks : tasks.filter(t => t.status === taskFilter);
 
   return (
@@ -391,6 +399,15 @@ export default function TaskRoutingPage() {
                               )}
                             </div>
                           </div>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"
+                              title="Delete task"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       );
                     })}

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isDemoMode } from '../lib/isDemoMode';
 import {
   Flame, LayoutDashboard, Radar, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
-  GitBranch, Settings, Crosshair, Calendar, BarChart3, Coins,
+  GitBranch, Settings, Bug, Calendar, BarChart3, Coins,
   Clock, Webhook, Bell, FolderKanban, Network, Scale,
   PanelLeftClose, PanelLeft, Menu, X,
 } from 'lucide-react';
@@ -61,7 +61,7 @@ const navGroups = [
   {
     label: 'Tools',
     items: [
-      { href: '/bounty-hunter', icon: Crosshair, label: 'Bounty Hunter' },
+      { href: '/bug-hunter', icon: Bug, label: 'Bug Hunter' },
       { href: '/calendar', icon: Calendar, label: 'Calendar' },
     ],
   },
@@ -72,6 +72,19 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const demo = isDemoMode();
+  const navRef = useRef(null);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (nav) {
+      const saved = sessionStorage.getItem('sidebar-scroll');
+      if (saved) nav.scrollTop = parseInt(saved, 10);
+    }
+  }, []);
+
+  const handleNavScroll = useCallback((e) => {
+    sessionStorage.setItem('sidebar-scroll', String(e.target.scrollTop));
+  }, []);
 
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard';
@@ -100,7 +113,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav Groups */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2">
+      <nav ref={navRef} onScroll={handleNavScroll} className="flex-1 overflow-y-auto py-3 px-2">
         {navGroups.map((group) => (
           <div key={group.label} className="mb-4">
             {!collapsed && (

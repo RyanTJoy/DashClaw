@@ -95,7 +95,7 @@ export default function LearningStatsCard() {
         {stats.recentLessons.length > 0 && (
           <div>
             <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider mb-2">Recent Lessons</div>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
+            <div className="space-y-2">
               {stats.recentLessons.map((lesson, index) => (
                 <div key={index} className="text-xs text-zinc-400 flex items-start gap-2">
                   <span className="text-brand mt-1 flex-shrink-0">&#8226;</span>

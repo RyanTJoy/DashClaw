@@ -41,6 +41,16 @@ process.on('unhandledRejection', (reason) => {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 
+const MAX_GOALS = 50;
+
+function isValidGoal(title) {
+  if (!title || title.length <= 5) return false;
+  if (title.split(/\s+/).length < 2) return false; // single-word items
+  const lower = title.toLowerCase();
+  if (['done', 'todo', 'n/a', 'tbd', 'wip', 'yes', 'no'].includes(lower)) return false;
+  return true;
+}
+
 // ─── Env / Args ─────────────────────────────────────────────
 
 function loadEnvFile(filePath) {
@@ -137,10 +147,19 @@ function gatherWorkspaceMarkdownSources(dir) {
     if (existsSync(p)) sources.push(p);
   }
 
+  // README and CONTRIBUTING at any level (up to 5 deep)
+  sources.push(...findFiles(dir, /^(README|CONTRIBUTING)\.md$/i, 5));
+
+  // docs/ folder markdown files (up to 5 deep within docs/)
+  const docsDir = join(dir, 'docs');
+  if (existsSync(docsDir)) {
+    sources.push(...findFiles(docsDir, /\.md$/i, 5));
+  }
+
   // ".claude" memory (Claude-style) if present
   const claudeDir = join(dir, '.claude');
   if (existsSync(claudeDir)) {
-    sources.push(...findFiles(claudeDir, /\.md$/i, 3));
+    sources.push(...findFiles(claudeDir, /\.md$/i, 5));
   }
 
   // Hierarchical memory folder (OpenClaw-style): memory/**/*.md
@@ -155,13 +174,13 @@ function gatherWorkspaceMarkdownSources(dir) {
     // Include all structured memory plus a slice of recent daily logs.
     daily.sort((a, b) => (safeStat(b)?.mtimeMs || 0) - (safeStat(a)?.mtimeMs || 0));
     sources.push(...other);
-    sources.push(...daily.slice(0, 30));
+    sources.push(...daily.slice(0, 60));
   }
 
   return uniq(sources).filter((p) => extname(p).toLowerCase() === '.md');
 }
 
-function findFiles(dir, pattern, maxDepth = 3, depth = 0) {
+function findFiles(dir, pattern, maxDepth = 5, depth = 0) {
   if (depth > maxDepth) return [];
   const results = [];
   try {
@@ -403,12 +422,18 @@ function scanGoals(dir) {
     for (const line of todoContent.split('\n')) {
       const unchecked = line.match(/^[-*]\s+\[\s\]\s+(.+)/);
       if (unchecked) {
-        goals.push({ title: unchecked[1].trim(), status: 'active' });
+        const title = unchecked[1].trim();
+        if (isValidGoal(title) && !goals.some(g => g.title.toLowerCase().trim() === title.toLowerCase().trim())) {
+          goals.push({ title, status: 'active' });
+        }
         continue;
       }
       const checked = line.match(/^[-*]\s+\[x\]\s+(.+)/i);
       if (checked) {
-        goals.push({ title: checked[1].trim(), status: 'completed', progress: 100 });
+        const title = checked[1].trim();
+        if (isValidGoal(title) && !goals.some(g => g.title.toLowerCase().trim() === title.toLowerCase().trim())) {
+          goals.push({ title, status: 'completed', progress: 100 });
+        }
       }
     }
   }
@@ -429,7 +454,7 @@ function scanGoals(dir) {
         statusNorm.includes('paused') ? 'paused' :
         'active';
 
-      if (goalLine && !goals.some(g => g.title === goalLine)) {
+      if (goalLine && isValidGoal(goalLine) && !goals.some(g => g.title.toLowerCase().trim() === goalLine.toLowerCase().trim())) {
         goals.push({
           title: goalLine,
           status: projectStatus,
@@ -450,26 +475,32 @@ function scanGoals(dir) {
       const done = tasks.filter(t => t.status === 'completed').length;
       const pct = total ? Math.round((done / total) * 100) : null;
 
-      if (total >= 3 && !goals.some(g => g.title === `${heading} (progress)`)) {
-        goals.push({
-          title: `${heading} (progress)`,
-          status: projectStatus,
-          category: 'project_progress',
-          description: `Checkbox progress extracted from projects.md for ${heading}.`,
-          progress: pct ?? 0,
-        });
-      }
-
-      for (const t of tasks) {
-        if (!t.title) continue;
-        if (goals.some(g => g.title === t.title)) continue;
-        goals.push({
-          title: t.title,
-          status: t.status,
-          progress: t.progress ?? 0,
-          category: 'task',
-          description: `From projects.md (${heading})`,
-        });
+      if (total >= 3) {
+        // Group project-level checkboxes under a progress summary instead of individual goals
+        if (!goals.some(g => g.title.toLowerCase().trim() === `${heading} (progress)`.toLowerCase().trim())) {
+          goals.push({
+            title: `${heading} (progress)`,
+            status: projectStatus,
+            category: 'project_progress',
+            description: `Checkbox progress extracted from projects.md for ${heading}.`,
+            progress: pct ?? 0,
+          });
+        }
+        // Skip individual task goals — the progress summary captures them
+      } else {
+        // Fewer than 3 tasks — add them individually
+        for (const t of tasks) {
+          if (!t.title) continue;
+          if (!isValidGoal(t.title)) continue;
+          if (goals.some(g => g.title.toLowerCase().trim() === t.title.toLowerCase().trim())) continue;
+          goals.push({
+            title: t.title,
+            status: t.status,
+            progress: t.progress ?? 0,
+            category: 'task',
+            description: `From projects.md (${heading})`,
+          });
+        }
       }
     }
   }
@@ -480,7 +511,7 @@ function scanGoals(dir) {
     const taskMatches = pendingTasks.matchAll(/^\*\*Task:\*\*\s*(.+)$/gim);
     for (const m of taskMatches) {
       const title = (m[1] || '').trim();
-      if (title.length > 3 && !goals.some(g => g.title === title)) {
+      if (isValidGoal(title) && !goals.some(g => g.title.toLowerCase().trim() === title.toLowerCase().trim())) {
         goals.push({ title, status: 'active', category: 'pending_task', description: 'From memory/pending-tasks.md' });
       }
     }
@@ -497,13 +528,24 @@ function scanGoals(dir) {
           const bullet = line.match(/^[-*]\s+(.+)/);
           if (bullet) {
             const text = bullet[1].trim();
-            if (text.length > 3 && !goals.some(g => g.title === text)) {
+            if (isValidGoal(text) && !goals.some(g => g.title.toLowerCase().trim() === text.toLowerCase().trim())) {
               goals.push({ title: text, status: 'active' });
             }
           }
         }
       }
     }
+  }
+
+  // Cap goals to prevent overwhelming the dashboard
+  if (goals.length > MAX_GOALS) {
+    const completed = goals.filter(g => g.status === 'completed');
+    const active = goals.filter(g => g.status !== 'completed');
+    // Keep all completed (they're bounded), trim active
+    const budget = MAX_GOALS - Math.min(completed.length, Math.floor(MAX_GOALS / 4));
+    const keptCompleted = completed.slice(0, Math.floor(MAX_GOALS / 4));
+    const keptActive = active.slice(0, budget);
+    return [...keptActive, ...keptCompleted];
   }
 
   return goals;
