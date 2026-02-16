@@ -224,6 +224,88 @@ decisions = claw.get_guard_decisions(decision="block", limit=50)
 | `guard(context, include_signals=False)` | Check action context against active policies |
 | `get_guard_decisions(decision=None, limit=20, offset=0, agent_id=None)` | Get guard decision history. Filter by decision type |
 
+### Compliance & Governance Patterns
+
+DashClaw's guard + action recording pipeline maps directly to compliance controls.
+
+**SOC 2 CC6.1 — Logical Access Controls**
+```python
+# Before any high-risk operation, enforce policy
+guard_result = claw.guard({
+    "action_type": "database_write",
+    "risk_score": 85,
+    "systems_touched": ["production_db"],
+    "reversible": False,
+    "declared_goal": "Drop legacy user table"
+})
+
+if guard_result["decision"] == "block":
+    # SOC 2 control satisfied: unauthorized action prevented
+    print("Policy blocked:", guard_result.get("reasons"))
+    return
+
+# Decision is governed — record with full lineage
+result = claw.create_action(
+    action_type="database_write",
+    declared_goal="Drop legacy user table",
+    risk_score=85,
+    reversible=False,
+    authorization_scope="admin-approved"
+)
+action_id = result["action_id"]
+
+# Register the assumption this decision relies on
+claw.register_assumption(
+    action_id=action_id,
+    assumption="Legacy table has zero active references",
+    basis="Schema dependency scan completed 2h ago"
+)
+```
+
+**EU AI Act Article 14 — Human Oversight**
+```python
+# require_approval forces human-in-the-loop
+result = claw.guard({
+    "action_type": "customer_communication",
+    "risk_score": 60,
+    "declared_goal": "Send pricing update to 500 customers"
+})
+
+if result["decision"] == "require_approval":
+    # Create action in pending state, wait for human approval
+    action = claw.create_action(
+        action_type="customer_communication",
+        declared_goal="Send pricing update to 500 customers",
+        status="pending"
+    )
+    # Approval queue at /approvals shows this to operators
+```
+
+**ISO 42001 — AI Decision Accountability**
+```python
+# Full decision lineage: guard → action → assumptions → outcome
+result = claw.create_action(
+    action_type="data_processing",
+    declared_goal="Rebuild customer segmentation model",
+    risk_score=45,
+    systems_touched=["ml-pipeline", "customer-db"]
+)
+action_id = result["action_id"]
+
+claw.register_assumption(
+    action_id=action_id,
+    assumption="Customer data is current as of today",
+    basis="CRM sync completed at 09:00 UTC"
+)
+
+# Later: validate or invalidate assumptions
+claw.validate_assumption(assumption_id, validated=True)
+
+# Decision integrity signals auto-detect when assumptions drift
+signals = claw.get_signals()
+# → Returns 'assumption_drift' if too many invalidated
+```
+
 ## Webhooks
 
 Manage webhook endpoints for event notifications:
