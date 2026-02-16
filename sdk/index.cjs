@@ -1,5 +1,5 @@
 /**
- * DashClaw SDK — CommonJS compatibility wrapper.
+ * DashClaw SDK: CommonJS compatibility wrapper.
  * For ESM: import { DashClaw } from 'dashclaw'
  * For CJS: const { DashClaw } = require('dashclaw')
  */

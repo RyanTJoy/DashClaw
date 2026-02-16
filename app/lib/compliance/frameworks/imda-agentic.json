@@ -70,7 +70,7 @@
       "gap_recommendations": [
         "Ensure all agent tool invocations are logged with decision rationale",
         "Retain audit trails for a minimum of 12 months",
-        "Enable DashClaw observability features for full action recording",
+        "Enable DashClaw decision recording features for full governance coverage",
         "Generate periodic audit reports from decision logs"
       ]
     },

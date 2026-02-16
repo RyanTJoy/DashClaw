@@ -193,7 +193,7 @@ export default function SecurityDashboard() {
   return (
     <PageLayout
       title="Security"
-      subtitle={`Risk Signals & Agent Oversight${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
+      subtitle={`Decision Integrity & Risk Signals${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Security']}
       actions={
         <div className="flex items-center gap-2">

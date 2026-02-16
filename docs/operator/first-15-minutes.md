@@ -4,7 +4,7 @@ Goal: from zero to seeing a live event in the dashboard.
 
 ## 1) What you are starting
 
-DashClaw is an AI agent observability and governance platform. It provides a website, an operator dashboard, an API control plane, realtime streaming with replay, SDKs (Node and Python), and local agent tooling.
+DashClaw is an AI agent decision infrastructure platform. It provides a website, an operator dashboard, an API control plane, realtime streaming with replay, SDKs (Node and Python), and local agent tooling.
 
 ## 2) Key surfaces
 

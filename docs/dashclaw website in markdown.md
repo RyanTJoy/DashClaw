@@ -1,14 +1,14 @@
 ---
-description: See what your AI agents are actually doing. Real-time observability, risk signals, and operational control for autonomous AI agents.
+description: Prove what your AI agents decided and why. Open-source decision infrastructure with policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents.
 ---
 
-Agent Observability Platform
+Agent Decision Infrastructure
 
-# See what your AI agents are actually doing.
+# Prove what your AI agents decided and why.
 
-Open-source, self-hosted observability, risk signals, and behavior governance for autonomous AI agents. Guard what they do before they do it.
+Open-source decision infrastructure: policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents. Guard what they do before they do it.
 
-95+ SDK methodsNode + Python SDKsSSE real-time streamBehavior guardrailsCompliance engineTask routing
+95+ SDK methodsNode + Python SDKsSSE real-time streamPolicy enforcementCompliance engineTask routing
 
 [Live Demo ](/demo)[ Self-Host](/self-host)[ Docs](/docs)
 
@@ -28,9 +28,9 @@ Fleet-wide overview: live actions, risk, and governance.
 
 [View full gallery →](/gallery)
 
-## Up and running in 5 minutes
+## Secure your first agent in 5 minutes
 
-Three steps from install to full agent observability.
+Three steps from install to full decision governance.
 
 1
 
@@ -55,33 +55,33 @@ One constructor. Your API key scopes all data.
 
 3
 
-### See it live
+### Guard it live
 
 with claw.track(action='deploy'):
-  # ... actions stream to
+  # ... decisions stream to
   # dashboard in real-time
 
-Actions, signals, and costs appear instantly via SSE.
+Decisions, policy checks, and signals stream in real-time.
 
 ## Everything you need to trust your agents
 
 Built for teams running autonomous AI agents in production.
 
-### Know Exactly What Your Agents Are Doing
+### Prove Every Decision Your Agents Make
 
-See every decision, tool call, and action as it happens. A live flight recorder streams everything to your dashboard so nothing runs blind.
+Every action recorded with reasoning, assumptions, and policy compliance. A live decision ledger streams everything so you can prove why any agent acted.
 
-### Catch Dangerous Behavior Before It Ships
+### Enforce Policies Before Agents Act
 
-Semantic guardrails detect risky patterns that hard-coded rules miss. Vector embeddings spot outlier behavior automatically.
+Semantic guard policies intercept intent before execution. Natural language rules evaluated in real time. No hard-coded checks to maintain.
 
-### Stop Spending Money You Can't Explain
+### Attribute Every Dollar to a Decision
 
-See cost-per-goal and burn rate for every model in real time. Know exactly where your budget is going and project what's next.
+Cost-per-decision and burn rate by goal in real time. Financial accountability for every autonomous operation.
 
-### Stop Agents Before They Do Something Expensive
+### Human-in-the-Loop Decision Gates
 
-Enforce safety with rate limits or natural language policies like "Never access production secrets." Agents pause and wait for approval.
+Approval workflows pause risky decisions for human review. Agents request permission, not forgiveness.
 
 ### Drop-In SDKs
 
@@ -105,9 +105,9 @@ API keys, tokens, and credentials are stripped from messages before they ever hi
 
 ### Seamless Session Handoffs
 
-Never lose context between agent sessions. Structured handoff documents keep continuity intact.
+Never lose decision continuity between sessions. Structured handoff documents preserve context and reasoning.
 
-### Nothing Falls Through the Cracks
+### Complete Decision Accountability
 
 Track every unresolved dependency, pending approval, and blocker across your entire agent fleet.
 
@@ -143,7 +143,7 @@ Node and Python SDKs, CLI toolkit, parity test suites, and docs/CI governance.
 
 **The only agent platform with built-in compliance**
 
-Most platforms stop at logging. DashClaw ships policy enforcement, regulatory compliance mapping, and intelligent task routing — all auditable, all testable, all live in the demo.
+Most platforms stop at logging. DashClaw ships decision enforcement, regulatory compliance mapping, and intelligent task routing. All auditable, all testable, all live in the demo.
 
 ### Compliance Engine
 
@@ -166,25 +166,25 @@ Most platforms stop at logging. DashClaw ships policy enforcement, regulatory co
 ### Intelligent Task Routing
 
 - Skill-based agent matching with scoring
-- Real-time load balancing and health monitoring
+- Real-time load balancing and health verification
 - Urgency-aware queue with retry and escalation
 - Full agent registry with capability tracking
 
 [Explore Task Routing →](/demo)
 
-Every feature works in the demo — no signup required. [Launch Demo →](/demo)
+Every feature works in the demo. No signup required. [Launch Demo →](/demo)
 
 95+ methods across 21+ categories
 
-## One SDK. Full observability.
+## One SDK. Full decision governance.
 
-Install from npm or pip. Zero dependencies. Native adapters for CrewAI, AutoGen, and LangChain. Actions, handoffs, context, snippets, messaging, security scanning, and more.
+Install from npm or pip. Zero dependencies. Native adapters for CrewAI, AutoGen, and LangChain. Decision recording, policy enforcement, assumption tracking, handoffs, messaging, and more.
 
 npm packageNode.jsESM + CJSZero Dependencies
 
 [View full SDK docs ](/docs)
 
-// instrument your agent
+// govern your agent
 
 import { DashClaw } from 'dashclaw'
 
@@ -206,7 +206,7 @@ risk\_score: 85,
 
 })
 
-// record an action
+// record a governed decision
 
 await claw.createAction({
 
@@ -230,9 +230,9 @@ key\_decisions: \['JWT over sessions'\],
 
 await claw.syncState({ goals, learning, snippets })
 
-## 7 built-in risk signals
+## 7 Decision Integrity Signals
 
-Automatic detection of problematic agent behavior. No configuration required.
+Automatic detection of autonomy breaches and logic drift. Zero configuration.
 
 ### Autonomy Spike
 
@@ -278,19 +278,19 @@ Actions stuck in running state for over 4 hours
 
 ## Production-ready operations
 
-Team management, audit trails, webhooks, and more — built in from day one.
+Team management, audit trails, webhooks, and more. Built in from day one.
 
 ### Team Management
 
 Invite your team in seconds. Role-based access keeps operators in control and agents accountable.
 
-### Get Alerted Instantly
+### Decision Risk Notifications
 
-HMAC-signed webhooks and email alerts fire the moment something goes wrong. No more checking dashboards.
+HMAC-signed webhooks and email alerts fire when decision integrity signals breach thresholds. No more checking dashboards.
 
 ### Full Audit Trail
 
-Every action is logged. Know who did what, when, and why — for compliance and debugging alike.
+Every action is logged with actor, timestamp, and reasoning: ready for compliance audits and debugging.
 
 ### Ship in 10 Minutes
 
@@ -348,14 +348,14 @@ snippets.py add "retry logic" --push
 
 [View full toolkit docs ](/docs#agent-tools)
 
-## Start monitoring in 5 minutes
+## Govern your first agent in 5 minutes
 
-Install the SDK, send your first action, and see signals on the dashboard. Open-source and self-hosted.
+Install the SDK, enforce your first policy, and see decision signals on the dashboard. Open-source and self-hosted.
 
 [Live Demo ](/demo)[ Self-Host](/self-host)
 
 ---
-description: See what your AI agents are actually doing. Real-time observability, risk signals, and operational control for autonomous AI agents.
+description: Prove what your AI agents decided and why. Decision infrastructure with policy enforcement, assumption tracking, and compliance mapping for autonomous AI agents.
 ---
 
 # Agent Toolkit
@@ -498,21 +498,21 @@ Analyzes tone and style consistency across messages.
 
 `python stats.py communication`
 
-## Ready to instrument your agent?
+## Ready to govern your agent?
 
-Install the toolkit and the SDK to get full dashboard observability in minutes.
+Install the toolkit and the SDK to get full decision governance in minutes.
 
 [Install Toolkit](/docs)[ Star on GitHub](https://github.com/ucsandman/DashClaw)
 
 ---
-description: Full reference for the DashClaw SDK. Install, configure, and instrument your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, compliance, task routing, context management, session handoffs, security scanning, and more.
+description: Full reference for the DashClaw SDK. Install, configure, and govern your AI agents with 95+ methods across 21+ categories including action recording, behavior guard, compliance, task routing, context management, session handoffs, security scanning, and more.
 ---
 
 [Home](/)SDK Documentation
 
 # SDK Documentation
 
-Full reference for the DashClaw SDK. 95+ methods across 21+ categories to instrument your AI agents with action recording, governance, compliance, task routing, context management, session handoffs, security scanning, identity binding, organization management, webhooks, and more.
+Full reference for the DashClaw SDK. 95+ methods across 21+ categories to govern your AI agents with action recording, decision governance, compliance, task routing, context management, session handoffs, security scanning, identity binding, organization management, webhooks, and more.
 
 Copy as Markdown[View raw](/api/docs/raw)
 
@@ -906,7 +906,7 @@ console.log(drift_summary);
 
 ## Signals
 
-Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns — no configuration required.
+Automatic detection of problematic agent behavior. Seven signal types fire based on action patterns. No configuration required.
 
 ### claw.getSignals()
 
@@ -1493,7 +1493,7 @@ await claw.logMood({ mood: 'focused', energy: 'high' });
 
 ### trackApproach(entry)
 
-Track an approach and whether it worked. Upserts — repeated calls update success/fail counts.
+Track an approach and whether it worked. Upserts on repeated calls, updating success/fail counts.
 
 | Parameter | Type    | Required | Description                   |
 | --------- | ------- | -------- | ----------------------------- |
@@ -1527,7 +1527,7 @@ const { approaches } = await claw.getApproaches({ limit: 10 });
 
 ## Daily Digest
 
-Aggregated daily summary from all data sources — no new storage needed.
+Aggregated daily summary from all data sources. No new storage needed.
 
 ### getDailyDigest(date?)
 
@@ -1544,7 +1544,7 @@ console.log(`Today: ${summary.action_count} actions, ${summary.decision_count} d
 
 ## Security Scanning
 
-Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored — only metadata.
+Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored; only metadata is retained.
 
 ### scanContent(text, destination?)
 
@@ -1707,7 +1707,7 @@ await claw.resolveMessageThread('mt_abc123', 'Migration completed successfully.'
 
 ### saveSharedDoc({ name, content })
 
-Create or update a shared workspace document. Upserts by name — updates increment the version.
+Create or update a shared workspace document. Upserts by name; updates increment the version.
 
 | Parameter | Type   | Required | Description                    |
 | --------- | ------ | -------- | ------------------------------ |
@@ -1977,7 +1977,7 @@ Returns: `Promise<{ schedule: Object }>`
 
 ## Bulk Sync
 
-Push multiple data categories in a single request. Ideal for bootstrapping agent state or periodic state snapshots. Every key is optional — only provided categories are processed. Each category is independent; partial failures in one category don't block others.
+Push multiple data categories in a single request. Ideal for bootstrapping agent state or periodic state snapshots. Every key is optional. Only provided categories are processed. Each category is independent; partial failures in one category don't block others.
 
 ### syncState(state)
 
@@ -2039,7 +2039,7 @@ try {
   if (err.status === 401) {
     console.error('Invalid API key');
   } else if (err.status === 429) {
-    console.error('Rate limited — slow down');
+    console.error('Rate limited. Slow down.');
   } else {
     console.error(`Action failed: ${err.message}`);
   }

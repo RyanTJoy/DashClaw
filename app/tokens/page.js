@@ -177,7 +177,7 @@ export default function TokensDashboard() {
   return (
     <PageLayout
       title="Token Efficiency"
-      subtitle={`Real-time Cost Monitoring${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
+      subtitle={`Real-time Cost Accountability${lastUpdated ? ` -- Updated ${lastUpdated}` : ''}`}
       breadcrumbs={['Dashboard', 'Tokens']}
       actions={
         <div className="flex items-center gap-2">

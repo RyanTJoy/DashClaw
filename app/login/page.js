@@ -31,7 +31,7 @@ export default function LoginPage() {
             <Flame size={32} className="text-brand" />
           </div>
           <h1 className="text-2xl font-bold text-white">Sign in to DashClaw</h1>
-          <p className="text-sm text-zinc-400 mt-2">Agent observability starts here.</p>
+          <p className="text-sm text-zinc-400 mt-2">Agent governance starts here.</p>
         </div>
 
         <div className="space-y-3">

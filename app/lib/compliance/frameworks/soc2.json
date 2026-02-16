@@ -108,7 +108,7 @@
       "gap_recommendations": [
         "Add approval requirement for all external communications",
         "Implement domain allowlisting for web requests",
-        "Use DashClaw webhook monitoring to track outbound integrations"
+        "Use DashClaw webhook governance to track outbound integrations"
       ]
     },
     {
@@ -185,7 +185,7 @@
       },
       "gap_recommendations": [
         "Ensure at least one guard policy is active and logging decisions",
-        "Enable DashClaw signal detection cron for automated monitoring",
+        "Enable DashClaw signal detection cron for automated governance",
         "Configure email/webhook alerts for critical signals",
         "Review guard decision logs at least monthly"
       ]

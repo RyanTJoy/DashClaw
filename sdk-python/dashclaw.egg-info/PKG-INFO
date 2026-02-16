@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: dashclaw
-Version: 1.8.2
-Summary: Python SDK for the DashClaw AI agent observability platform
+Version: 1.8.3
+Summary: Python SDK for the DashClaw AI agent decision infrastructure platform
 Home-page: https://github.com/ucsandman/DashClaw
 Author: Wes Sander
 Classifier: Programming Language :: Python :: 3
@@ -20,9 +20,11 @@ Dynamic: provides-extra
 Dynamic: requires-python
 Dynamic: summary
 
-# DashClaw Python SDK
+# DashClaw Python SDK: Agent Decision Infrastructure
 
-Full-featured agent toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform â€” 95+ methods across 21+ categories. Zero dependencies, requires Python 3.7+.
+Full-featured decision governance toolkit for the [DashClaw](https://github.com/ucsandman/DashClaw) platform. 95+ methods across 21+ categories. Zero dependencies, requires Python 3.7+.
+
+DashClaw treats every agent action as a governed decision. The SDK provides decision recording, policy enforcement, assumption tracking, and compliance mapping.
 
 ## Install
 
@@ -56,7 +58,7 @@ with claw.track(action_type="research", declared_goal="Explore Python SDK capabi
 
 ## Action Recording
 
-Record actions, track outcomes, and query action history:
+Record governed decisions, track outcomes, and query decision history:
 
 ```python
 # Record and auto-track an action with the context manager
@@ -92,7 +94,7 @@ signals = claw.get_signals()
 
 ## Loops & Assumptions
 
-Track open loops, register assumptions, and detect drift:
+Decision integrity primitives: track open loops, register assumptions, and detect drift.
 
 ```python
 # Register an open loop
@@ -153,7 +155,7 @@ Capture session context for seamless handoffs between sessions or agents:
 
 ```python
 # Create a handoff
-claw.create_handoff("Finished data pipeline setup. Next: add monitoring.", context={"pipeline_id": "p_123"})
+claw.create_handoff("Finished data pipeline setup. Next: add signal checks.", context={"pipeline_id": "p_123"})
 
 # Get handoffs
 handoffs = claw.get_handoffs(limit=5)
@@ -224,6 +226,8 @@ pending = claw.get_pending_approvals(limit=25)
 
 ## Behavior Guard
 
+Guard is the heart of DashClaw. Every action is checked against policies before execution.
+
 Check actions against policies and fetch guard audit history:
 
 ```python
@@ -241,6 +245,88 @@ decisions = claw.get_guard_decisions(decision="block", limit=50)
 |--------|-------------|
 | `guard(context, include_signals=False)` | Check action context against active policies |
 | `get_guard_decisions(decision=None, limit=20, offset=0, agent_id=None)` | Get guard decision history. Filter by decision type |
+
+### Compliance & Governance Patterns
+
+DashClaw's guard + action recording pipeline maps directly to compliance controls.
+
+**SOC 2 CC6.1: Logical Access Controls**
+```python
+# Before any high-risk operation, enforce policy
+guard_result = claw.guard({
+    "action_type": "database_write",
+    "risk_score": 85,
+    "systems_touched": ["production_db"],
+    "reversible": False,
+    "declared_goal": "Drop legacy user table"
+})
+
+if guard_result["decision"] == "block":
+    # SOC 2 control satisfied: unauthorized action prevented
+    print("Policy blocked:", guard_result.get("reasons"))
+    return
+
+# Decision is governed. Record with full lineage
+result = claw.create_action(
+    action_type="database_write",
+    declared_goal="Drop legacy user table",
+    risk_score=85,
+    reversible=False,
+    authorization_scope="admin-approved"
+)
+action_id = result["action_id"]
+
+# Register the assumption this decision relies on
+claw.register_assumption(
+    action_id=action_id,
+    assumption="Legacy table has zero active references",
+    basis="Schema dependency scan completed 2h ago"
+)
+```
+
+**EU AI Act Article 14: Human Oversight**
+```python
+# require_approval forces human-in-the-loop
+result = claw.guard({
+    "action_type": "customer_communication",
+    "risk_score": 60,
+    "declared_goal": "Send pricing update to 500 customers"
+})
+
+if result["decision"] == "require_approval":
+    # Create action in pending state, wait for human approval
+    action = claw.create_action(
+        action_type="customer_communication",
+        declared_goal="Send pricing update to 500 customers",
+        status="pending"
+    )
+    # Approval queue at /approvals shows this to operators
+```
+
+**ISO 42001: AI Decision Accountability**
+```python
+# Full decision lineage: guard â†’ action â†’ assumptions â†’ outcome
+result = claw.create_action(
+    action_type="data_processing",
+    declared_goal="Rebuild customer segmentation model",
+    risk_score=45,
+    systems_touched=["ml-pipeline", "customer-db"]
+)
+action_id = result["action_id"]
+
+claw.register_assumption(
+    action_id=action_id,
+    assumption="Customer data is current as of today",
+    basis="CRM sync completed at 09:00 UTC"
+)
+
+# Later: validate or invalidate assumptions
+claw.validate_assumption(assumption_id, validated=True)
+
+# Decision integrity signals auto-detect when assumptions drift
+signals = claw.get_signals()
+# â†’ Returns 'assumption_drift' if too many invalidated
+```
 
 ## Webhooks
 
@@ -421,7 +507,7 @@ Get a URL to download an attachment.
 |---|---|---|
 | `attachment_id` | `str` | Attachment ID (`att_*`) |
 
-**Returns:** `str` â€” URL to fetch the attachment
+**Returns:** `str`: URL to fetch the attachment
 
 ---
 
@@ -453,7 +539,7 @@ Run guardrails tests, generate compliance proof reports, and import policy packs
 report = claw.test_policies()
 print(f"{report['passed']}/{report['total']} policies passed")
 for r in [r for r in report["results"] if not r["passed"]]:
-    print(f"FAIL: {r['policy']} â€” {r['reason']}")
+    print(f"FAIL: {r['policy']}: {r['reason']}")
 
 # Generate compliance proof report
 proof = claw.get_proof_report(format="md")
@@ -482,7 +568,7 @@ Map policies to regulatory frameworks, run gap analysis, and generate compliance
 mapping = claw.map_compliance("soc2")
 print(f"SOC 2 coverage: {mapping['coverage_pct']}%")
 for ctrl in [c for c in mapping["controls"] if not c["covered"]]:
-    print(f"Gap: {ctrl['id']} â€” {ctrl['name']}")
+    print(f"Gap: {ctrl['id']}: {ctrl['name']}")
 
 # Run gap analysis with remediation plan
 gaps = claw.analyze_gaps("soc2")

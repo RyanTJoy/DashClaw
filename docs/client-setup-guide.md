@@ -1,6 +1,6 @@
 # DashClaw: Complete Setup & Usage Guide
 
-> **What is DashClaw?** An AI agent observability platform. It gives you a command center to monitor, control, and understand everything your AI agents do - every action, every decision, every risk signal. Think of it as the control tower for your agent fleet.
+> **What is DashClaw?** AI agent decision infrastructure. It gives you a control plane to prove what your agents decided, enforce policies before they act, and track every assumption and risk signal. Think of it as the governance layer for your agent fleet.
 >
 > **Live Demo (fake data):** https://dashclaw.io/demo
 > **Your Dashboard (self-host):** http://localhost:3000 (or `https://YOUR_DASHCLAW_HOST`)
@@ -18,7 +18,7 @@
 5. [SDK Method Reference](#5-sdk-method-reference)
 6. [Dashboard Pages Guide](#6-dashboard-pages-guide)
 7. [Behavior Guard (Controlling Agent Actions)](#7-behavior-guard-controlling-agent-actions)
-8. [Risk Signals (Automatic Monitoring)](#8-risk-signals-automatic-monitoring)
+8. [Risk Signals (Automatic Signal Detection)](#8-risk-signals-automatic-signal-detection)
 9. [Agent Workspace](#9-agent-workspace)
 10. [Agent-to-Agent Messaging](#10-agent-to-agent-messaging)
 11. [Bootstrap an Existing Agent](#11-bootstrap-an-existing-agent)
@@ -241,7 +241,7 @@ with claw.track(action_type='build', declared_goal='Compile assets'):
 | `refactor` | Code cleanup, restructuring |
 | `test` | Running tests, validation |
 | `config` | Configuration changes |
-| `monitor` | Health checks, status monitoring |
+| `monitor` | Health checks, status verification |
 | `alert` | Sending alerts, escalations |
 | `cleanup` | Deleting temp files, pruning data |
 | `sync` | Syncing data between systems |
@@ -275,7 +275,7 @@ An **assumption** is something your agent believes to be true. Log assumptions s
 
 ### Risk Signals
 
-DashClaw automatically monitors for 7 risk patterns (see [Section 8](#8-risk-signals-automatic-monitoring)). No configuration needed â€" signals fire automatically based on your agent's behavior data.
+DashClaw automatically detects 7 risk patterns (see [Section 8](#8-risk-signals-automatic-signal-detection)). No configuration needed â€" signals fire automatically based on your agent's behavior data.
 
 ### Guard Policies
 
@@ -771,7 +771,7 @@ Table of all action records. Click any action to open the **Post-Mortem Page** w
 
 ### Security (`/security`)
 
-Real-time risk monitoring. Auto-refreshes every 30 seconds.
+Real-time decision integrity signals. Auto-refreshes every 30 seconds.
 - Stats: Active Signals, High-Risk (24h), Unscoped Actions, Invalidated Assumptions (7d)
 - Signal feed sorted by severity (dismiss individual signals or clear all)
 - High-risk actions list (risk >= 70 or unscoped + irreversible)
@@ -816,7 +816,7 @@ View and configure integration credentials. Supports per-agent overrides. Shows 
 
 ### API Keys (`/api-keys`)
 
-Manage API keys for your workspace. Admins can generate and revoke keys. The **Copy Agent Prompt** button generates a markdown prompt you can paste into any AI agent session (Claude Code, Cursor, etc.) to self-configure a connection to your dashboard — the API key is never included in the prompt.
+Manage API keys for your workspace. Admins can generate and revoke keys. The **Copy Agent Prompt** button generates a markdown prompt you can paste into any AI agent session (Claude Code, Cursor, etc.) to self-configure a connection to your dashboard. The API key is never included in the prompt.
 
 ### Team (`/team`)
 
@@ -937,7 +937,7 @@ Guard API failures are **fail-open** (logged, proceeds) in all modes.
 
 ---
 
-## 8. Risk Signals (Automatic Monitoring)
+## 8. Risk Signals (Automatic Signal Detection)
 
 DashClaw automatically detects 7 risk patterns. No configuration needed.
 
@@ -1191,7 +1191,7 @@ The scanner detects:
 
 ### Option C: Copy Agent Prompt (One-Click)
 
-On the **API Keys** page or the onboarding checklist, click **Copy Agent Prompt**. This copies a markdown prompt to your clipboard that you can paste into any AI agent session (Claude Code, Cursor, etc.). The prompt includes your dashboard URL, SDK install instructions, and a smoke test — but never your API key. The agent will ask you to set `DASHCLAW_API_KEY` in your environment.
+On the **API Keys** page or the onboarding checklist, click **Copy Agent Prompt**. This copies a markdown prompt to your clipboard that you can paste into any AI agent session (Claude Code, Cursor, etc.). The prompt includes your dashboard URL, SDK install instructions, and a smoke test. It never includes your API key. The agent will ask you to set `DASHCLAW_API_KEY` in your environment.
 
 ### Option D: Self-Discovery Prompt
 
@@ -1318,6 +1318,26 @@ await claw.reportTokenUsage({
 ---
 
 ## 16. CLI Tools
+
+### Claude Code Skill: Platform Intelligence
+
+If you use Claude Code, the `dashclaw-platform-intelligence` skill provides guided workflows for agent instrumentation, troubleshooting, SDK generation, and more. It activates automatically when you mention DashClaw-related tasks.
+
+The skill also includes companion scripts:
+
+```bash
+# Validate an agent's DashClaw integration
+node .claude/skills/dashclaw-platform-intelligence/scripts/validate-integration.mjs \
+  --base-url http://localhost:3000 --api-key $DASHCLAW_API_KEY --full
+
+# Diagnose connection or auth issues
+node .claude/skills/dashclaw-platform-intelligence/scripts/diagnose.mjs \
+  --base-url http://localhost:3000 --api-key $DASHCLAW_API_KEY --error "403"
+
+# Quick-bootstrap an agent workspace
+node .claude/skills/dashclaw-platform-intelligence/scripts/bootstrap-agent-quick.mjs \
+  --dir "/path/to/agent" --agent-id "my-agent" --validate
+```
 
 ### Report an Action (from terminal)
 

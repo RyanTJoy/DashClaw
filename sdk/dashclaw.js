@@ -1,7 +1,7 @@
 /**
  * DashClaw SDK
  * Full-featured agent toolkit for the DashClaw platform.
- * Zero-dependency ESM SDK — requires Node 18+ (native fetch).
+ * Zero-dependency ESM SDK. Requires Node 18+ (native fetch).
  *
  * 96+ methods across 22+ categories:
  * - Action Recording (7)
@@ -217,7 +217,7 @@ class DashClaw {
     try {
       decision = await this.guard(context);
     } catch (err) {
-      // Guard API failure is fail-open — log and proceed
+      // Guard API failure is fail-open: log and proceed
       console.warn(`[DashClaw] Guard check failed (proceeding): ${err.message}`);
       return;
     }
@@ -403,11 +403,11 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 1: Action Recording (6 methods)
+  // Category 1: Decision Recording (6 methods)
   // ══════════════════════════════════════════════
 
   /**
-   * Create a new action record.
+   * Record a governed decision. Every action is a decision with a full audit trail: goal, reasoning, assumptions, and policy compliance.
    * @param {Object} action
    * @param {string} action.action_type - One of: build, deploy, post, apply, security, message, api, calendar, research, review, fix, refactor, test, config, monitor, alert, cleanup, sync, migrate, other
    * @param {string} action.declared_goal - What this action aims to accomplish
@@ -619,9 +619,9 @@ class DashClaw {
           } else if (line.startsWith('data: ')) {
             currentData += line.slice(6);
           } else if (line.startsWith(':')) {
-            // SSE comment (keepalive heartbeat) — ignore
+            // SSE comment (keepalive heartbeat). Ignore.
           } else if (line === '' && currentEvent) {
-            // End of SSE frame — dispatch
+            // End of SSE frame. Dispatch.
             if (currentData) {
               try {
                 const parsed = JSON.parse(currentData);
@@ -631,7 +631,7 @@ class DashClaw {
             currentEvent = null;
             currentData = '';
           } else if (line === '') {
-            // Blank line without a pending event — reset partial state
+            // Blank line without a pending event. Reset partial state.
             currentEvent = null;
             currentData = '';
           }
@@ -766,11 +766,11 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 2: Loops & Assumptions (7 methods)
+  // Category 2: Decision Integrity (Loops & Assumptions) (7 methods)
   // ══════════════════════════════════════════════
 
   /**
-   * Register an open loop for an action.
+   * Register an unresolved dependency for a decision. Open loops track work that must be completed before the decision can be considered fully resolved.
    * @param {Object} loop
    * @param {string} loop.action_id - Parent action ID
    * @param {string} loop.loop_type - One of: followup, question, dependency, approval, review, handoff, other
@@ -817,7 +817,7 @@ class DashClaw {
   }
 
   /**
-   * Register assumptions made during an action.
+   * Register assumptions underlying a decision. Assumptions are the decision basis. They must be validated or invalidated to maintain decision integrity.
    * @param {Object} assumption
    * @param {string} assumption.action_id - Parent action ID
    * @param {string} assumption.assumption - The assumption being made
@@ -873,11 +873,11 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 3: Signals (1 method)
+  // Category 3: Decision Integrity Signals (1 method)
   // ══════════════════════════════════════════════
 
   /**
-   * Get current risk signals.
+   * Get current decision integrity signals. Returns autonomy breaches, logic drift, and governance violations.
    * @returns {Promise<{signals: Object[], counts: {red: number, amber: number, total: number}}>}
    */
   async getSignals() {
@@ -1669,7 +1669,7 @@ class DashClaw {
 
   /**
    * Create or update a shared workspace document.
-   * Upserts by (org_id, name) — updates increment the version.
+   * Upserts by (org_id, name). Updates increment the version.
    * @param {Object} params
    * @param {string} params.name - Document name (unique per org)
    * @param {string} params.content - Document content
@@ -1717,12 +1717,11 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 13: Behavior Guard (2 methods)
+  // Category 13: Policy Enforcement (Guard) (2 methods)
   // ══════════════════════════════════════════════
 
   /**
-   * Check guard policies before executing a risky action.
-   * Returns allow/warn/block/require_approval.
+   * Enforce policies before a decision executes. Guard is the heart of DashClaw. It intercepts intent and returns allow/warn/block/require_approval.
    * @param {Object} context
    * @param {string} context.action_type - Action type (required)
    * @param {number} [context.risk_score] - Risk score 0-100
@@ -2133,7 +2132,7 @@ class DashClaw {
 
   /**
    * Sync multiple data categories in a single request.
-   * Every key is optional — only provided categories are processed.
+   * Every key is optional. Only provided categories are processed.
    * @param {Object} state - Data to sync (connections, memory, goals, learning, content, inspiration, context_points, context_threads, handoffs, preferences, snippets)
    * @returns {Promise<{results: Object, total_synced: number, total_errors: number, duration_ms: number}>}
    */
