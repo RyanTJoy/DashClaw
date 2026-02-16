@@ -184,18 +184,22 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
             </p>
           </StepCard>
 
-          {/* Claude Code Skill */}
+          {/* DashClaw Platform Skill */}
           <div className="rounded-2xl bg-gradient-to-b from-[rgba(249,115,22,0.06)] to-transparent p-6 sm:p-8 border border-[rgba(249,115,22,0.12)]">
             <div className="flex items-start gap-3 mb-5">
               <div className="w-10 h-10 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center shrink-0">
                 <Sparkles size={20} className="text-brand" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-zinc-100">Claude Code Skill</h2>
+                <h2 className="text-lg font-semibold text-zinc-100">DashClaw Platform Skill</h2>
                 <p className="text-sm text-zinc-400 leading-relaxed mt-1">
-                  If you use Claude Code, this skill turns it into a DashClaw platform expert.
-                  It can instrument your agent, scaffold API routes, generate SDK clients, design guard policies,
-                  troubleshoot errors, and bootstrap workspaces — all from your terminal.
+                  Skills are an open standard for giving agents specialized capabilities. Any agent that supports
+                  the skill framework can load this skill and become a DashClaw platform expert: instrumenting agents,
+                  scaffolding API routes, generating SDK clients, designing guard policies, troubleshooting errors,
+                  and bootstrapping workspaces.
+                </p>
+                <p className="text-sm text-zinc-400 leading-relaxed mt-2">
+                  Works with Claude Code, and the growing ecosystem of skill-compatible agents.
                 </p>
               </div>
             </div>
@@ -224,10 +228,10 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
             <div className="rounded-lg bg-[#0d0d0d] border border-[rgba(255,255,255,0.06)] p-4 mb-5">
               <h3 className="text-sm font-semibold text-zinc-200 mb-3">Setup</h3>
               <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-2">
-                <li>Download and extract the zip into your project&apos;s <code className="text-zinc-300 font-mono text-xs">.claude/skills/</code> directory</li>
+                <li>Download and extract the zip into your project&apos;s skills directory (e.g. <code className="text-zinc-300 font-mono text-xs">.claude/skills/</code> for Claude Code)</li>
                 <li>
                   Verify the structure:
-                  <pre className="mt-1.5 bg-[#0a0a0a] rounded-lg px-3 py-2 text-xs text-zinc-400 font-mono overflow-x-auto">{`.claude/skills/dashclaw-platform-intelligence/
+                  <pre className="mt-1.5 bg-[#0a0a0a] rounded-lg px-3 py-2 text-xs text-zinc-400 font-mono overflow-x-auto">{`dashclaw-platform-intelligence/
 ├── SKILL.md
 ├── scripts/
 │   ├── validate-integration.mjs
@@ -238,7 +242,7 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
     ├── api-surface.md
     └── troubleshooting.md`}</pre>
                 </li>
-                <li>Open Claude Code in your project and tell it what you need — the skill activates automatically</li>
+                <li>Point your agent at the skill directory and it activates automatically</li>
               </ol>
             </div>
 
@@ -250,7 +254,7 @@ DASHCLAW_AGENT_ID=cinder`}</CodeBlock>
               >
                 <Download size={16} /> Download Skill
               </a>
-              <span className="text-xs text-zinc-500">~22 KB · works with any Claude Code project</span>
+              <span className="text-xs text-zinc-500">~22 KB · open standard, works with any skill-compatible agent</span>
             </div>
           </div>
 
