@@ -22,6 +22,7 @@ export default function ActionPostMortem() {
   const [loops, setLoops] = useState([]);
   const [assumptions, setAssumptions] = useState([]);
   const [trace, setTrace] = useState(null);
+  const [guardDecision, setGuardDecision] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pendingOps, setPendingOps] = useState({});
@@ -49,6 +50,22 @@ export default function ActionPostMortem() {
             setTrace(traceData.trace);
           }
         } catch { /* trace is optional */ }
+      }
+
+      // Fetch correlated guard decision (policy governance)
+      if (data.action.agent_id) {
+        try {
+          const guardRes = await fetch(`/api/guard?agent_id=${encodeURIComponent(data.action.agent_id)}&limit=10`);
+          if (guardRes.ok) {
+            const guardData = await guardRes.json();
+            const actionStart = new Date(data.action.timestamp_start).getTime();
+            const match = (guardData.decisions || []).find(gd =>
+              gd.action_type === data.action.action_type &&
+              Math.abs(new Date(gd.created_at).getTime() - actionStart) <= 60000
+            );
+            if (match) setGuardDecision(match);
+          }
+        } catch { /* guard correlation is optional */ }
       }
     } catch (err) {
       console.error('Failed to fetch action:', err);
@@ -805,6 +822,63 @@ export default function ActionPostMortem() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Policy Governance */}
+          <Card hover={false}>
+            <CardHeader title="Policy Governance" icon={ShieldCheck} />
+            <CardContent>
+              {guardDecision ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                      guardDecision.decision === 'allow' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+                      guardDecision.decision === 'warn' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                      guardDecision.decision === 'block' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                      'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                    }`}>
+                      <ShieldCheck size={12} />
+                      {guardDecision.decision}
+                    </span>
+                  </div>
+                  {guardDecision.matched_policies && (() => {
+                    const policies = typeof guardDecision.matched_policies === 'string'
+                      ? (() => { try { return JSON.parse(guardDecision.matched_policies); } catch { return []; } })()
+                      : Array.isArray(guardDecision.matched_policies) ? guardDecision.matched_policies : [];
+                    return policies.length > 0 ? (
+                      <div>
+                        <div className="text-xs text-zinc-500 uppercase mb-1">Matched Policies</div>
+                        <div className="flex flex-wrap gap-1">
+                          {policies.map((p, i) => (
+                            <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/10 text-zinc-300 border border-zinc-500/20">
+                              {typeof p === 'string' ? p : p.name || p.id || JSON.stringify(p)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null;
+                  })()}
+                  {guardDecision.reason && (
+                    <div>
+                      <div className="text-xs text-zinc-500 uppercase mb-1">Reason</div>
+                      <div className="text-xs text-zinc-300">{guardDecision.reason}</div>
+                    </div>
+                  )}
+                  <div className="text-xs text-zinc-500">{formatTime(guardDecision.created_at)}</div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2">
+                  <HelpCircle size={14} className="text-zinc-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="text-sm text-zinc-400">No policy evaluation recorded</div>
+                    <div className="text-xs text-zinc-500 mt-1">
+                      This decision executed without a prior guard evaluation.
+                      Consider using <code className="text-zinc-400">claw.guard()</code> before <code className="text-zinc-400">claw.createAction()</code> for full governance coverage.
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

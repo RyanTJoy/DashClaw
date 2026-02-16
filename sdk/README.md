@@ -113,6 +113,88 @@ try {
 }
 ```
 
+### Compliance & Governance Patterns
+
+DashClaw's guard + action recording pipeline maps directly to compliance controls.
+
+**SOC 2 CC6.1 — Logical Access Controls**
+```javascript
+// Before any high-risk operation, enforce policy
+const guardResult = await claw.guard({
+  action_type: 'database_write',
+  risk_score: 85,
+  systems_touched: ['production_db'],
+  reversible: false,
+  declared_goal: 'Drop legacy user table'
+});
+
+if (guardResult.decision === 'block') {
+  // SOC 2 control satisfied: unauthorized action prevented
+  console.log('Policy blocked:', guardResult.reasons);
+  return;
+}
+
+// Decision is governed — record with full lineage
+const { action_id } = await claw.createAction({
+  action_type: 'database_write',
+  declared_goal: 'Drop legacy user table',
+  risk_score: 85,
+  reversible: false,
+  authorization_scope: 'admin-approved'
+});
+
+// Register the assumption this decision relies on
+await claw.registerAssumption({
+  action_id,
+  assumption: 'Legacy table has zero active references',
+  basis: 'Schema dependency scan completed 2h ago'
+});
+```
+
+**EU AI Act Article 14 — Human Oversight**
+```javascript
+// require_approval forces human-in-the-loop
+const result = await claw.guard({
+  action_type: 'customer_communication',
+  risk_score: 60,
+  declared_goal: 'Send pricing update to 500 customers'
+});
+
+if (result.decision === 'require_approval') {
+  // Create action in pending state, wait for human approval
+  const { action_id } = await claw.createAction({
+    action_type: 'customer_communication',
+    declared_goal: 'Send pricing update to 500 customers',
+    status: 'pending'
+  });
+  // Approval queue at /approvals shows this to operators
+}
+```
+
+**ISO 42001 — AI Decision Accountability**
+```javascript
+// Full decision lineage: guard → action → assumptions → outcome
+const { action_id } = await claw.createAction({
+  action_type: 'data_processing',
+  declared_goal: 'Rebuild customer segmentation model',
+  risk_score: 45,
+  systems_touched: ['ml-pipeline', 'customer-db']
+});
+
+await claw.registerAssumption({
+  action_id,
+  assumption: 'Customer data is current as of today',
+  basis: 'CRM sync completed at 09:00 UTC'
+});
+
+// Later: validate or invalidate assumptions
+await claw.validateAssumption(assumptionId, true);
+
+// Decision integrity signals auto-detect when assumptions drift
+const signals = await claw.getSignals();
+// → Returns 'assumption_drift' if too many invalidated
+```
+
 ---
 
 ## Action Recording
