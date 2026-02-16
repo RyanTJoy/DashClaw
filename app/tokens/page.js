@@ -22,6 +22,8 @@ export default function TokensDashboard() {
   });
   const [lastUpdated, setLastUpdated] = useState('');
   const [operations, setOperations] = useState([]);
+  const [todayStats, setTodayStats] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [budgetForm, setBudgetForm] = useState({ ...DEFAULT_BUDGET });
   const [savingBudget, setSavingBudget] = useState(false);
@@ -49,20 +51,22 @@ export default function TokensDashboard() {
         if (budgetData.budget) budget = budgetData.budget;
       } catch { /* use defaults */ }
 
-      const todayIn = data?.stats?.today?.tokens_in || 0;
-      const todayOut = data?.stats?.today?.tokens_out || 0;
-      const dailyUsed = todayIn + todayOut;
+      // Today's totals come from data.today (camelCase)
+      const dailyUsed = data?.today?.totalTokens || 0;
 
-      const totalIn = data?.stats?.total?.tokens_in || 0;
-      const totalOut = data?.stats?.total?.tokens_out || 0;
-      const totalUsed = totalIn + totalOut;
+      // Weekly = sum of history[] (7-day rolling window)
+      const weeklyUsed = Array.isArray(data?.history)
+        ? data.history.reduce((sum, day) => sum + (day.totalTokens || 0), 0)
+        : 0;
+
+      setTodayStats(data?.today || null);
 
       setTokenData({
-        dailyUsed: dailyUsed,
+        dailyUsed,
         dailyLimit: budget.daily_limit || DEFAULT_BUDGET.daily_limit,
-        weeklyUsed: totalUsed,
+        weeklyUsed,
         weeklyLimit: budget.weekly_limit || DEFAULT_BUDGET.weekly_limit,
-        monthlyUsed: totalUsed,
+        monthlyUsed: weeklyUsed,
         monthlyLimit: budget.monthly_limit || DEFAULT_BUDGET.monthly_limit,
       });
       setBudgetForm({
@@ -71,15 +75,16 @@ export default function TokensDashboard() {
         monthly_limit: budget.monthly_limit || DEFAULT_BUDGET.monthly_limit,
       });
 
-      if (data?.usage && Array.isArray(data.usage)) {
-        const ops = data.usage.slice(0, 10).map((u, idx) => ({
-          id: u.id || idx,
-          name: u.operation || 'Unknown operation',
-          timestamp: u.timestamp || '',
-          tokensIn: u.tokens_in || 0,
-          tokensOut: u.tokens_out || 0,
-          total: (u.tokens_in || 0) + (u.tokens_out || 0),
-          model: u.model || 'unknown'
+      // Operations = timeline snapshots (recent 24h snapshots)
+      if (Array.isArray(data?.timeline)) {
+        const ops = data.timeline.slice(0, 10).map((s, idx) => ({
+          id: idx,
+          name: 'Token Snapshot',
+          timestamp: s.time ? new Date(s.time).toLocaleString() : '',
+          tokensIn: s.tokensIn || 0,
+          tokensOut: s.tokensOut || 0,
+          total: (s.tokensIn || 0) + (s.tokensOut || 0),
+          contextPct: s.contextPct || 0,
         }));
         setOperations(ops);
       }
@@ -87,6 +92,8 @@ export default function TokensDashboard() {
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (error) {
       console.error('Failed to fetch token data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -221,6 +228,16 @@ export default function TokensDashboard() {
         ))}
       </div>
 
+      {/* Today Summary */}
+      {todayStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Stat label="Today In" value={formatNumber(todayStats.tokensIn || 0)} />
+          <Stat label="Today Out" value={formatNumber(todayStats.tokensOut || 0)} />
+          <Stat label="Est. Cost" value={todayStats.estimatedCost || '$0.00'} />
+          <Stat label="Snapshots" value={todayStats.snapshots || 0} />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Operations */}
         <Card hover={false}>
@@ -251,7 +268,7 @@ export default function TokensDashboard() {
                         <span className="text-green-400 text-xs tabular-nums">In: {formatNumber(op.tokensIn)}</span>
                         <span className="text-blue-400 text-xs tabular-nums">Out: {formatNumber(op.tokensOut)}</span>
                       </div>
-                      <span className="text-xs text-zinc-500">{op.model}</span>
+                      <span className="text-xs text-zinc-500">Context: {op.contextPct}%</span>
                     </div>
                   </div>
                 ))

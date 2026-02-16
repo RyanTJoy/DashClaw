@@ -14,8 +14,8 @@ Baseline parity for critical SDK capabilities, derived from:
 
 ## Snapshot Summary
 
-- Node public methods: `97+`
-- Python public methods: `97+`
+- Node public methods: `98+`
+- Python public methods: `98+`
 - Current parity (method-level, normalized by Node surface): `100%`
 
 ## WS5 M2 Critical Domain Delta (February 14, 2026)
@@ -97,7 +97,7 @@ Current shared contract cases covered by the harness:
 | Action Recording | 7 | 7 | Full parity |
 | Loops & Assumptions | 7 | 7 | Full parity |
 | Signals | 1 | 1 | Full parity |
-| Dashboard Data | 12 | 12 | Full parity |
+| Dashboard Data | 13 | 13 | Full parity |
 | Session Handoffs | 3 | 3 | Full parity |
 | Context Manager | 7 | 7 | Full parity |
 | Automation Snippets | 5 | 5 | Full parity |

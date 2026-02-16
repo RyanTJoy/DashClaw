@@ -601,6 +601,86 @@ class DashClaw:
         payload = {"tokens_in": tokens_in, "tokens_out": tokens_out, "agent_id": self.agent_id, **kwargs}
         return self._request("/api/tokens", method="POST", body=payload)
 
+    def _report_token_usage_from_llm(self, tokens_in, tokens_out, model):
+        """Internal: fire-and-forget token report extracted from an LLM response."""
+        if tokens_in is None and tokens_out is None:
+            return
+        try:
+            self._request("/api/tokens", method="POST", body={
+                "tokens_in": tokens_in or 0,
+                "tokens_out": tokens_out or 0,
+                "model": model,
+                "agent_id": self.agent_id,
+            })
+        except Exception:
+            pass  # fire-and-forget: never let telemetry break the caller
+
+    def wrap_client(self, llm_client, provider=None):
+        """Wrap an Anthropic or OpenAI client to auto-report token usage.
+
+        Returns the same client instance (mutated) for fluent usage.
+
+        Args:
+            llm_client: An Anthropic or OpenAI SDK client instance.
+            provider: Force provider detection ('anthropic' or 'openai').
+
+        Example::
+
+            anthropic = claw.wrap_client(Anthropic())
+            msg = anthropic.messages.create(model="claude-sonnet-4-20250514", max_tokens=1024, messages=[...])
+            # Token usage is auto-reported to DashClaw
+        """
+        if getattr(llm_client, "_dashclaw_wrapped", False):
+            return llm_client
+
+        detected = provider
+        if not detected:
+            if hasattr(llm_client, "messages") and hasattr(getattr(llm_client, "messages"), "create"):
+                detected = "anthropic"
+            elif hasattr(llm_client, "chat") and hasattr(getattr(llm_client, "chat"), "completions"):
+                detected = "openai"
+
+        if not detected:
+            raise ValueError(
+                "DashClaw.wrap_client: unable to detect provider. "
+                "Pass provider='anthropic' or provider='openai'."
+            )
+
+        dashclaw_self = self
+
+        if detected == "anthropic":
+            original = llm_client.messages.create
+
+            def wrapped_create(*args, **kwargs):
+                response = original(*args, **kwargs)
+                usage = getattr(response, "usage", None)
+                dashclaw_self._report_token_usage_from_llm(
+                    tokens_in=getattr(usage, "input_tokens", None) if usage else None,
+                    tokens_out=getattr(usage, "output_tokens", None) if usage else None,
+                    model=getattr(response, "model", None),
+                )
+                return response
+
+            llm_client.messages.create = wrapped_create
+
+        elif detected == "openai":
+            original = llm_client.chat.completions.create
+
+            def wrapped_create(*args, **kwargs):
+                response = original(*args, **kwargs)
+                usage = getattr(response, "usage", None)
+                dashclaw_self._report_token_usage_from_llm(
+                    tokens_in=getattr(usage, "prompt_tokens", None) if usage else None,
+                    tokens_out=getattr(usage, "completion_tokens", None) if usage else None,
+                    model=getattr(response, "model", None),
+                )
+                return response
+
+            llm_client.chat.completions.create = wrapped_create
+
+        llm_client._dashclaw_wrapped = True
+        return llm_client
+
     def create_calendar_event(self, summary, start_time, **kwargs):
         """Create a calendar event."""
         payload = {"summary": summary, "start_time": start_time, **kwargs}
