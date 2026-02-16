@@ -34,6 +34,10 @@ function addSecurityHeaders(response) {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
+  // SECURITY: Apply HSTS in production to prevent protocol downgrade attacks
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   return response;
 }
 
@@ -893,7 +897,7 @@ export async function middleware(request) {
       path: '/',
       maxAge: 60 * 60 * 24, // 24h
       sameSite: 'lax',
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
     });
     addSecurityHeaders(response);
