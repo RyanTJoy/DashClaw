@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Flame, Github, ChevronDown } from 'lucide-react';
+import { Flame, Github, ChevronDown, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const galleryPreview = [
   { title: 'Mission Control', file: 'Mission Control.png' },
@@ -18,6 +18,7 @@ const galleryPreview = [
 
 export default function PublicNavbar() {
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // index into galleryPreview
   const dropdownRef = useRef(null);
   const timeoutRef = useRef(null);
 
@@ -31,6 +32,18 @@ export default function PublicNavbar() {
   }, []);
 
   useEffect(() => () => clearTimeout(timeoutRef.current), []);
+
+  // Lightbox keyboard navigation
+  useEffect(() => {
+    if (lightbox === null) return;
+    const handler = (e) => {
+      if (e.key === 'Escape') setLightbox(null);
+      if (e.key === 'ArrowRight') setLightbox((i) => (i + 1) % galleryPreview.length);
+      if (e.key === 'ArrowLeft') setLightbox((i) => (i - 1 + galleryPreview.length) % galleryPreview.length);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [lightbox]);
 
   return (
     <nav className="fixed top-0 w-full z-50 border-b border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]/80 backdrop-blur-sm">
@@ -57,11 +70,11 @@ export default function PublicNavbar() {
               <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3">
                 <div className="w-[540px] rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111]/95 backdrop-blur-md shadow-2xl shadow-black/60 p-4">
                   <div className="grid grid-cols-4 gap-3">
-                    {galleryPreview.map((s) => (
-                      <Link
+                    {galleryPreview.map((s, i) => (
+                      <button
                         key={s.file}
-                        href="/gallery"
-                        className="group flex flex-col gap-1.5"
+                        onClick={(e) => { e.stopPropagation(); setLightbox(i); }}
+                        className="group flex flex-col gap-1.5 text-left cursor-pointer"
                       >
                         <div className="relative aspect-[16/10] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.06)] bg-[#0a0a0a]">
                           <Image
@@ -73,7 +86,7 @@ export default function PublicNavbar() {
                           />
                         </div>
                         <span className="text-[11px] text-zinc-500 group-hover:text-zinc-300 transition-colors truncate">{s.title}</span>
-                      </Link>
+                      </button>
                     ))}
                   </div>
                   <Link
@@ -105,6 +118,49 @@ export default function PublicNavbar() {
           </Link>
         </div>
       </div>
+      {/* Lightbox overlay */}
+      {lightbox !== null && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+        >
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i - 1 + galleryPreview.length) % galleryPreview.length); }}
+            className="absolute left-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Previous"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightbox((i) => (i + 1) % galleryPreview.length); }}
+            className="absolute right-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Next"
+          >
+            <ChevronRight size={24} />
+          </button>
+          <div className="relative w-[90vw] max-w-5xl aspect-[16/10]" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={`/images/screenshots/${encodeURIComponent(galleryPreview[lightbox].file)}`}
+              alt={galleryPreview[lightbox].title}
+              fill
+              sizes="90vw"
+              className="object-contain rounded-lg"
+              priority
+            />
+            <div className="absolute -bottom-10 left-0 right-0 text-center text-sm text-zinc-400">
+              {galleryPreview[lightbox].title}
+              <span className="ml-2 text-zinc-600">{lightbox + 1}/{galleryPreview.length}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
