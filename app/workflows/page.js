@@ -224,8 +224,8 @@ export default function WorkflowsDashboard() {
     >
       {/* Template Selection Modal */}
       {showTemplateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <Card hover={false} className="w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowTemplateModal(false)}>
+          <Card hover={false} className="w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <CardHeader title="New from Template" icon={Plus} />
             <CardContent className="overflow-y-auto">
               <div className="space-y-3">
