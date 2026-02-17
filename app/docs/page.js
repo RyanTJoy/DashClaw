@@ -382,18 +382,37 @@ try {
             </div>
             <p className="text-sm text-zinc-400 mb-4">Subscribe to server-sent events for instant push notifications. Eliminates polling for approvals, policy changes, and task assignments.</p>
 
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+                <h4 className="text-sm font-semibold text-white mb-2">Reactive Mission Control</h4>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Strategic fleet overview with real-time health pulses, decision timelines, and a live terminal-style swarm log.
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+                <h4 className="text-sm font-semibold text-white mb-2">Instant Governance</h4>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Guard decisions and risk signals stream instantly to the dashboard, allowing human operators to react the moment a policy is triggered.
+                </p>
+              </div>
+            </div>
+
             <MethodEntry
               id="events"
               signature="claw.events()"
-              description="Open a persistent SSE connection. Returns a chainable handle with .on(event, callback) and .close(). Supported events: action.created, action.updated, message.created, policy.updated, task.assigned, task.completed."
+              description="Open a persistent SSE connection. Returns a chainable handle with .on(event, callback) and .close(). Supported events: action.created, action.updated, decision.created, guard.decision.created, signal.detected, token.usage, message.created, policy.updated, task.assigned, task.completed."
               returns="{ on(eventType, callback): this, close(): void }"
-              example={`const stream = claw.events();
+              example={`const stream = dc.events();
 
 stream
   .on('action.created', (data) => console.log('New action:', data.action_id))
   .on('action.updated', (data) => {
     if (data.status === 'running') console.log('Approved:', data.action_id);
   })
+  .on('decision.created', (data) => console.log('Agent decided:', data.decision))
+  .on('guard.decision.created', (data) => console.log('Guard:', data.decision))
+  .on('signal.detected', (data) => console.log('Alert:', data.label))
+  .on('token.usage', (data) => console.log('Burn:', data.estimated_cost))
   .on('policy.updated', (data) => console.log('Policy changed:', data.change_type))
   .on('task.assigned', (data) => console.log('Task routed:', data.task?.title))
   .on('task.completed', (data) => console.log('Task done:', data.task?.task_id))
