@@ -17,7 +17,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    const pairingId = params.pairingId;
+    const { pairingId } = await params;
 
     const rows = await sql`
       SELECT id, agent_id, agent_name, public_key, algorithm, status, expires_at

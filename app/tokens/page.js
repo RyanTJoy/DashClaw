@@ -84,7 +84,6 @@ export default function TokensDashboard() {
           tokensIn: s.tokensIn || 0,
           tokensOut: s.tokensOut || 0,
           total: (s.tokensIn || 0) + (s.tokensOut || 0),
-          contextPct: s.contextPct || 0,
         }));
         setOperations(ops);
       }
@@ -263,12 +262,11 @@ export default function TokensDashboard() {
                         <div className="text-xs text-zinc-500">tokens</div>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center text-sm">
                       <div className="flex space-x-4">
                         <span className="text-green-400 text-xs tabular-nums">In: {formatNumber(op.tokensIn)}</span>
                         <span className="text-blue-400 text-xs tabular-nums">Out: {formatNumber(op.tokensOut)}</span>
                       </div>
-                      <span className="text-xs text-zinc-500">Context: {op.contextPct}%</span>
                     </div>
                   </div>
                 ))

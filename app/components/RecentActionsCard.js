@@ -156,7 +156,8 @@ export default function RecentActionsCard() {
   }
 
   const ITEM_H = 56;
-  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H) : 5;
+  const OVERFLOW_LINK_H = 28;
+  const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H, OVERFLOW_LINK_H) : 3;
   const visibleActions = actions.slice(0, maxVisible);
   const overflow = actions.length - visibleActions.length;
 

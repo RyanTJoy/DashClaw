@@ -236,6 +236,7 @@ function demoTokens(fixtures) {
   };
 }
 
+
 function demoPolicies(fixtures) {
   return { policies: fixtures.policies || [] };
 }
@@ -666,9 +667,17 @@ function demoSwarmGraph(fixtures, url) {
 // SECURITY: In-memory rate limiting is local to the instance.
 // For production multi-region deployments, use Redis or Upstash.
 const rateLimitMap = new Map();
-const RATE_LIMIT_DISABLED = ['1', 'true', 'yes', 'on'].includes(
-  String(process.env.DASHCLAW_DISABLE_RATE_LIMIT || '').toLowerCase()
-);
+const RATE_LIMIT_DISABLED = (() => {
+  const wants = ['1', 'true', 'yes', 'on'].includes(
+    String(process.env.DASHCLAW_DISABLE_RATE_LIMIT || '').toLowerCase()
+  );
+  // SECURITY: Never allow rate limiting to be disabled in production.
+  if (wants && process.env.NODE_ENV === 'production') {
+    console.warn('[SECURITY] DASHCLAW_DISABLE_RATE_LIMIT is set but ignored in production.');
+    return false;
+  }
+  return wants;
+})();
 const RATE_LIMIT_WINDOW = (() => {
   const v = parseInt(String(process.env.DASHCLAW_RATE_LIMIT_WINDOW_MS || ''), 10);
   return Number.isFinite(v) && v > 0 ? v : (60 * 1000); // 1 minute
@@ -789,8 +798,8 @@ async function verifyOrgExists(orgId) {
     return exists;
   } catch (err) {
     console.error('[MIDDLEWARE] Failed to verify org existence:', err.message);
-    // On DB error, don't cache — fail open for availability but log loudly
-    return true;
+    // SECURITY: Fail closed — a deleted/revoked org's key must not work during outages
+    return false;
   }
 }
 
@@ -910,7 +919,7 @@ export async function middleware(request) {
   // - Block all writes (no secrets, no mutations).
   // Demo sandbox: cookie or explicit DASHCLAW_MODE=demo. Cookie only provides fixture data, never real data.
   // SECURITY: Only honor demo cookie when DASHCLAW_MODE=demo to prevent self-host bypass
-  if (mode === 'demo' || (mode === 'demo' && demoCookie)) {
+  if (mode === 'demo') {
     if (pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') {
         return new NextResponse(null, { status: 204, headers: getCorsHeaders(request) });
@@ -1470,8 +1479,9 @@ export async function middleware(request) {
       const orgExists = await verifyOrgExists(configuredOrgId);
       if (!orgExists) {
         console.error(`[SECURITY] DASHCLAW_API_KEY_ORG="${configuredOrgId}" does not exist in organizations table. Run migrations or create the org.`);
+        // SECURITY: Do not leak the configured org ID to the client.
         return NextResponse.json(
-          { error: `Server misconfigured: DASHCLAW_API_KEY_ORG references org "${configuredOrgId}" which does not exist. Run migrations or create the org via POST /api/orgs.` },
+          { error: 'Server misconfigured: configured org does not exist. Check server logs and run migrations.' },
           { status: 503 }
         );
       }

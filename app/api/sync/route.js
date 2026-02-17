@@ -469,8 +469,10 @@ export async function POST(request) {
     }
     const body = validation.data;
 
-    // Allow admin callers to target a specific org (for bootstrap scripts)
-    const orgId = (body.target_org_id && callerRole === 'admin') ? body.target_org_id : callerOrgId;
+    // SECURITY: Always use the caller's own org. Cross-org writes are not
+    // allowed — bootstrap scripts should authenticate with the target org's
+    // own API key instead of relying on target_org_id overrides.
+    const orgId = callerOrgId;
     const agentId = body.agent_id || null;
     const sql = getSql();
     const start = Date.now();

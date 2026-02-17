@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../lib/db.js';
 import { isEmbeddingsEnabled } from '../../lib/embeddings.js';
 import { getRealtimeHealth } from '../../lib/events.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../../../package.json');
 
 /**
  * Health check endpoint for DashClaw
@@ -11,7 +15,7 @@ export async function GET() {
   const health = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    version: '1.5.0',
+    version,
     checks: {}
   };
 

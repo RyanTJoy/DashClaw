@@ -3,6 +3,8 @@
  * Absorbed from dashclaw-guardrails/packages/guardrailgen-js/src/evaluator.js
  */
 
+import { globToRegex } from '../globToRegex.js';
+
 /**
  * Evaluate a single policy against an input action
  * @param {object} policy - Policy object from guardrails.yml
@@ -15,8 +17,7 @@ export function evaluatePolicy(policy, input) {
   // Check if policy applies to this tool
   const toolMatches = applies_to.tools?.some(pattern => {
     if (pattern.includes('*')) {
-      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-      return regex.test(input.tool);
+      return globToRegex(pattern).test(input.tool);
     }
     return pattern === input.tool;
   });

@@ -50,14 +50,14 @@ export async function getHistory(sql, orgId, agentId) {
 export async function getRecentSnapshots(sql, orgId, agentId, since) {
   if (agentId) {
     return sql`
-      SELECT timestamp, tokens_in, tokens_out, context_pct, hourly_pct_left, weekly_pct_left
+      SELECT timestamp, tokens_in, tokens_out
       FROM token_snapshots
       WHERE timestamp > ${since} AND org_id = ${orgId} AND agent_id = ${agentId}
       ORDER BY timestamp ASC
     `;
   }
   return sql`
-    SELECT timestamp, tokens_in, tokens_out, context_pct, hourly_pct_left, weekly_pct_left
+    SELECT timestamp, tokens_in, tokens_out
     FROM token_snapshots
     WHERE timestamp > ${since} AND org_id = ${orgId} AND agent_id IS NULL
     ORDER BY timestamp ASC

@@ -7,7 +7,6 @@ import {
   getTodayTotals,
   getHistory,
   getRecentSnapshots,
-  getPerAgentLatestSnapshots,
   insertSnapshot,
   insertOrgAggregateSnapshot,
   upsertDailyTotals,
@@ -43,23 +42,10 @@ export async function GET(request) {
     const latest = latestSnapshot[0] || null;
     const todayData = todayTotals[0] || null;
 
-    // For All Agents view, also fetch per-agent context snapshots
-    let agentContexts = [];
-    if (!agentId) {
-      agentContexts = await getPerAgentLatestSnapshots(sql, orgId);
-    }
-
     return NextResponse.json({
       current: latest ? {
         tokensIn: latest.tokens_in,
         tokensOut: latest.tokens_out,
-        contextUsed: latest.context_used,
-        contextMax: latest.context_max,
-        contextPct: latest.context_pct,
-        hourlyPctLeft: latest.hourly_pct_left,
-        weeklyPctLeft: latest.weekly_pct_left,
-        hourlyUsed: 100 - (latest.hourly_pct_left || 0),
-        weeklyUsed: 100 - (latest.weekly_pct_left || 0),
         compactions: latest.compactions,
         model: latest.model,
         session: latest.session_key,
@@ -71,7 +57,6 @@ export async function GET(request) {
         tokensIn: todayData.total_tokens_in,
         tokensOut: todayData.total_tokens_out,
         totalTokens: todayData.total_tokens,
-        peakContextPct: todayData.peak_context_pct,
         snapshots: todayData.snapshots_count,
         estimatedCost: estimateCost(todayData.total_tokens_in, todayData.total_tokens_out)
       } : null,
@@ -80,7 +65,6 @@ export async function GET(request) {
         tokensIn: day.total_tokens_in,
         tokensOut: day.total_tokens_out,
         totalTokens: day.total_tokens,
-        peakContextPct: day.peak_context_pct,
         snapshots: day.snapshots_count,
         estimatedCost: estimateCost(day.total_tokens_in, day.total_tokens_out)
       })),
@@ -88,17 +72,6 @@ export async function GET(request) {
         time: s.timestamp,
         tokensIn: s.tokens_in,
         tokensOut: s.tokens_out,
-        contextPct: s.context_pct,
-        hourlyLeft: s.hourly_pct_left,
-        weeklyLeft: s.weekly_pct_left
-      })),
-      agentContexts: agentContexts.map(s => ({
-        agentId: s.agent_id,
-        contextUsed: s.context_used,
-        contextMax: s.context_max,
-        contextPct: s.context_pct,
-        model: s.model,
-        updatedAt: s.timestamp
       })),
       lastUpdated: new Date().toISOString()
     });
@@ -110,7 +83,6 @@ export async function GET(request) {
       today: null,
       history: [],
       timeline: [],
-      agentContexts: [],
       lastUpdated: new Date().toISOString(),
       error: 'An error occurred while fetching token data'
     }, { status: 500 });
@@ -123,6 +95,8 @@ export async function POST(request) {
     const orgId = getOrgId(request);
     const body = await request.json();
 
+    // POST still accepts context_* and rate limit fields for SDK backwards compat —
+    // they are stored in the DB but not surfaced in GET responses.
     const {
       tokens_in, tokens_out, context_used, context_max,
       model, agent_id, session_key,

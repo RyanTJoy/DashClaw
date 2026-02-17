@@ -22,11 +22,18 @@ export async function GET(request) {
     }
 
     const buffer = Buffer.from(attachment.data, 'base64');
+
+    // SECURITY: Sanitize filename to prevent header injection via ", \r, \n,
+    // or non-printable characters. Force 'attachment' disposition to prevent
+    // user-controlled Content-Type from rendering inline HTML at our origin.
+    const safeFilename = (attachment.filename || 'download')
+      .replace(/["\r\n\x00-\x1f\x7f]/g, '_');
+
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         'Content-Type': attachment.mime_type,
-        'Content-Disposition': `inline; filename="${attachment.filename}"`,
+        'Content-Disposition': `attachment; filename="${safeFilename}"`,
         'Content-Length': String(buffer.length),
         'Cache-Control': 'private, max-age=3600',
       },
