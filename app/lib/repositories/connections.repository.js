@@ -35,37 +35,17 @@ export async function ensureConnectionsTable(sql) {
  * List connections with optional filters
  */
 export async function listConnections(sql, orgId, { agentId, provider } = {}) {
-  let conditions = [sql`org_id = ${orgId}`];
-
-  if (agentId) {
-    conditions.push(sql`agent_id = ${agentId}`);
+  // SECURITY: Use parameterized queries only — no sql.unsafe().
+  let connections;
+  if (agentId && provider) {
+    connections = await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} AND agent_id = ${agentId} AND provider = ${provider} ORDER BY updated_at DESC`;
+  } else if (agentId) {
+    connections = await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY updated_at DESC`;
+  } else if (provider) {
+    connections = await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} AND provider = ${provider} ORDER BY updated_at DESC`;
+  } else {
+    connections = await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} ORDER BY updated_at DESC`;
   }
-  if (provider) {
-    conditions.push(sql`provider = ${provider}`);
-  }
-
-  const whereClause = conditions.length > 0
-    ? sql`WHERE ${sql.unsafe(conditions.map((_, i) => `$${i + 1}`).join(' AND '))}`
-    : sql``;
-
-  const connections = await sql`
-    SELECT * FROM agent_connections
-    WHERE ${sql.unsafe(conditions.map((c, i) => i === 0 ? 'org_id = $1' : (agentId && i === 1) ? 'AND agent_id = $2' : 'AND provider = $3').join(' '))}
-    ${agentId ? sql`AND agent_id = ${agentId}` : sql``}
-    ${provider ? sql`AND provider = ${provider}` : sql``}
-    ORDER BY updated_at DESC
-  `.catch(async () => {
-    // Fallback to simpler query construction
-    if (agentId && provider) {
-      return await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} AND agent_id = ${agentId} AND provider = ${provider} ORDER BY updated_at DESC`;
-    } else if (agentId) {
-      return await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY updated_at DESC`;
-    } else if (provider) {
-      return await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} AND provider = ${provider} ORDER BY updated_at DESC`;
-    } else {
-      return await sql`SELECT * FROM agent_connections WHERE org_id = ${orgId} ORDER BY updated_at DESC`;
-    }
-  });
 
   return connections || [];
 }

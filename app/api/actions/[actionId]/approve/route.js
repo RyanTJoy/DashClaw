@@ -28,7 +28,7 @@ function redactAny(value, findings) {
  */
 export async function POST(request, { params }) {
   try {
-    const { actionId } = params;
+    const { actionId } = await params;
     const orgId = getOrgId(request);
     const role = getOrgRole(request);
     const userId = getUserId(request);

@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Gauge, Clock, CalendarDays, BookOpen, Cpu, ArrowRight, Users, TrendingUp } from 'lucide-react';
+import { Gauge, Cpu, ArrowRight, TrendingUp, ArrowDown, ArrowUp, RotateCw } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { StatCompact } from './ui/Stat';
-import { ProgressBar } from './ui/ProgressBar';
 import { CardSkeleton } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
@@ -14,20 +13,15 @@ import { useAgentFilter } from '../lib/AgentFilterContext';
 export default function TokenBudgetCard() {
   const { agentId } = useAgentFilter();
   const [data, setData] = useState({
-    hourUsed: 0,
-    weekUsed: 0,
-    hourRemaining: 100,
-    weekRemaining: 100,
-    contextUsed: 0,
-    contextMax: 200000,
-    contextPct: 0,
-    model: 'loading...',
-    status: 'loading',
+    todayTokensIn: 0,
+    todayTokensOut: 0,
     todayTokens: 0,
     todayCost: 0,
-    compactions: 0
+    compactions: 0,
+    model: 'loading...',
+    status: 'loading',
+    snapshots: 0,
   });
-  const [agentContexts, setAgentContexts] = useState([]);
   const [projectedCost, setProjectedCost] = useState(null);
   const [lastUpdated, setLastUpdated] = useState('');
 
@@ -37,23 +31,17 @@ export default function TokenBudgetCard() {
       const res = await fetch(url);
       const json = await res.json();
 
-      // Store per-agent contexts for All Agents view
-      setAgentContexts(json.agentContexts || []);
-
       // Compute 24h cost projection from history + today's partial spend
       const history = json.history || [];
       const today = json.today;
-      if (history.length >= 2 || (history.length >= 1 && today)) {
-        // Average daily cost from available history
+      if (history.length >= 1 || today) {
         const costs = history.map(d => d.estimatedCost || 0).filter(c => c > 0);
         if (costs.length > 0) {
           const avgDailyCost = costs.reduce((a, b) => a + b, 0) / costs.length;
-          // Weight today's partial cost: extrapolate today's spend to full 24h
           const now = new Date();
           const hoursElapsed = now.getHours() + now.getMinutes() / 60;
           const todayCost = today?.estimatedCost || 0;
           const todayExtrapolated = hoursElapsed > 1 ? (todayCost / hoursElapsed) * 24 : avgDailyCost;
-          // Blend: 60% today's trajectory, 40% historical average
           const projected = hoursElapsed > 1
             ? todayExtrapolated * 0.6 + avgDailyCost * 0.4
             : avgDailyCost;
@@ -65,29 +53,21 @@ export default function TokenBudgetCard() {
         setProjectedCost(null);
       }
 
-      if (json.current) {
-        const current = json.current;
-        const today = json.today;
+      const current = json.current;
+      const todayData = json.today;
 
-        let status = 'ok';
-        if (current.hourlyPctLeft < 10 || current.weeklyPctLeft < 10) status = 'critical';
-        else if (current.hourlyPctLeft < 30 || current.weeklyPctLeft < 30) status = 'warning';
-
+      if (current || todayData) {
         setData({
-          hourUsed: current.hourlyUsed || 0,
-          weekUsed: current.weeklyUsed || 0,
-          hourRemaining: current.hourlyPctLeft || 100,
-          weekRemaining: current.weeklyPctLeft || 100,
-          contextUsed: current.contextUsed || 0,
-          contextMax: current.contextMax || 200000,
-          contextPct: current.contextPct || 0,
-          model: current.model || 'unknown',
-          compactions: current.compactions || 0,
-          todayTokens: today?.totalTokens || 0,
-          todayCost: today?.estimatedCost || 0,
-          status
+          todayTokensIn: todayData?.tokensIn || 0,
+          todayTokensOut: todayData?.tokensOut || 0,
+          todayTokens: todayData?.totalTokens || 0,
+          todayCost: todayData?.estimatedCost || 0,
+          compactions: current?.compactions || 0,
+          model: current?.model || 'unknown',
+          snapshots: todayData?.snapshots || 0,
+          status: 'ok',
         });
-        setLastUpdated(new Date(current.updatedAt || Date.now()).toLocaleTimeString());
+        setLastUpdated(new Date(current?.updatedAt || Date.now()).toLocaleTimeString());
       } else {
         setData(prev => ({ ...prev, status: 'no-data' }));
         setLastUpdated('No data yet');
@@ -104,31 +84,15 @@ export default function TokenBudgetCard() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'critical': return <Badge variant="error" size="sm">Low Capacity</Badge>;
-      case 'warning': return <Badge variant="warning" size="sm">Moderate</Badge>;
-      case 'error': return <Badge variant="default" size="sm">Error</Badge>;
-      case 'no-data': return <Badge variant="default" size="sm">Awaiting Data</Badge>;
-      default: return <Badge variant="success" size="sm">Good</Badge>;
-    }
-  };
-
   const formatCost = (cost) => {
     if (cost < 0.01) return '<$0.01';
     return `$${cost.toFixed(2)}`;
   };
 
-  const getBarColor = (pctRemaining) => {
-    if (pctRemaining < 20) return 'error';
-    if (pctRemaining < 40) return 'warning';
-    return 'success';
-  };
-
-  const getContextBarColor = (pct) => {
-    if (pct > 80) return 'error';
-    if (pct > 60) return 'warning';
-    return 'purple';
+  const formatTokens = (n) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return String(n);
   };
 
   if (data.status === 'loading') {
@@ -136,118 +100,67 @@ export default function TokenBudgetCard() {
   }
 
   const viewAllLink = (
-    <Link href="/usage" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
-      View all <ArrowRight size={12} />
+    <Link href="/tokens" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
+      Details <ArrowRight size={12} />
     </Link>
   );
 
-  // All Agents view with no data at all
-  const isAllAgents = !agentId;
-  const hasNoData = data.status === 'no-data';
+  const getStatusBadge = () => {
+    if (data.status === 'error') return <Badge variant="default" size="sm">Error</Badge>;
+    if (data.status === 'no-data') return <Badge variant="default" size="sm">Awaiting Data</Badge>;
+    return null;
+  };
 
   return (
     <Card className="h-full">
       <CardHeader title="Token Usage" icon={Gauge} action={viewAllLink}>
-        {getStatusBadge(data.status)}
+        {getStatusBadge()}
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {hasNoData ? (
+        {data.status === 'no-data' ? (
           <EmptyState
             icon={Gauge}
             title="No token data reported yet"
-            description="Use the SDK's reportTokens() or POST /api/tokens to report usage"
+            description="Use the SDK's reportTokenUsage() or POST /api/tokens to report usage"
           />
         ) : (
           <>
             {/* Compact stat row */}
             <div className="bg-surface-tertiary rounded-lg px-3 py-2.5">
-              <div className="grid grid-cols-4 gap-2">
-                <StatCompact label="Hour" value={`${data.hourRemaining}%`} color="text-green-400" />
-                <StatCompact label="Week" value={`${data.weekRemaining}%`} color="text-blue-400" />
-                <StatCompact label="Context" value={`${data.contextPct}%`} color="text-purple-400" />
+              <div className="grid grid-cols-3 gap-2">
+                <StatCompact label="Today" value={formatTokens(data.todayTokens)} color="text-white" />
+                <StatCompact label="Cost" value={formatCost(data.todayCost)} color="text-green-400" />
                 <StatCompact label="Compacts" value={data.compactions} color="text-zinc-300" />
               </div>
             </div>
 
-            {/* Context Window — per-agent breakdown or single bar */}
-            {isAllAgents && agentContexts.length > 0 ? (
-              <div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Users size={12} className="text-zinc-500" />
-                  <span className="text-xs text-zinc-500">Context per Agent</span>
+            {/* Token In / Out Breakdown */}
+            <div className="flex gap-3">
+              <div className="flex-1 bg-surface-tertiary rounded-lg px-3 py-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ArrowDown size={11} className="text-green-500" />
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Input</span>
                 </div>
-                <div className="space-y-2">
-                  {agentContexts.map(ac => (
-                    <div key={ac.agentId}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs text-zinc-400 truncate max-w-[140px]">{ac.agentId}</span>
-                        <span className="text-xs text-zinc-300 tabular-nums">
-                          {Math.round((ac.contextUsed || 0) / 1000)}k / {Math.round((ac.contextMax || 0) / 1000)}k
-                        </span>
-                      </div>
-                      <ProgressBar value={ac.contextPct || 0} color={getContextBarColor(ac.contextPct || 0)} />
-                    </div>
-                  ))}
+                <div className="text-sm font-semibold tabular-nums text-green-400">
+                  {formatTokens(data.todayTokensIn)}
                 </div>
               </div>
-            ) : (
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <BookOpen size={12} className="text-zinc-500" />
-                    <span className="text-xs text-zinc-500">Context Window</span>
-                  </div>
-                  <span className="text-xs text-zinc-300 tabular-nums">
-                    {Math.round(data.contextUsed / 1000)}k / {Math.round(data.contextMax / 1000)}k
-                  </span>
+              <div className="flex-1 bg-surface-tertiary rounded-lg px-3 py-2.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ArrowUp size={11} className="text-blue-500" />
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider">Output</span>
                 </div>
-                <ProgressBar value={data.contextPct} color={getContextBarColor(data.contextPct)} />
-              </div>
-            )}
-
-            {/* Hourly Budget */}
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Clock size={12} className="text-zinc-500" />
-                  <span className="text-xs text-zinc-500">Hourly Budget</span>
+                <div className="text-sm font-semibold tabular-nums text-blue-400">
+                  {formatTokens(data.todayTokensOut)}
                 </div>
-                <span className="text-xs text-zinc-300 tabular-nums">{data.hourRemaining}% left</span>
               </div>
-              <ProgressBar value={data.hourRemaining} color={getBarColor(data.hourRemaining)} />
             </div>
 
-            {/* Weekly Budget */}
-            <div>
-              <div className="flex justify-between items-center mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <CalendarDays size={12} className="text-zinc-500" />
-                  <span className="text-xs text-zinc-500">Weekly Budget</span>
-                </div>
-                <span className="text-xs text-zinc-300 tabular-nums">{data.weekRemaining}% left</span>
-              </div>
-              <ProgressBar value={data.weekRemaining} color={getBarColor(data.weekRemaining)} />
-            </div>
-
-            {/* Today's Stats */}
-            <div className="bg-surface-tertiary rounded-lg px-3 py-2.5">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Today</div>
-                  <div className="text-sm font-semibold tabular-nums text-white">
-                    {(data.todayTokens / 1000).toFixed(1)}k tokens
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider">Est. Cost</div>
-                  <div className="text-sm font-semibold tabular-nums text-green-400">
-                    {formatCost(data.todayCost)}
-                  </div>
-                </div>
-              </div>
-              {projectedCost !== null && (
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[rgba(255,255,255,0.04)]">
+            {/* Cost Projection */}
+            {projectedCost !== null && (
+              <div className="bg-surface-tertiary rounded-lg px-3 py-2.5">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <TrendingUp size={11} className="text-zinc-500" />
                     <span className="text-[10px] text-zinc-500 uppercase tracking-wider">24h Projected</span>
@@ -256,8 +169,8 @@ export default function TokenBudgetCard() {
                     {formatCost(projectedCost)}
                   </span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Model + Last Updated */}
             <div className="flex justify-between items-center">
@@ -266,7 +179,7 @@ export default function TokenBudgetCard() {
                 <span className="font-mono text-xs text-zinc-500">{data.model}</span>
               </div>
               {lastUpdated && (
-                <span className="text-xs text-zinc-600">Last updated: {lastUpdated}</span>
+                <span className="text-xs text-zinc-600">{lastUpdated}</span>
               )}
             </div>
           </>

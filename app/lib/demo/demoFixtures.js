@@ -298,7 +298,6 @@ function buildFixtures() {
       tokensIn,
       tokensOut,
       totalTokens,
-      peakContextPct: int(rnd, 25, 92),
       snapshots: int(rnd, 10, 120),
       estimatedCost: Math.round((0.2 + rnd() * 6) * 100) / 100,
     };
@@ -307,29 +306,18 @@ function buildFixtures() {
   const tokensCurrent = {
     tokensIn: int(rnd, 200, 3500),
     tokensOut: int(rnd, 150, 2400),
-    contextUsed: int(rnd, 20_000, 170_000),
-    contextMax: 200_000,
-    contextPct: 0,
-    hourlyPctLeft: int(rnd, 15, 90),
-    weeklyPctLeft: int(rnd, 10, 80),
-    hourlyUsed: 0,
-    weeklyUsed: 0,
     compactions: int(rnd, 0, 8),
     model: pick(rnd, ['gpt-4o-mini', 'gpt-4o', 'claude-3.5-sonnet', 'o3-mini']),
     session: 'demo',
     agentId: null,
     updatedAt: isoFromNow(int(rnd, 1, 8) * 60 * 1000),
   };
-  tokensCurrent.contextPct = Math.round((tokensCurrent.contextUsed / tokensCurrent.contextMax) * 100);
-  tokensCurrent.hourlyUsed = 100 - tokensCurrent.hourlyPctLeft;
-  tokensCurrent.weeklyUsed = 100 - tokensCurrent.weeklyPctLeft;
 
   const tokensToday = {
     date: new Date(BASE_NOW).toISOString().slice(0, 10),
     tokensIn: int(rnd, 10_000, 80_000),
     tokensOut: int(rnd, 10_000, 65_000),
     totalTokens: 0,
-    peakContextPct: int(rnd, 30, 95),
     snapshots: int(rnd, 25, 180),
     estimatedCost: Math.round((0.2 + rnd() * 4.5) * 100) / 100,
   };

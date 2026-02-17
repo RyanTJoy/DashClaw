@@ -6,6 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { globToRegex } from '../globToRegex.js';
 
 const FRAMEWORKS_DIR = path.join(process.cwd(), 'app', 'lib', 'compliance', 'frameworks');
 
@@ -157,12 +158,10 @@ function checkToolPatterns(policy, patterns) {
       if (tool === pattern) return true;
 
       if (pattern.includes('*')) {
-        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-        if (regex.test(tool)) return true;
+        if (globToRegex(pattern).test(tool)) return true;
       }
       if (tool.includes('*')) {
-        const regex = new RegExp('^' + tool.replace(/\*/g, '.*') + '$');
-        if (regex.test(pattern)) return true;
+        if (globToRegex(tool).test(pattern)) return true;
       }
     }
   }
