@@ -286,11 +286,6 @@ export default function ActivityTimeline() {
               </div>
             ))}
           </div>
-          {eventOverflow > 0 && (
-            <span className="mt-2 text-xs text-brand inline-flex items-center gap-1 flex-shrink-0">
-              +{eventOverflow} more events
-            </span>
-          )}
         </>)}
         </div>
       </CardContent>
