@@ -1576,6 +1576,24 @@ Returns: `Promise<{clean: boolean, findings_count: number, findings: Object[], r
 
 await claw.reportSecurityFinding(outboundMessage, 'email');
 
+### scanPromptInjection(text, options?)
+
+Scan text for prompt injection attacks — role overrides, delimiter injection, instruction smuggling, data exfiltration attempts, and encoding evasion. Returns risk level and actionable recommendation (allow/warn/block).
+
+| Parameter      | Type   | Required | Description                                                    |
+| -------------- | ------ | -------- | -------------------------------------------------------------- |
+| text           | string | Yes      | Text to scan for injection attacks                             |
+| options.source | string | No       | Where this text came from (e.g. user_input, tool_output, retrieval) |
+
+Returns: `Promise<{clean: boolean, risk_level: string, recommendation: string, findings_count: number, categories: string[], findings: Object[]}>`
+
+const result = await claw.scanPromptInjection(userMessage, { source: 'user_input' });
+if (result.recommendation === 'block') {
+  console.error(`Blocked: ${result.findings_count} injection patterns detected`);
+} else if (result.recommendation === 'warn') {
+  console.warn(`Warning: ${result.categories.join(', ')} detected`);
+}
+
 ## Agent Messaging
 
 Direct inter-agent messaging with inbox semantics, conversation threads, shared workspace documents, and broadcast capability.

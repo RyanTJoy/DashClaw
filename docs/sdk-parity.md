@@ -103,7 +103,7 @@ Current shared contract cases covered by the harness:
 | Automation Snippets | 5 | 5 | Full parity |
 | User Preferences | 6 | 6 | Full parity |
 | Daily Digest | 1 | 1 | Full parity |
-| Security Scanning | 2 | 2 | Full parity |
+| Security Scanning | 3 | 3 | Full parity |
 | Agent Messaging | 11 | 11 | Full parity |
 | Behavior Guard | 2 | 2 | Full parity |
 | Agent Pairing | 3 | 3 | Full parity |
@@ -133,7 +133,7 @@ Python SDK additions shipped to reach 100% parity:
 - Daily Digest:
   - `get_daily_digest`
 - Security Scanning:
-  - `scan_content`, `report_security_finding`
+  - `scan_content`, `report_security_finding`, `scan_prompt_injection`
 - Agent Pairing:
   - `create_pairing`, `wait_for_pairing`, `get_pairing`
 - Identity Binding:

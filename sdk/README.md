@@ -1133,6 +1133,27 @@ Scan text and store finding metadata for audit trails. The original content is n
 
 **Returns:** `Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>`
 
+### claw.scanPromptInjection(text, options?)
+Scan text for prompt injection attacks — role overrides, delimiter injection, instruction smuggling, data exfiltration attempts, and encoding evasion. Returns risk level and actionable recommendation.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| text | string | Yes | Text to scan for injection attacks |
+| options.source | string | No | Where this text came from (e.g. user_input, tool_output, retrieval) |
+
+**Returns:** `Promise<{clean: boolean, risk_level: string, recommendation: string, findings_count: number, critical_count: number, categories: string[], findings: Object[]}>`
+
+**Example:**
+```javascript
+const result = await claw.scanPromptInjection(userMessage, { source: 'user_input' });
+if (result.recommendation === 'block') {
+  console.error(`Blocked: ${result.findings_count} injection patterns detected`);
+} else if (result.recommendation === 'warn') {
+  console.warn(`Warning: ${result.categories.join(', ')} detected`);
+}
+```
+
 ---
 
 ## Agent Messaging

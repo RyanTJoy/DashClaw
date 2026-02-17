@@ -145,6 +145,7 @@ app/
     ├── preferences/           # User preferences (observations, prefs, moods, approaches)
     ├── digest/                # Daily digest aggregation (GET only)
     ├── security/scan/         # Content security scanning (POST only)
+    ├── security/prompt-injection/ # Prompt injection scanning (GET/POST)
     ├── sync/                  # Bulk sync (POST - all categories in one request)
     ├── guard/                 # Guard evaluation (POST: check policies, GET: recent decisions)
     ├── policies/              # Guard policy CRUD (GET/POST/PATCH/DELETE - POST/PATCH/DELETE admin only) + test/proof/import [beta]
@@ -328,6 +329,7 @@ function getSql() {
 - `GET/POST /api/preferences` - user preferences (GET: `?type=summary|observations|preferences|moods|approaches`; POST: body.type discriminator)
 - `GET /api/digest` - daily digest aggregation (GET: `?date`, `?agent_id`; aggregates from 7 tables, no storage)
 - `POST /api/security/scan` - content security scanning (18 regex patterns; returns findings + redacted text; optionally stores metadata)
+- `GET/POST /api/security/prompt-injection` - prompt injection scanning (POST: heuristic pattern detection for role overrides, delimiter injection, instruction smuggling, etc.; GET: list recent scans; optionally stores metadata)
 - `GET/POST/PATCH /api/messages` - agent messages (GET: `?agent_id`, `?direction=inbox|sent|all`, `?type`, `?unread=true`, `?thread_id`; POST: send message; PATCH: batch read/archive)
 - `GET/POST/PATCH /api/messages/threads` - message threads (GET: `?status`, `?agent_id`; POST: create; PATCH: resolve/update)
 - `/api/messages/attachments` — GET: download attachment binary by ID

@@ -46,9 +46,9 @@
     ]
   },
   "summary": {
-    "total_routes": 98,
+    "total_routes": 99,
     "stable_routes": 42,
-    "beta_routes": 14,
+    "beta_routes": 15,
     "experimental_routes": 42
   },
   "routes": [
@@ -791,6 +791,16 @@
       "maturity": "experimental",
       "matched_prefix": "/api/schedules",
       "file": "app/api/schedules/route.js"
+    },
+    {
+      "path": "/api/security/prompt-injection",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "maturity": "beta",
+      "matched_prefix": "/api/security",
+      "file": "app/api/security/prompt-injection/route.js"
     },
     {
       "path": "/api/security/scan",
