@@ -13,6 +13,7 @@ import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import { isDemoMode } from '../lib/isDemoMode';
+import { useRealtime } from '../hooks/useRealtime';
 
 export default function SwarmIntelligencePage() {
   const router = useRouter();
@@ -41,6 +42,40 @@ export default function SwarmIntelligencePage() {
     activeAgentId: null,
     activeLink: null,
     tick: 0,
+  });
+
+  useRealtime((event, payload) => {
+    if (!selectedAgent?.id) return;
+
+    if (event === 'action.created' && payload.agent_id === selectedAgent.id) {
+      setAgentContext(prev => ({
+        ...prev,
+        actions: [{
+          action_id: payload.action_id,
+          action_type: payload.action_type,
+          status: payload.status === 'running' ? 'in-progress' : payload.status,
+          timestamp_start: payload.timestamp_start,
+          risk_score: payload.risk_score
+        }, ...prev.actions].slice(0, 6),
+        pendingApprovals: payload.status === 'pending_approval'
+          ? [payload, ...prev.pendingApprovals].slice(0, 6)
+          : prev.pendingApprovals
+      }));
+    }
+
+    if (event === 'message.created' && (payload.from_agent_id === selectedAgent.id || payload.to_agent_id === selectedAgent.id)) {
+      setAgentContext(prev => ({
+        ...prev,
+        messages: [payload, ...prev.messages].slice(0, 6)
+      }));
+    }
+
+    if (event === 'guard.decision.created' && payload.decision.agent_id === selectedAgent.id) {
+      setAgentContext(prev => ({
+        ...prev,
+        guard: [payload.decision, ...prev.guard].slice(0, 6)
+      }));
+    }
   });
 
   const fetchGraph = useCallback(async () => {

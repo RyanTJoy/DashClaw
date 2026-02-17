@@ -9,6 +9,7 @@ import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import { useTileSize, fitItems } from '../hooks/useTileSize';
+import { useRealtime } from '../hooks/useRealtime';
 
 function getSignalHash(signal) {
   return `${signal.type || signal.signal_type || ''}:${signal.agent_id || ''}:${signal.action_id || ''}:${signal.loop_id || ''}:${signal.assumption_id || ''}`;
@@ -19,6 +20,13 @@ export default function RiskSignalsCard() {
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
   const { ref: sizeRef, height: tileHeight } = useTileSize();
+
+  useRealtime((event, payload) => {
+    if (event === 'signal.detected') {
+      if (agentId && payload.agent_id !== agentId) return;
+      setSignals(prev => [payload, ...prev].slice(0, 50));
+    }
+  });
 
   useEffect(() => {
     async function fetchSignals() {

@@ -13,6 +13,7 @@ import { Badge } from '../components/ui/Badge';
 import { StatCompact } from '../components/ui/Stat';
 import { EmptyState } from '../components/ui/EmptyState';
 import { isDemoMode } from '../lib/isDemoMode';
+import { useRealtime } from '../hooks/useRealtime';
 
 const POLICY_TYPES = [
   { value: 'risk_threshold', label: 'Risk Threshold', desc: 'Block or warn when risk score exceeds a threshold' },
@@ -151,6 +152,19 @@ export default function PoliciesPage() {
   const [proofReport, setProofReport] = useState('');
   const [proofFormat, setProofFormat] = useState('markdown');
   const [generatingProof, setGeneratingProof] = useState(false);
+
+  useRealtime((event, payload) => {
+    if (event === 'guard.decision.created') {
+      setDecisions(prev => [payload, ...prev].slice(0, 20));
+      setStats(prev => ({
+        ...prev,
+        total_24h: (parseInt(prev.total_24h || 0, 10) + 1).toString(),
+        blocks_24h: (parseInt(prev.blocks_24h || 0, 10) + (payload.decision === 'block' ? 1 : 0)).toString(),
+        warns_24h: (parseInt(prev.warns_24h || 0, 10) + (payload.decision === 'warn' ? 1 : 0)).toString(),
+        approvals_24h: (parseInt(prev.approvals_24h || 0, 10) + (payload.decision === 'require_approval' ? 1 : 0)).toString(),
+      }));
+    }
+  });
 
   const fetchData = useCallback(async () => {
     try {

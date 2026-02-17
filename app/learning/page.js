@@ -7,6 +7,7 @@ import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 
 export default function LearningDashboard() {
   const { agentId } = useAgentFilter();
@@ -24,6 +25,22 @@ export default function LearningDashboard() {
   const [decisionForm, setDecisionForm] = useState({ decision: '', category: 'general', context: '', outcome: 'pending' });
   const [lessonForm, setLessonForm] = useState({ lesson: '', category: 'general', confidence: 80, tags: '' });
   const [submitting, setSubmitting] = useState(false);
+
+  useRealtime((event, payload) => {
+    if (event === 'decision.created') {
+      if (agentId && payload.agent_id !== agentId) return;
+      setDecisions(prev => [payload, ...prev].slice(0, 20));
+      setStats(prev => {
+        const newTotalDecisions = prev.totalDecisions + 1;
+        const successCount = (prev.successRate * prev.totalDecisions / 100) + (payload.outcome === 'success' ? 1 : 0);
+        return {
+          ...prev,
+          totalDecisions: newTotalDecisions,
+          successRate: Math.round((successCount / newTotalDecisions) * 100)
+        };
+      });
+    }
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -88,8 +105,6 @@ export default function LearningDashboard() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 60000);
-    return () => clearInterval(interval);
   }, [fetchData]);
 
   const getOutcomeVariant = (outcome) => {

@@ -167,9 +167,10 @@ export default function ActivityTimeline() {
   }, [fetchAll]);
 
   // Real-time updates
-  useRealtime(useCallback((event) => {
-    if (event.type === 'action.created' && event.data) {
-      const a = event.data;
+  useRealtime(useCallback((event, payload) => {
+    if (event === 'action.created') {
+      const a = payload;
+      if (agentId && a.agent_id !== agentId) return;
       setEvents(prev => [{
         id: a.action_id,
         category: 'action',
@@ -180,8 +181,30 @@ export default function ActivityTimeline() {
         status: a.status,
         timestamp: a.timestamp_start || new Date().toISOString(),
       }, ...prev].slice(0, 30));
+    } else if (event === 'decision.created') {
+      const d = payload;
+      if (agentId && d.agent_id !== agentId) return;
+      setEvents(prev => [{
+        id: `learn-${d.id || Math.random().toString(36).slice(2, 8)}`,
+        category: 'learning',
+        title: 'Lesson Learned',
+        detail: d.decision || '',
+        timestamp: d.timestamp || new Date().toISOString(),
+      }, ...prev].slice(0, 30));
+    } else if (event === 'guard.decision.created') {
+      const g = payload.decision;
+      if (agentId && g.agent_id !== agentId) return;
+      setEvents(prev => [{
+        id: g.id,
+        category: 'signal',
+        title: 'Guard Decision',
+        detail: `${g.decision.toUpperCase()}: ${g.reason || 'Evaluated action'}`,
+        agentId: g.agent_id,
+        status: g.decision,
+        timestamp: g.created_at,
+      }, ...prev].slice(0, 30));
     }
-  }, []));
+  }, [agentId]));
 
   if (loading) return <CardSkeleton />;
 

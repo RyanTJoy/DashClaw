@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSql as getDbSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
 import { estimateCost } from '../../lib/billing.js';
+import { EVENTS, publishOrgEvent } from '../../lib/events.js';
 import {
   getLatestSnapshot,
   getTodayTotals,
@@ -134,6 +135,16 @@ export async function POST(request) {
     if (agentId) {
       await upsertDailyTotals(sql, orgId, null, today, tokensIn, tokensOut, contextPct);
     }
+
+    void publishOrgEvent(EVENTS.TOKEN_USAGE, {
+      orgId,
+      agent_id: agentId,
+      tokens_in: tokensIn,
+      tokens_out: tokensOut,
+      total_tokens: tokensIn + tokensOut,
+      estimated_cost: estimateCost(tokensIn, tokensOut),
+      model: model || 'unknown'
+    });
 
     return NextResponse.json({ snapshot: result[0] }, { status: 201 });
   } catch (error) {
