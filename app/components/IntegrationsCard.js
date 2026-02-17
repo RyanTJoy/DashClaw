@@ -168,12 +168,6 @@ export default function IntegrationsCard() {
               ))}
             </div>
 
-            {integrationOverflow > 0 && (
-              <Link href="/integrations" className="text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1">
-                +{integrationOverflow} more
-              </Link>
-            )}
-
             {/* Bottom status line */}
             <div className="flex items-center justify-between text-xs text-zinc-500 flex-shrink-0">
               <span className="flex items-center gap-1.5">

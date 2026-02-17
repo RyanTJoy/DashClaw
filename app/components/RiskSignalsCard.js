@@ -116,11 +116,6 @@ export default function RiskSignalsCard() {
             })
           )}
         </div>
-        {overflow > 0 && (
-          <Link href="/security" className="mt-2 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
-            +{overflow} more <ArrowRight size={12} />
-          </Link>
-        )}
         </div>
       </CardContent>
     </Card>

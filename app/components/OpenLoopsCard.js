@@ -212,11 +212,6 @@ export default function OpenLoopsCard() {
             })
           )}
         </div>
-        {loopOverflow > 0 && (
-          <Link href="/actions" className="mt-2 text-xs text-brand hover:text-brand-hover transition-colors inline-flex items-center gap-1 flex-shrink-0">
-            +{loopOverflow} more <ArrowRight size={12} />
-          </Link>
-        )}
         </div>
       </CardContent>
     </Card>
