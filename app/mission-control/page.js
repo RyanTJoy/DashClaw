@@ -13,6 +13,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import ActivityTimeline from '../components/ActivityTimeline';
+import SwarmActivityLog from '../components/SwarmActivityLog';
 
 function computeSystemState(redCount, amberCount) {
   if (redCount >= 2) return { label: 'ALERT', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', pulse: true };
@@ -318,7 +319,10 @@ export default function MissionControlPage() {
       </div>
 
       {/* ── Section D: Live Activity Feed ── */}
-      <ActivityTimeline />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[500px]">
+        <ActivityTimeline />
+        <SwarmActivityLog />
+      </div>
     </PageLayout>
   );
 }
