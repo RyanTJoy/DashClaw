@@ -191,7 +191,7 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <div
-        className={`hidden md:flex flex-col flex-shrink-0 bg-surface-secondary border-r border-[rgba(255,255,255,0.06)] h-screen sticky top-0 transition-all duration-200 ${
+        className={`hidden md:flex flex-col flex-shrink-0 bg-surface-secondary border-r border-[rgba(255,255,255,0.06)] h-screen sticky top-0 z-20 transition-all duration-200 ${
           collapsed ? 'w-14' : 'w-56'
         }`}
       >

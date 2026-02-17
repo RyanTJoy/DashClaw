@@ -145,6 +145,31 @@ export async function archiveMessage(sql, orgId, messageId, now) {
   return rows.length > 0;
 }
 
+export async function getMessagesForUpdate(sql, orgId, messageIds) {
+  if (!messageIds || messageIds.length === 0) return [];
+  return sql`SELECT id, to_agent_id, read_by FROM agent_messages WHERE id = ANY(${messageIds}) AND org_id = ${orgId}`;
+}
+
+export async function batchMarkMessagesRead(sql, messageIds, now) {
+  if (!messageIds || messageIds.length === 0) return 0;
+  const rows = await sql`
+    UPDATE agent_messages SET status = 'read', read_at = ${now}
+    WHERE id = ANY(${messageIds}) AND status = 'sent'
+    RETURNING id
+  `;
+  return rows.length;
+}
+
+export async function batchArchiveMessages(sql, orgId, messageIds, now) {
+  if (!messageIds || messageIds.length === 0) return 0;
+  const rows = await sql`
+    UPDATE agent_messages SET status = 'archived', archived_at = ${now}
+    WHERE id = ANY(${messageIds}) AND org_id = ${orgId} AND status != 'archived'
+    RETURNING id
+  `;
+  return rows.length;
+}
+
 // ── Attachments ──────────────────────────────────────────────
 
 export async function createAttachment(sql, payload) {

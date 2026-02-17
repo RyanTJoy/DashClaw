@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   BarChart3, Layers, ArrowRightLeft, Code2, UserCog, Brain,
@@ -690,7 +690,7 @@ function SnippetsTab({ agentId, dense }) {
     } catch { /* ignore */ }
   }
 
-  const languages = [...new Set(snippets.map(s => s.language).filter(Boolean))].sort();
+  const languages = useMemo(() => [...new Set(snippets.map(s => s.language).filter(Boolean))].sort(), [snippets]);
 
   return (
     <div>
@@ -1063,7 +1063,7 @@ function MemoryTab({ agentId, dense }) {
               <div className="text-xs text-zinc-500">No entities extracted</div>
             ) : (
               <div className={`space-y-1.5 max-h-[400px] overflow-y-auto ${dense ? 'text-xs' : 'text-sm'}`}>
-                {entities.sort((a, b) => (b.mention_count || 0) - (a.mention_count || 0)).map((e, i) => (
+                {[...entities].sort((a, b) => (b.mention_count || 0) - (a.mention_count || 0)).map((e, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
                     {e.type && <Badge variant="info" size="xs">{e.type}</Badge>}
                     <span className="text-zinc-300 flex-1 truncate">{e.name}</span>
@@ -1082,7 +1082,7 @@ function MemoryTab({ agentId, dense }) {
               <div className="text-xs text-zinc-500">No topics extracted</div>
             ) : (
               <div className="flex flex-wrap gap-2 max-h-[400px] overflow-y-auto">
-                {topics.sort((a, b) => (b.mention_count || 0) - (a.mention_count || 0)).map((t, i) => (
+                {[...topics].sort((a, b) => (b.mention_count || 0) - (a.mention_count || 0)).map((t, i) => (
                   <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-border text-xs text-zinc-300">
                     {t.name}
                     <span className="text-[10px] text-zinc-500">{t.mention_count || 0}</span>

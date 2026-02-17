@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FolderKanban } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -95,6 +95,16 @@ export default function ProjectsCard() {
     fetchProjects();
   }, [agentId]);
 
+  const { activeCount, buildingCount, maintainingCount } = useMemo(() => {
+    let active = 0, building = 0, maintaining = 0;
+    for (const p of projects) {
+      if (p.status === 'active') active++;
+      else if (p.status === 'building') building++;
+      else if (p.status === 'maintaining') maintaining++;
+    }
+    return { activeCount: active, buildingCount: building, maintainingCount: maintaining };
+  }, [projects]);
+
   const formatDate = (ts) => {
     if (!ts) return '--';
     try {
@@ -125,10 +135,6 @@ export default function ProjectsCard() {
   const FOOTER_H = 80;
   const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H, FOOTER_H) : 5;
   const visibleProjects = projects.slice(0, maxVisible);
-
-  const activeCount = projects.filter(p => p.status === 'active').length;
-  const buildingCount = projects.filter(p => p.status === 'building').length;
-  const maintainingCount = projects.filter(p => p.status === 'maintaining').length;
 
   return (
     <Card className="h-full">

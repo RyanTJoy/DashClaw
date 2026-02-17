@@ -1,11 +1,11 @@
 const TABLE_CONFIG = [
-  { key: 'actions', table: 'action_records', tsCol: 'timestamp_start' },
-  { key: 'decisions', table: 'decisions', tsCol: 'timestamp' },
-  { key: 'lessons', table: 'lessons', tsCol: 'timestamp' },
-  { key: 'content', table: 'content', tsCol: 'created_at' },
-  { key: 'ideas', table: 'ideas', tsCol: 'captured_at', noAgent: true },
-  { key: 'interactions', table: 'interactions', tsCol: 'created_at' },
-  { key: 'goals', table: 'goals', tsCol: 'created_at' },
+  { key: 'actions', table: 'action_records', tsCol: 'timestamp_start', cols: 'action_id, action_type, declared_goal, status, risk_score, timestamp_start' },
+  { key: 'decisions', table: 'decisions', tsCol: 'timestamp', cols: 'id, decision, outcome, timestamp' },
+  { key: 'lessons', table: 'lessons', tsCol: 'timestamp', cols: 'id, lesson, content, timestamp' },
+  { key: 'content', table: 'content', tsCol: 'created_at', cols: 'id, title, platform, status, created_at' },
+  { key: 'ideas', table: 'ideas', tsCol: 'captured_at', noAgent: true, cols: 'id, title, score, captured_at' },
+  { key: 'interactions', table: 'interactions', tsCol: 'created_at', cols: 'id, summary, direction, created_at' },
+  { key: 'goals', table: 'goals', tsCol: 'created_at', cols: 'id, title, progress, status, created_at' },
 ];
 
 function isMissingTable(err) {
@@ -28,20 +28,32 @@ async function safeQuery(promise) {
  * Otherwise returns recent activity (most recent first, capped at 50 per category).
  */
 export async function fetchDigestData(sql, orgId, { agentId, date } = {}) {
-  const queries = TABLE_CONFIG.map(({ table, tsCol, noAgent }) => {
+  const queries = TABLE_CONFIG.map(({ table, tsCol, noAgent, cols }) => {
     if (date) {
       const dayStart = `${date}T00:00:00.000Z`;
       const dayEnd = `${date}T23:59:59.999Z`;
       if (agentId && !noAgent) {
-        return safeQuery(sql`SELECT * FROM ${sql(table)} WHERE org_id = ${orgId} AND agent_id = ${agentId} AND ${sql(tsCol)} >= ${dayStart} AND ${sql(tsCol)} <= ${dayEnd} ORDER BY ${sql(tsCol)} DESC`);
+        return safeQuery(sql.query(
+          `SELECT ${cols} FROM ${table} WHERE org_id = $1 AND agent_id = $2 AND ${tsCol} >= $3 AND ${tsCol} <= $4 ORDER BY ${tsCol} DESC`,
+          [orgId, agentId, dayStart, dayEnd]
+        ));
       }
-      return safeQuery(sql`SELECT * FROM ${sql(table)} WHERE org_id = ${orgId} AND ${sql(tsCol)} >= ${dayStart} AND ${sql(tsCol)} <= ${dayEnd} ORDER BY ${sql(tsCol)} DESC`);
+      return safeQuery(sql.query(
+        `SELECT ${cols} FROM ${table} WHERE org_id = $1 AND ${tsCol} >= $2 AND ${tsCol} <= $3 ORDER BY ${tsCol} DESC`,
+        [orgId, dayStart, dayEnd]
+      ));
     }
     // Recent: no date filter, limit 50
     if (agentId && !noAgent) {
-      return safeQuery(sql`SELECT * FROM ${sql(table)} WHERE org_id = ${orgId} AND agent_id = ${agentId} ORDER BY ${sql(tsCol)} DESC LIMIT 50`);
+      return safeQuery(sql.query(
+        `SELECT ${cols} FROM ${table} WHERE org_id = $1 AND agent_id = $2 ORDER BY ${tsCol} DESC LIMIT 50`,
+        [orgId, agentId]
+      ));
     }
-    return safeQuery(sql`SELECT * FROM ${sql(table)} WHERE org_id = ${orgId} ORDER BY ${sql(tsCol)} DESC LIMIT 50`);
+    return safeQuery(sql.query(
+      `SELECT ${cols} FROM ${table} WHERE org_id = $1 ORDER BY ${tsCol} DESC LIMIT 50`,
+      [orgId]
+    ));
   });
 
   const results = await Promise.all(queries);
