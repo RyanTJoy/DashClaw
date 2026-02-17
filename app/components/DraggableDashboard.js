@@ -21,11 +21,13 @@ import TokenChart from './TokenChart';
 import ActivityTimeline from './ActivityTimeline';
 import OnboardingChecklist from './OnboardingChecklist';
 import CapabilityHighlightsCard from './CapabilityHighlightsCard';
+import RecentMessagesCard from './RecentMessagesCard';
 
 const CARD_COMPONENTS = {
   'risk-signals': RiskSignalsCard,
   'open-loops': OpenLoopsCard,
   'recent-actions': RecentActionsCard,
+  'recent-messages': RecentMessagesCard,
   'projects': ProjectsCard,
   'goals': GoalsChart,
   'learning': LearningStatsCard,
@@ -59,6 +61,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'token-chart',       x: 0, y: 14, w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
     { i: 'integrations',      x: 2, y: 12, w: 1, h: 3, ...SHARED_CONSTRAINTS },
     { i: 'inspiration',       x: 3, y: 12, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'recent-messages',   x: 2, y: 15, w: 2, h: 3, ...SHARED_CONSTRAINTS },
   ],
   md: [
     { i: 'risk-signals',      x: 0, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
@@ -76,6 +79,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'token-chart',       x: 0, y: 21, w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
     { i: 'integrations',      x: 0, y: 24, w: 1, h: 3, ...SHARED_CONSTRAINTS },
     { i: 'inspiration',       x: 1, y: 24, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'recent-messages',   x: 0, y: 27, w: 2, h: 3, ...SHARED_CONSTRAINTS },
   ],
   sm: [
     { i: 'risk-signals',      x: 0, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
@@ -93,6 +97,7 @@ const DEFAULT_LAYOUTS = {
     { i: 'token-chart',       x: 0, y: 35, w: 1, h: 3, ...SHARED_CONSTRAINTS },
     { i: 'integrations',      x: 0, y: 38, w: 1, h: 3, ...SHARED_CONSTRAINTS },
     { i: 'inspiration',       x: 0, y: 41, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'recent-messages',   x: 0, y: 44, w: 1, h: 3, ...SHARED_CONSTRAINTS },
   ],
 };
 
@@ -114,6 +119,7 @@ const PRESET_LAYOUTS = {
       { i: 'token-chart',       x: 2, y: 12, w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
       { i: 'integrations',      x: 0, y: 16, w: 1, h: 3, ...SHARED_CONSTRAINTS },
       { i: 'inspiration',       x: 1, y: 16, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'recent-messages',   x: 2, y: 15, w: 2, h: 3, ...SHARED_CONSTRAINTS },
     ],
   },
   'Analytics Focus': {
@@ -133,6 +139,7 @@ const PRESET_LAYOUTS = {
       { i: 'memory-health',     x: 2, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
       { i: 'integrations',      x: 3, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
       { i: 'inspiration',       x: 0, y: 17, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'recent-messages',   x: 1, y: 17, w: 2, h: 3, ...SHARED_CONSTRAINTS },
     ],
   },
   'Compact Overview': {
@@ -152,6 +159,7 @@ const PRESET_LAYOUTS = {
       { i: 'activity-timeline', x: 0, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
       { i: 'token-chart',       x: 2, y: 6,  w: 2, h: 3, ...SHARED_CONSTRAINTS, minW: 2 },
       { i: 'inspiration',       x: 0, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+      { i: 'recent-messages',   x: 1, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
     ],
   },
   'Developer': {
@@ -171,6 +179,7 @@ const PRESET_LAYOUTS = {
       { i: 'calendar',          x: 1, y: 14, w: 1, h: 3, ...SHARED_CONSTRAINTS },
       { i: 'token-budget',      x: 2, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
       { i: 'inspiration',       x: 3, y: 13, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+      { i: 'recent-messages',   x: 0, y: 17, w: 2, h: 3, ...SHARED_CONSTRAINTS },
     ],
   },
 };
