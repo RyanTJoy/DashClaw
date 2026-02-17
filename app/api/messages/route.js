@@ -8,10 +8,13 @@ import { getSql } from '../../lib/db.js';
 import { scanSensitiveData } from '../../lib/security.js';
 import {
   archiveMessage,
+  batchArchiveMessages,
+  batchMarkMessagesRead,
   createAttachment,
   createMessage,
   getAttachmentsForMessages,
   getMessageForUpdate,
+  getMessagesForUpdate,
   getMessageThread,
   getUnreadMessageCount,
   listMessages,
@@ -224,34 +227,43 @@ export async function PATCH(request) {
 
     if (action === 'read') {
       const readerId = agent_id || 'dashboard';
-      for (const msgId of message_ids) {
-        const msg = await getMessageForUpdate(sql, orgId, msgId);
-        if (!msg) continue;
+      // Batch-fetch all messages in one query instead of N sequential queries
+      const messages = await getMessagesForUpdate(sql, orgId, message_ids);
 
+      // Separate broadcasts (to_agent_id IS NULL) from targeted messages
+      const directReadIds = [];
+      const broadcastUpdates = []; // { id, readBy }
+
+      for (const msg of messages) {
         if (msg.to_agent_id === null) {
           let readBy = [];
           try {
-            const parsed = JSON.parse(msg.read_by || '[]');
+            const parsed = typeof msg.read_by === 'string' ? JSON.parse(msg.read_by || '[]') : (msg.read_by || []);
             readBy = Array.isArray(parsed) ? parsed : [];
           } catch {
             readBy = [];
           }
-
           if (!readBy.includes(readerId)) {
             readBy.push(readerId);
-            await markBroadcastRead(sql, msgId, readBy);
-            updated++;
+            broadcastUpdates.push({ id: msg.id, readBy });
           }
         } else if (readerId === 'dashboard' || msg.to_agent_id === readerId) {
-          await markMessageRead(sql, msgId, now);
-          updated++;
+          directReadIds.push(msg.id);
         }
       }
-    } else {
-      for (const msgId of message_ids) {
-        const archived = await archiveMessage(sql, orgId, msgId, now);
-        if (archived) updated++;
+
+      // Batch update targeted messages in one query
+      const directCount = await batchMarkMessagesRead(sql, directReadIds, now);
+      updated += directCount;
+
+      // Broadcast read_by updates must remain per-message (each has unique read_by array)
+      for (const { id, readBy } of broadcastUpdates) {
+        await markBroadcastRead(sql, id, readBy);
+        updated++;
       }
+    } else {
+      // Batch archive in one query instead of N sequential queries
+      updated = await batchArchiveMessages(sql, orgId, message_ids, now);
     }
 
     return NextResponse.json({ updated });

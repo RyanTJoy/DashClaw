@@ -771,9 +771,9 @@ async function hashApiKey(key) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// In-memory cache for org existence verification (5-min TTL)
+// In-memory cache for org existence verification (1-hour TTL — orgs rarely change)
 const orgExistsCache = new Map();
-const ORG_EXISTS_CACHE_TTL = 5 * 60 * 1000;
+const ORG_EXISTS_CACHE_TTL = 60 * 60 * 1000;
 
 async function verifyOrgExists(orgId) {
   const now = Date.now();

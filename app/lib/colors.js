@@ -10,12 +10,18 @@ const agentColors = [
   'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
 ];
 
+const agentColorCache = new Map();
+
 export function getAgentColor(agentId) {
+  const cached = agentColorCache.get(agentId);
+  if (cached) return cached;
   let hash = 0;
   for (let i = 0; i < (agentId || '').length; i++) {
     hash = ((hash << 5) - hash + agentId.charCodeAt(i)) | 0;
   }
-  return agentColors[Math.abs(hash) % agentColors.length];
+  const color = agentColors[Math.abs(hash) % agentColors.length];
+  agentColorCache.set(agentId, color);
+  return color;
 }
 
 // Action type icon mapping (returns Lucide icon name)

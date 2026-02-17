@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ShieldAlert, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
@@ -37,18 +37,21 @@ export default function RiskSignalsCard() {
     fetchSignals();
   }, [agentId]);
 
+  // Respect dismissals from the Security page (re-read when signals refresh)
+  const dismissed = useMemo(() => {
+    try {
+      const stored = typeof window !== 'undefined' && localStorage.getItem('dashclaw_dismissed_signals');
+      if (stored) return new Set(JSON.parse(stored));
+    } catch { /* ignore */ }
+    return new Set();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signals]);
+
+  const filteredSignals = useMemo(() => signals.filter(s => !dismissed.has(getSignalHash(s))), [signals, dismissed]);
+
   if (loading) {
     return <CardSkeleton />;
   }
-
-  // Respect dismissals from the Security page
-  let dismissed = new Set();
-  try {
-    const stored = typeof window !== 'undefined' && localStorage.getItem('dashclaw_dismissed_signals');
-    if (stored) dismissed = new Set(JSON.parse(stored));
-  } catch { /* ignore */ }
-
-  const filteredSignals = signals.filter(s => !dismissed.has(getSignalHash(s)));
   const ITEM_H = 52;
   const maxVisible = tileHeight > 0 ? fitItems(tileHeight, ITEM_H) : 5;
   const visibleSignals = filteredSignals.slice(0, maxVisible);

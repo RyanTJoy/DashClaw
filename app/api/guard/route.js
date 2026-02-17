@@ -76,28 +76,26 @@ export async function GET(request) {
     }
 
     const where = conditions.join(' AND ');
-    const query = `SELECT * FROM guard_decisions WHERE ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`;
+    const query = `SELECT id, org_id, agent_id, action_type, risk_score, decision, reasons, created_at FROM guard_decisions WHERE ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`;
     params.push(limit, offset);
 
     const countQuery = `SELECT COUNT(*) as total FROM guard_decisions WHERE ${where}`;
     const countParams = params.slice(0, -2);
 
-    const [decisions, countResult] = await Promise.all([
+    const [decisions, countResult, statsRows] = await Promise.all([
       sql.query(query, params),
       sql.query(countQuery, countParams),
+      sql`
+        SELECT
+          COUNT(*) as total_24h,
+          COUNT(*) FILTER (WHERE decision = 'block') as blocks_24h,
+          COUNT(*) FILTER (WHERE decision = 'warn') as warns_24h,
+          COUNT(*) FILTER (WHERE decision = 'require_approval') as approvals_24h
+        FROM guard_decisions
+        WHERE org_id = ${orgId}
+          AND created_at::timestamptz > NOW() - INTERVAL '24 hours'
+      `,
     ]);
-
-    // Stats for last 24h
-    const statsRows = await sql`
-      SELECT
-        COUNT(*) as total_24h,
-        COUNT(*) FILTER (WHERE decision = 'block') as blocks_24h,
-        COUNT(*) FILTER (WHERE decision = 'warn') as warns_24h,
-        COUNT(*) FILTER (WHERE decision = 'require_approval') as approvals_24h
-      FROM guard_decisions
-      WHERE org_id = ${orgId}
-        AND created_at::timestamptz > NOW() - INTERVAL '24 hours'
-    `;
 
     return NextResponse.json({
       decisions,

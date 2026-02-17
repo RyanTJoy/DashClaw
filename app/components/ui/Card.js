@@ -1,7 +1,7 @@
 export function Card({ children, className = '', hover = true }) {
   return (
     <div
-      className={`group/card flex flex-col bg-surface-secondary border border-border rounded-xl outline-none ${hover ? 'transition-colors duration-150 hover:border-border-hover' : ''} ${className}`}
+      className={`group/card flex flex-col overflow-hidden bg-surface-secondary border border-border rounded-xl outline-none ${hover ? 'transition-colors duration-150 hover:border-border-hover' : ''} ${className}`}
       tabIndex={0}
     >
       {children}
