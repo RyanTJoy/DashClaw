@@ -161,6 +161,7 @@ const navItems = [
   { href: '#security-scanning', label: 'Security Scanning' },
   { href: '#scanContent', label: 'scanContent', indent: true },
   { href: '#reportSecurityFinding', label: 'reportSecurityFinding', indent: true },
+  { href: '#scanPromptInjection', label: 'scanPromptInjection', indent: true },
   { href: '#agent-messaging', label: 'Agent Messaging' },
   { href: '#sendMessage', label: 'sendMessage', indent: true },
   { href: '#getInbox', label: 'getInbox', indent: true },
@@ -1173,7 +1174,7 @@ console.log(\`Today: \${summary.action_count} actions, \${summary.decision_count
           {/* ── Security Scanning ── */}
           <section id="security-scanning" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
             <h2 className="text-2xl font-bold tracking-tight mb-2">Security Scanning</h2>
-            <p className="text-sm text-zinc-400 mb-6">Scan text for sensitive data (API keys, tokens, PII) before sending it externally. Content is never stored; only metadata is retained.</p>
+            <p className="text-sm text-zinc-400 mb-6">Scan text for sensitive data (API keys, tokens, PII) and prompt injection attacks before sending it externally. Content is never stored; only metadata is retained.</p>
 
             <MethodEntry id="scanContent" signature="scanContent(text, destination?)" description="Scan text for sensitive data. Returns findings and redacted text. Does not store anything." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan' }, { name: 'destination', type: 'string', required: false, desc: 'Where text is headed (context)' }]} returns="Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>" example={`const result = await claw.scanContent(messageText, 'slack');
 if (!result.clean) {
@@ -1182,6 +1183,13 @@ if (!result.clean) {
 }`} />
 
             <MethodEntry id="reportSecurityFinding" signature="reportSecurityFinding(text, destination?)" description="Same as scanContent but stores finding metadata (never the content) for audit trails." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan' }, { name: 'destination', type: 'string', required: false, desc: 'Where text is headed' }]} returns="Promise<{clean: boolean, findings_count: number, findings: Object[], redacted_text: string}>" example={`await claw.reportSecurityFinding(outboundMessage, 'email');`} />
+
+            <MethodEntry id="scanPromptInjection" signature="scanPromptInjection(text, options?)" description="Scan text for prompt injection attacks — role overrides, delimiter injection, instruction smuggling, data exfiltration attempts, and encoding evasion. Returns risk level and actionable recommendation (allow/warn/block)." params={[{ name: 'text', type: 'string', required: true, desc: 'Text to scan for injection attacks' }, { name: 'options.source', type: 'string', required: false, desc: 'Where this text came from (e.g. user_input, tool_output, retrieval)' }]} returns="Promise<{clean: boolean, risk_level: string, recommendation: string, findings_count: number, categories: string[], findings: Object[]}>" example={`const result = await claw.scanPromptInjection(userMessage, { source: 'user_input' });
+if (result.recommendation === 'block') {
+  console.error(\`Blocked: \${result.findings_count} injection patterns detected\`);
+} else if (result.recommendation === 'warn') {
+  console.warn(\`Warning: \${result.categories.join(', ')} detected\`);
+}`} />
           </section>
 
           {/* ── Agent Messaging ── */}

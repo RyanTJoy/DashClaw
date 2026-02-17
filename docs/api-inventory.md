@@ -13,9 +13,9 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `98`
+- Total routes: `99`
 - Stable routes: `42`
-- Beta routes: `14`
+- Beta routes: `15`
 - Experimental routes: `42`
 
 ## Routes
@@ -99,6 +99,7 @@ doc-type: architecture
 | `/api/routing/tasks/{taskId}` | `DELETE, GET` | `experimental` | `(default)` | `app/api/routing/tasks/[taskId]/route.js` |
 | `/api/routing/tasks/{taskId}/complete` | `POST` | `experimental` | `(default)` | `app/api/routing/tasks/[taskId]/complete/route.js` |
 | `/api/schedules` | `GET` | `experimental` | `/api/schedules` | `app/api/schedules/route.js` |
+| `/api/security/prompt-injection` | `GET, POST` | `beta` | `/api/security` | `app/api/security/prompt-injection/route.js` |
 | `/api/security/scan` | `POST` | `beta` | `/api/security` | `app/api/security/scan/route.js` |
 | `/api/security/status` | `GET` | `beta` | `/api/security` | `app/api/security/status/route.js` |
 | `/api/settings` | `DELETE, GET, POST` | `stable` | `/api/settings` | `app/api/settings/route.js` |

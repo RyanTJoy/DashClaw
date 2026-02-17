@@ -13,7 +13,7 @@
  * - Automation Snippets (5)
  * - User Preferences (6)
  * - Daily Digest (1)
- * - Security Scanning (2)
+ * - Security Scanning (3)
  * - Agent Messaging (9)
  * - Behavior Guard (2)
  * - Agent Pairing (3)
@@ -1570,7 +1570,7 @@ class DashClaw {
   }
 
   // ══════════════════════════════════════════════
-  // Category 10: Security Scanning (2 methods)
+  // Category 10: Security Scanning (3 methods)
   // ══════════════════════════════════════════════
 
   /**
@@ -1602,6 +1602,22 @@ class DashClaw {
       destination,
       agent_id: this.agentId,
       store: true,
+    });
+  }
+
+  /**
+   * Scan text for prompt injection attacks (role overrides, delimiter injection,
+   * instruction smuggling, data exfiltration attempts, etc.).
+   * @param {string} text - Text to scan
+   * @param {Object} [options]
+   * @param {string} [options.source] - Where this text came from (for context)
+   * @returns {Promise<{clean: boolean, risk_level: string, recommendation: string, findings_count: number, critical_count: number, categories: string[], findings: Object[]}>}
+   */
+  async scanPromptInjection(text, options = {}) {
+    return this._request('/api/security/prompt-injection', 'POST', {
+      text,
+      source: options.source,
+      agent_id: this.agentId,
     });
   }
 

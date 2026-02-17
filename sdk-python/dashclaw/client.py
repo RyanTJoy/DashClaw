@@ -838,6 +838,13 @@ class DashClaw:
             payload["destination"] = destination
         return self._request("/api/security/scan", method="POST", body=payload)
 
+    def scan_prompt_injection(self, text, source=None):
+        """Scan text for prompt injection attacks (role overrides, delimiter injection, etc.)."""
+        payload = {"text": text, "agent_id": self.agent_id}
+        if source is not None:
+            payload["source"] = source
+        return self._request("/api/security/prompt-injection", method="POST", body=payload)
+
     # --- Category 11: Agent Messaging ---
 
     def send_message(self, body, to=None, message_type="info", attachments=None, **kwargs):
