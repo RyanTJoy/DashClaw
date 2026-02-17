@@ -216,7 +216,7 @@ export default function ActivityTimeline() {
   const grouped = groupByDay(visibleEvents);
 
   return (
-    <Card className="h-full">
+    <Card className="flex flex-col h-full overflow-hidden">
       <CardHeader title="Decision Timeline" icon={Clock}>
         <Badge variant="default" size="sm">{events.length} events</Badge>
       </CardHeader>
