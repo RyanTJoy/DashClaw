@@ -9,6 +9,7 @@ import { StatCompact } from './ui/Stat';
 import { CardSkeleton } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 
 export default function TokenBudgetCard() {
   const { agentId } = useAgentFilter();
@@ -24,6 +25,23 @@ export default function TokenBudgetCard() {
   });
   const [projectedCost, setProjectedCost] = useState(null);
   const [lastUpdated, setLastUpdated] = useState('');
+
+  useRealtime((event, payload) => {
+    if (event === 'token.usage') {
+      if (agentId && payload.agent_id !== agentId) return;
+      
+      setData(prev => ({
+        ...prev,
+        todayTokensIn: prev.todayTokensIn + (payload.tokens_in || 0),
+        todayTokensOut: prev.todayTokensOut + (payload.tokens_out || 0),
+        todayTokens: prev.todayTokens + (payload.total_tokens || 0),
+        todayCost: prev.todayCost + (payload.estimated_cost || 0),
+        model: payload.model || prev.model,
+        status: 'ok'
+      }));
+      setLastUpdated(new Date().toLocaleTimeString());
+    }
+  });
 
   const fetchData = useCallback(async () => {
     try {
@@ -80,8 +98,6 @@ export default function TokenBudgetCard() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
   }, [fetchData]);
 
   const formatCost = (cost) => {

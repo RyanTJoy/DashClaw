@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
 import { enforceFieldLimits } from '../../lib/validate.js';
+import { EVENTS, publishOrgEvent } from '../../lib/events.js';
 
 // sql initialized inside handler for serverless compatibility
 
@@ -102,6 +103,11 @@ export async function POST(request) {
       )
       RETURNING *
     `;
+
+    void publishOrgEvent(EVENTS.DECISION_CREATED, {
+      orgId,
+      decision: result[0]
+    });
 
     return NextResponse.json({ decision: result[0] }, { status: 201 });
   } catch (error) {

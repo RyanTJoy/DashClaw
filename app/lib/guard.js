@@ -8,6 +8,7 @@ import { deliverGuardWebhook } from './webhooks.js';
 import { checkSemanticGuardrail } from './llm.js';
 import { generateActionEmbedding, isEmbeddingsEnabled } from './embeddings.js';
 import { scanSensitiveData } from './security.js';
+import { EVENTS, publishOrgEvent } from './events.js';
 
 const DECISION_SEVERITY = { allow: 0, warn: 1, require_approval: 2, block: 3 };
 
@@ -130,6 +131,22 @@ export async function evaluateGuard(orgId, context, sql, options = {}) {
       ${evaluated_at}
     )
   `.catch(() => {});
+
+  void publishOrgEvent(EVENTS.GUARD_DECISION_CREATED, {
+    orgId,
+    decision: {
+      id: decisionId,
+      org_id: orgId,
+      agent_id: context.agent_id || null,
+      decision: highestDecision,
+      reason: reasons.join('; ') || null,
+      matched_policies: matchedPolicies,
+      context: safeContextForLog,
+      risk_score: context.risk_score != null ? context.risk_score : null,
+      action_type: context.action_type || null,
+      created_at: evaluated_at
+    }
+  });
 
   return {
     decision: highestDecision,

@@ -10,6 +10,8 @@ export const EVENTS = {
   POLICY_UPDATED: 'policy.updated',
   TASK_ASSIGNED: 'task.assigned',
   TASK_COMPLETED: 'task.completed',
+  DECISION_CREATED: 'decision.created',
+  GUARD_DECISION_CREATED: 'guard.decision.created',
 };
 
 const EVENT_VERSION = 'v1';

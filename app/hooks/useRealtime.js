@@ -67,6 +67,38 @@ function attachListeners(es) {
       console.error('SSE Parse Error:', err);
     }
   });
+
+  es.addEventListener('decision.created', (e) => {
+    try {
+      broadcast('decision.created', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('guard.decision.created', (e) => {
+    try {
+      broadcast('guard.decision.created', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('signal.detected', (e) => {
+    try {
+      broadcast('signal.detected', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('token.usage', (e) => {
+    try {
+      broadcast('token.usage', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
 }
 
 function ensureEventSource() {

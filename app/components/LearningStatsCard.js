@@ -9,11 +9,32 @@ import { ProgressBar } from './ui/ProgressBar';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 
 export default function LearningStatsCard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
+
+  useRealtime((event, payload) => {
+    if (event === 'decision.created') {
+      if (agentId && payload.agent_id !== agentId) return;
+
+      setStats(prev => {
+        if (!prev) return null;
+        const newTotalDecisions = prev.decisions + 1;
+        const successCount = prev.successRate * prev.decisions / 100 + (payload.outcome === 'success' ? 1 : 0);
+        const newSuccessRate = Math.round((successCount / newTotalDecisions) * 100);
+
+        return {
+          ...prev,
+          decisions: newTotalDecisions,
+          successRate: newSuccessRate,
+          recentLessons: [payload.decision, ...prev.recentLessons].slice(0, 4)
+        };
+      });
+    }
+  });
 
   useEffect(() => {
     async function fetchData() {
@@ -38,8 +59,6 @@ export default function LearningStatsCard() {
       }
     }
     fetchData();
-    const interval = setInterval(fetchData, 60000);
-    return () => clearInterval(interval);
   }, [agentId]);
 
   if (loading) {

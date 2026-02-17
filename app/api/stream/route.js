@@ -60,6 +60,18 @@ data: ${JSON.stringify(data)}
       if (envelope.event === EVENTS.TASK_ASSIGNED || envelope.event === EVENTS.TASK_COMPLETED) {
         return envelope.payload || null;
       }
+      if (envelope.event === EVENTS.DECISION_CREATED) {
+        return envelope.payload?.decision || null;
+      }
+      if (envelope.event === EVENTS.GUARD_DECISION_CREATED) {
+        return envelope.payload?.decision || null;
+      }
+      if (envelope.event === EVENTS.SIGNAL_DETECTED) {
+        return envelope.payload?.signal || null;
+      }
+      if (envelope.event === EVENTS.TOKEN_USAGE) {
+        return envelope.payload || null;
+      }
       return envelope.payload || null;
     };
 
