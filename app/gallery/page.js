@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
+import PublicFooter from '../components/PublicFooter';
 import ImageLightbox from '../components/ImageLightbox';
 import Image from 'next/image';
 import { useMemo, useState, useEffect, Suspense } from 'react';
@@ -125,23 +126,7 @@ function GalleryContent() {
         />
       )}
 
-      <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
-        <div className="max-w-6xl auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center">
-              <span className="text-white text-[10px] font-bold">DC</span>
-            </div>
-            <span className="text-sm text-zinc-400">DashClaw</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-zinc-500">
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300">GitHub</a>
-            <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
-            <Link href="/toolkit" className="hover:text-zinc-300">Toolkit</Link>
-            <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/self-host" className="hover:text-zinc-300">Get Started</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

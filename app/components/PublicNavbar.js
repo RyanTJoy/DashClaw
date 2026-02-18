@@ -93,6 +93,7 @@ export default function PublicNavbar() {
             )}
           </div>
           <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+          <Link href="/practical-systems" className="hover:text-white transition-colors">Practical Systems</Link>
           <a
             href="https://github.com/ucsandman/DashClaw"
             target="_blank"

@@ -150,7 +150,12 @@ export default function Sidebar() {
       {/* Bottom */}
       <div className="border-t border-[rgba(255,255,255,0.06)] px-4 py-3">
         {!collapsed && (
-          <div className="text-[10px] text-zinc-600">DashClaw v1.0</div>
+          <div className="space-y-2">
+            <div className="text-[10px] text-zinc-600">DashClaw v1.0</div>
+            <div className="text-[10px] text-zinc-600">
+              Powered by <Link href="/practical-systems" className="hover:text-brand transition-colors">Practical Systems</Link>
+            </div>
+          </div>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

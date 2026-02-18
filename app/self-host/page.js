@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github, Download, Sparkles } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
+import PublicFooter from '../components/PublicFooter';
 import CopyMarkdownButton from '../components/CopyMarkdownButton';
 import CopyableCodeBlock from '../components/CopyableCodeBlock';
 import SecretGenerator from '../components/SecretGenerator';
@@ -297,6 +298,7 @@ ENFORCE_AGENT_SIGNATURES=true`}</CopyableCodeBlock>
           </StepCard>
         </div>
       </section>
+      <PublicFooter />
     </div>
   );
 }
