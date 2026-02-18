@@ -117,6 +117,14 @@ The dashboard requires GitHub and/or Google OAuth for login.
    - Cloud: `https://your-app.vercel.app/api/auth/callback/google`
 3. Add `GOOGLE_ID` and `GOOGLE_SECRET`
 
+### OIDC Provider (Authentik, Keycloak, etc.)
+
+1.  Set the callback URL in your provider to: `https://your-app.vercel.app/api/auth/callback/oidc`
+2.  Add `OIDC_ISSUER_URL`, `OIDC_CLIENT_ID`, and `OIDC_CLIENT_SECRET` to your environment variables.
+3.  (Optional) Add `OIDC_DISPLAY_NAME` to customize the login button text.
+
+See [OIDC Setup Guide](docs/OIDC_SETUP.md) for detailed instructions.
+
 If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL.
 
 ---

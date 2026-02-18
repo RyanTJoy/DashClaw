@@ -5,12 +5,16 @@ import { getSql } from './db.js';
 
 // SECURITY: In production, require real OAuth credentials — do not fall through to mocks
 const isProd = process.env.NODE_ENV === 'production';
-if (isProd && (!process.env.GITHUB_ID || !process.env.GITHUB_SECRET) && (!process.env.GOOGLE_ID || !process.env.GOOGLE_SECRET)) {
-  console.error('[AUTH] FATAL: At least one OAuth provider (GITHUB_ID/GITHUB_SECRET or GOOGLE_ID/GOOGLE_SECRET) must be configured in production');
+const hasGitHub = process.env.GITHUB_ID && process.env.GITHUB_SECRET;
+const hasGoogle = process.env.GOOGLE_ID && process.env.GOOGLE_SECRET;
+const hasOIDC = process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET && process.env.OIDC_ISSUER_URL;
+
+if (isProd && !hasGitHub && !hasGoogle && !hasOIDC) {
+  console.error('[AUTH] FATAL: At least one authentication provider (GitHub, Google, or OIDC) must be configured in production');
 }
 
 const providers = [];
-if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
+if (hasGitHub) {
   providers.push(GitHubProvider({
     clientId: process.env.GITHUB_ID,
     clientSecret: process.env.GITHUB_SECRET,
@@ -21,7 +25,8 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     clientSecret: 'mock_github_secret',
   }));
 }
-if (process.env.GOOGLE_ID && process.env.GOOGLE_SECRET) {
+
+if (hasGoogle) {
   providers.push(GoogleProvider({
     clientId: process.env.GOOGLE_ID,
     clientSecret: process.env.GOOGLE_SECRET,
@@ -31,6 +36,18 @@ if (process.env.GOOGLE_ID && process.env.GOOGLE_SECRET) {
     clientId: 'mock_google_id',
     clientSecret: 'mock_google_secret',
   }));
+}
+
+if (hasOIDC) {
+  providers.push({
+    id: 'oidc',
+    name: process.env.OIDC_DISPLAY_NAME || 'OIDC',
+    type: 'oidc',
+    issuer: process.env.OIDC_ISSUER_URL,
+    clientId: process.env.OIDC_CLIENT_ID,
+    clientSecret: process.env.OIDC_CLIENT_SECRET,
+    authorization: { params: { scope: 'openid email profile' } },
+  });
 }
 
 export const authOptions = {

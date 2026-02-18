@@ -33,8 +33,17 @@ if (isProd) {
   // At least one OAuth provider
   const hasGitHub = process.env.GITHUB_ID && process.env.GITHUB_SECRET;
   const hasGoogle = process.env.GOOGLE_ID && process.env.GOOGLE_SECRET;
-  if (!hasGitHub && !hasGoogle) {
-    errors.push('At least one OAuth provider (GITHUB or GOOGLE) must be configured in production');
+  const hasOIDC = process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET && process.env.OIDC_ISSUER_URL;
+
+  if (!hasGitHub && !hasGoogle && !hasOIDC) {
+    errors.push('At least one authentication provider (GITHUB, GOOGLE, or OIDC) must be configured in production');
+  }
+
+  // Validate OIDC fields if any are set
+  if (process.env.OIDC_CLIENT_ID || process.env.OIDC_CLIENT_SECRET || process.env.OIDC_ISSUER_URL) {
+    if (!process.env.OIDC_CLIENT_ID) errors.push('OIDC_CLIENT_ID is required when OIDC is partially configured');
+    if (!process.env.OIDC_CLIENT_SECRET) errors.push('OIDC_CLIENT_SECRET is required when OIDC is partially configured');
+    if (!process.env.OIDC_ISSUER_URL) errors.push('OIDC_ISSUER_URL is required when OIDC is partially configured');
   }
 
   // Recommended in production
