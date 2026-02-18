@@ -23,7 +23,9 @@ export async function GET(request, { params }) {
     }
 
     const orgs = await sql`
-      SELECT * FROM organizations WHERE id = ${orgId}
+      SELECT id, name, slug, plan, created_at, updated_at 
+      FROM organizations 
+      WHERE id = ${orgId}
     `;
 
     if (orgs.length === 0) {

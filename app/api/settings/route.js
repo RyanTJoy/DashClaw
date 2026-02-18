@@ -34,25 +34,31 @@ export async function GET(request) {
 
     const isApiKeyRequest = !!request.headers.get('x-api-key');
     const role = getOrgRole(request);
+    
+    // SECURITY:
+    // - Only admins using an API key can decrypt secrets.
+    // - Browser sessions (admins or members) ALWAYS see masked values for sensitive keys.
+    // - Members ALWAYS see masked values for EVERYTHING.
     const canDecrypt = isApiKeyRequest && role === 'admin';
 
-    // SECURITY:
-    // - Never return decrypted secrets to browser sessions (masked only).
-    // - Only return decrypted secrets to admin API keys (least privilege).
     const processed = settings.map(s => {
       let val = s.value;
-      if (s.encrypted && val) {
-        if (canDecrypt) {
+      const sensitive = s.encrypted || shouldAutoEncrypt(s.key, false);
+      const shouldMask = !canDecrypt && (sensitive || role !== 'admin');
+
+      if (val) {
+        if (s.encrypted && canDecrypt) {
           try {
             val = decrypt(val);
           } catch (err) {
             console.error('[SETTINGS] Decryption failed for key:', s.key);
             val = '[DECRYPTION_FAILED]';
           }
-        } else {
+        } else if (shouldMask) {
           val = maskValue(val);
         }
       }
+
       return {
         ...s,
         value: val,

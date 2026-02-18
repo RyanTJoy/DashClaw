@@ -10,7 +10,7 @@ const ALLOWED_URL_PATTERNS = {
 };
 
 function isPrivateIP(hostname) {
-  return /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.|localhost|::1|\[::1\])/.test(hostname);
+  return /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|0\.|localhost|::1|\[::1\])/i.test(hostname);
 }
 
 function validateUrl(url, type) {
@@ -25,6 +25,27 @@ function validateUrl(url, type) {
     if (type === 'DATABASE_URL') return ALLOWED_URL_PATTERNS.DATABASE_URL.test(url);
     return false;
   }
+}
+
+/**
+ * SECURITY: Standardized fetch wrapper for connection tests to prevent SSRF via redirects.
+ */
+async function safeFetch(url, options = {}) {
+  // Enforce HTTPS
+  if (!url.startsWith('https://')) {
+    throw new Error('Connection test URLs must use HTTPS');
+  }
+
+  // Parse and check for private IPs
+  const parsed = new URL(url);
+  if (isPrivateIP(parsed.hostname)) {
+    throw new Error('Internal or private URLs are not allowed');
+  }
+
+  return fetch(url, {
+    ...options,
+    redirect: 'manual', // Prevent SSRF via redirects
+  });
 }
 
 // POST - Test a connection with provided credentials (admin only)
@@ -115,7 +136,7 @@ async function testNeon(credentials) {
 
 async function testNotion(credentials) {
   try {
-    const res = await fetch('https://api.notion.com/v1/users/me', {
+    const res = await safeFetch('https://api.notion.com/v1/users/me', {
       headers: {
         'Authorization': `Bearer ${credentials.NOTION_API_KEY}`,
         'Notion-Version': '2022-06-28'
@@ -133,7 +154,7 @@ async function testNotion(credentials) {
 
 async function testGitHub(credentials) {
   try {
-    const res = await fetch('https://api.github.com/user', {
+    const res = await safeFetch('https://api.github.com/user', {
       headers: {
         'Authorization': `Bearer ${credentials.GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json'
@@ -151,7 +172,7 @@ async function testGitHub(credentials) {
 
 async function testOpenAI(credentials) {
   try {
-    const res = await fetch('https://api.openai.com/v1/models', {
+    const res = await safeFetch('https://api.openai.com/v1/models', {
       headers: { 'Authorization': `Bearer ${credentials.OPENAI_API_KEY}` }
     });
     if (res.ok) {
@@ -177,7 +198,7 @@ async function testAnthropic(credentials) {
 
 async function testBrave(credentials) {
   try {
-    const res = await fetch('https://api.search.brave.com/res/v1/web/search?q=test', {
+    const res = await safeFetch('https://api.search.brave.com/res/v1/web/search?q=test', {
       headers: { 'X-Subscription-Token': credentials.BRAVE_API_KEY }
     });
     if (res.ok) {
@@ -191,7 +212,7 @@ async function testBrave(credentials) {
 
 async function testElevenLabs(credentials) {
   try {
-    const res = await fetch('https://api.elevenlabs.io/v1/user', {
+    const res = await safeFetch('https://api.elevenlabs.io/v1/user', {
       headers: { 'xi-api-key': credentials.ELEVENLABS_API_KEY }
     });
     if (res.ok) {
@@ -235,7 +256,7 @@ async function testSupabase(credentials) {
     // Reconstruct a safe origin to avoid carrying over any attacker-controlled path/query
     const safeOrigin = `https://${hostname}`;
 
-    const res = await fetch(`${safeOrigin}/rest/v1/`, {
+    const res = await safeFetch(`${safeOrigin}/rest/v1/`, {
       headers: {
         'apikey': credentials.SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${credentials.SUPABASE_ANON_KEY}`
@@ -253,7 +274,7 @@ async function testSupabase(credentials) {
 
 async function testGroq(credentials) {
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/models', {
+    const res = await safeFetch('https://api.groq.com/openai/v1/models', {
       headers: { 'Authorization': `Bearer ${credentials.GROQ_API_KEY}` }
     });
     if (res.ok) {
@@ -267,7 +288,7 @@ async function testGroq(credentials) {
 
 async function testTogether(credentials) {
   try {
-    const res = await fetch('https://api.together.xyz/v1/models', {
+    const res = await safeFetch('https://api.together.xyz/v1/models', {
       headers: { 'Authorization': `Bearer ${credentials.TOGETHER_API_KEY}` }
     });
     if (res.ok) {
@@ -281,7 +302,7 @@ async function testTogether(credentials) {
 
 async function testReplicate(credentials) {
   try {
-    const res = await fetch('https://api.replicate.com/v1/account', {
+    const res = await safeFetch('https://api.replicate.com/v1/account', {
       headers: { 'Authorization': `Token ${credentials.REPLICATE_API_TOKEN}` }
     });
     if (res.ok) {
@@ -296,7 +317,7 @@ async function testReplicate(credentials) {
 
 async function testDiscord(credentials) {
   try {
-    const res = await fetch('https://discord.com/api/v10/users/@me', {
+    const res = await safeFetch('https://discord.com/api/v10/users/@me', {
       headers: { 'Authorization': `Bot ${credentials.DISCORD_BOT_TOKEN}` }
     });
     if (res.ok) {
@@ -311,7 +332,7 @@ async function testDiscord(credentials) {
 
 async function testSlack(credentials) {
   try {
-    const res = await fetch('https://slack.com/api/auth.test', {
+    const res = await safeFetch('https://slack.com/api/auth.test', {
       headers: { 'Authorization': `Bearer ${credentials.SLACK_BOT_TOKEN}` }
     });
     const data = await res.json();
@@ -326,7 +347,7 @@ async function testSlack(credentials) {
 
 async function testLinear(credentials) {
   try {
-    const res = await fetch('https://api.linear.app/graphql', {
+    const res = await safeFetch('https://api.linear.app/graphql', {
       method: 'POST',
       headers: { 
         'Authorization': credentials.LINEAR_API_KEY,
@@ -346,7 +367,7 @@ async function testLinear(credentials) {
 
 async function testResend(credentials) {
   try {
-    const res = await fetch('https://api.resend.com/domains', {
+    const res = await safeFetch('https://api.resend.com/domains', {
       headers: { 'Authorization': `Bearer ${credentials.RESEND_API_KEY}` }
     });
     if (res.ok) {
@@ -360,7 +381,7 @@ async function testResend(credentials) {
 
 async function testStripe(credentials) {
   try {
-    const res = await fetch('https://api.stripe.com/v1/balance', {
+    const res = await safeFetch('https://api.stripe.com/v1/balance', {
       headers: { 'Authorization': `Bearer ${credentials.STRIPE_SECRET_KEY}` }
     });
     if (res.ok) {
@@ -374,7 +395,7 @@ async function testStripe(credentials) {
 
 async function testCloudflare(credentials) {
   try {
-    const res = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+    const res = await safeFetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
       headers: { 'Authorization': `Bearer ${credentials.CLOUDFLARE_API_TOKEN}` }
     });
     const data = await res.json();
@@ -389,7 +410,7 @@ async function testCloudflare(credentials) {
 
 async function testVercel(credentials) {
   try {
-    const res = await fetch('https://api.vercel.com/v2/user', {
+    const res = await safeFetch('https://api.vercel.com/v2/user', {
       headers: { 'Authorization': `Bearer ${credentials.VERCEL_TOKEN}` }
     });
     if (res.ok) {

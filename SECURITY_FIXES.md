@@ -2,11 +2,60 @@
 
 ## Summary
 
-All **HIGH** and **MEDIUM** severity security issues have been addressed.
+All **HIGH**, **MEDIUM**, and **LOW** severity security issues identified in February 2026 audits have been addressed.
 
 ---
 
-## HIGH Severity Fixes
+## Audit: February 17, 2026 (Manual Review)
+
+### 1. Broken Access Control: Plaintext Settings Leak ✅ FIXED
+
+**Issue**: GET `/api/settings` returned unencrypted secrets in plaintext to authenticated non-admin users.
+**Security Risk**: Any member of an organization could steal integration credentials (API keys, DB URLs) not explicitly marked as encrypted.
+**Resolution**: Restricted setting visibility. All sensitive keys (detected by suffix) are now masked for non-admins and for all browser-based sessions (even admins). Decrypted values are only served to admin API key requests.
+
+**Files Modified**:
+- `app/api/settings/route.js`
+
+---
+
+### 2. Server-Side Request Forgery (SSRF) in Testing ✅ FIXED
+
+**Issue**: Connection testing utility used bypassable regex for private IP blocking and lacked redirect protection.
+**Security Risk**: Attacker could probe internal networks or trigger cloud metadata service requests via DNS rebinding or IP encoding.
+**Resolution**: Implemented `safeFetch` wrapper that enforces HTTPS, blocks private IP ranges at the hostname level, and disables automatic redirects (`redirect: 'manual'`).
+
+**Files Modified**:
+- `app/api/settings/test/route.js` (Major refactor)
+
+---
+
+### 3. SQL Injection Hardening ✅ FIXED
+
+**Issue**: Manual SQL construction using string concatenation and brittle index counters (`paramIdx++`) in repository methods.
+**Security Risk**: High risk of accidental SQL injection if dynamic fields (e.g., column names) are ever user-controlled.
+**Resolution**: Refactored `actions.repository.js` and `guard/route.js` to use a cleaner `params.push()` pattern, ensuring placeholders ($1, $2...) always stay in sync with their values.
+
+**Files Modified**:
+- `app/lib/repositories/actions.repository.js`
+- `app/api/guard/route.js`
+
+---
+
+### 4. Information Leakage Reduction ✅ FIXED
+
+**Issue**: Public endpoints returned excessive metadata about the system environment and internal identifiers.
+**Security Risk**: Facilitates reconnaissance for attackers (e.g., knowing specific auth providers or billing IDs).
+**Resolution**: Restricted API responses to return only non-sensitive columns. Removed `stripe_customer_id` and production environment indicators from public responses.
+
+**Files Modified**:
+- `app/api/auth/config/route.js`
+- `app/api/orgs/route.js`
+- `app/api/orgs/[orgId]/route.js`
+
+---
+
+## Audit: February 16, 2026 (Automated Review)
 
 ### 1. xlsx Dependency Vulnerability ⚠️ ACCEPTED RISK
 

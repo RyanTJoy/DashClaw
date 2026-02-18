@@ -1,3 +1,5 @@
+import { OUTCOME_FIELDS } from '../validate.js';
+
 export async function listActions(sql, orgId, filters = {}) {
   const {
     agent_id,
@@ -9,35 +11,29 @@ export async function listActions(sql, orgId, filters = {}) {
     offset = 0,
   } = filters;
 
-  let paramIdx = 1;
-  const conditions = [`org_id = $${paramIdx++}`];
+  const conditions = ['org_id = $1'];
   const params = [orgId];
 
   if (agent_id) {
-    conditions.push(`agent_id = $${paramIdx++}`);
-    params.push(agent_id);
+    conditions.push(`agent_id = $${params.push(agent_id)}`);
   }
   if (swarm_id) {
-    conditions.push(`swarm_id = $${paramIdx++}`);
-    params.push(swarm_id);
+    conditions.push(`swarm_id = $${params.push(swarm_id)}`);
   }
   if (status) {
-    conditions.push(`status = $${paramIdx++}`);
-    params.push(status);
+    conditions.push(`status = $${params.push(status)}`);
   }
   if (action_type) {
-    conditions.push(`action_type = $${paramIdx++}`);
-    params.push(action_type);
+    conditions.push(`action_type = $${params.push(action_type)}`);
   }
   if (risk_min != null) {
-    conditions.push(`risk_score >= $${paramIdx++}`);
-    params.push(parseInt(risk_min, 10));
+    conditions.push(`risk_score >= $${params.push(parseInt(risk_min, 10))}`);
   }
 
-  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = `WHERE ${conditions.join(' AND ')}`;
   const listCols = `action_id, agent_id, agent_name, swarm_id, action_type, declared_goal, reasoning, authorization_scope, systems_touched, status, reversible, risk_score, confidence, output_summary, error_message, side_effects, artifacts_created, duration_ms, cost_estimate, timestamp_start, timestamp_end, created_at, verified`;
-  const query = `SELECT ${listCols} FROM action_records ${where} ORDER BY timestamp_start DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`;
-  const queryParams = [...params, limit, offset];
+  
+  const query = `SELECT ${listCols} FROM action_records ${where} ORDER BY timestamp_start DESC LIMIT $${params.push(Math.min(limit, 200))} OFFSET $${params.push(offset)}`;
 
   const countQuery = `SELECT COUNT(*) as total FROM action_records ${where}`;
   const statsQuery = `
@@ -53,9 +49,9 @@ export async function listActions(sql, orgId, filters = {}) {
   `;
 
   const [actions, countResult, stats] = await Promise.all([
-    sql.query(query, queryParams),
-    sql.query(countQuery, params),
-    sql.query(statsQuery, params),
+    sql.query(query, params),
+    sql.query(countQuery, params.slice(0, conditions.length)),
+    sql.query(statsQuery, params.slice(0, conditions.length)),
   ]);
 
   return {
@@ -158,49 +154,28 @@ export async function getActionWithRelations(sql, orgId, actionId) {
 }
 
 export async function updateActionOutcome(sql, orgId, actionId, outcome) {
-  const existing = await sql`SELECT action_id FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  // Verify existence and ownership
+  const existing = await sql`SELECT action_id FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId} LIMIT 1`;
   if (existing.length === 0) return null;
 
-  const setClauses = [];
-  const values = [];
-  let paramIdx = 1;
+  const data = { ...outcome };
+  
+  // JSON stringify array/object fields
+  if (data.side_effects !== undefined) data.side_effects = JSON.stringify(data.side_effects);
+  if (data.artifacts_created !== undefined) data.artifacts_created = JSON.stringify(data.artifacts_created);
 
-  if (outcome.status !== undefined) {
-    setClauses.push(`status = $${paramIdx++}`);
-    values.push(outcome.status);
-  }
-  if (outcome.output_summary !== undefined) {
-    setClauses.push(`output_summary = $${paramIdx++}`);
-    values.push(outcome.output_summary);
-  }
-  if (outcome.side_effects !== undefined) {
-    setClauses.push(`side_effects = $${paramIdx++}`);
-    values.push(JSON.stringify(outcome.side_effects));
-  }
-  if (outcome.artifacts_created !== undefined) {
-    setClauses.push(`artifacts_created = $${paramIdx++}`);
-    values.push(JSON.stringify(outcome.artifacts_created));
-  }
-  if (outcome.error_message !== undefined) {
-    setClauses.push(`error_message = $${paramIdx++}`);
-    values.push(outcome.error_message);
-  }
-  if (outcome.timestamp_end !== undefined) {
-    setClauses.push(`timestamp_end = $${paramIdx++}`);
-    values.push(outcome.timestamp_end);
-  }
-  if (outcome.duration_ms !== undefined) {
-    setClauses.push(`duration_ms = $${paramIdx++}`);
-    values.push(outcome.duration_ms);
-  }
-  if (outcome.cost_estimate !== undefined) {
-    setClauses.push(`cost_estimate = $${paramIdx++}`);
-    values.push(outcome.cost_estimate);
-  }
+  const fields = Object.keys(data).filter(k => OUTCOME_FIELDS.includes(k));
+  if (fields.length === 0) return null;
 
-  const query = `UPDATE action_records SET ${setClauses.join(', ')} WHERE action_id = $${paramIdx++} AND org_id = $${paramIdx++} RETURNING *`;
-  values.push(actionId, orgId);
-
-  const updated = await sql.query(query, values);
+  // Use a cleaner update pattern if the driver supports it, 
+  // or stick to the existing $n pattern but with more robust construction.
+  const setClauses = fields.map((f, i) => `${f} = $${i + 1}`);
+  const values = fields.map(f => data[f]);
+  
+  const query = `UPDATE action_records SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE action_id = $${fields.length + 1} AND org_id = $${fields.length + 2} RETURNING *`;
+  
+  const queryParams = [...values, actionId, orgId];
+  const updated = await sql.query(query, queryParams);
+  
   return updated[0] || null;
 }
