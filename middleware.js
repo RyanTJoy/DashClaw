@@ -1478,8 +1478,8 @@ export async function middleware(request) {
       // Validate that the configured org actually exists in the database (cached).
       const orgExists = await verifyOrgExists(configuredOrgId);
       if (!orgExists) {
-        console.error(`[SECURITY] DASHCLAW_API_KEY_ORG="${configuredOrgId}" does not exist in organizations table. Run migrations or create the org.`);
-        // SECURITY: Do not leak the configured org ID to the client.
+        console.error('[SECURITY] DASHCLAW_API_KEY_ORG is set to a value that does not exist in the organizations table. Run migrations or create the org.');
+        // SECURITY: Do not leak the configured org ID to the client or logs.
         return NextResponse.json(
           { error: 'Server misconfigured: configured org does not exist. Check server logs and run migrations.' },
           { status: 503 }
