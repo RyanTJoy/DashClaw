@@ -57,11 +57,11 @@ export default function PracticalSystemsPage() {
                   Founded by Wes, who led AI adoption at a mid-market company — building 40+ custom AI tools, driving adoption across 50+ users, and leading AI strategy conversations with executive leadership.
                 </p>
                 <p>
-                  The firm's approach: strategic advisory combined with hands-on implementation. We do not just recommend. We build and run what we sell.
+                  The firm&apos;s approach: strategic advisory combined with hands-on implementation. We do not just recommend. We build and run what we sell.
                 </p>
                 <div className="pt-4 flex items-center gap-3">
                   <div className="h-px w-8 bg-brand"></div>
-                  <span className="text-brand font-medium italic">"We run what we sell."</span>
+                  <span className="text-brand font-medium italic">&quot;We run what we sell.&quot;</span>
                 </div>
               </div>
             </div>
