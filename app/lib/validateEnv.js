@@ -31,8 +31,10 @@ if (isProd) {
   }
 
   // At least one OAuth provider
-  const hasGitHub = process.env.GITHUB_ID && process.env.GITHUB_SECRET;
-  const hasGoogle = process.env.GOOGLE_ID && process.env.GOOGLE_SECRET;
+  const hasGitHub = (process.env.GITHUB_ID || process.env.GITHUB_CLIENT_ID) && 
+                    (process.env.GITHUB_SECRET || process.env.GITHUB_CLIENT_SECRET);
+  const hasGoogle = (process.env.GOOGLE_ID || process.env.GOOGLE_CLIENT_ID) && 
+                    (process.env.GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET);
   const hasOIDC = process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET && process.env.OIDC_ISSUER_URL;
 
   if (!hasGitHub && !hasGoogle && !hasOIDC) {
