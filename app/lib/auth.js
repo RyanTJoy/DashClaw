@@ -5,8 +5,14 @@ import { getSql } from './db.js';
 
 // SECURITY: In production, require real OAuth credentials — do not fall through to mocks
 const isProd = process.env.NODE_ENV === 'production';
-const hasGitHub = process.env.GITHUB_ID && process.env.GITHUB_SECRET;
-const hasGoogle = process.env.GOOGLE_ID && process.env.GOOGLE_SECRET;
+
+const GITHUB_ID = process.env.GITHUB_ID || process.env.GITHUB_CLIENT_ID;
+const GITHUB_SECRET = process.env.GITHUB_SECRET || process.env.GITHUB_CLIENT_SECRET;
+const GOOGLE_ID = process.env.GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_SECRET = process.env.GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+
+const hasGitHub = GITHUB_ID && GITHUB_SECRET;
+const hasGoogle = GOOGLE_ID && GOOGLE_SECRET;
 const hasOIDC = process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET && process.env.OIDC_ISSUER_URL;
 
 if (isProd && !hasGitHub && !hasGoogle && !hasOIDC) {
@@ -16,8 +22,8 @@ if (isProd && !hasGitHub && !hasGoogle && !hasOIDC) {
 const providers = [];
 if (hasGitHub) {
   providers.push(GitHubProvider({
-    clientId: process.env.GITHUB_ID,
-    clientSecret: process.env.GITHUB_SECRET,
+    clientId: GITHUB_ID,
+    clientSecret: GITHUB_SECRET,
   }));
 } else if (!isProd) {
   providers.push(GitHubProvider({
@@ -28,8 +34,8 @@ if (hasGitHub) {
 
 if (hasGoogle) {
   providers.push(GoogleProvider({
-    clientId: process.env.GOOGLE_ID,
-    clientSecret: process.env.GOOGLE_SECRET,
+    clientId: GOOGLE_ID,
+    clientSecret: GOOGLE_SECRET,
   }));
 } else if (!isProd) {
   providers.push(GoogleProvider({
