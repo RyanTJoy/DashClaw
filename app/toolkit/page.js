@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Github, Terminal, ArrowLeft, Zap, Brain, Shield, Rocket, HeartPulse, Search, MessageSquare, ClipboardCheck, History } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
+import PublicFooter from '../components/PublicFooter';
 
 const toolCategories = [
   {
@@ -106,20 +107,7 @@ export default function ToolkitPage() {
         </div>
       </main>
 
-      <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Shield size={16} className="text-brand" />
-            <span className="text-sm text-zinc-400">DashClaw</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-zinc-500">
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300">GitHub</a>
-            <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
-            <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/self-host" className="hover:text-zinc-300">Get Started</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

@@ -20,6 +20,7 @@ const PUBLIC_ROUTES = [
   // Public read-only content endpoints
   '/api/docs/raw',
   '/api/prompts',
+  '/practical-systems',
 ];
 
 function getDashclawMode() {

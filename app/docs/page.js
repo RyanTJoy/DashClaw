@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import CopyDocsButton from '../components/CopyDocsButton';
 import PublicNavbar from '../components/PublicNavbar';
+import PublicFooter from '../components/PublicFooter';
 
 export const metadata = {
   title: 'DashClaw SDK Documentation',
@@ -2009,21 +2010,7 @@ python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context
         </section>
       </div>
 
-      <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <Shield size={16} className="text-brand" />
-            <span className="text-sm text-zinc-400">DashClaw</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-zinc-500">
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 transition-colors">GitHub</a>
-            <Link href="/docs" className="hover:text-zinc-300">Docs</Link>
-            <Link href="/toolkit" className="hover:text-zinc-300">Toolkit</Link>
-            <Link href="/gallery" className="hover:text-zinc-300">Gallery</Link>
-            <Link href="/self-host" className="hover:text-zinc-300">Get Started</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

@@ -86,6 +86,7 @@ app/
 ├── actions/                   # ActionRecord UI pages
 ├── api-keys/                  # API key management page
 ├── docs/page.js               # Public SDK documentation (server component)
+├── practical-systems/page.js  # Practical Systems branding and about page (public)
 ├── login/page.js              # Custom login page (GitHub + Google OAuth)
 ├── bounty-hunter/             # Bounty hunter page
 ├── content/                   # Content tracker page
