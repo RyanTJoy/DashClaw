@@ -35,7 +35,7 @@ export async function verifyAgentSignature(orgId, agentId, payload, signature, s
     verifier.update(stringToVerify);
     return verifier.verify(public_key, signature, 'base64');
   } catch (err) {
-    console.warn(`[Identity] Verification error for ${agentId}:`, err.message);
+    console.warn('[Identity] Verification error for %s:', agentId, err.message);
     return false;
   }
 }
