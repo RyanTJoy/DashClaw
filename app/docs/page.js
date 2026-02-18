@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  Flame, ArrowRight, Github, ExternalLink, BookOpen,
+  ArrowRight, Github, ExternalLink, BookOpen,
   Terminal, Zap, CircleDot, Eye, ShieldAlert, Shield, BarChart3,
   ChevronRight, Network, FileCheck, Scale, Radio,
 } from 'lucide-react';
@@ -2012,7 +2012,7 @@ python agent-tools/tools/sync_to_dashclaw.py --categories learning,goals,context
       <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <Flame size={16} className="text-brand" />
+            <Shield size={16} className="text-brand" />
             <span className="text-sm text-zinc-400">DashClaw</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-zinc-500">
