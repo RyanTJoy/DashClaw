@@ -206,10 +206,36 @@ async function testElevenLabs(credentials) {
 
 async function testSupabase(credentials) {
   try {
-    if (!validateUrl(credentials.SUPABASE_URL, 'SUPABASE_URL')) {
+    const rawUrl = credentials?.SUPABASE_URL;
+
+    if (typeof rawUrl !== 'string' || rawUrl.length === 0) {
       return NextResponse.json({ success: false, message: 'Invalid Supabase URL. Must be https://<project>.supabase.co' });
     }
-    const res = await fetch(`${credentials.SUPABASE_URL}/rest/v1/`, {
+
+    let parsed;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      return NextResponse.json({ success: false, message: 'Invalid Supabase URL. Must be https://<project>.supabase.co' });
+    }
+
+    const hostname = parsed.hostname;
+    const protocol = parsed.protocol;
+
+    // Enforce https and public Supabase project hostnames only
+    const supabaseHostPattern = /^[a-z0-9]+\.supabase\.co$/;
+    if (
+      protocol !== 'https:' ||
+      !supabaseHostPattern.test(hostname) ||
+      isPrivateIP(hostname)
+    ) {
+      return NextResponse.json({ success: false, message: 'Invalid Supabase URL. Must be https://<project>.supabase.co' });
+    }
+
+    // Reconstruct a safe origin to avoid carrying over any attacker-controlled path/query
+    const safeOrigin = `https://${hostname}`;
+
+    const res = await fetch(`${safeOrigin}/rest/v1/`, {
       headers: {
         'apikey': credentials.SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${credentials.SUPABASE_ANON_KEY}`
