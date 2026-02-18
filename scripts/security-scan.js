@@ -186,7 +186,7 @@ function checkGitignore() {
   
   required.forEach(pattern => {
     // Check for exact match or equivalent coverage
-    if (content.includes(pattern) || content.includes(pattern.replace('*', ''))) {
+    if (content.includes(pattern) || content.includes(pattern.replace(/\*/g, ''))) {
       log(OK, `${pattern} is gitignored`);
       issues.ok++;
     } else {
