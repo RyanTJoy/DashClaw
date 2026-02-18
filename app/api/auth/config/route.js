@@ -11,11 +11,6 @@ export async function GET() {
   const GOOGLE_ID = process.env.GOOGLE_ID || process.env.GOOGLE_CLIENT_ID;
   const GOOGLE_SECRET = process.env.GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET;
 
-  console.log('[AUTH CONFIG] NODE_ENV:', process.env.NODE_ENV);
-  console.log('[AUTH CONFIG] GITHUB_ID set:', !!GITHUB_ID);
-  console.log('[AUTH CONFIG] GOOGLE_ID set:', !!GOOGLE_ID);
-  console.log('[AUTH CONFIG] OIDC configured:', !!(process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET && process.env.OIDC_ISSUER_URL));
-
   if (GITHUB_ID && GITHUB_SECRET) {
     providers.push({ id: 'github', name: 'GitHub' });
   } else if (!isProd) {
@@ -35,5 +30,5 @@ export async function GET() {
     });
   }
 
-  return NextResponse.json({ providers, isProd });
+  return NextResponse.json({ providers });
 }

@@ -64,23 +64,26 @@ export async function GET(request) {
 
     const conditions = ['org_id = $1'];
     const params = [orgId];
-    let idx = 2;
 
     if (agentId) {
-      conditions.push(`agent_id = $${idx++}`);
-      params.push(agentId);
+      conditions.push(`agent_id = $${params.push(agentId)}`);
     }
     if (decision) {
-      conditions.push(`decision = $${idx++}`);
-      params.push(decision);
+      conditions.push(`decision = $${params.push(decision)}`);
     }
 
     const where = conditions.join(' AND ');
-    const query = `SELECT id, org_id, agent_id, action_type, risk_score, decision, reasons, created_at FROM guard_decisions WHERE ${where} ORDER BY created_at DESC LIMIT $${idx++} OFFSET $${idx++}`;
-    params.push(limit, offset);
+    const query = `
+      SELECT id, org_id, agent_id, action_type, risk_score, decision, reasons, created_at 
+      FROM guard_decisions 
+      WHERE ${where} 
+      ORDER BY created_at DESC 
+      LIMIT $${params.push(limit)} 
+      OFFSET $${params.push(offset)}
+    `;
 
     const countQuery = `SELECT COUNT(*) as total FROM guard_decisions WHERE ${where}`;
-    const countParams = params.slice(0, -2);
+    const countParams = params.slice(0, conditions.length);
 
     const [decisions, countResult, statsRows] = await Promise.all([
       sql.query(query, params),
