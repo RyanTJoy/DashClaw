@@ -8,6 +8,7 @@ import { Flame, Github, Key } from 'lucide-react';
 export default function LoginPage() {
   const { data: session, status } = useSession();
   const [providers, setProviders] = useState([]);
+  const [isProd, setIsProd] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function LoginPage() {
         if (res.ok) {
           const data = await res.json();
           setProviders(data.providers || []);
+          setIsProd(data.isProd);
         }
       } catch (err) {
         console.error('Failed to fetch auth providers:', err);
@@ -74,6 +76,13 @@ export default function LoginPage() {
             </p>
           )}
         </div>
+
+        {!isProd && !providers.some(p => p.id === 'oidc') && (
+          <div className="mt-6 p-3 rounded bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-500 text-center">
+            <p className="font-semibold text-zinc-400 mb-1">Want to use Authentik/OIDC?</p>
+            Add <code className="bg-black px-1 py-0.5 rounded text-zinc-300">OIDC_CLIENT_ID</code>, <code className="bg-black px-1 py-0.5 rounded text-zinc-300">OIDC_CLIENT_SECRET</code>, and <code className="bg-black px-1 py-0.5 rounded text-zinc-300">OIDC_ISSUER_URL</code> to your .env file.
+          </div>
+        )}
 
         <p className="text-xs text-zinc-600 text-center mt-6">
           By signing in, you agree to our terms of service.

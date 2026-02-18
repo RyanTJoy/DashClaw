@@ -6,6 +6,11 @@ export async function GET() {
   const providers = [];
   const isProd = process.env.NODE_ENV === 'production';
 
+  console.log('[AUTH CONFIG] NODE_ENV:', process.env.NODE_ENV);
+  console.log('[AUTH CONFIG] GITHUB_ID set:', !!process.env.GITHUB_ID);
+  console.log('[AUTH CONFIG] GOOGLE_ID set:', !!process.env.GOOGLE_ID);
+  console.log('[AUTH CONFIG] OIDC configured:', !!(process.env.OIDC_CLIENT_ID && process.env.OIDC_CLIENT_SECRET && process.env.OIDC_ISSUER_URL));
+
   if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
     providers.push({ id: 'github', name: 'GitHub' });
   } else if (!isProd) {
@@ -25,5 +30,5 @@ export async function GET() {
     });
   }
 
-  return NextResponse.json({ providers });
+  return NextResponse.json({ providers, isProd });
 }
