@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  Flame, Zap, ShieldAlert, Shield, CircleDot, Eye, ArrowRight, Github,
+  Zap, ShieldAlert, Shield, CircleDot, Eye, ArrowRight, Github,
   ExternalLink, BookOpen, FolderKanban, MessageSquare, ArrowLeftRight,
   Brain, ScanSearch, HeartPulse, Newspaper, Package, UsersRound,
   Webhook, Clock, Compass, Building2, Terminal, BarChart3,
@@ -624,7 +624,7 @@ export default function LandingPage() {
       <footer className="border-t border-[rgba(255,255,255,0.06)] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Flame size={16} className="text-brand" />
+            <Shield size={16} className="text-brand" />
             <span className="text-sm text-zinc-400">DashClaw</span>
           </div>
           <div className="flex items-center gap-4 text-sm text-zinc-500">

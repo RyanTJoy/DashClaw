@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Contact, MessageSquare, Zap, Flame, Calendar, Search, ArrowUpRight, ArrowDownLeft, RotateCw, X } from 'lucide-react';
+import { Users, Contact, MessageSquare, Zap, Calendar, Search, ArrowUpRight, ArrowDownLeft, RotateCw, X } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';

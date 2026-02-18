@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isDemoMode } from '../lib/isDemoMode';
 import {
-  Flame, LayoutDashboard, Radar, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
+  LayoutDashboard, Radar, Zap, CircleDot, ShieldAlert, Shield, MessageSquare,
   FileText, Users, UsersRound, BookOpen, Target, Plug, KeyRound,
   GitBranch, Settings, Bug, Calendar, BarChart3, Coins,
   Clock, Webhook, Bell, FolderKanban, Network, Scale,
@@ -101,12 +101,12 @@ export default function Sidebar() {
             className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
             title="Back to dashclaw.io"
           >
-            <Flame size={20} className="text-brand flex-shrink-0" />
+            <Shield size={20} className="text-brand flex-shrink-0" />
             {!collapsed && <span className="text-lg font-semibold text-white">DashClaw</span>}
           </a>
         ) : (
           <Link href="/dashboard" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-            <Flame size={20} className="text-brand flex-shrink-0" />
+            <Shield size={20} className="text-brand flex-shrink-0" />
             {!collapsed && <span className="text-lg font-semibold text-white">DashClaw</span>}
           </Link>
         )}
