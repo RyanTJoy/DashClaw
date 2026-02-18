@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
 import ImageLightbox from '../components/ImageLightbox';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 
 const screenshots = [
   { title: 'Mission Control', file: 'Mission Control.png', desc: 'Strategic overview: fleet health, risk signals, cost velocity, and activity timeline.' },
@@ -36,8 +37,11 @@ const screenshots = [
   { title: 'Bug Hunter', file: 'Bug Hunter.png', desc: 'Automated platform quality scanner.' },
 ];
 
-export default function GalleryPage() {
+function GalleryContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [selectedIndex, setSelectedIndex] = useState(null);
+
   const items = useMemo(() => {
     return screenshots.map((s) => ({
       src: `/images/screenshots/${encodeURIComponent(s.file)}`,
@@ -46,6 +50,28 @@ export default function GalleryPage() {
       description: s.desc,
     }));
   }, []);
+
+  useEffect(() => {
+    const v = searchParams.get('v');
+    if (v !== null) {
+      // Try to find by index first
+      let idx = parseInt(v);
+      if (isNaN(idx)) {
+        // Try to find by filename
+        idx = screenshots.findIndex(s => s.file === v || encodeURIComponent(s.file) === v);
+      }
+      
+      if (idx >= 0 && idx < screenshots.length) {
+        setSelectedIndex(idx);
+      }
+    }
+  }, [searchParams]);
+
+  const handleClose = () => {
+    setSelectedIndex(null);
+    // Remove query param without full navigation
+    router.replace('/gallery', { scroll: false });
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
@@ -95,12 +121,12 @@ export default function GalleryPage() {
           items={items}
           index={selectedIndex}
           onChangeIndex={setSelectedIndex}
-          onClose={() => setSelectedIndex(null)}
+          onClose={handleClose}
         />
       )}
 
       <footer className="border-t border-[rgba(255,255,255,0.06)] py-12 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="max-w-6xl auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-brand flex items-center justify-center">
               <span className="text-white text-[10px] font-bold">DC</span>
@@ -117,5 +143,13 @@ export default function GalleryPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a]" />}>
+      <GalleryContent />
+    </Suspense>
   );
 }
