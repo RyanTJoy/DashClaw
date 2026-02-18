@@ -132,7 +132,7 @@ async function run() {
   // Step 3b: Create DASHCLAW_API_KEY_ORG organization if configured and different from org_default
   const configuredOrgId = process.env.DASHCLAW_API_KEY_ORG;
   if (configuredOrgId && configuredOrgId !== 'org_default') {
-    console.log(`Step 3b: Ensuring DASHCLAW_API_KEY_ORG (${configuredOrgId}) exists...`);
+    console.log('Step 3b: Ensuring DASHCLAW_API_KEY_ORG organization exists...');
     const slug = configuredOrgId.replace(/^org_/, '').replace(/[^a-z0-9-]/g, '-').slice(0, 64);
     await sql`
       INSERT INTO organizations (id, name, slug, plan)
