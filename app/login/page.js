@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Flame, Github } from 'lucide-react';
+import { Flame, Github, Key } from 'lucide-react';
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
+  const [providers, setProviders] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -14,6 +15,21 @@ export default function LoginPage() {
       router.replace('/dashboard');
     }
   }, [status, router]);
+
+  useEffect(() => {
+    async function fetchProviders() {
+      try {
+        const res = await fetch('/api/auth/config');
+        if (res.ok) {
+          const data = await res.json();
+          setProviders(data.providers || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch auth providers:', err);
+      }
+    }
+    fetchProviders();
+  }, []);
 
   if (status === 'loading' || status === 'authenticated') {
     return (
@@ -35,21 +51,28 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-3">
-          <button
-            onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
-          >
-            <Github size={18} />
-            Continue with GitHub
-          </button>
+          {providers.map((provider) => (
+            <button
+              key={provider.id}
+              onClick={() => signIn(provider.id, { callbackUrl: '/dashboard' })}
+              className={`w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                provider.id === 'github'
+                  ? 'bg-white text-black hover:bg-zinc-200'
+                  : 'bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-white hover:bg-[#222]'
+              }`}
+            >
+              {provider.id === 'github' && <Github size={18} />}
+              {provider.id === 'google' && <GoogleIcon />}
+              {provider.id === 'oidc' && <Key size={18} />}
+              Continue with {provider.name}
+            </button>
+          ))}
 
-          <button
-            onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-white text-sm font-medium hover:bg-[#222] transition-colors"
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
+          {providers.length === 0 && (
+            <p className="text-xs text-red-400 text-center py-4">
+              No authentication providers configured. Check your environment variables.
+            </p>
+          )}
         </div>
 
         <p className="text-xs text-zinc-600 text-center mt-6">

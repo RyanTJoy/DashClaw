@@ -13,9 +13,9 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `99`
+- Total routes: `100`
 - Stable routes: `42`
-- Beta routes: `15`
+- Beta routes: `16`
 - Experimental routes: `42`
 
 ## Routes
@@ -35,6 +35,7 @@ doc-type: architecture
 | `/api/agent-schedules` | `GET, POST` | `experimental` | `(default)` | `app/api/agent-schedules/route.js` |
 | `/api/agents` | `GET` | `experimental` | `/api/agents` | `app/api/agents/route.js` |
 | `/api/agents/connections` | `GET, POST` | `experimental` | `/api/agents` | `app/api/agents/connections/route.js` |
+| `/api/auth/config` | `GET` | `beta` | `/api/auth` | `app/api/auth/config/route.js` |
 | `/api/bounties` | `GET` | `experimental` | `/api/bounties` | `app/api/bounties/route.js` |
 | `/api/bug-hunter` | `GET, POST` | `experimental` | `(default)` | `app/api/bug-hunter/route.js` |
 | `/api/calendar` | `GET, POST` | `experimental` | `/api/calendar` | `app/api/calendar/route.js` |
