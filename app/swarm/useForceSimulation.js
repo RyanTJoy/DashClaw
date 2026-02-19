@@ -42,12 +42,11 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
 
     if (!simulation.current) {
       simulation.current = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(100).strength(0.1))
-        .force('charge', d3.forceManyBody().strength(0)) // Removed repulsion entirely
+        .force('link', d3.forceLink(links).id(d => d.id).distance(80).strength(0.1))
+        .force('charge', d3.forceManyBody().strength(0)) // Zero repulsion
         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-        .force('collision', d3.forceCollide().radius(35).strength(0.7)) // Increased collision to compensate for lack of charge
+        .force('collision', d3.forceCollide().radius(20).strength(0.5))
         .on('tick', () => {
-          // 1. BOUNDARY CONSTRAINT (Strict containment)
           const margin = 40;
           nodes.forEach(n => {
             if (n.x < margin) n.x = margin;
@@ -57,13 +56,11 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
           });
         });
       
-      // Reduce default decay so it settles into a stable state faster
-      simulation.current.alphaDecay(0.05);
+      simulation.current.alphaDecay(0.1); // Settle extremely fast
     } else {
       simulation.current.nodes(nodes);
       simulation.current.force('link').links(links);
-      // Minimal restart on data change, no explosion
-      simulation.current.alpha(0.1).restart();
+      simulation.current.alpha(0.05).restart(); // Minimal nudge on update
     }
 
     return () => {
@@ -72,28 +69,8 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
   }, [initialNodes, initialLinks, width, height]);
 
   const wake = useCallback(() => {
-    if (simulation.current) simulation.current.alpha(0.2).restart();
+    if (simulation.current) simulation.current.alpha(0.1).restart();
   }, []);
 
-  const setNodeFixed = useCallback((id, x, y) => {
-    const node = nodesRef.current.find(n => n.id === id);
-    if (node) {
-      if (x === null) {
-        delete node.fx;
-        delete node.fy;
-        // Slower release restart
-        if (simulation.current) simulation.current.alpha(0.15).restart();
-      } else {
-        node.fx = x;
-        node.fy = y;
-        // RESTART SIMULATION DURING DRAG: This fixes the "freeze" issue
-        // We use a small alpha but restart to ensure ticks continue while moving.
-        if (simulation.current) {
-          simulation.current.alpha(0.3).restart();
-        }
-      }
-    }
-  }, []);
-
-  return { nodesRef, linksRef, setNodeFixed, wake };
+  return { nodesRef, linksRef, wake };
 }

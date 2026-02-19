@@ -38,10 +38,8 @@ export default function SwarmIntelligencePage() {
 
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  // Track drag state specifically to avoid clicking shunting other nodes
-  const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, node: null, hasMoved: false });
 
-  const { nodesRef, linksRef, setNodeFixed, wake } = useForceSimulation({
+  const { nodesRef, linksRef, wake } = useForceSimulation({
     nodes: graphData.nodes,
     links: graphData.links,
     width: 800,
@@ -179,11 +177,8 @@ export default function SwarmIntelligencePage() {
     });
 
     if (clickedNode) {
-      dragRef.current = { isDragging: true, node: clickedNode, hasMoved: false };
       setSelectedAgentId(clickedNode.id);
-      // We DO NOT setNodeFixed here anymore. We wait for actual movement.
     } else {
-      dragRef.current = { isDragging: true, node: null, startX: e.clientX, startY: e.clientY, hasMoved: false };
       setSelectedAgentId(null);
     }
   };
@@ -191,30 +186,16 @@ export default function SwarmIntelligencePage() {
   const handleMouseMove = (e) => {
     const { x, y } = screenToWorld(e.clientX, e.clientY);
     
-    if (dragRef.current.isDragging) {
-      dragRef.current.hasMoved = true;
-      if (dragRef.current.node) {
-        // Only fix the node once we've actually moved, preventing click-shunts
-        setNodeFixed(dragRef.current.node.id, x, y);
-        setHoveredAgentId(null); // Clear hover while dragging
-      } else {
-        setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
-      }
-    } else {
-      const hovNode = nodesRef.current.find(n => {
-        const dx = n.x - x;
-        const dy = n.y - y;
-        return Math.sqrt(dx * dx + dy * dy) < 30 / zoom;
-      });
-      setHoveredAgentId(hovNode?.id || null);
-    }
+    const hovNode = nodesRef.current.find(n => {
+      const dx = n.x - x;
+      const dy = n.y - y;
+      return Math.sqrt(dx * dx + dy * dy) < 30 / zoom;
+    });
+    setHoveredAgentId(hovNode?.id || null);
   };
 
   const handleMouseUp = () => {
-    if (dragRef.current.node && dragRef.current.hasMoved) {
-      setNodeFixed(dragRef.current.node.id, null, null);
-    }
-    dragRef.current = { isDragging: false, node: null, hasMoved: false };
+    // Interactivity disabled as per request
   };
 
   const handleWheel = useCallback((e) => {
