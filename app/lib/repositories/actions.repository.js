@@ -179,3 +179,85 @@ export async function updateActionOutcome(sql, orgId, actionId, outcome) {
   
   return updated[0] || null;
 }
+
+/**
+ * Fetch all data required for an action trace (parent chain, assumptions, loops, related actions, sub-actions).
+ */
+export async function getActionTraceData(sql, orgId, actionId) {
+  // Fetch the target action first to get metadata for related queries
+  const actions = await sql`
+    SELECT * FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId}
+  `;
+
+  if (actions.length === 0) return null;
+  const action = actions[0];
+
+  // Parallel fetch of direct associations and related signals
+  const [assumptions, loops, relatedActions, subActions] = await Promise.all([
+    sql`SELECT * FROM assumptions WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
+    sql`SELECT * FROM open_loops WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
+    sql`
+      SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
+             risk_score, timestamp_start, error_message
+      FROM action_records
+      WHERE action_id != ${actionId}
+        AND org_id = ${orgId}
+        AND (
+          agent_id = ${action.agent_id}
+          OR (systems_touched = ${action.systems_touched} AND systems_touched IS NOT NULL AND systems_touched != '[]')
+        )
+        AND timestamp_start::timestamptz > ${action.timestamp_start}::timestamptz - INTERVAL '1 hour'
+        AND timestamp_start::timestamptz < ${action.timestamp_start}::timestamptz + INTERVAL '1 hour'
+      ORDER BY timestamp_start DESC
+      LIMIT 20
+    `,
+    sql`
+      SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
+             risk_score, timestamp_start, error_message
+      FROM action_records
+      WHERE parent_action_id = ${actionId}
+        AND org_id = ${orgId}
+      ORDER BY timestamp_start ASC
+    `
+  ]);
+
+  // Recursively build parent chain (limited to 10 generations to prevent infinite loops)
+  const parentChain = [];
+  let currentParentId = action.parent_action_id;
+  const visited = new Set([actionId]);
+  while (currentParentId && !visited.has(currentParentId) && parentChain.length < 10) {
+    visited.add(currentParentId);
+    const parentResult = await sql`
+      SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
+             risk_score, timestamp_start, error_message, parent_action_id
+      FROM action_records WHERE action_id = ${currentParentId} AND org_id = ${orgId}
+    `;
+    if (parentResult.length === 0) break;
+    parentChain.push(parentResult[0]);
+    currentParentId = parentResult[0].parent_action_id;
+  }
+
+  return {
+    action,
+    assumptions,
+    loops,
+    relatedActions,
+    subActions,
+    parentChain
+  };
+}
+
+/**
+ * Fetch historical actions for policy simulation.
+ */
+export async function listActionsForSimulation(sql, orgId, days = 7, limit = 200) {
+  return sql`
+    SELECT action_id, agent_id, agent_name, action_type, declared_goal, risk_score, 
+           systems_touched, reversible, timestamp_start, status
+    FROM action_records
+    WHERE org_id = ${orgId}
+      AND timestamp_start::timestamptz > NOW() - INTERVAL '1 day' * ${parseInt(days, 10)}
+    ORDER BY timestamp_start DESC
+    LIMIT ${parseInt(limit, 10)}
+  `;
+}

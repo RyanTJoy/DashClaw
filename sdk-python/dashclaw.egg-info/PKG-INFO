@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: dashclaw
-Version: 1.9.2
+Version: 1.9.3
 Summary: Python SDK for the DashClaw AI agent decision infrastructure platform
 Home-page: https://github.com/ucsandman/DashClaw
 Author: Wes Sander
@@ -91,6 +91,29 @@ signals = claw.get_signals()
 | `get_action_trace(action_id)` | Get the full trace for an action |
 | `track(action_type, declared_goal, **kwargs)` | Context manager: auto-creates action, records status + duration |
 | `get_signals()` | Get computed signals (anomalies, streaks, patterns) |
+
+## Agent Presence & Health
+
+Monitor agent uptime and status in real-time. Use heartbeats to detect when an agent crashes or loses network connectivity.
+
+```python
+# Report presence manually
+claw.heartbeat(status="busy", current_task_id="task_123")
+
+# Start reporting presence automatically in a background thread
+claw.start_heartbeat(interval=60)
+
+# Stop reporting
+claw.stop_heartbeat()
+```
+
+**Methods:**
+
+| Method | Description |
+|--------|-------------|
+| `heartbeat(status="online", current_task_id=None, metadata=None)` | Report agent presence and health |
+| `start_heartbeat(interval=60, **kwargs)` | Start an automatic heartbeat timer in a background thread |
+| `stop_heartbeat()` | Stop the automatic heartbeat timer |
 
 ## Loops & Assumptions
 
