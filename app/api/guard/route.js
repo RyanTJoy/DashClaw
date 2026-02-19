@@ -74,7 +74,7 @@ export async function GET(request) {
 
     const where = conditions.join(' AND ');
     const query = `
-      SELECT id, org_id, agent_id, action_type, risk_score, decision, reasons, created_at 
+      SELECT id, org_id, agent_id, action_type, risk_score, decision, reason, created_at 
       FROM guard_decisions 
       WHERE ${where} 
       ORDER BY created_at DESC 
