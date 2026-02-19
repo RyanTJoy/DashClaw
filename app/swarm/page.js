@@ -71,7 +71,7 @@ export default function SwarmIntelligencePage() {
       ctx.save();
       
       // Apply View Transform (Zoom/Pan)
-      ctx.translate(400 + pan.x, 300 + pan.y);
+      ctx.translate(width / 2 + pan.x, height / 2 + pan.y);
       ctx.scale(zoom, zoom);
       ctx.translate(-400, -300);
 
@@ -160,10 +160,10 @@ export default function SwarmIntelligencePage() {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const x = (sx - rect.left) * (800 / rect.width);
-    const y = (sy - rect.top) * (600 / rect.height);
-    const wx = (x - 400 - pan.x) / zoom + 400;
-    const wy = (y - 300 - pan.y) / zoom + 300;
+    const x = (sx - rect.left) * (canvas.width / rect.width);
+    const y = (sy - rect.top) * (canvas.height / rect.height);
+    const wx = (x - canvas.width / 2 - pan.x) / zoom + 400;
+    const wy = (y - canvas.height / 2 - pan.y) / zoom + 300;
     return { x: wx, y: wy };
   }, [pan, zoom]);
 
@@ -171,7 +171,6 @@ export default function SwarmIntelligencePage() {
     setIsFocused(true);
     const { x, y } = screenToWorld(e.clientX, e.clientY);
     
-    // Increased hit radius for easier selection
     const clickedNode = nodesRef.current.find(n => {
       const dx = n.x - x;
       const dy = n.y - y;
@@ -211,7 +210,6 @@ export default function SwarmIntelligencePage() {
     dragRef.current = { isDragging: false, node: null };
   };
 
-  // ZOOM TO MOUSE POSITION (NO WAKE ON SCROLL to prevent flying apart)
   const handleWheel = useCallback((e) => {
     if (!isFocused) return;
     e.preventDefault();
@@ -221,14 +219,13 @@ export default function SwarmIntelligencePage() {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const mx = (e.clientX - rect.left) * (800 / rect.width);
-      const my = (e.clientY - rect.top) * (600 / rect.height);
-      const dx = (mx - 400 - pan.x) * (delta - 1);
-      const dy = (my - 300 - pan.y) * (delta - 1);
+      const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+      const dx = (mx - canvas.width / 2 - pan.x) * (delta - 1);
+      const dy = (my - canvas.height / 2 - pan.y) * (delta - 1);
       setPan(p => ({ x: p.x - dx, y: p.y - dy }));
       setZoom(newZoom);
     }
-    // wake() removed from scroll to keep agents stable
   }, [isFocused, zoom, pan]);
 
   useEffect(() => {
@@ -345,7 +342,6 @@ export default function SwarmIntelligencePage() {
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} className="text-zinc-400" /></button>
         </div>
-
         <div className="flex-1 overflow-y-auto space-y-6 custom-scrollbar pr-2">
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-xl bg-surface-tertiary border border-white/5">
@@ -357,14 +353,12 @@ export default function SwarmIntelligencePage() {
               <div className="text-sm font-mono text-zinc-300">{formatTimestamp(action.timestamp_start)}</div>
             </div>
           </div>
-
           <div className="space-y-2">
             <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-2"><Info size={12} /> Neural Rationale</div>
             <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-sm text-zinc-300 leading-relaxed italic">
               {action.status_reason || action.reason || "Autonomous decision based on current swarm goals and policy constraints."}
             </div>
           </div>
-
           {action.metadata && (
             <div className="space-y-2">
               <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-2"><Terminal size={12} /> Contextual Metadata</div>
@@ -374,7 +368,6 @@ export default function SwarmIntelligencePage() {
             </div>
           )}
         </div>
-
         <div className="mt-6 pt-6 border-t border-white/10 flex gap-3">
           <button onClick={() => router.push(`/workspace?agent_id=${selectedAgentId}&action_id=${action.action_id}`)} className="flex-1 py-3 bg-brand rounded-xl text-xs font-bold text-white hover:bg-brand-hover transition-all flex items-center justify-center gap-2">View Raw Trace <FileText size={14} /></button>
         </div>
@@ -389,9 +382,14 @@ export default function SwarmIntelligencePage() {
       breadcrumbs={['Operations', 'Swarm']}
       actions={<button onClick={fetchGraph} className="p-2 text-zinc-400 hover:text-white transition-colors"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-320px)] min-h-[500px]">
-        <div className="lg:col-span-3 space-y-4 h-full flex flex-col">
-          <Card className="relative overflow-hidden group border-brand/10 bg-[#050505] shadow-2xl flex-1 flex flex-col">
+      {/* UNIFIED VIEWPORT CONTAINER */}
+      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-160px)] min-h-[600px] overflow-hidden">
+        
+        {/* LEFT COLUMN (Swarm + Log + Stats) */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0 h-full">
+          
+          {/* TOP SECTION: SWARM CANVAS */}
+          <Card className="relative overflow-hidden group border-brand/10 bg-[#050505] shadow-2xl flex-[2] flex flex-col min-h-0">
             <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 py-3 z-10 relative bg-[#050505]/80 backdrop-blur-md">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
@@ -403,10 +401,10 @@ export default function SwarmIntelligencePage() {
               </div>
             </CardHeader>
             
-            <CardContent className="p-0 flex-1 relative overflow-hidden">
+            <CardContent className="p-0 flex-1 relative overflow-hidden bg-[#050505]">
               <div 
                 ref={containerRef}
-                className={`w-full h-full relative cursor-grab active:cursor-grabbing`}
+                className="w-full h-full relative cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -414,14 +412,14 @@ export default function SwarmIntelligencePage() {
               >
                 <canvas ref={canvasRef} width={800} height={600} className="w-full h-full select-none" />
                 {!isFocused && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none transition-all duration-700">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none transition-all duration-700 z-20">
                     <div className="flex flex-col items-center gap-4">
                       <div className="w-16 h-16 rounded-full border border-brand/30 flex items-center justify-center animate-pulse"><MousePointer2 className="text-brand" size={24} /></div>
                       <div className="px-6 py-2.5 rounded-full bg-brand text-white text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl border border-white/20">Engage Swarm</div>
                     </div>
                   </div>
                 )}
-                <div className="absolute top-4 right-4 flex flex-col gap-2">
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
                   <button onClick={() => { setZoom(z => Math.min(10, z * 1.5)); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">+</button>
                   <button onClick={() => { setZoom(z => Math.max(0.1, z * 0.7)); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">-</button>
                   <button onClick={() => { setZoom(0.8); setPan({ x: 0, y: 0 }); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors"><RefreshCw size={14} /></button>
@@ -430,24 +428,31 @@ export default function SwarmIntelligencePage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-24">
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center"><StatCompact label="Neural Links" value={graphData.links.length} color="text-white" /></div>
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center"><StatCompact label="Sync Latency" value="12ms" color="text-brand" /></div>
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center"><StatCompact label="Drift State" value="Nominal" color="text-blue-400" /></div>
+          {/* MIDDLE SECTION: SWARM LOG */}
+          <div className="flex-1 min-h-[150px] max-h-[250px] overflow-hidden rounded-xl border border-white/5 bg-surface-primary/30 backdrop-blur-sm">
+            <SwarmActivityLog />
+          </div>
+
+          {/* BOTTOM SECTION: STATS */}
+          <div className="grid grid-cols-3 gap-4 h-20 shrink-0">
+            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Neural Links" value={graphData.links.length} color="text-white" /></div>
+            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Sync Latency" value="12ms" color="text-brand" /></div>
+            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Drift State" value="Nominal" color="text-blue-400" /></div>
           </div>
         </div>
 
-        <div className="h-full relative overflow-hidden">
+        {/* RIGHT COLUMN (Telemetry Sidebar) */}
+        <div className="w-full lg:w-[400px] h-full shrink-0 relative overflow-hidden">
           <Card className="h-full border-brand/5 bg-surface-secondary/20 shadow-xl backdrop-blur-lg flex flex-col overflow-hidden">
             <CardHeader className="border-b border-white/5 py-4">
               <div className="flex items-center gap-2"><Activity size={16} className="text-brand" /><span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Agent Telemetry</span></div>
             </CardHeader>
-            <CardContent className="pt-6 flex-1 overflow-hidden relative flex flex-col">
+            <CardContent className="pt-6 flex-1 overflow-hidden relative flex flex-col min-h-0">
               {inspectedAction && <ActionDetailOverlay action={inspectedAction} onClose={() => setInspectedAction(null)} />}
               
               {selectedAgent ? (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex-1 flex flex-col overflow-hidden">
-                  <div className="relative group shrink-0">
+                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex-1 flex flex-col min-h-0">
+                  <div className="relative group shrink-0 px-1">
                     <div className="absolute -inset-2 bg-brand/5 rounded-xl blur-xl group-hover:bg-brand/10 transition-all" />
                     <div className="relative">
                       <h3 className="text-lg font-bold text-white mb-0.5">{selectedAgent.name}</h3>
@@ -459,7 +464,7 @@ export default function SwarmIntelligencePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-3 shrink-0">
+                  <div className="space-y-3 shrink-0 px-1">
                     <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Zap size={10} className="text-brand" /> Live Performance</h4>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Actions</div><div className="text-lg font-mono text-white">{selectedAgent.actions || 0}</div></div>
@@ -467,7 +472,7 @@ export default function SwarmIntelligencePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-3 flex-1 overflow-hidden flex flex-col min-h-0">
+                  <div className="space-y-3 flex-1 overflow-hidden flex flex-col min-h-0 px-1">
                     <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><History size={10} className="text-zinc-400" /> Latest Neural Loops</h4>
                     <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
                       {agentContext.loading ? (
@@ -500,7 +505,7 @@ export default function SwarmIntelligencePage() {
                     </div>
                   </div>
 
-                  <div className="pt-6 border-t border-white/5 shrink-0">
+                  <div className="pt-6 border-t border-white/5 shrink-0 px-1">
                     <button onClick={() => router.push(`/workspace?agent_id=${selectedAgent.id}`)} className="w-full flex items-center justify-center gap-2 py-3 bg-brand rounded-xl text-[11px] font-bold text-white hover:bg-brand-hover shadow-lg shadow-brand/20 transition-all active:scale-95 group">Connect to Workspace <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" /></button>
                   </div>
                 </div>
@@ -514,7 +519,6 @@ export default function SwarmIntelligencePage() {
           </Card>
         </div>
       </div>
-      <div className="h-40 mt-6 opacity-80 hover:opacity-100 transition-opacity"><SwarmActivityLog /></div>
     </PageLayout>
   );
 }
