@@ -2,7 +2,7 @@ import Link from 'next/link';
 import {
   ArrowRight, Github, ExternalLink, BookOpen,
   Terminal, Zap, CircleDot, Eye, ShieldAlert, Shield, BarChart3,
-  ChevronRight, Network, FileCheck, Scale, Radio,
+  ChevronRight, Network, FileCheck, Scale, Radio, Users
 } from 'lucide-react';
 import CopyDocsButton from '../components/CopyDocsButton';
 import PublicNavbar from '../components/PublicNavbar';

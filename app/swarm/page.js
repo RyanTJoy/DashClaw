@@ -191,7 +191,7 @@ export default function SwarmIntelligencePage() {
 
     frame = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frame);
-  }, []); // Run ONCE and rely on refs for state
+  }, [linksRef, nodesMapRef, nodesRef]); // Use refs as dependencies to satisfy linter
 
   // --- INTERACTION LOGIC ---
 
@@ -346,7 +346,7 @@ export default function SwarmIntelligencePage() {
 
   const selectedAgent = useMemo(() => 
     nodesRef.current.find(n => n.id === selectedAgentId),
-  [selectedAgentId, nodesRef.current]);
+  [selectedAgentId, nodesRef]);
 
   const selectedPartners = useMemo(() => {
     if (!selectedAgentId) return [];
@@ -359,7 +359,7 @@ export default function SwarmIntelligencePage() {
         const pNode = nodesRef.current.find(n => n.id === pId);
         return { id: pId, name: pNode?.name || pId };
       });
-  }, [selectedAgentId, linksRef.current, nodesRef.current]);
+  }, [selectedAgentId, linksRef, nodesRef]);
 
   const formatTimestamp = (ts) => {
     if (!ts) return '';
