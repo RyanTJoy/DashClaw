@@ -28,13 +28,55 @@ export default function SwarmIntelligencePage() {
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [livePackets, setLivePackets] = useState([]);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [dragNodeId, setDragNodeId] = useState(null);
 
-  const { nodes, links } = useForceSimulation({
+  const { nodes, links, setNodeFixed } = useForceSimulation({
     nodes: graphData.nodes,
     links: graphData.links,
     width: 800,
     height: 600
   });
+
+  const svgRef = useRef(null);
+
+  const handleMouseDown = (e) => {
+    if (e.target.tagName === 'svg' || e.target.tagName === 'rect') {
+      setIsPanning(true);
+    }
+  };
+
+  const handleMouseMove = (e) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (800 / rect.width);
+    const y = (e.clientY - rect.top) * (600 / rect.height);
+
+    if (isPanning) {
+      setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
+    } else if (dragNodeId) {
+      // Adjust x/y based on zoom and pan
+      const transformedX = (x - 400 - pan.x) / zoom + 400;
+      const transformedY = (y - 300 - pan.y) / zoom + 300;
+      setNodeFixed(dragNodeId, transformedX, transformedY);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+    if (dragNodeId) {
+      setNodeFixed(dragNodeId, null, null);
+      setDragNodeId(null);
+    }
+  };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(prev => Math.max(0.2, Math.min(5, prev * delta)));
+  };
 
   const [agentContext, setAgentContext] = useState({
     loading: false,
@@ -254,108 +296,148 @@ export default function SwarmIntelligencePage() {
     const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden cursor-crosshair select-none">
-        <defs>
-          <radialGradient id="nodeGradient">
-            <stop offset="0%" stopColor="rgba(249, 115, 22, 0.4)" />
-            <stop offset="100%" stopColor="transparent" />
-          </radialGradient>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-            <feMerge>
-              <feMergeNode in="coloredBlur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+      <div 
+        className="w-full h-full relative" 
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <svg 
+          ref={svgRef}
+          viewBox={`0 0 ${width} ${height}`} 
+          className="w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden cursor-move select-none"
+        >
+          <defs>
+            <radialGradient id="nodeGradient">
+              <stop offset="0%" stopColor="rgba(249, 115, 22, 0.4)" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
 
-        {/* Links */}
-        {links.map((link, i) => {
-          const s = nodeMap[link.source];
-          const t = nodeMap[link.target];
-          if (!s || !t) return null;
-          
-          const isHighlighted = (hoveredNode && (link.source === hoveredNode || link.target === hoveredNode));
-          const isActive = activityPulse.activeLink && activityPulse.activeLink.source === link.source && activityPulse.activeLink.target === link.target;
-          
-          return (
-            <line
-              key={`link-${i}`}
-              x1={s.x} y1={s.y}
-              x2={t.x} y2={t.y}
-              stroke={isActive ? 'rgba(249, 115, 22, 0.6)' : isHighlighted ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255,255,255,0.05)'}
-              strokeWidth={isActive ? 2 : 1}
-              className="transition-all duration-500"
-            />
-          );
-        })}
+          {/* Transformation Group */}
+          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center' }}>
+            {/* Links */}
+            {links.map((link, i) => {
+              const s = nodeMap[link.source];
+              const t = nodeMap[link.target];
+              if (!s || !t) return null;
+              
+              const isHighlighted = (hoveredNode && (link.source === hoveredNode || link.target === hoveredNode));
+              const isActive = activityPulse.activeLink && activityPulse.activeLink.source === link.source && activityPulse.activeLink.target === link.target;
+              
+              return (
+                <line
+                  key={`link-${i}`}
+                  x1={s.x} y1={s.y}
+                  x2={t.x} y2={t.y}
+                  stroke={isActive ? 'rgba(249, 115, 22, 0.6)' : isHighlighted ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255,255,255,0.05)'}
+                  strokeWidth={isActive ? 2 : 1}
+                  className="transition-all duration-500"
+                />
+              );
+            })}
 
-        {/* Data Packets */}
-        {livePackets.map(packet => {
-          const s = nodeMap[packet.from];
-          const t = nodeMap[packet.to === 'broadcast' ? nodes[0]?.id : packet.to];
-          if (!s || !t) return null;
+            {/* Data Packets */}
+            {livePackets.map(packet => {
+              const s = nodeMap[packet.from];
+              const t = nodeMap[packet.to === 'broadcast' ? nodes[0]?.id : packet.to];
+              if (!s || !t) return null;
 
-          return (
-            <circle key={packet.id} r="3" fill="#f97316" filter="url(#glow)">
-              <animateMotion
-                dur="0.8s"
-                path={`M${s.x},${s.y} L${t.x},${t.y}`}
-                fill="freeze"
-              />
-              <animate attributeName="opacity" values="1;0" dur="0.8s" fill="freeze" />
-            </circle>
-          );
-        })}
-
-        {/* Nodes */}
-        {nodes.map((node) => {
-          const isSelected = selectedAgent?.id === node.id;
-          const isHovered = hoveredNode === node.id;
-          const riskColor = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
-
-          return (
-            <g 
-              key={node.id} 
-              onMouseEnter={() => setHoveredNode(node.id)}
-              onMouseLeave={() => setHoveredNode(null)}
-              onClick={() => setSelectedAgent(node)}
-              className="transition-all duration-300 cursor-pointer"
-            >
-              {isHovered && (
-                <circle cx={node.x} cy={node.y} r={25} fill="url(#nodeGradient)" />
-              )}
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={isSelected ? 12 : isHovered ? 10 : 6}
-                fill="#111"
-                stroke={isSelected ? '#f97316' : riskColor}
-                strokeWidth={isSelected ? 3 : 2}
-                className="transition-all duration-300"
-              />
-              {(isHovered || isSelected || nodes.length < 12) && (
-                <g>
-                  <rect 
-                    x={node.x - 40} y={node.y + 12} width={80} height={16} 
-                    rx={4} fill="rgba(0,0,0,0.6)" backdropBlur="sm" 
+              return (
+                <circle key={packet.id} r="3" fill="#f97316" filter="url(#glow)">
+                  <animateMotion
+                    dur="0.8s"
+                    path={`M${s.x},${s.y} L${t.x},${t.y}`}
+                    fill="freeze"
                   />
-                  <text
-                    x={node.x}
-                    y={node.y + 23}
-                    textAnchor="middle"
-                    fill={isSelected ? 'white' : '#a1a1aa'}
-                    fontSize="9"
-                    className="font-medium pointer-events-none select-none"
-                  >
-                    {node.name}
-                  </text>
+                  <animate attributeName="opacity" values="1;0" dur="0.8s" fill="freeze" />
+                </circle>
+              );
+            })}
+
+            {/* Nodes */}
+            {nodes.map((node) => {
+              const isSelected = selectedAgent?.id === node.id;
+              const isHovered = hoveredNode === node.id;
+              const riskColor = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
+
+              return (
+                <g 
+                  key={node.id} 
+                  onMouseEnter={() => setHoveredNode(node.id)}
+                  onMouseLeave={() => setHoveredNode(null)}
+                  onMouseDown={(e) => { e.stopPropagation(); setDragNodeId(node.id); }}
+                  onClick={() => setSelectedAgent(node)}
+                  className="transition-all duration-300 cursor-pointer"
+                >
+                  {isHovered && (
+                    <circle cx={node.x} cy={node.y} r={25} fill="url(#nodeGradient)" />
+                  )}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={isSelected ? 12 : isHovered ? 10 : 6}
+                    fill="#111"
+                    stroke={isSelected ? '#f97316' : riskColor}
+                    strokeWidth={isSelected ? 3 : 2}
+                    className="transition-all duration-300"
+                  />
+                  {(isHovered || isSelected || nodes.length < 12) && (
+                    <g>
+                      <rect 
+                        x={node.x - 40} y={node.y + 12} width={80} height={16} 
+                        rx={4} fill="rgba(0,0,0,0.6)" backdropBlur="sm" 
+                      />
+                      <text
+                        x={node.x}
+                        y={node.y + 23}
+                        textAnchor="middle"
+                        fill={isSelected ? 'white' : '#a1a1aa'}
+                        fontSize="9"
+                        className="font-medium pointer-events-none select-none"
+                      >
+                        {node.name}
+                      </text>
+                    </g>
+                  )}
                 </g>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+              );
+            })}
+          </g>
+        </svg>
+
+        {/* Zoom Controls Overlay */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <button 
+            onClick={() => setZoom(z => Math.min(5, z * 1.2))}
+            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
+          >
+            +
+          </button>
+          <button 
+            onClick={() => setZoom(z => Math.max(0.2, z * 0.8))}
+            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
+          >
+            -
+          </button>
+          <button 
+            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
+            title="Reset view"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
+      </div>
     );
   };
 
