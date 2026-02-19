@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Clock, Play, CheckCircle2, XCircle, AlertTriangle,
-  CircleDot, Brain, ArrowRight, Shield, Loader2,
+  CircleDot, Brain, ArrowRight, Shield, Loader2, Target,
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -24,6 +24,9 @@ function getEventIcon(event) {
     case 'loop':
       if (event.status === 'resolved') return <CheckCircle2 size={14} className="text-emerald-400" />;
       return <CircleDot size={14} className="text-amber-400" />;
+    case 'goal':
+      if (event.status === 'completed') return <CheckCircle2 size={14} className="text-emerald-400" />;
+      return <Target size={14} className="text-emerald-400" />;
     case 'learning':
       return <Brain size={14} className="text-purple-400" />;
     case 'signal':
@@ -37,6 +40,7 @@ function getCategoryLabel(category) {
   switch (category) {
     case 'action': return 'Decision';
     case 'loop': return 'Open Loop';
+    case 'goal': return 'Goal';
     case 'learning': return 'Lesson';
     case 'signal': return 'Integrity Signal';
     default: return 'Event';
@@ -47,6 +51,7 @@ function getCategoryColor(category) {
   switch (category) {
     case 'action': return 'text-blue-400';
     case 'loop': return 'text-amber-400';
+    case 'goal': return 'text-emerald-400';
     case 'learning': return 'text-purple-400';
     case 'signal': return 'text-red-400';
     default: return 'text-zinc-400';
@@ -178,9 +183,21 @@ export default function ActivityTimeline() {
         detail: a.declared_goal || '',
         agentId: a.agent_id,
         agentName: a.agent_name,
-        status: a.status,
+        status: a.status === 'running' ? 'running' : a.status,
         timestamp: a.timestamp_start || new Date().toISOString(),
       }, ...prev].slice(0, 30));
+    } else if (event === 'action.updated') {
+      const a = payload;
+      setEvents(prev => prev.map(e => {
+        if (e.id === a.action_id) {
+          return {
+            ...e,
+            status: a.status === 'running' ? 'running' : a.status,
+            timestamp: a.timestamp_end || e.timestamp,
+          };
+        }
+        return e;
+      }));
     } else if (event === 'decision.created') {
       const d = payload;
       if (agentId && d.agent_id !== agentId) return;
@@ -191,8 +208,58 @@ export default function ActivityTimeline() {
         detail: d.decision || '',
         timestamp: d.timestamp || new Date().toISOString(),
       }, ...prev].slice(0, 30));
+    } else if (event === 'loop.created') {
+      const l = payload;
+      if (agentId && l.agent_id !== agentId) return;
+      setEvents(prev => [{
+        id: l.loop_id,
+        category: 'loop',
+        title: l.loop_type || 'Open Loop',
+        detail: l.description || '',
+        agentId: l.agent_id,
+        agentName: l.agent_name,
+        status: l.status,
+        priority: l.priority,
+        timestamp: l.created_at || new Date().toISOString(),
+      }, ...prev].slice(0, 30));
+    } else if (event === 'loop.updated') {
+      const l = payload;
+      setEvents(prev => prev.map(e => {
+        if (e.id === l.loop_id) {
+          return {
+            ...e,
+            status: l.status,
+            timestamp: l.resolved_at || e.timestamp,
+          };
+        }
+        return e;
+      }));
+    } else if (event === 'goal.created') {
+      const g = payload;
+      if (agentId && g.agent_id !== agentId) return;
+      setEvents(prev => [{
+        id: g.id,
+        category: 'goal',
+        title: 'New Goal',
+        detail: g.title || '',
+        agentId: g.agent_id,
+        status: g.status,
+        timestamp: g.created_at || new Date().toISOString(),
+      }, ...prev].slice(0, 30));
+    } else if (event === 'goal.updated') {
+      const g = payload;
+      setEvents(prev => prev.map(e => {
+        if (e.id === g.id) {
+          return {
+            ...e,
+            status: g.status,
+            detail: `${g.title} (${g.progress}%)`,
+          };
+        }
+        return e;
+      }));
     } else if (event === 'guard.decision.created') {
-      const g = payload.decision;
+      const g = payload;
       if (agentId && g.agent_id !== agentId) return;
       setEvents(prev => [{
         id: g.id,
@@ -202,6 +269,17 @@ export default function ActivityTimeline() {
         agentId: g.agent_id,
         status: g.decision,
         timestamp: g.created_at,
+      }, ...prev].slice(0, 30));
+    } else if (event === 'signal.detected') {
+      const s = payload;
+      if (agentId && s.agent_id !== agentId) return;
+      setEvents(prev => [{
+        id: `sig-${Date.now()}`,
+        category: 'signal',
+        title: s.label || 'Risk Signal',
+        detail: s.detail || '',
+        agentId: s.agent_id,
+        timestamp: new Date().toISOString(),
       }, ...prev].slice(0, 30));
     }
   }, [agentId]));

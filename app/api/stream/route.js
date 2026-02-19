@@ -66,6 +66,12 @@ data: ${JSON.stringify(data)}
       if (envelope.event === EVENTS.GUARD_DECISION_CREATED) {
         return envelope.payload?.decision || null;
       }
+      if (envelope.event === EVENTS.LOOP_CREATED || envelope.event === EVENTS.LOOP_UPDATED) {
+        return envelope.payload?.loop || null;
+      }
+      if (envelope.event === EVENTS.GOAL_CREATED || envelope.event === EVENTS.GOAL_UPDATED) {
+        return envelope.payload?.goal || null;
+      }
       if (envelope.event === EVENTS.SIGNAL_DETECTED) {
         return envelope.payload?.signal || null;
       }

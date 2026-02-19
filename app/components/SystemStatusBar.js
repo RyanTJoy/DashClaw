@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ShieldAlert, ShieldCheck, Activity } from 'lucide-react';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 
 function computeSystemState(redCount, amberCount) {
   if (redCount >= 2) return { label: 'ALERT', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', pulse: true };
@@ -32,6 +33,12 @@ export default function SystemStatusBar() {
     const interval = setInterval(fetchSignals, 30000);
     return () => clearInterval(interval);
   }, [fetchSignals]);
+
+  useRealtime(useCallback((event) => {
+    if (event === 'signal.detected') {
+      fetchSignals();
+    }
+  }, [fetchSignals]));
 
   if (!counts) return null;
 

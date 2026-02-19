@@ -12,6 +12,7 @@ import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ListSkeleton } from '../components/ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 import ActivityTimeline from '../components/ActivityTimeline';
 import SwarmActivityLog from '../components/SwarmActivityLog';
 
@@ -76,6 +77,39 @@ export default function MissionControlPage() {
     const interval = setInterval(fetchAll, 30000);
     return () => clearInterval(interval);
   }, [fetchAll]);
+
+  // Real-time updates
+  useRealtime(useCallback((event, payload) => {
+    if (event === 'action.created' || event === 'action.updated') {
+      // Small delay to let DB settle if needed, or just re-fetch signals/loops
+      // Re-fetching is safer than manual state manipulation for complex derived stats
+      fetchAll();
+    } else if (event === 'signal.detected') {
+      if (agentId && payload.agent_id !== agentId) return;
+      setSignals(prev => ({
+        ...prev,
+        signals: [payload, ...(prev?.signals || [])].slice(0, 50),
+        counts: {
+          ...prev?.counts,
+          total: (prev?.counts?.total || 0) + 1,
+          red: payload.severity === 'red' ? (prev?.counts?.red || 0) + 1 : (prev?.counts?.red || 0),
+          amber: payload.severity === 'amber' ? (prev?.counts?.amber || 0) + 1 : (prev?.counts?.amber || 0),
+        }
+      }));
+    } else if (event === 'token.usage') {
+      if (agentId && payload.agent_id !== agentId) return;
+      setTokens(prev => ({
+        ...prev,
+        today: {
+          ...prev?.today,
+          estimatedCost: (prev?.today?.estimatedCost || 0) + (payload.estimated_cost || 0),
+        }
+      }));
+    } else if (event === 'loop.created' || event === 'loop.updated') {
+      if (agentId && payload.agent_id !== agentId) return;
+      fetchAll(); // Re-fetch loops to get correct stats and list
+    }
+  }, [agentId, fetchAll]));
 
   // Derived: signals
   const signalCounts = signals?.counts || { red: 0, amber: 0, total: 0 };

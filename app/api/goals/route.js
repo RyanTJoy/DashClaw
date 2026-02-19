@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../lib/db.js';
 import { getOrgId } from '../../lib/org.js';
 import { enforceFieldLimits } from '../../lib/validate.js';
+import { publishOrgEvent, EVENTS } from '../../lib/events.js';
 
 // sql initialized inside handler for serverless compatibility
 
@@ -104,7 +105,15 @@ export async function POST(request) {
       RETURNING *
     `;
 
-    return NextResponse.json({ goal: result[0] }, { status: 201 });
+    const goal = result[0];
+
+    // Publish event
+    await publishOrgEvent(EVENTS.GOAL_CREATED, {
+      orgId,
+      goal,
+    });
+
+    return NextResponse.json({ goal }, { status: 201 });
   } catch (error) {
     console.error('Goals API POST error:', error);
     return NextResponse.json({ error: 'An error occurred while creating the goal' }, { status: 500 });
