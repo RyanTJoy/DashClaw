@@ -14,6 +14,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
   const simulation = useRef(null);
   const nodesRef = useRef([]);
   const linksRef = useRef([]);
+  const nodesMapRef = useRef(new Map());
   
   useEffect(() => {
     if (!initialNodes.length) return;
@@ -39,28 +40,34 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
 
     nodesRef.current = nodes;
     linksRef.current = links;
+    
+    // Update fast lookup map
+    const newMap = new Map();
+    nodes.forEach(n => newMap.set(n.id, n));
+    nodesMapRef.current = newMap;
 
     if (!simulation.current) {
       simulation.current = d3.forceSimulation(nodes)
         .force('link', d3.forceLink(links).id(d => d.id).distance(80).strength(0.1))
-        .force('charge', d3.forceManyBody().strength(0)) // Zero repulsion
+        .force('charge', d3.forceManyBody().strength(0)) 
         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
         .force('collision', d3.forceCollide().radius(20).strength(0.5))
         .on('tick', () => {
           const margin = 40;
-          nodes.forEach(n => {
+          for (let i = 0; i < nodes.length; i++) {
+            const n = nodes[i];
             if (n.x < margin) n.x = margin;
             if (n.x > width - margin) n.x = width - margin;
             if (n.y < margin) n.y = margin;
             if (n.y > height - margin) n.y = height - margin;
-          });
+          }
         });
       
-      simulation.current.alphaDecay(0.1); // Settle extremely fast
+      simulation.current.alphaDecay(0.1); 
     } else {
       simulation.current.nodes(nodes);
       simulation.current.force('link').links(links);
-      simulation.current.alpha(0.05).restart(); // Minimal nudge on update
+      simulation.current.alpha(0.05).restart(); 
     }
 
     return () => {
@@ -72,5 +79,5 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     if (simulation.current) simulation.current.alpha(0.1).restart();
   }, []);
 
-  return { nodesRef, linksRef, wake };
+  return { nodesRef, linksRef, nodesMapRef, wake };
 }
