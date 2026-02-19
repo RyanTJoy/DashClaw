@@ -32,8 +32,8 @@ export const users = pgTable('users', {
   provider: text('provider'),
   providerAccountId: text('provider_account_id'),
   role: text('role').default('member'),
-  createdAt: text('created_at'),
-  lastLoginAt: text('last_login_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  lastLoginAt: timestamp('last_login_at').defaultNow(),
 }, (table) => ({
   providerUnique: uniqueIndex('users_provider_account_unique').on(table.provider, table.providerAccountId),
 }));
@@ -170,7 +170,7 @@ export const content = pgTable('content', {
   status: text('status').default('draft'),
   url: text('url'),
   body: text('body'),
-  createdAt: text('created_at'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const ideas = pgTable('ideas', {
@@ -211,7 +211,7 @@ export const interactions = pgTable('interactions', {
   type: text('type'),
   platform: text('platform'),
   date: text('date'),
-  createdAt: text('created_at'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // --- Learning Loop ---
@@ -235,8 +235,8 @@ export const learningEpisodes = pgTable('learning_episodes', {
   recommendationApplied: integer('recommendation_applied').default(0),
   score: integer('score').notNull(),
   scoreBreakdown: text('score_breakdown'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const learningRecommendations = pgTable('learning_recommendations', {
@@ -252,8 +252,8 @@ export const learningRecommendations = pgTable('learning_recommendations', {
   hints: text('hints').notNull(),
   guidance: text('guidance'),
   active: integer('active').notNull().default(1),
-  computedAt: text('computed_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  computedAt: timestamp('computed_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const learningRecommendationEvents = pgTable('learning_recommendation_events', {
@@ -265,7 +265,7 @@ export const learningRecommendationEvents = pgTable('learning_recommendation_eve
   eventType: text('event_type').notNull(),
   eventKey: text('event_key'),
   details: text('details'),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const learningVelocity = pgTable('learning_velocity', {
@@ -359,7 +359,7 @@ export const agentConnections = pgTable('agent_connections', {
   status: text('status').notNull().default('active'),
   metadata: text('metadata'),
   reportedAt: text('reported_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const tokenSnapshots = pgTable('token_snapshots', {
@@ -417,9 +417,9 @@ export const agentMessages = pgTable('agent_messages', {
   status: text('status').notNull().default('sent'),
   docRef: text('doc_ref'),
   readBy: text('read_by'),
-  createdAt: text('created_at').notNull(),
-  readAt: text('read_at'),
-  archivedAt: text('archived_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  readAt: timestamp('read_at'),
+  archivedAt: timestamp('archived_at'),
 });
 
 export const messageThreads = pgTable('message_threads', {
@@ -430,9 +430,9 @@ export const messageThreads = pgTable('message_threads', {
   status: text('status').notNull().default('open'),
   summary: text('summary'),
   createdBy: text('created_by').notNull(),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
-  resolvedAt: text('resolved_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  resolvedAt: timestamp('resolved_at'),
 });
 
 export const sharedDocs = pgTable('shared_docs', {
@@ -443,8 +443,8 @@ export const sharedDocs = pgTable('shared_docs', {
   createdBy: text('created_by').notNull(),
   lastEditedBy: text('last_edited_by'),
   version: integer('version').notNull().default(1),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // --- Policy & Guard ---
@@ -457,8 +457,8 @@ export const guardPolicies = pgTable('guard_policies', {
   rules: text('rules').notNull(),
   active: integer('active').notNull().default(1),
   createdBy: text('created_by'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const guardDecisions = pgTable('guard_decisions', {
@@ -471,7 +471,7 @@ export const guardDecisions = pgTable('guard_decisions', {
   context: text('context'),
   riskScore: integer('risk_score'),
   actionType: text('action_type'),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // --- Compliance & Audit ---
@@ -486,7 +486,7 @@ export const activityLogs = pgTable('activity_logs', {
   resourceId: text('resource_id'),
   details: text('details'),
   ipAddress: text('ip_address'),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const guardrailsTestRuns = pgTable('guardrails_test_runs', {
@@ -499,7 +499,7 @@ export const guardrailsTestRuns = pgTable('guardrails_test_runs', {
   success: integer('success').notNull().default(0),
   details: text('details'),
   triggeredBy: text('triggered_by'),
-  createdAt: text('created_at').notNull().default('now()'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const complianceSnapshots = pgTable('compliance_snapshots', {
@@ -513,7 +513,7 @@ export const complianceSnapshots = pgTable('compliance_snapshots', {
   coveragePercentage: integer('coverage_percentage').notNull().default(0),
   riskLevel: text('risk_level'),
   fullReport: text('full_report'),
-  createdAt: text('created_at').notNull().default('now()'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // --- Routing Engine ---
@@ -527,8 +527,8 @@ export const routingAgents = pgTable('routing_agents', {
   currentLoad: integer('current_load').notNull().default(0),
   status: text('status').notNull().default('available'),
   endpoint: text('endpoint'),
-  createdAt: text('created_at').notNull().default('now()'),
-  updatedAt: text('updated_at').notNull().default('now()'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const routingTasks = pgTable('routing_tasks', {
@@ -545,8 +545,8 @@ export const routingTasks = pgTable('routing_tasks', {
   maxRetries: integer('max_retries').notNull().default(2),
   retryCount: integer('retry_count').notNull().default(0),
   callbackUrl: text('callback_url'),
-  createdAt: text('created_at').notNull().default('now()'),
-  updatedAt: text('updated_at').notNull().default('now()'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const routingAgentMetrics = pgTable('routing_agent_metrics', {
@@ -557,8 +557,8 @@ export const routingAgentMetrics = pgTable('routing_agent_metrics', {
   tasksCompleted: integer('tasks_completed').notNull().default(0),
   tasksFailed: integer('tasks_failed').notNull().default(0),
   avgDurationMs: integer('avg_duration_ms'),
-  lastCompletedAt: text('last_completed_at'),
-  createdAt: text('created_at').notNull().default('now()'),
+  lastCompletedAt: timestamp('last_completed_at'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const routingDecisions = pgTable('routing_decisions', {
@@ -569,7 +569,7 @@ export const routingDecisions = pgTable('routing_decisions', {
   selectedAgentId: text('selected_agent_id'),
   selectedScore: real('selected_score'),
   reason: text('reason'),
-  createdAt: text('created_at').notNull().default('now()'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // --- Drift Engine ---
@@ -645,7 +645,7 @@ export const contextPoints = pgTable('context_points', {
   importance: integer('importance').default(5),
   sessionDate: text('session_date').notNull(),
   compressed: integer('compressed').default(0),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const contextEntries = pgTable('context_entries', {
@@ -654,7 +654,7 @@ export const contextEntries = pgTable('context_entries', {
   orgId: text('org_id').notNull().default('org_default'),
   content: text('content').notNull(),
   entryType: text('entry_type').default('note'),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const calendarEvents = pgTable('calendar_events', {
@@ -670,7 +670,7 @@ export const calendarEvents = pgTable('calendar_events', {
 export const waitlist = pgTable('waitlist', {
   id: serial('id').primaryKey(),
   email: text('email').notNull().unique(),
-  signedUpAt: text('signed_up_at').notNull(),
+  signedUpAt: timestamp('signed_up_at').defaultNow(),
   signupCount: integer('signup_count').default(1),
   source: text('source').default('landing_page'),
   notes: text('notes'),
@@ -693,8 +693,8 @@ export const webhooks = pgTable('webhooks', {
   active: integer('active').notNull().default(1),
   createdBy: text('created_by'),
   failureCount: integer('failure_count').notNull().default(0),
-  lastTriggeredAt: text('last_triggered_at'),
-  createdAt: text('created_at').notNull(),
+  lastTriggeredAt: timestamp('last_trigger_at'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const usageMeters = pgTable('usage_meters', {
@@ -703,8 +703,8 @@ export const usageMeters = pgTable('usage_meters', {
   period: text('period').notNull(),
   resource: text('resource').notNull(),
   count: integer('count').notNull().default(0),
-  lastReconciledAt: text('last_reconciled_at'),
-  updatedAt: text('updated_at').notNull(),
+  lastReconciledAt: timestamp('last_reconciled_at'),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const snippets = pgTable('snippets', {
@@ -717,8 +717,8 @@ export const snippets = pgTable('snippets', {
   language: text('language'),
   tags: text('tags'),
   useCount: integer('use_count').default(0),
-  createdAt: text('created_at').notNull(),
-  lastUsed: text('last_used'),
+  createdAt: timestamp('created_at').defaultNow(),
+  lastUsed: timestamp('last_used'),
 });
 
 export const promptTemplates = pgTable('prompt_templates', {
@@ -787,7 +787,7 @@ export const userObservations = pgTable('user_observations', {
   observation: text('observation').notNull(),
   category: text('category'),
   importance: integer('importance').default(5),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const userPreferences = pgTable('user_preferences', {
@@ -798,8 +798,8 @@ export const userPreferences = pgTable('user_preferences', {
   preference: text('preference').notNull(),
   category: text('category'),
   confidence: integer('confidence').default(50),
-  lastValidated: text('last_validated'),
-  createdAt: text('created_at').notNull(),
+  lastValidated: timestamp('last_validated'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const userMoods = pgTable('user_moods', {
@@ -810,7 +810,7 @@ export const userMoods = pgTable('user_moods', {
   mood: text('mood').notNull(),
   energy: text('energy'),
   notes: text('notes'),
-  createdAt: text('created_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const userApproaches = pgTable('user_approaches', {
@@ -822,8 +822,8 @@ export const userApproaches = pgTable('user_approaches', {
   context: text('context'),
   successCount: integer('success_count').default(0),
   failCount: integer('fail_count').default(0),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const notificationPreferences = pgTable('notification_preferences', {
@@ -887,7 +887,7 @@ export const evalScores = pgTable('eval_scores', {
   reasoning: text('reasoning'),
   evaluatedBy: text('evaluated_by'),
   metadata: text('metadata'),
-  createdAt: text('created_at'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 export const agentSchedules = pgTable('agent_schedules', {
@@ -916,10 +916,10 @@ export const evalRuns = pgTable('eval_runs', {
   summary: text('summary'),
   errorMessage: text('error_message'),
   filterCriteria: text('filter_criteria'),
-  startedAt: text('started_at'),
-  completedAt: text('completed_at'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
   createdBy: text('created_by'),
-  createdAt: text('created_at'),
+  createdAt: timestamp('created_at').defaultNow(),
 });
 
 // --- Scoring Profiles ---
@@ -975,3 +975,27 @@ export const riskTemplates = pgTable('risk_templates', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+export const agentPairings = pgTable('agent_pairings', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id').notNull().references(() => organizations.id),
+  agentId: text('agent_id').notNull(),
+  agentName: text('agent_name'),
+  publicKey: text('public_key').notNull(),
+  algorithm: text('algorithm').default('RSASSA-PKCS1-v1_5'),
+  status: text('status').default('pending'),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const agentIdentities = pgTable('agent_identities', {
+  orgId: text('org_id').notNull().references(() => organizations.id),
+  agentId: text('agent_id').notNull(),
+  publicKey: text('public_key').notNull(),
+  algorithm: text('algorithm').default('RSASSA-PKCS1-v1_5'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  pk: uniqueIndex('agent_identities_org_agent_unique').on(table.orgId, table.agentId),
+}));

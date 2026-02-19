@@ -1,0 +1,23 @@
+const postgres = require('postgres');
+
+async function fix() {
+  const sql = postgres("postgresql://neondb_owner:REDACTED@ep-polished-smoke-c4.us-east-1.aws.neon.tech/neondb?sslmode=require");
+  
+  try {
+    console.log('Dropping problematic columns to allow type change...');
+    await sql`ALTER TABLE users DROP COLUMN IF EXISTS created_at`;
+    await sql`ALTER TABLE users DROP COLUMN IF EXISTS last_login_at`;
+    
+    // Also cleaning up others that were text in the old schema but timestamp in the new one
+    await sql`ALTER TABLE learning_episodes DROP COLUMN IF EXISTS created_at`;
+    await sql`ALTER TABLE learning_episodes DROP COLUMN IF EXISTS updated_at`;
+    
+    console.log('Columns dropped successfully.');
+  } catch (e) {
+    console.error('Error:', e.message);
+  } finally {
+    await sql.end();
+  }
+}
+
+fix();

@@ -41,7 +41,18 @@ export async function GET(request) {
       SELECT id, org_id, role, name FROM users WHERE id = ${userId} LIMIT 1
     `;
     if (users.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      // If user not found, we still return a valid structure but with onboarding required
+      // This prevents client-side crashes on 404s
+      return NextResponse.json({
+        onboarding_required: true,
+        steps: {
+          workspace_created: false,
+          api_key_exists: false,
+          first_action_sent: false,
+        },
+        org_id: 'org_default', // Fallback for safe rendering
+        user_name: null,
+      });
     }
 
     const user = users[0];
