@@ -760,6 +760,25 @@ export const promptRuns = pgTable('prompt_runs', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+export const feedback = pgTable('feedback', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id').notNull(),
+  actionId: text('action_id'),
+  agentId: text('agent_id'),
+  source: text('source').default('user'),
+  rating: integer('rating'),
+  sentiment: text('sentiment').default('neutral'),
+  category: text('category').default('general'),
+  comment: text('comment'),
+  tags: jsonb('tags').default([]),
+  metadata: jsonb('metadata').default({}),
+  resolved: boolean('resolved').default(false),
+  resolvedBy: text('resolved_by'),
+  resolvedAt: timestamp('resolved_at'),
+  createdBy: text('created_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 export const userObservations = pgTable('user_observations', {
   id: text('id').primaryKey(),
   orgId: text('org_id').notNull().default('org_default'),
