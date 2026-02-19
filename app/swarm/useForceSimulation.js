@@ -3,167 +3,171 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * HIGH-ENERGY FORCE SIMULATION
+ * ROBUST FORCE SIMULATION (v3)
  * 
- * Specifically tuned for high-motion "walking" and organic jitter.
- * Uses object cloning to force React re-renders on every frame.
+ * - Decoupled from React render cycle for physics calculations.
+ * - Forces React updates via requestAnimationFrame loop.
+ * - Explicitly handles "fixed" nodes for dragging.
  */
 export function useForceSimulation({ nodes: initialNodes, links: initialLinks, width = 800, height = 600 }) {
-  const [nodes, setNodes] = useState([]);
-  const [links, setLinks] = useState([]);
-  const frameRef = useRef();
-  
-  // simulationRef holds the "source of truth" for physics
-  const simulationRef = useRef({
+  // We use a ref to store the actual physics state to avoid stale closures
+  const state = useRef({
     nodes: [],
     links: [],
+    nodeMap: new Map(),
   });
 
-  // 1. Sync React state to Simulation state
+  // React state for rendering
+  const [nodes, setNodes] = useState([]);
+  const [links, setLinks] = useState([]);
+
+  // Initialization: Sync props to ref
   useEffect(() => {
-    const sim = simulationRef.current;
+    const s = state.current;
     
-    // Maintain a map of existing nodes to preserve momentum
-    const existingNodes = new Map(sim.nodes.map(n => [n.id, n]));
-    
-    const newNodes = initialNodes.map(node => {
-      const existing = existingNodes.get(node.id);
-      if (existing) {
-        // Keep physics, update metadata
-        return { ...existing, ...node };
-      }
-      // New node: spawn with a "kick"
+    // Index existing nodes to keep positions
+    const existing = new Map(s.nodes.map(n => [n.id, n]));
+
+    s.nodes = initialNodes.map(node => {
+      const prev = existing.get(node.id);
       return {
         ...node,
-        x: width / 2 + (Math.random() - 0.5) * 300,
-        y: height / 2 + (Math.random() - 0.5) * 300,
-        vx: (Math.random() - 0.5) * 10,
-        vy: (Math.random() - 0.5) * 10,
-        fx: null,
-        fy: null,
+        x: prev ? prev.x : width / 2 + (Math.random() - 0.5) * 200,
+        y: prev ? prev.y : height / 2 + (Math.random() - 0.5) * 200,
+        vx: prev ? prev.vx : (Math.random() - 0.5) * 2,
+        vy: prev ? prev.vy : (Math.random() - 0.5) * 2,
+        // Important: preserve fixed state if it exists
+        fx: prev ? prev.fx : null,
+        fy: prev ? prev.fy : null,
       };
     });
 
-    const nodeMap = new Map(newNodes.map(n => [n.id, n]));
+    s.nodeMap = new Map(s.nodes.map(n => [n.id, n]));
 
-    const newLinks = initialLinks.map(link => ({
-      ...link,
+    s.links = initialLinks.map(link => ({
       source: typeof link.source === 'object' ? link.source.id : link.source,
       target: typeof link.target === 'object' ? link.target.id : link.target,
-    })).filter(l => nodeMap.has(l.source) && nodeMap.has(l.target));
+      weight: link.weight
+    })).filter(l => s.nodeMap.has(l.source) && s.nodeMap.has(l.target));
 
-    sim.nodes = newNodes;
-    sim.links = newLinks;
-    
-    // Initial render
-    setNodes(newNodes.map(n => ({ ...n })));
-    setLinks([...newLinks]);
+    setNodes(s.nodes.map(n => ({...n}))); 
+    setLinks(s.links);
   }, [initialNodes, initialLinks, width, height]);
 
-  // 2. The Physics Engine
-  const tick = useCallback(() => {
-    const sim = simulationRef.current;
-    if (!sim.nodes.length) return;
-
-    // PHYSICS CONSTANTS - CRANKED UP FOR VISIBLE MOVEMENT
-    const REPULSION = 60000;    // Aggressive spacing
-    const LINK_SPRING = 0.04;   // Snappy connections
-    const CENTER_PULL = 0.005;  // Moderate center gravity
-    const FRICTION = 0.97;      // Fluid coasting
-    const JITTER = 1.2;         // Random walking impulse (Visible!)
-    const DRIFT_FORCE = 0.5;    // Large scale organic swaying
+  // The Physics Loop
+  useEffect(() => {
+    let frame;
     
-    const time = Date.now() * 0.001;
+    const tick = () => {
+      const { nodes, links, nodeMap } = state.current;
+      if (!nodes.length) return;
 
-    // a. Global Repulsion (Push everyone away)
-    for (let i = 0; i < sim.nodes.length; i++) {
-      const a = sim.nodes[i];
-      for (let j = i + 1; j < sim.nodes.length; j++) {
-        const b = sim.nodes[j];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const distSq = dx * dx + dy * dy || 1;
-        const dist = Math.sqrt(distSq);
-        const force = REPULSION / distSq;
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
+      const REPULSION = 1000;
+      const CENTER_GRAVITY = 0.0005;
+      const LINK_STRENGTH = 0.005;
+      const FRICTION = 0.96;
+      const SPEED_LIMIT = 8;
+      const WALL_BOUNCE = 0.5;
+      const JITTER = 0.05;
+
+      const t = Date.now() * 0.001;
+
+      // 1. Repulsion (Push apart)
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = nodes[j];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let distSq = dx * dx + dy * dy;
+          if (distSq === 0) { dx = 0.1; dy = 0.1; distSq = 0.02; } // Prevent div by zero
+          
+          const dist = Math.sqrt(distSq);
+          const force = REPULSION / distSq;
+          const fx = (dx / dist) * force;
+          const fy = (dy / dist) * force;
+
+          a.vx -= fx;
+          a.vy -= fy;
+          b.vx += fx;
+          b.vy += fy;
+        }
+      }
+
+      // 2. Links (Pull together)
+      for (const link of links) {
+        const s = nodeMap.get(link.source);
+        const t = nodeMap.get(link.target);
+        if (!s || !t) continue;
+
+        const dx = t.x - s.x;
+        const dy = t.y - s.y;
+        // const dist = Math.sqrt(dx * dx + dy * dy);
+        // Hooke's Law: pull towards distance 0
+        const strength = LINK_STRENGTH * (link.weight || 1);
         
-        a.vx -= fx;
-        a.vy -= fy;
-        b.vx += fx;
-        b.vy += fy;
-      }
-    }
-
-    // b. Elastic Links
-    sim.links.forEach(link => {
-      const s = sim.nodes.find(n => n.id === link.source);
-      const t = sim.nodes.find(n => n.id === link.target);
-      if (!s || !t) return;
-
-      const dx = t.x - s.x;
-      const dy = t.y - s.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const strength = LINK_SPRING * (link.weight || 1);
-      const fx = dx * strength;
-      const fy = dy * strength;
-
-      s.vx += fx;
-      s.vy += fy;
-      t.vx -= fx;
-      t.vy -= fy;
-    });
-
-    // c. Movement & Noise
-    sim.nodes.forEach((node, idx) => {
-      // If manually dragging (fixed position)
-      if (node.fx != null && node.fy != null) {
-        node.x = node.fx;
-        node.y = node.fy;
-        node.vx = 0;
-        node.vy = 0;
-        return;
+        s.vx += dx * strength;
+        s.vy += dy * strength;
+        t.vx -= dx * strength;
+        t.vy -= dy * strength;
       }
 
-      // Gravitational center pull
-      node.vx += (width / 2 - node.x) * CENTER_PULL;
-      node.vy += (height / 2 - node.y) * CENTER_PULL;
+      // 3. Environment (Center + Noise + Update)
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
 
-      // "Walking" Jitter
-      node.vx += (Math.random() - 0.5) * JITTER;
-      node.vy += (Math.random() - 0.5) * JITTER;
+        // Fixed position (dragging)
+        if (n.fx != null && n.fy != null) {
+          n.x = n.fx;
+          n.y = n.fy;
+          n.vx = 0;
+          n.vy = 0;
+          continue;
+        }
 
-      // Large Organic Drift
-      node.vx += Math.sin(time * 0.6 + idx) * DRIFT_FORCE;
-      node.vy += Math.cos(time * 0.5 + idx) * DRIFT_FORCE;
+        // Center Gravity
+        n.vx += (width / 2 - n.x) * CENTER_GRAVITY;
+        n.vy += (height / 2 - n.y) * CENTER_GRAVITY;
 
-      // Integration
-      node.x += node.vx;
-      node.y += node.vy;
-      node.vx *= FRICTION;
-      node.vy *= FRICTION;
+        // Organic Jitter (The "Walking" effect)
+        n.vx += (Math.random() - 0.5) * JITTER;
+        n.vy += (Math.random() - 0.5) * JITTER;
 
-      // Soft Wall Bounce
-      const m = 50;
-      if (node.x < m) { node.x = m; node.vx = Math.abs(node.vx) * 0.8; }
-      if (node.x > width - m) { node.x = width - m; node.vx = -Math.abs(node.vx) * 0.8; }
-      if (node.y < m) { node.y = m; node.vy = Math.abs(node.vy) * 0.8; }
-      if (node.y > height - m) { node.y = height - m; node.vy = -Math.abs(node.vy) * 0.8; }
-    });
+        // Velocity Cap
+        const v = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
+        if (v > SPEED_LIMIT) {
+          n.vx = (n.vx / v) * SPEED_LIMIT;
+          n.vy = (n.vy / v) * SPEED_LIMIT;
+        }
 
-    // CRITICAL: Clone objects to force React to update the SVG circles
-    setNodes(sim.nodes.map(n => ({ ...n })));
-    
-    frameRef.current = requestAnimationFrame(tick);
+        // Move
+        n.x += n.vx;
+        n.y += n.vy;
+
+        // Friction
+        n.vx *= FRICTION;
+        n.vy *= FRICTION;
+
+        // Boundaries
+        const m = 20;
+        if (n.x < m) { n.x = m; n.vx = Math.abs(n.vx) * WALL_BOUNCE; }
+        if (n.x > width - m) { n.x = width - m; n.vx = -Math.abs(n.vx) * WALL_BOUNCE; }
+        if (n.y < m) { n.y = m; n.vy = Math.abs(n.vy) * WALL_BOUNCE; }
+        if (n.y > height - m) { n.y = height - m; n.vy = -Math.abs(n.vy) * WALL_BOUNCE; }
+      }
+
+      // Sync to React
+      setNodes(nodes.map(n => ({...n})));
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, [width, height]);
 
-  useEffect(() => {
-    frameRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameRef.current);
-  }, [tick]);
-
+  // External control for dragging
   const setNodeFixed = useCallback((id, x, y) => {
-    const node = simulationRef.current.nodes.find(n => n.id === id);
+    const node = state.current.nodeMap.get(id);
     if (node) {
       node.fx = x;
       node.fy = y;
