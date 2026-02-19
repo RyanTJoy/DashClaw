@@ -118,6 +118,7 @@ const navItems = [
   { href: '#getDriftReport', label: 'getDriftReport', indent: true },
   { href: '#signals', label: 'Signals' },
   { href: '#getSignals', label: 'getSignals', indent: true },
+  { href: '#swarm-intelligence', label: 'Swarm Intelligence' },
   { href: '#behavior-guard', label: 'Behavior Guard' },
   { href: '#guard', label: 'guard', indent: true },
   { href: '#getGuardDecisions', label: 'getGuardDecisions', indent: true },
@@ -742,6 +743,46 @@ for (const signal of signals) {
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+
+          {/* ── Swarm Intelligence ── */}
+          <section id="swarm-intelligence" className="scroll-mt-20 pt-12 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-[rgba(249,115,22,0.1)] flex items-center justify-center">
+                <Users size={16} className="text-brand" />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">Swarm Intelligence</h2>
+            </div>
+            <p className="text-sm text-zinc-400 mb-4">
+              Visualize multi-agent communication and operational drift in real-time. The Swarm dashboard maps your entire fleet as a neural web, highlighting high-risk nodes and message flows.
+            </p>
+
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+                <h4 className="text-sm font-semibold text-white mb-2">Neural Web Visualization</h4>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  High-performance canvas rendering supports 50+ agents. Nodes are color-coded by risk, and live &quot;packets&quot; visualize inter-agent messaging as it happens.
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+                <h4 className="text-sm font-semibold text-white mb-2">Swarm Pulse (Expand)</h4>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Use the <strong>Expand</strong> button to trigger a physical pulse that temporarily spreads agents apart, instantly decluttering complex webs for better visibility.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#111] border border-[rgba(255,255,255,0.06)]">
+              <h4 className="text-sm font-semibold text-white mb-3">Swarm Grouping</h4>
+              <p className="text-xs text-zinc-400 mb-3">
+                Use the <code className="font-mono text-brand">swarmId</code> constructor parameter to group related agents together in the neural web.
+              </p>
+              <CodeBlock>{`const claw = new DashClaw({
+  agentId: 'researcher-1',
+  swarmId: 'research-fleet-alpha', // Group agents together visually
+  // ...
+});`}</CodeBlock>
             </div>
           </section>
 
