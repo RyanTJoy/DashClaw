@@ -22,6 +22,7 @@ Users fork the repo, deploy to Vercel free tier, and get a fully functional dash
 ## Product Surfaces
 
 - `/` - landing page (marketing on dashclaw.io, homepage on self-hosted)
+- `/practical-systems` - about the team behind DashClaw (public)
 - `/demo` - demo sandbox (fake data, read-only, no login)
 - `/dashboard` - operations dashboard (real data, requires auth)
 - `/docs` - SDK + platform docs (public)

@@ -23,6 +23,7 @@ Both modes use the same landing page and the same "Dashboard" button (`/dashboar
 ## Product Surfaces
 
 - `/` - public landing site (doubles as homepage for self-hosted instances)
+- `/practical-systems` - about the team behind DashClaw (public)
 - `/demo` - demo sandbox UI (fake data, read-only, no login)
 - `/dashboard` - authenticated operations dashboard (real data)
 - `/workspace` - per-agent workspace (digest, context, handoffs, snippets, preferences, memory)
