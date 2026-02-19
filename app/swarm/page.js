@@ -32,6 +32,7 @@ export default function SwarmIntelligencePage() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [dragNodeId, setDragNodeId] = useState(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   const { nodes, links, setNodeFixed } = useForceSimulation({
     nodes: graphData.nodes,
@@ -43,8 +44,12 @@ export default function SwarmIntelligencePage() {
   const svgRef = useRef(null);
 
   const handleMouseDown = (e) => {
-    if (e.target.tagName === 'svg' || e.target.tagName === 'rect') {
+    setIsFocused(true);
+    if (e.target.tagName === 'svg' || e.target.id === 'swarm-bg') {
       setIsPanning(true);
+      if (e.target.id === 'swarm-bg') {
+        setSelectedAgent(null);
+      }
     }
   };
 
@@ -57,7 +62,6 @@ export default function SwarmIntelligencePage() {
     if (isPanning) {
       setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
     } else if (dragNodeId) {
-      // Adjust x/y based on zoom and pan
       const transformedX = (x - 400 - pan.x) / zoom + 400;
       const transformedY = (y - 300 - pan.y) / zoom + 300;
       setNodeFixed(dragNodeId, transformedX, transformedY);
@@ -73,6 +77,7 @@ export default function SwarmIntelligencePage() {
   };
 
   const handleWheel = (e) => {
+    if (!isFocused) return; // Prevent zooming unless focused
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     setZoom(prev => Math.max(0.2, Math.min(5, prev * delta)));
@@ -297,17 +302,17 @@ export default function SwarmIntelligencePage() {
 
     return (
       <div 
-        className="w-full h-full relative" 
+        className={`w-full h-full relative group/graph ${!isFocused ? 'cursor-pointer' : ''}`}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={() => { handleMouseUp(); setIsFocused(false); }}
       >
         <svg 
           ref={svgRef}
           viewBox={`0 0 ${width} ${height}`} 
-          className="w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden cursor-move select-none"
+          className={`w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden select-none transition-opacity duration-300 ${isFocused ? 'opacity-100' : 'opacity-60'}`}
         >
           <defs>
             <radialGradient id="nodeGradient">
@@ -322,6 +327,9 @@ export default function SwarmIntelligencePage() {
               </feMerge>
             </filter>
           </defs>
+
+          {/* Background for clicking/panning */}
+          <rect id="swarm-bg" x="0" y="0" width={width} height={height} fill="transparent" />
 
           {/* Transformation Group */}
           <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center' }}>
@@ -415,8 +423,17 @@ export default function SwarmIntelligencePage() {
           </g>
         </svg>
 
+        {/* Focus Lock Overlay */}
+        {!isFocused && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+            <div className="px-4 py-2 rounded-full bg-brand/80 text-white text-xs font-bold uppercase tracking-widest animate-pulse backdrop-blur-md">
+              Click to engage neural zoom
+            </div>
+          </div>
+        )}
+
         {/* Zoom Controls Overlay */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <div className={`absolute top-4 right-4 flex flex-col gap-2 transition-opacity duration-300 ${isFocused ? 'opacity-100' : 'opacity-0'}`}>
           <button 
             onClick={() => setZoom(z => Math.min(5, z * 1.2))}
             className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
@@ -491,8 +508,11 @@ export default function SwarmIntelligencePage() {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-[#22c55e]" /> Nominal Operation
                 </div>
-                <div className="mt-2 pt-2 border-t border-white/5 opacity-60 font-mono">
-                  FORCE-DIRECTED TOPOLOGY ACTIVE
+                <div className="mt-2 pt-2 border-t border-white/5 opacity-60 font-mono flex flex-col gap-1">
+                  <div>• SCROLL TO ZOOM</div>
+                  <div>• DRAG BG TO PAN</div>
+                  <div>• DRAG AGENT TO MOVE</div>
+                  <div>• CLICK EMPTY TO DESELECT</div>
                 </div>
               </div>
             </CardContent>

@@ -619,7 +619,7 @@ function demoSwarmGraph(fixtures, url) {
   const agents = Array.from(byAgent.values())
     .sort((a, b) => (b.actions - a.actions) || String(a.id).localeCompare(String(b.id)));
 
-  const MAX_NODES = 18;
+  const MAX_NODES = 50;
   const chosen = agents.slice(0, MAX_NODES);
 
   const nodes = chosen.map((a) => ({
