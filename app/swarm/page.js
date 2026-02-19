@@ -36,6 +36,7 @@ export default function SwarmIntelligencePage() {
   const packetsRef = useRef([]);
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const dragRef = useRef({ isDragging: false, node: null, hasMoved: false });
   const renderStateRef = useRef({ 
     selectedId: null, 
     hoveredId: null, 
@@ -46,7 +47,7 @@ export default function SwarmIntelligencePage() {
   // Action Inspection State
   const [inspectedAction, setInspectedAction] = useState(null);
 
-  const { nodesRef, linksRef, nodesMapRef, wake } = useForceSimulation({
+  const { nodesRef, linksRef, nodesMapRef, setNodeFixed, wake } = useForceSimulation({
     nodes: graphData.nodes,
     links: graphData.links,
     width: 800,
@@ -218,8 +219,10 @@ export default function SwarmIntelligencePage() {
     });
 
     if (clickedNode) {
+      dragRef.current = { isDragging: true, node: clickedNode, hasMoved: false };
       setSelectedAgentId(clickedNode.id);
     } else {
+      dragRef.current = { isDragging: true, node: null, hasMoved: false };
       setSelectedAgentId(null);
     }
   };
@@ -227,17 +230,30 @@ export default function SwarmIntelligencePage() {
   const handleMouseMove = (e) => {
     const { x, y } = screenToWorld(e.clientX, e.clientY);
     
-    const hovNode = nodesRef.current.find(n => {
-      const dx = n.x - x;
-      const dy = n.y - y;
-      const { zoom: z } = renderStateRef.current;
-      return Math.sqrt(dx * dx + dy * dy) < 30 / z;
-    });
-    setHoveredAgentId(hovNode?.id || null);
+    if (dragRef.current.isDragging) {
+      dragRef.current.hasMoved = true;
+      if (dragRef.current.node) {
+        setNodeFixed(dragRef.current.node.id, x, y);
+        setHoveredAgentId(null);
+      } else {
+        setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
+      }
+    } else {
+      const hovNode = nodesRef.current.find(n => {
+        const dx = n.x - x;
+        const dy = n.y - y;
+        const { zoom: z } = renderStateRef.current;
+        return Math.sqrt(dx * dx + dy * dy) < 30 / z;
+      });
+      setHoveredAgentId(hovNode?.id || null);
+    }
   };
 
   const handleMouseUp = () => {
-    // Interactivity disabled as per request
+    if (dragRef.current.node && dragRef.current.hasMoved) {
+      setNodeFixed(dragRef.current.node.id, null, null);
+    }
+    dragRef.current = { isDragging: false, node: null, hasMoved: false };
   };
 
   const handleWheel = useCallback((e) => {
