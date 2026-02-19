@@ -25,6 +25,7 @@ Users fork the repo, deploy to Vercel free tier, and get a fully functional dash
 - `/practical-systems` - about the team behind DashClaw (public)
 - `/demo` - demo sandbox (fake data, read-only, no login)
 - `/dashboard` - operations dashboard (real data, requires auth)
+- `/swarm` - real-time swarm intelligence & neural web (visual fleet overview)
 - `/docs` - SDK + platform docs (public)
 - `/self-host` - get started guide (Vercel + Neon setup)
 
