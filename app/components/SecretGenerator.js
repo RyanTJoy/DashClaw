@@ -86,6 +86,9 @@ export default function SecretGenerator() {
       `DASHCLAW_API_KEY=${secrets.DASHCLAW_API_KEY}`,
       `ENCRYPTION_KEY=${secrets.ENCRYPTION_KEY}`,
       `CRON_SECRET=${secrets.CRON_SECRET}`,
+      `REALTIME_BACKEND=redis`,
+      `REDIS_URL=redis://default:pass@ep-xyz.upstash.io:6379`,
+      `REALTIME_ENFORCE_REDIS=true`,
       `GITHUB_ID=<from-step-3>`,
       `GITHUB_SECRET=<from-step-3>`,
     ].join('\n');
@@ -145,7 +148,7 @@ export default function SecretGenerator() {
       </div>
 
       <p className="text-xs text-zinc-500">
-        Replace <code className="font-mono text-zinc-300">DATABASE_URL</code>, <code className="font-mono text-zinc-300">NEXTAUTH_URL</code>, <code className="font-mono text-zinc-300">GITHUB_ID</code>, and <code className="font-mono text-zinc-300">GITHUB_SECRET</code> with your actual values. The four generated secrets are ready to use.
+        Replace <code className="font-mono text-zinc-300">DATABASE_URL</code>, <code className="font-mono text-zinc-300">NEXTAUTH_URL</code>, <code className="font-mono text-zinc-300">REDIS_URL</code>, <code className="font-mono text-zinc-300">GITHUB_ID</code>, and <code className="font-mono text-zinc-300">GITHUB_SECRET</code> with your actual values. The four generated secrets are ready to use.
       </p>
     </div>
   );

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github, Download, Sparkles } from 'lucide-react';
+import { ChevronRight, Terminal, ArrowRight, Shield, KeyRound, Server, Cloud, Database, Github, Download, Sparkles, Zap } from 'lucide-react';
 import PublicNavbar from '../components/PublicNavbar';
 import PublicFooter from '../components/PublicFooter';
 import CopyMarkdownButton from '../components/CopyMarkdownButton';
@@ -153,6 +153,30 @@ export default function SelfHostPage() {
 
           <StepCard
             n="4"
+            title="Enable Live Updates (Redis)"
+            desc="Use Upstash Redis to bridge Vercel's serverless functions for real-time dashboard events."
+            icon={Zap}
+          >
+            <ol className="list-decimal list-inside text-sm text-zinc-400 space-y-1.5 mb-4">
+              <li>Sign up for a free account at <a href="https://upstash.com" target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-hover transition-colors">upstash.com</a></li>
+              <li>Create a new Redis database (Global or in the same region as your Vercel app)</li>
+              <li>Copy the <strong className="text-zinc-200">REST URL</strong> and <strong className="text-zinc-200">REST Token</strong>, or the raw <strong className="text-zinc-200">Redis URL</strong></li>
+              <li>Add these environment variables to Vercel:
+                <ul className="list-disc list-inside ml-4 mt-1 text-zinc-500 text-xs font-mono">
+                  <li>REALTIME_BACKEND=redis</li>
+                  <li>REDIS_URL=redis://default:pass@ep-xyz.upstash.io:6379</li>
+                  <li>REALTIME_ENFORCE_REDIS=true</li>
+                </ul>
+              </li>
+              <li>Redeploy your Vercel app to apply the changes</li>
+            </ol>
+            <p className="text-xs text-zinc-500">
+              The 30MB free tier at Upstash is more than enough for DashClaw&apos;s live event buffer.
+            </p>
+          </StepCard>
+
+          <StepCard
+            n="5"
             title="Connect your agents"
             desc="Agents only need a base URL + API key. Paste these into your agent's environment."
             icon={KeyRound}
@@ -282,7 +306,7 @@ DASHCLAW_AGENT_ID=cinder`}</CopyableCodeBlock>
 
           {/* Verified agents */}
           <StepCard
-            n="5"
+            n="6"
             title="Optional: enable verified agents (one-click pairing)"
             desc="If you want cryptographic identity binding, your agent generates a keypair and prints a one-click pairing URL. You approve once (or approve-all)."
             icon={Shield}

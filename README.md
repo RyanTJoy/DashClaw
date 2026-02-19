@@ -148,6 +148,9 @@ The fastest path: Vercel free tier + Neon free tier. Accessible from any device,
    - `DASHCLAW_API_KEY`: from step 4 (authenticates your agents; `oc_live_` prefix is required). This is the initial bootstrap admin key — you can manage additional keys from the dashboard at `/api-keys` after you sign in
    - `ENCRYPTION_KEY`: from step 4 (encrypts sensitive settings in DB)
    - `CRON_SECRET`: from step 4 (authenticates scheduled jobs)
+   - `REALTIME_BACKEND`: `redis` (for live updates on Vercel)
+   - `REDIS_URL`: your Upstash Redis connection string
+   - `REALTIME_ENFORCE_REDIS`: `true`
    - `GITHUB_ID` + `GITHUB_SECRET`: from GitHub OAuth setup (see above)
 6. Deploy. Tables are created automatically on first request
 7. Visit `your-app.vercel.app` → click **Dashboard** → sign in with GitHub

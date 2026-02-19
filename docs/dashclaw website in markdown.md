@@ -2196,6 +2196,22 @@ Your server uses .env.local. Your agent uses its own environment variables.
 
 3
 
+## Enable Live Updates (Redis)
+
+If you are deploying to Vercel, you need a Redis backend to bridge serverless functions for real-time events. Upstash provides a free tier that works perfectly.
+
+### Connection Environment Variables
+
+Add these to your Vercel project:
+
+- `REALTIME_BACKEND=redis`
+- `REDIS_URL=redis://default:pass@ep-xyz.upstash.io:6379`
+- `REALTIME_ENFORCE_REDIS=true`
+
+The dashboard will automatically detect Redis and switch from in-memory events to the broker-backed fanout.
+
+4
+
 ## Optional: enable verified agents (one-click pairing)
 
 If you want cryptographic identity binding, your agent generates a keypair and prints a one-click pairing URL. You approve once (or approve-all).
