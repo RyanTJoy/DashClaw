@@ -170,7 +170,7 @@ function applyResult(result, policy, reasons, warnings, matchedPolicies) {
   matchedPolicies.push(policy.id);
 }
 
-async function evaluatePolicy(policy, rules, context, sql, orgId) {
+export async function evaluatePolicy(policy, rules, context, sql, orgId) {
   switch (policy.policy_type) {
     case 'risk_threshold': {
       const threshold = rules.threshold ?? 80;
@@ -309,7 +309,7 @@ async function evaluatePolicy(policy, rules, context, sql, orgId) {
  * Evaluate a webhook_check policy by calling the customer's endpoint.
  * Customer decision can only upgrade severity (never downgrade).
  */
-async function evaluateWebhookPolicy(policy, rules, context, orgId, sql, preliminary) {
+export async function evaluateWebhookPolicy(policy, rules, context, orgId, sql, preliminary) {
   const payload = {
     event: 'guard.evaluation',
     org_id: orgId,

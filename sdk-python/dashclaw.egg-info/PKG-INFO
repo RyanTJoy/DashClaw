@@ -1,6 +1,6 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: dashclaw
-Version: 1.9.1
+Version: 1.9.2
 Summary: Python SDK for the DashClaw AI agent decision infrastructure platform
 Home-page: https://github.com/ucsandman/DashClaw
 Author: Wes Sander
@@ -11,6 +11,14 @@ Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 Provides-Extra: langchain
 Requires-Dist: langchain-core>=0.1.0; extra == "langchain"
+Dynamic: author
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: provides-extra
+Dynamic: requires-python
+Dynamic: summary
 
 # DashClaw Python SDK: Agent Decision Infrastructure
 

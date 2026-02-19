@@ -138,7 +138,77 @@ export default function PoliciesPage() {
   const [formFallback, setFormFallback] = useState('allow');
   const [creating, setCreating] = useState(false);
 
+  // Policy Simulation state
+  const [simResults, setSimResults] = useState(null);
+  const [simulating, setSimulating] = useState(false);
+  const [simDays, setSimDays] = useState(7);
+
   // Import Policy Pack state
+  const [importPack, setImportPack] = useState('enterprise-strict');
+  const [importYaml, setImportYaml] = useState('');
+  const [importMode, setImportMode] = useState('pack'); // 'pack' or 'yaml'
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  // Policy Test Runner state
+  const [testResults, setTestResults] = useState(null);
+  const [testRunning, setTestRunning] = useState(false);
+  const [expandedTests, setExpandedTests] = useState({});
+  // Proof Report state
+  const [proofReport, setProofReport] = useState('');
+  const [proofFormat, setProofFormat] = useState('markdown');
+  const [generatingProof, setGeneratingProof] = useState(false);
+
+  const handleSimulate = async (customRules = null, customType = null) => {
+    setSimulating(true);
+    setSimResults(null);
+    
+    let rules = customRules;
+    let type = customType;
+
+    if (!rules) {
+      switch (formType) {
+        case 'risk_threshold':
+          rules = { threshold: Number(formThreshold) || 0, action: formAction };
+          break;
+        case 'require_approval':
+          rules = { action_types: formActionTypes, action: 'require_approval' };
+          break;
+        case 'block_action_type':
+          rules = { action_types: formActionTypes, action: 'block' };
+          break;
+        case 'rate_limit':
+          rules = { max_actions: formMaxActions, window_minutes: formWindowMinutes, action: formAction };
+          break;
+        case 'webhook_check':
+          rules = { url: formWebhookUrl, timeout_ms: formWebhookTimeout, on_timeout: formWebhookOnTimeout };
+          break;
+        case 'semantic_check':
+          rules = { instruction: formInstruction, fallback: formFallback };
+          break;
+        default:
+          rules = {};
+      }
+      type = formType;
+    }
+
+    try {
+      const res = await fetch('/api/policies/simulate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policy_type: type, rules, days: simDays }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setSimResults(json);
+      } else {
+        setError(json.error || 'Simulation failed');
+      }
+    } catch {
+      setError('Simulation failed');
+    } finally {
+      setSimulating(false);
+    }
+  };
   const [importPack, setImportPack] = useState('enterprise-strict');
   const [importYaml, setImportYaml] = useState('');
   const [importMode, setImportMode] = useState('pack'); // 'pack' or 'yaml'
@@ -588,13 +658,89 @@ export default function PoliciesPage() {
               </div>
             )}
 
-            <button
-              type="submit"
-              disabled={creating || !formName.trim() || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0) || (formType === 'webhook_check' && (() => { try { const u = new URL(formWebhookUrl); return u.protocol !== 'https:' || !u.hostname; } catch { return true; } })()) || (formType === 'semantic_check' && !formInstruction.trim())}
-              className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
-            >
-              {creating ? 'Creating...' : 'Create Policy'}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={creating || !formName.trim() || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0) || (formType === 'webhook_check' && (() => { try { const u = new URL(formWebhookUrl); return u.protocol !== 'https:' || !u.hostname; } catch { return true; } })()) || (formType === 'semantic_check' && !formInstruction.trim())}
+                className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors disabled:opacity-50"
+              >
+                {creating ? 'Creating...' : 'Create Policy'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSimulate()}
+                disabled={simulating || ((formType === 'require_approval' || formType === 'block_action_type') && formActionTypes.length === 0) || (formType === 'webhook_check' && (() => { try { const u = new URL(formWebhookUrl); return u.protocol !== 'https:' || !u.hostname; } catch { return true; } })()) || (formType === 'semantic_check' && !formInstruction.trim())}
+                className="px-4 py-2 rounded-lg bg-zinc-700 text-zinc-300 text-sm font-medium hover:bg-zinc-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <Play size={14} />
+                {simulating ? 'Simulating...' : 'Simulate impact'}
+              </button>
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <span>over last</span>
+                <select 
+                  value={simDays} 
+                  onChange={(e) => setSimDays(parseInt(e.target.value, 10))}
+                  className="bg-[#111] border border-[rgba(255,255,255,0.1)] rounded px-1 py-0.5 focus:outline-none"
+                >
+                  <option value="1">1 day</option>
+                  <option value="7">7 days</option>
+                  <option value="30">30 days</option>
+                </select>
+              </div>
+            </div>
+
+            {simResults && (
+              <div className="mt-4 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-blue-300 flex items-center gap-2">
+                    <Shield size={16} />
+                    Simulation Results
+                  </h3>
+                  <button onClick={() => setSimResults(null)} className="text-blue-400 hover:text-blue-300 text-xs">&times; Close</button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{simResults.summary.total}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase">Actions Checked</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xl font-bold ${simResults.summary.block > 0 ? 'text-red-400' : 'text-zinc-400'}`}>{simResults.summary.block}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase">Would Block</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xl font-bold ${simResults.summary.warn > 0 ? 'text-amber-400' : 'text-zinc-400'}`}>{simResults.summary.warn}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase">Would Warn</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-xl font-bold ${simResults.summary.require_approval > 0 ? 'text-blue-400' : 'text-zinc-400'}`}>{simResults.summary.require_approval}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase">Would Gate</div>
+                  </div>
+                </div>
+                
+                {simResults.matches.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                    {simResults.matches.slice(0, 10).map((match, i) => (
+                      <div key={i} className="text-[11px] p-2 rounded bg-white/5 border border-white/5 flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-medium text-zinc-300 truncate">{match.goal}</div>
+                          <div className="text-zinc-500 truncate">{match.agent_name} • {new Date(match.timestamp).toLocaleDateString()}</div>
+                        </div>
+                        <Badge variant={DECISION_COLORS[match.simulated_action]} size="xs">{match.simulated_action}</Badge>
+                      </div>
+                    ))}
+                    {simResults.matches.length > 10 && (
+                      <div className="text-center text-[10px] text-zinc-500 pt-1">
+                        + {simResults.matches.length - 10} more matches
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {simResults.matches.length === 0 && (
+                  <p className="text-center text-xs text-zinc-500 py-2">No historical matches found. This policy would not have triggered any actions.</p>
+                )}
+              </div>
+            )}
           </form>
         )}
 
@@ -626,6 +772,14 @@ export default function PoliciesPage() {
                   </div>
                   {canEdit && (
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleSimulate(JSON.parse(policy.rules), policy.policy_type)}
+                        className="text-zinc-500 hover:text-brand transition-colors p-1"
+                        title="Simulate historical impact"
+                        disabled={simulating}
+                      >
+                        <Play size={14} />
+                      </button>
                       <button
                         onClick={() => handleToggle(policy)}
                         className="text-zinc-500 hover:text-white transition-colors"

@@ -12,7 +12,7 @@
  * @returns {Promise<Array>} signals array
  */
 export async function computeSignals(orgId, filterAgentId, sql) {
-  const [autonomySpikes, highImpact, repeatedFailures, staleLoops, assumptionDrift, staleAssumptions, staleRunning] = await Promise.all([
+  const [autonomySpikes, highImpact, repeatedFailures, staleLoops, assumptionDrift, staleAssumptions, staleRunning, stalePresence] = await Promise.all([
     sql`
       SELECT agent_id, agent_name, COUNT(*) as action_count
       FROM action_records
@@ -86,10 +86,32 @@ export async function computeSignals(orgId, filterAgentId, sql) {
         AND timestamp_start::timestamptz < NOW() - INTERVAL '4 hours'
       ORDER BY timestamp_start ASC
       LIMIT 10
+    `,
+    // Check for stale heartbeats (silent for > 10 mins)
+    sql`
+      SELECT agent_id, agent_name, last_heartbeat_at, current_task_id, status
+      FROM agent_presence
+      WHERE org_id = ${orgId}
+        AND last_heartbeat_at::timestamptz < NOW() - INTERVAL '10 minutes'
+        AND (status != 'offline' OR current_task_id IS NOT NULL)
+      LIMIT 10
     `
   ]);
 
   const signals = [];
+
+  for (const presence of stalePresence) {
+    signals.push({
+      type: 'agent_silent',
+      severity: presence.current_task_id ? 'red' : 'amber',
+      label: `Agent heartbeat lost: ${presence.agent_name || presence.agent_id}`,
+      detail: `This agent has not sent a heartbeat for over 10 minutes. Last heartbeat: ${new Date(presence.last_heartbeat_at).toLocaleString()}.`,
+      help: presence.current_task_id 
+        ? 'Agent is silent while assigned to an active task. Investigate potential process crash or network failure.'
+        : 'Agent heartbeat lost. It may be offline or unable to reach the dashboard.',
+      agent_id: presence.agent_id
+    });
+  }
 
   for (const spike of autonomySpikes) {
     signals.push({

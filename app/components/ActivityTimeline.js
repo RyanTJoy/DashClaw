@@ -319,46 +319,58 @@ export default function ActivityTimeline() {
                   <div className="absolute left-[7px] top-3 bottom-3 w-px bg-[rgba(255,255,255,0.06)]" />
 
                   <div className="space-y-1">
-                    {dayEvents.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex items-start gap-3 pl-0 py-1.5 group"
-                      >
-                        {/* Icon dot on timeline */}
-                        <div className="relative z-[1] mt-0.5 flex-shrink-0">
-                          {getEventIcon(event)}
-                        </div>
+                    {dayEvents.map((event) => {
+                      const isClickable = event.category === 'action' || event.category === 'loop';
+                      const href = event.category === 'action' ? `/actions/${event.id}` : (event.category === 'loop' ? `/actions/${event.actionId || ''}` : null);
+                      
+                      const content = (
+                        <div className={`flex items-start gap-3 pl-0 py-1.5 group ${isClickable ? 'cursor-pointer' : ''}`}>
+                          {/* Icon dot on timeline */}
+                          <div className="relative z-[1] mt-0.5 flex-shrink-0">
+                            {getEventIcon(event)}
+                          </div>
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-[10px] font-medium uppercase tracking-wider ${getCategoryColor(event.category)}`}>
-                              {getCategoryLabel(event.category)}
-                            </span>
-                            <span className="text-xs font-medium text-white truncate">{event.title}</span>
-                            {event.agentName && (
-                              <span className="text-[10px] text-zinc-600 font-mono">{event.agentName}</span>
-                            )}
-                            {event.riskScore != null && event.riskScore >= 70 && (
-                              <span className="flex items-center gap-0.5 text-[10px] text-red-400">
-                                <AlertTriangle size={9} /> {event.riskScore}
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-[10px] font-medium uppercase tracking-wider ${getCategoryColor(event.category)}`}>
+                                {getCategoryLabel(event.category)}
                               </span>
-                            )}
-                            {event.priority === 'critical' && (
-                              <Badge variant="error" size="sm">Critical</Badge>
+                              <span className="text-xs font-medium text-white truncate">{event.title}</span>
+                              {event.agentName && (
+                                <span className="text-[10px] text-zinc-600 font-mono">{event.agentName}</span>
+                              )}
+                              {event.riskScore != null && event.riskScore >= 70 && (
+                                <span className="flex items-center gap-0.5 text-[10px] text-red-400">
+                                  <AlertTriangle size={9} /> {event.riskScore}
+                                </span>
+                              )}
+                              {event.priority === 'critical' && (
+                                <Badge variant="error" size="sm">Critical</Badge>
+                              )}
+                            </div>
+                            {event.detail && (
+                              <p className="text-xs text-zinc-500 mt-0.5 truncate max-w-md">{event.detail}</p>
                             )}
                           </div>
-                          {event.detail && (
-                            <p className="text-xs text-zinc-500 mt-0.5 truncate max-w-md">{event.detail}</p>
-                          )}
-                        </div>
 
-                        {/* Timestamp */}
-                        <span className="text-[10px] text-zinc-600 whitespace-nowrap flex-shrink-0 mt-0.5 tabular-nums">
-                          {formatTimestamp(event.timestamp)}
-                        </span>
-                      </div>
-                    ))}
+                          {/* Timestamp */}
+                          <span className="text-[10px] text-zinc-600 whitespace-nowrap flex-shrink-0 mt-0.5 tabular-nums">
+                            {formatTimestamp(event.timestamp)}
+                          </span>
+                        </div>
+                      );
+
+                      if (isClickable && href) {
+                        return (
+                          <Link key={event.id} href={href} className="block hover:bg-white/[0.02] rounded-md transition-colors px-1 -mx-1">
+                            {content}
+                          </Link>
+                        );
+                      }
+
+                      return <div key={event.id}>{content}</div>;
+                    })}
                   </div>
                 </div>
               </div>

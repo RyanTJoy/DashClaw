@@ -865,7 +865,7 @@ const claw = new DashClaw({
 });
 ```
 
-**Action Recording (7)**: `createAction()`, `waitForApproval()`, `updateOutcome()`, `getActions()`, `getAction()`, `getActionTrace()`, `track()`
+**Action Recording (10)**: `createAction()`, `waitForApproval()`, `updateOutcome()`, `getActions()`, `getAction()`, `getActionTrace()`, `track()`, `heartbeat()`, `startHeartbeat()`, `stopHeartbeat()`
 
 **Loops & Assumptions (7)**: `registerOpenLoop()`, `resolveOpenLoop()`, `getOpenLoops()`, `registerAssumption()`, `getAssumption()`, `validateAssumption()`, `getDriftReport()`
 

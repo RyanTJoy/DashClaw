@@ -30,7 +30,7 @@ export async function GET(request, { params }) {
     const action = actions[0];
 
     // Run all trace queries in parallel
-    const [assumptions, loops, relatedActions] = await Promise.all([
+    const [assumptions, loops, relatedActions, subActions] = await Promise.all([
       // All assumptions for this action
       sql`SELECT * FROM assumptions WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
       // All loops for this action
@@ -50,6 +50,15 @@ export async function GET(request, { params }) {
           AND timestamp_start::timestamptz < ${action.timestamp_start}::timestamptz + INTERVAL '1 hour'
         ORDER BY timestamp_start DESC
         LIMIT 20
+      `,
+      // Sub-actions (children)
+      sql`
+        SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
+               risk_score, timestamp_start, error_message
+        FROM action_records
+        WHERE parent_action_id = ${actionId}
+          AND org_id = ${orgId}
+        ORDER BY timestamp_start ASC
       `
     ]);
 
@@ -139,6 +148,7 @@ export async function GET(request, { params }) {
         assumptions: assumptionSummary,
         loops: loopSummary,
         parent_chain: parentChain,
+        sub_actions: subActions,
         related_actions: relatedActions,
         root_cause_indicators: rootCauseIndicators
       }

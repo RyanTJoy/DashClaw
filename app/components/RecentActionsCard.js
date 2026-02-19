@@ -194,8 +194,9 @@ export default function RecentActionsCard() {
               const agentColorClass = getAgentColor(action.agentId);
 
               return (
-                <div
+                <Link
                   key={action.id}
+                  href={`/actions/${action.id}`}
                   className="group flex items-center gap-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-zinc-800 hover:bg-zinc-800/30 transition-all duration-200"
                 >
                   {/* Type icon */}
@@ -240,7 +241,7 @@ export default function RecentActionsCard() {
                       {date} {time}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })
           )}
