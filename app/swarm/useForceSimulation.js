@@ -43,9 +43,9 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     if (!simulation.current) {
       simulation.current = d3.forceSimulation(nodes)
         .force('link', d3.forceLink(links).id(d => d.id).distance(100).strength(0.1))
-        .force('charge', d3.forceManyBody().strength(-100).distanceMax(250)) // Lower repulsion
+        .force('charge', d3.forceManyBody().strength(0)) // Removed repulsion entirely
         .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-        .force('collision', d3.forceCollide().radius(25))
+        .force('collision', d3.forceCollide().radius(35).strength(0.7)) // Increased collision to compensate for lack of charge
         .on('tick', () => {
           // 1. BOUNDARY CONSTRAINT (Strict containment)
           const margin = 40;
@@ -54,12 +54,6 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
             if (n.x > width - margin) n.x = width - margin;
             if (n.y < margin) n.y = margin;
             if (n.y > height - margin) n.y = height - margin;
-
-            // 2. Micro-jitter (Only for organic feel, no energy kicks)
-            if (n.fx === undefined) {
-              n.vx += (Math.random() - 0.5) * 0.05;
-              n.vy += (Math.random() - 0.5) * 0.05;
-            }
           });
         });
       
@@ -92,7 +86,11 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       } else {
         node.fx = x;
         node.fy = y;
-        // NO ALPHA RESTART HERE. This stops agents from flying apart when you grab one.
+        // RESTART SIMULATION DURING DRAG: This fixes the "freeze" issue
+        // We use a small alpha but restart to ensure ticks continue while moving.
+        if (simulation.current) {
+          simulation.current.alpha(0.3).restart();
+        }
       }
     }
   }, []);

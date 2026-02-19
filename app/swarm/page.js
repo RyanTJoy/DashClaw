@@ -211,7 +211,9 @@ export default function SwarmIntelligencePage() {
   };
 
   const handleMouseUp = () => {
-    if (dragRef.current.node) setNodeFixed(dragRef.current.node.id, null, null);
+    if (dragRef.current.node && dragRef.current.hasMoved) {
+      setNodeFixed(dragRef.current.node.id, null, null);
+    }
     dragRef.current = { isDragging: false, node: null, hasMoved: false };
   };
 
