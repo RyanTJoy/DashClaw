@@ -29,15 +29,16 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
   const parentChain = trace.parent_chain || [];
   const allAssumptions = trace.assumptions?.items || [];
   const allLoops = trace.loops?.items || [];
+  const subActions = trace.sub_actions || [];
   const relatedActions = trace.related_actions || [];
 
-  const hasContent = parentChain.length > 0 || allAssumptions.length > 0 || allLoops.length > 0 || relatedActions.length > 0;
+  const hasContent = parentChain.length > 0 || allAssumptions.length > 0 || allLoops.length > 0 || subActions.length > 0 || relatedActions.length > 0;
 
   if (!hasContent) {
     return (
       <div className="py-6 text-center text-sm text-zinc-500">
         <GitBranch size={24} className="mx-auto mb-2 text-zinc-600" />
-        No parent chain, assumptions, or loops to visualize.
+        No parent chain, assumptions, loops, or sub-actions to visualize.
       </div>
     );
   }
@@ -51,11 +52,12 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
   const COL_LEFT_X = 40;
   const COL_RIGHT_X = 560;
   const ROW_GAP = 80;
+  const SUB_ACTION_ROW_GAP = 80;
   const BRANCH_GAP_Y = 52;
   const PADDING_TOP = 30;
   const RELATED_Y_OFFSET = 60;
 
-  // Build center column: reversed parent chain + current action at bottom
+  // Build center column: reversed parent chain + current action
   const centerNodes = [
     ...parentChain.slice().reverse().map((p, i) => ({
       id: p.action_id,
@@ -75,6 +77,18 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
     },
   ];
 
+  const currentActionNode = centerNodes[centerNodes.length - 1];
+
+  // Build sub-actions row (below current action)
+  const subActionNodes = subActions.map((s, i) => ({
+    id: s.action_id,
+    type: 'action', // using action style for subactions
+    label: s.declared_goal || s.action_id,
+    status: s.status,
+    x: COL_CENTER_X + (i - (subActions.length - 1) / 2) * (NODE_W + 20),
+    y: currentActionNode.y + SUB_ACTION_ROW_GAP,
+  }));
+
   // Map assumptions/loops to their action in the center column
   const actionIndex = {};
   centerNodes.forEach((n, i) => { actionIndex[n.id] = i; });
@@ -85,7 +99,7 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
     const parentIdx = actionIndex[asm.action_id];
     const anchorY = parentIdx !== undefined
       ? centerNodes[parentIdx].y
-      : centerNodes[centerNodes.length - 1].y;
+      : currentActionNode.y;
     leftBranches.push({
       id: asm.assumption_id,
       type: 'assumption',
@@ -104,7 +118,7 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
     const parentIdx = actionIndex[loop.action_id];
     const anchorY = parentIdx !== undefined
       ? centerNodes[parentIdx].y
-      : centerNodes[centerNodes.length - 1].y;
+      : currentActionNode.y;
     rightBranches.push({
       id: loop.loop_id,
       type: 'loop',
@@ -117,11 +131,16 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
   });
 
   // Related actions (bottom row)
-  const lastCenterY = centerNodes[centerNodes.length - 1].y;
+  const lastCenterY = currentActionNode.y;
+  const lastSubActionY = subActionNodes.length > 0 
+    ? Math.max(...subActionNodes.map(n => n.y)) 
+    : lastCenterY;
+
   const branchMaxY = Math.max(
     ...leftBranches.map(b => b.y + BRANCH_H),
     ...rightBranches.map(b => b.y + BRANCH_H),
     lastCenterY + NODE_H,
+    lastSubActionY + NODE_H,
   );
   const relatedY = branchMaxY + RELATED_Y_OFFSET;
 
@@ -137,10 +156,19 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
   const totalHeight = relatedNodes.length > 0
     ? relatedY + NODE_H + 30
     : branchMaxY + 30;
-  const totalWidth = Math.max(
+  
+  const minX = Math.min(
+    COL_LEFT_X,
+    subActionNodes.length > 0 ? Math.min(...subActionNodes.map(n => n.x)) : COL_LEFT_X,
+    0
+  );
+  const maxX = Math.max(
     COL_RIGHT_X + BRANCH_W + 40,
+    subActionNodes.length > 0 ? Math.max(...subActionNodes.map(n => n.x)) + NODE_W + 40 : 0,
     relatedNodes.length > 0 ? relatedNodes[relatedNodes.length - 1].x + NODE_W + 40 : 0,
   );
+
+  const totalWidth = maxX - minX;
 
   const getNodeColor = (node) => {
     if (node.type === 'current') return 'border-brand';
@@ -201,6 +229,8 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
     return <Zap size={14} className="text-zinc-400 flex-shrink-0" />;
   };
 
+  const offsetX = -minX;
+
   return (
     <div className="mb-8 overflow-x-auto">
       <div className="text-xs text-zinc-500 uppercase font-medium mb-3 flex items-center gap-2">
@@ -226,17 +256,30 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
             return (
               <line
                 key={`center-${idx}`}
-                x1={prev.x + NODE_W / 2} y1={prev.y + NODE_H}
-                x2={node.x + NODE_W / 2} y2={node.y}
+                x1={prev.x + NODE_W / 2 + offsetX} y1={prev.y + NODE_H}
+                x2={node.x + NODE_W / 2 + offsetX} y2={node.y}
                 stroke="#3f3f46" strokeWidth={1.5} strokeDasharray="4 3"
               />
             );
           })}
 
+          {/* Sub-action connectors (current -> children) */}
+          {subActionNodes.map((child) => (
+            <path
+              key={`sub-${child.id}`}
+              d={`M${currentActionNode.x + NODE_W / 2 + offsetX},${currentActionNode.y + NODE_H} C${currentActionNode.x + NODE_W / 2 + offsetX},${child.y} ${child.x + NODE_W / 2 + offsetX},${currentActionNode.y + NODE_H} ${child.x + NODE_W / 2 + offsetX},${child.y}`}
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth={1.5}
+              strokeOpacity={0.4}
+              strokeDasharray="4 2"
+            />
+          ))}
+
           {/* Left branch connectors (assumption -> center) */}
           {leftBranches.map(branch => {
-            const cx = COL_CENTER_X;
-            const startX = branch.x + BRANCH_W;
+            const cx = COL_CENTER_X + offsetX;
+            const startX = branch.x + BRANCH_W + offsetX;
             const startY = branch.y + BRANCH_H / 2;
             const endX = cx;
             const endY = branch.anchorY + NODE_H / 2;
@@ -255,8 +298,8 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
 
           {/* Right branch connectors (center -> loop) */}
           {rightBranches.map(branch => {
-            const cx = COL_CENTER_X + NODE_W;
-            const endX = branch.x;
+            const cx = COL_CENTER_X + NODE_W + offsetX;
+            const endX = branch.x + offsetX;
             const endY = branch.y + BRANCH_H / 2;
             const startY = branch.anchorY + NODE_H / 2;
             const midX = (cx + endX) / 2;
@@ -283,7 +326,7 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
               node.type === 'current' ? 'ring-1 ring-brand/40' : ''
             }`}
             style={{
-              left: node.x,
+              left: node.x + offsetX,
               top: node.y,
               width: NODE_W,
               height: NODE_H,
@@ -293,6 +336,35 @@ export default function AssumptionGraph({ trace, currentActionId, onNodeClick })
             <div className="flex items-center gap-2">
               <NodeIcon node={node} />
               <span className="text-xs text-white font-medium truncate">{node.label}</span>
+            </div>
+            {node.status && (
+              <span className={`text-[10px] mt-0.5 inline-block ${
+                node.status === 'completed' ? 'text-green-400' :
+                node.status === 'failed' ? 'text-red-400' : 'text-zinc-400'
+              }`}>
+                {node.status}
+              </span>
+            )}
+          </div>
+        ))}
+
+        {/* Sub-action nodes */}
+        {subActionNodes.map(node => (
+          <div
+            key={node.id}
+            onClick={() => handleClick(node)}
+            className={`absolute rounded-lg border-2 ${getNodeColor(node)} bg-surface-primary px-3 py-2 cursor-pointer hover:brightness-125 transition-all`}
+            style={{
+              left: node.x + offsetX,
+              top: node.y,
+              width: NODE_W,
+              height: NODE_H,
+              zIndex: 1,
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <NodeIcon node={node} />
+              <span className="text-xs text-zinc-300 font-medium truncate">{node.label}</span>
             </div>
             {node.status && (
               <span className={`text-[10px] mt-0.5 inline-block ${

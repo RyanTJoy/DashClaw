@@ -443,6 +443,26 @@ export default function ActionPostMortem() {
                 </div>
               </div>
             )}
+
+            {/* Sub-actions (Children) */}
+            {trace.sub_actions && trace.sub_actions.length > 0 && (
+              <div className="mt-4">
+                <div className="text-sm text-zinc-400 font-semibold mb-2">Sub-actions (Actions spawned by this decision)</div>
+                <div className="space-y-1">
+                  {trace.sub_actions.map((sub, idx) => (
+                    <div key={idx} className="flex items-center space-x-2 text-xs">
+                      <Link href={`/actions/${sub.action_id}`} className="text-brand hover:underline">
+                        {sub.declared_goal}
+                      </Link>
+                      <Badge variant={getStatusVariant(sub.status)} size="xs">
+                        {sub.status}
+                      </Badge>
+                      <span className="text-zinc-500">{sub.agent_name || sub.agent_id}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -765,6 +785,10 @@ export default function ActionPostMortem() {
                   <div className="bg-surface-tertiary rounded-lg p-3">
                     <div className="font-semibold text-white text-lg tabular-nums">{trace.related_actions.length}</div>
                     <div className="text-zinc-500">Related</div>
+                  </div>
+                  <div className="bg-surface-tertiary rounded-lg p-3">
+                    <div className="font-semibold text-white text-lg tabular-nums">{trace.sub_actions?.length || 0}</div>
+                    <div className="text-zinc-500">Children</div>
                   </div>
                 </div>
               </CardContent>

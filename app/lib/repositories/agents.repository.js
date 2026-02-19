@@ -121,7 +121,40 @@ export async function listAgentsForOrg(sql, orgId) {
     };
   });
 
-  agents.sort((a, b) => String(b.last_active || '').localeCompare(String(a.last_active || '')));
+  // Attach presence data (heartbeats)
+  try {
+    const presence = await sql.query(
+      `SELECT * FROM agent_presence WHERE org_id = $1`,
+      [orgId]
+    );
+    const presenceMap = {};
+    for (const p of presence || []) {
+      presenceMap[p.agent_id] = p;
+    }
+    for (const agent of agents) {
+      const p = presenceMap[agent.agent_id];
+      if (p) {
+        agent.status = p.status;
+        agent.last_heartbeat_at = p.last_heartbeat_at;
+        agent.current_task_id = p.current_task_id;
+        // metadata is a string in the DB if we use sql.query, or we might need to parse it
+        try {
+          agent.presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
+        } catch { agent.presence_metadata = {}; }
+      } else {
+        agent.status = 'unknown';
+      }
+    }
+  } catch (err) {
+    if (!isMissingTable(err)) throw err;
+  }
+
+  agents.sort((a, b) => {
+    // Sort online/recent heartbeat agents to the top
+    const aTime = a.last_heartbeat_at || a.last_active || '';
+    const bTime = b.last_heartbeat_at || b.last_active || '';
+    return String(bTime).localeCompare(String(aTime));
+  });
   return agents;
 }
 

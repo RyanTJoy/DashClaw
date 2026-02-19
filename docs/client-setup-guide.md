@@ -1594,6 +1594,8 @@ MOST USED METHODS:
   claw.guard({ action_type, risk_score, ... })
   claw.getSignals()
   claw.recordDecision({ decision, reasoning })
+  claw.heartbeat({ status?, currentTaskId? })
+  claw.startHeartbeat({ interval? })
   claw.getRecommendations({ action_type? })
   claw.rebuildRecommendations({ lookback_days?, min_samples? })
   claw.recommendAction({ action_type, declared_goal, ... })

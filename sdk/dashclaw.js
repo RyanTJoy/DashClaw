@@ -682,6 +682,48 @@ class DashClaw {
   }
 
   /**
+   * Report agent presence and health.
+   * @param {Object} [options]
+   * @param {'online'|'busy'|'error'} [options.status='online']
+   * @param {string} [options.currentTaskId]
+   * @param {Object} [options.metadata]
+   * @returns {Promise<{status: string, timestamp: string}>}
+   */
+  async heartbeat({ status = 'online', currentTaskId, metadata } = {}) {
+    return this._request('/api/agents/heartbeat', 'POST', {
+      agent_id: this.agentId,
+      agent_name: this.agentName,
+      status,
+      current_task_id: currentTaskId,
+      metadata,
+    });
+  }
+
+  /**
+   * Start an automatic heartbeat timer.
+   * @param {Object} [options]
+   * @param {number} [options.interval=60000] - Interval in ms
+   */
+  startHeartbeat(options = {}) {
+    if (this._heartbeatTimer) return;
+    const interval = options.interval || 60000;
+    this.heartbeat(options).catch(() => {}); // Initial heartbeat
+    this._heartbeatTimer = setInterval(() => {
+      this.heartbeat(options).catch(() => {});
+    }, interval);
+  }
+
+  /**
+   * Stop the automatic heartbeat timer.
+   */
+  stopHeartbeat() {
+    if (this._heartbeatTimer) {
+      clearInterval(this._heartbeatTimer);
+      this._heartbeatTimer = null;
+    }
+  }
+
+  /**
    * Update the outcome of an existing action.
    * @param {string} actionId - The action_id to update
    * @param {Object} outcome

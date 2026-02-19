@@ -314,6 +314,45 @@ Get root-cause trace for an action, including its assumptions, open loops, paren
 
 ---
 
+## Agent Presence & Health
+
+Monitor agent uptime and status in real-time. Use heartbeats to detect when an agent crashes or loses network connectivity.
+
+### claw.heartbeat(options?)
+Report agent presence and health to the dashboard.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| options.status | string | No | Agent status: 'online', 'busy', 'error' (default: 'online') |
+| options.currentTaskId | string | No | The ID of the task currently being executed |
+| options.metadata | Object | No | Optional key-value pairs for additional context |
+
+**Returns:** `Promise<{ status: string, timestamp: string }>`
+
+### claw.startHeartbeat(options?)
+Start an automatic heartbeat timer that reports 'online' every minute.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| options.interval | number | No | Heartbeat interval in milliseconds (default: 60000 / 1 min) |
+| options.status | string | No | Status to report |
+
+**Example:**
+```javascript
+// Start reporting presence automatically
+claw.startHeartbeat();
+
+// Later, stop it
+claw.stopHeartbeat();
+```
+
+### claw.stopHeartbeat()
+Stop the automatic heartbeat timer.
+
+---
+
 ## Real-Time Flight Recorder
 
 Stream actions live to the dashboard as they happen.
