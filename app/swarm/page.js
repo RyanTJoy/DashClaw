@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Users, Zap, ShieldAlert, MessageSquare, ArrowRight,
   RefreshCw, Activity, Search, MousePointer2, Info,
-  History, Target, Shield, Cpu
+  History, Target, Shield, Cpu, X, AlertCircle, CheckCircle2,
+  Clock, Terminal, FileText, ChevronRight
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -31,6 +32,9 @@ export default function SwarmIntelligencePage() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isFocused, setIsFocused] = useState(false);
   const [livePackets, setLivePackets] = useState([]);
+  
+  // Action Inspection State
+  const [inspectedAction, setInspectedAction] = useState(null);
 
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -67,7 +71,6 @@ export default function SwarmIntelligencePage() {
       ctx.save();
       
       // Apply View Transform (Zoom/Pan)
-      // Center of world is 400,300. We scale around that.
       ctx.translate(400 + pan.x, 300 + pan.y);
       ctx.scale(zoom, zoom);
       ctx.translate(-400, -300);
@@ -125,7 +128,7 @@ export default function SwarmIntelligencePage() {
           ctx.fill();
         }
 
-        // Body (BIGGER AGENTS)
+        // Body
         ctx.beginPath();
         ctx.arc(node.x, node.y, isSel ? 18 : 12, 0, Math.PI * 2);
         ctx.fillStyle = '#111';
@@ -157,15 +160,10 @@ export default function SwarmIntelligencePage() {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    
-    // 1. Normalize to canvas space (0-800)
     const x = (sx - rect.left) * (800 / rect.width);
     const y = (sy - rect.top) * (600 / rect.height);
-    
-    // 2. Inverse View Transform
     const wx = (x - 400 - pan.x) / zoom + 400;
     const wy = (y - 300 - pan.y) / zoom + 300;
-    
     return { x: wx, y: wy };
   }, [pan, zoom]);
 
@@ -173,7 +171,6 @@ export default function SwarmIntelligencePage() {
     setIsFocused(true);
     const { x, y } = screenToWorld(e.clientX, e.clientY);
     
-    // Check if clicked node
     const clickedNode = nodesRef.current.find(n => {
       const dx = n.x - x;
       const dy = n.y - y;
@@ -192,8 +189,6 @@ export default function SwarmIntelligencePage() {
 
   const handleMouseMove = (e) => {
     const { x, y } = screenToWorld(e.clientX, e.clientY);
-    
-    // Hover detection
     const hovNode = nodesRef.current.find(n => {
       const dx = n.x - x;
       const dy = n.y - y;
@@ -205,47 +200,32 @@ export default function SwarmIntelligencePage() {
       if (dragRef.current.node) {
         setNodeFixed(dragRef.current.node.id, x, y);
       } else {
-        setPan(prev => ({
-          x: prev.x + e.movementX,
-          y: prev.y + e.movementY
-        }));
+        setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
       }
     }
   };
 
   const handleMouseUp = () => {
-    if (dragRef.current.node) {
-      setNodeFixed(dragRef.current.node.id, null, null);
-    }
+    if (dragRef.current.node) setNodeFixed(dragRef.current.node.id, null, null);
     dragRef.current = { isDragging: false, node: null };
   };
 
-  // ZOOM TO MOUSE POSITION
   const handleWheel = useCallback((e) => {
     if (!isFocused) return;
     e.preventDefault();
-    
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = Math.max(0.1, Math.min(10, zoom * delta));
-    
     if (newZoom !== zoom) {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      
-      // Mouse position in Canvas coordinates (0-800)
       const mx = (e.clientX - rect.left) * (800 / rect.width);
       const my = (e.clientY - rect.top) * (600 / rect.height);
-      
-      // Calculate how much the mouse has "moved" relative to world due to zoom change
-      // This formula ensures the world point under the mouse stays under the mouse.
       const dx = (mx - 400 - pan.x) * (delta - 1);
       const dy = (my - 300 - pan.y) * (delta - 1);
-      
       setPan(p => ({ x: p.x - dx, y: p.y - dy }));
       setZoom(newZoom);
     }
-    
     wake();
   }, [isFocused, zoom, pan, wake]);
 
@@ -255,7 +235,7 @@ export default function SwarmIntelligencePage() {
     return () => el?.removeEventListener('wheel', handleWheel);
   }, [handleWheel]);
 
-  // --- DATA FETCHING & REALTIME ---
+  // --- DATA FETCHING ---
 
   const triggerPacket = useCallback((fromId, toId) => {
     const packetId = Math.random().toString(36).substring(7);
@@ -291,38 +271,29 @@ export default function SwarmIntelligencePage() {
     return () => clearInterval(interval);
   }, [fetchGraph]);
 
-  // Sync Agent Context for Sidebar
   useEffect(() => {
     if (!selectedAgentId) {
       setAgentContext({ loading: false, actions: [], messages: [] });
       return;
     }
-    
     const ctrl = new AbortController();
     const load = async () => {
       setAgentContext(prev => ({ ...prev, loading: true }));
       try {
-        const qs = (path) => `/api/${path}?agent_id=${encodeURIComponent(selectedAgentId)}&limit=10`;
+        const qs = (path) => `/api/${path}?agent_id=${encodeURIComponent(selectedAgentId)}&limit=15`;
         const [actionsRes, msgsRes] = await Promise.all([
           fetch(qs('actions'), { signal: ctrl.signal }),
           fetch(qs('messages'), { signal: ctrl.signal }),
         ]);
-        
         const [actionsJson, msgsJson] = await Promise.all([
           actionsRes.json().catch(() => ({ actions: [] })),
           msgsRes.json().catch(() => ({ messages: [] })),
         ]);
-
-        setAgentContext({
-          loading: false,
-          actions: actionsJson.actions || [],
-          messages: msgsJson.messages || [],
-        });
+        setAgentContext({ loading: false, actions: actionsJson.actions || [], messages: msgsJson.messages || [] });
       } catch (e) {
         if (e.name !== 'AbortError') setAgentContext(prev => ({ ...prev, loading: false }));
       }
     };
-
     load();
     return () => ctrl.abort();
   }, [selectedAgentId]);
@@ -348,6 +319,65 @@ export default function SwarmIntelligencePage() {
     if (!ts) return '';
     const date = new Date(ts);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
+  const ActionDetailOverlay = ({ action, onClose }) => {
+    if (!action) return null;
+    return (
+      <div className="absolute inset-0 z-[100] bg-black/90 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${
+              action.status === 'completed' ? 'bg-green-500/10 text-green-500' :
+              action.status === 'failed' ? 'bg-red-500/10 text-red-500' : 'bg-yellow-500/10 text-yellow-500'
+            }`}>
+              {action.status === 'completed' ? <CheckCircle2 size={24} /> : action.status === 'failed' ? <AlertCircle size={24} /> : <Clock size={24} />}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white leading-tight">{action.action_type}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline" className="text-[10px] uppercase font-mono border-white/10">{action.status}</Badge>
+                <span className="text-[10px] text-zinc-500 font-mono">{action.action_id}</span>
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} className="text-zinc-400" /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-6 custom-scrollbar pr-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-surface-tertiary border border-white/5">
+              <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2 flex items-center gap-2"><Target size={12} /> Risk Score</div>
+              <div className={`text-2xl font-mono ${action.risk_score > 70 ? 'text-red-400' : action.risk_score > 40 ? 'text-yellow-400' : 'text-green-400'}`}>{action.risk_score || 0}%</div>
+            </div>
+            <div className="p-4 rounded-xl bg-surface-tertiary border border-white/5">
+              <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2 flex items-center gap-2"><Clock size={12} /> Execution Time</div>
+              <div className="text-sm font-mono text-zinc-300">{formatTimestamp(action.timestamp_start)}</div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-2"><Info size={12} /> Neural Rationale</div>
+            <div className="p-4 rounded-xl bg-black/40 border border-white/5 text-sm text-zinc-300 leading-relaxed italic">
+              {action.status_reason || action.reason || "Autonomous decision based on current swarm goals and policy constraints."}
+            </div>
+          </div>
+
+          {action.metadata && (
+            <div className="space-y-2">
+              <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-2"><Terminal size={12} /> Contextual Metadata</div>
+              <pre className="p-4 rounded-xl bg-black/60 border border-white/5 text-[11px] font-mono text-brand overflow-x-auto">
+                {JSON.stringify(action.metadata, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 pt-6 border-t border-white/10 flex gap-3">
+          <button onClick={() => router.push(`/workspace?agent_id=${selectedAgentId}&action_id=${action.action_id}`)} className="flex-1 py-3 bg-brand rounded-xl text-xs font-bold text-white hover:bg-brand-hover transition-all flex items-center justify-center gap-2">View Raw Trace <FileText size={14} /></button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -380,51 +410,18 @@ export default function SwarmIntelligencePage() {
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseUp}
               >
-                <canvas 
-                  ref={canvasRef}
-                  width={800}
-                  height={600}
-                  className="w-full h-full select-none"
-                />
-                
+                <canvas ref={canvasRef} width={800} height={600} className="w-full h-full select-none" />
                 {!isFocused && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px] pointer-events-none transition-all duration-700">
                     <div className="flex flex-col items-center gap-4">
-                      <div className="w-16 h-16 rounded-full border border-brand/30 flex items-center justify-center animate-pulse">
-                        <MousePointer2 className="text-brand" size={24} />
-                      </div>
-                      <div className="px-6 py-2.5 rounded-full bg-brand text-white text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl border border-white/20">
-                        Engage Swarm
-                      </div>
+                      <div className="w-16 h-16 rounded-full border border-brand/30 flex items-center justify-center animate-pulse"><MousePointer2 className="text-brand" size={24} /></div>
+                      <div className="px-6 py-2.5 rounded-full bg-brand text-white text-[10px] font-bold uppercase tracking-[0.2em] shadow-2xl border border-white/20">Engage Swarm</div>
                     </div>
                   </div>
                 )}
-
-                <div className="absolute bottom-6 left-6 flex items-center gap-4 text-[10px] font-mono text-zinc-500">
-                  <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-green-500" /> Low Risk</div>
-                  <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-yellow-500" /> Med Risk</div>
-                  <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-red-500" /> High Risk</div>
-                </div>
-
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
-                  <button onClick={() => {
-                    const delta = 1.5;
-                    const newZoom = Math.min(10, zoom * delta);
-                    const dx = (400 - 400 - pan.x) * (delta - 1);
-                    const dy = (300 - 300 - pan.y) * (delta - 1);
-                    setPan(p => ({ x: p.x - dx, y: p.y - dy }));
-                    setZoom(newZoom);
-                    wake();
-                  }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">+</button>
-                  <button onClick={() => {
-                    const delta = 0.7;
-                    const newZoom = Math.max(0.1, zoom * delta);
-                    const dx = (400 - 400 - pan.x) * (delta - 1);
-                    const dy = (300 - 300 - pan.y) * (delta - 1);
-                    setPan(p => ({ x: p.x - dx, y: p.y - dy }));
-                    setZoom(newZoom);
-                    wake();
-                  }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">-</button>
+                  <button onClick={() => { setZoom(z => Math.min(10, z * 1.5)); wake(); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">+</button>
+                  <button onClick={() => { setZoom(z => Math.max(0.1, z * 0.7)); wake(); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">-</button>
                   <button onClick={() => { setZoom(0.8); setPan({ x: 0, y: 0 }); wake(); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors"><RefreshCw size={14} /></button>
                 </div>
               </div>
@@ -432,24 +429,20 @@ export default function SwarmIntelligencePage() {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm">
-              <StatCompact label="Neural Links" value={graphData.links.length} color="text-white" />
-            </div>
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm">
-              <StatCompact label="Sync Latency" value="12ms" color="text-brand" />
-            </div>
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm">
-              <StatCompact label="Drift State" value="Nominal" color="text-blue-400" />
-            </div>
+            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm"><StatCompact label="Neural Links" value={graphData.links.length} color="text-white" /></div>
+            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm"><StatCompact label="Sync Latency" value="12ms" color="text-brand" /></div>
+            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm"><StatCompact label="Drift State" value="Nominal" color="text-blue-400" /></div>
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 relative overflow-hidden">
           <Card className="h-full border-brand/5 bg-surface-secondary/20 shadow-xl backdrop-blur-lg flex flex-col">
             <CardHeader className="border-b border-white/5 py-4">
               <div className="flex items-center gap-2"><Activity size={16} className="text-brand" /><span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Agent Telemetry</span></div>
             </CardHeader>
-            <CardContent className="pt-6 flex-1 overflow-y-auto custom-scrollbar">
+            <CardContent className="pt-6 flex-1 overflow-y-auto custom-scrollbar relative">
+              {inspectedAction && <ActionDetailOverlay action={inspectedAction} onClose={() => setInspectedAction(null)} />}
+              
               {selectedAgent ? (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="relative group">
@@ -459,105 +452,67 @@ export default function SwarmIntelligencePage() {
                       <code className="text-[10px] text-zinc-500 font-mono">{selectedAgent.id.substring(0, 12)}...</code>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Badge variant="outline" className="text-[9px] bg-white/5 border-white/10 uppercase tracking-tighter">AGENT_CLASS_V2</Badge>
-                        <Badge variant="outline" className={`text-[9px] border-none ${selectedAgent.risk > 40 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-green-500/10 text-green-500'}`}>
-                          RISK: {selectedAgent.risk.toFixed(0)}%
-                        </Badge>
+                        <Badge variant="outline" className={`text-[9px] border-none ${selectedAgent.risk > 40 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-green-500/10 text-green-500'}`}>RISK: {selectedAgent.risk.toFixed(0)}%</Badge>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                      <Zap size={10} className="text-brand" /> Live Performance
-                    </h4>
+                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Zap size={10} className="text-brand" /> Live Performance</h4>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="p-3 rounded-lg bg-black/40 border border-white/5">
-                        <div className="text-[9px] text-zinc-500 mb-1">Actions</div>
-                        <div className="text-lg font-mono text-white">{selectedAgent.actions || 0}</div>
-                      </div>
-                      <div className="p-3 rounded-lg bg-black/40 border border-white/5">
-                        <div className="text-[9px] text-zinc-500 mb-1">Stability</div>
-                        <div className="text-lg font-mono text-green-400">99.8%</div>
-                      </div>
+                      <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Actions</div><div className="text-lg font-mono text-white">{selectedAgent.actions || 0}</div></div>
+                      <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Stability</div><div className="text-lg font-mono text-green-400">99.8%</div></div>
                     </div>
                   </div>
 
-                  {/* LATEST NEURAL LOOPS (NEW) */}
                   <div className="space-y-3">
-                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                      <History size={10} className="text-zinc-400" /> Latest Neural Loops
-                    </h4>
-                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><History size={10} className="text-zinc-400" /> Latest Neural Loops</h4>
+                    <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                       {agentContext.loading ? (
-                        <div className="py-4 text-center text-[10px] text-zinc-600 animate-pulse">Syncing neural state...</div>
+                        <div className="py-8 text-center text-[11px] text-zinc-600 animate-pulse">Syncing neural state...</div>
                       ) : agentContext.actions.length > 0 ? (
                         agentContext.actions.map((action, i) => (
-                          <div key={i} className="p-2.5 rounded-lg bg-white/5 border border-white/5 flex flex-col gap-1 hover:bg-white/10 transition-colors">
+                          <div 
+                            key={i} 
+                            onClick={() => setInspectedAction(action)}
+                            className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2 hover:bg-white/10 hover:border-brand/20 transition-all cursor-pointer group/action"
+                          >
                             <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-mono text-zinc-300 truncate max-w-[120px]">{action.action_type}</span>
-                              <Badge variant="outline" className={`text-[8px] py-0 px-1 border-none ${
+                              <span className="text-[12px] font-bold text-white group-hover:text-brand transition-colors truncate max-w-[140px]">{action.action_type}</span>
+                              <Badge variant="outline" className={`text-[9px] py-0 px-1.5 border-none font-bold ${
                                 action.status === 'completed' ? 'text-green-400 bg-green-400/10' : 
-                                action.status === 'failed' ? 'text-red-400 bg-red-400/10' : 
-                                'text-yellow-400 bg-yellow-400/10'
+                                action.status === 'failed' ? 'text-red-400 bg-red-400/10' : 'text-yellow-400 bg-yellow-400/10'
                               }`}>
                                 {action.status?.toUpperCase()}
                               </Badge>
                             </div>
-                            <div className="flex justify-between items-center text-[8px] text-zinc-600">
-                              <span className="font-mono">RISK: {action.risk_score || 0}%</span>
-                              <span>{formatTimestamp(action.timestamp_start)}</span>
+                            <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
+                              <div className="flex items-center gap-1.5"><Target size={10} /> {action.risk_score || 0}% RISK</div>
+                              <div className="flex items-center gap-1.5">{formatTimestamp(action.timestamp_start)} <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" /></div>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="py-4 text-center text-[10px] text-zinc-600 italic">No recent neural activity detected.</div>
+                        <div className="py-8 text-center text-[11px] text-zinc-600 italic">No recent neural activity detected.</div>
                       )}
                     </div>
                   </div>
 
-                  {selectedPartners.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Neural Proximity</h4>
-                      <div className="flex flex-wrap gap-1.5">
-                        {selectedPartners.slice(0, 5).map((p, i) => (
-                          <button key={i} onClick={() => setSelectedAgentId(p.id)} className="px-2 py-1 rounded bg-white/5 border border-white/10 hover:border-brand/50 transition-all text-[9px] text-zinc-400 hover:text-brand font-mono">{p.name}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   <div className="pt-6 border-t border-white/5">
-                    <button 
-                      onClick={() => router.push(`/workspace?agent_id=${selectedAgent.id}`)}
-                      className="w-full flex items-center justify-center gap-2 py-3 bg-brand rounded-xl text-[11px] font-bold text-white hover:bg-brand-hover shadow-lg shadow-brand/20 transition-all active:scale-95 group"
-                    >
-                      Connect to Workspace
-                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    <button onClick={() => router.push(`/workspace?agent_id=${selectedAgent.id}`)} className="w-full flex items-center justify-center gap-2 py-3 bg-brand rounded-xl text-[11px] font-bold text-white hover:bg-brand-hover shadow-lg shadow-brand/20 transition-all active:scale-95 group">Connect to Workspace <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" /></button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-24 flex flex-col items-center gap-6">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-brand/5 blur-2xl rounded-full" />
-                    <div className="relative w-16 h-16 rounded-full bg-zinc-900/50 flex items-center justify-center border border-white/5 group-hover:border-brand/20 transition-all">
-                      <Search className="text-zinc-700" size={24} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">No Agent Selected</p>
-                    <p className="text-[10px] text-zinc-600 leading-relaxed max-w-[200px] mx-auto">Click any node in the neural web to capture its real-time telemetry and decision stream.</p>
-                  </div>
+                  <div className="relative"><div className="absolute inset-0 bg-brand/5 blur-2xl rounded-full" /><div className="relative w-16 h-16 rounded-full bg-zinc-900/50 flex items-center justify-center border border-white/5 group-hover:border-brand/20 transition-all"><Search className="text-zinc-700" size={24} /></div></div>
+                  <div className="space-y-2"><p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">No Agent Selected</p><p className="text-[10px] text-zinc-600 leading-relaxed max-w-[200px] mx-auto">Click any node in the neural web to capture its real-time telemetry and decision stream.</p></div>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
-
-      <div className="h-80 opacity-80 hover:opacity-100 transition-opacity">
-        <SwarmActivityLog />
-      </div>
+      <div className="h-80 opacity-80 hover:opacity-100 transition-opacity"><SwarmActivityLog /></div>
     </PageLayout>
   );
 }
