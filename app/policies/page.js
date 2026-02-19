@@ -209,19 +209,6 @@ export default function PoliciesPage() {
       setSimulating(false);
     }
   };
-  const [importPack, setImportPack] = useState('enterprise-strict');
-  const [importYaml, setImportYaml] = useState('');
-  const [importMode, setImportMode] = useState('pack'); // 'pack' or 'yaml'
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState(null);
-  // Policy Test Runner state
-  const [testResults, setTestResults] = useState(null);
-  const [testRunning, setTestRunning] = useState(false);
-  const [expandedTests, setExpandedTests] = useState({});
-  // Proof Report state
-  const [proofReport, setProofReport] = useState('');
-  const [proofFormat, setProofFormat] = useState('markdown');
-  const [generatingProof, setGeneratingProof] = useState(false);
 
   useRealtime((event, payload) => {
     if (event === 'guard.decision.created') {
