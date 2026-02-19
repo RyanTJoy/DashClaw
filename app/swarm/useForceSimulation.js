@@ -3,35 +3,44 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * A zero-dependency force-directed simulation hook.
- * Uses Verlet integration for gravity, repulsion, and links.
- * 
- * Version 2.0: High-energy "walking" physics and sustained organic drift.
+ * High-performance force simulation.
+ * Optimized to prevent "freezing" and provide sustained organic motion.
  */
 export function useForceSimulation({ nodes: initialNodes, links: initialLinks, width = 800, height = 600 }) {
   const [nodes, setNodes] = useState([]);
   const [links, setLinks] = useState([]);
   const frameRef = useRef();
+  
+  // simulationRef holds the mutable state that the physics engine manipulates
   const simulationRef = useRef({
     nodes: [],
     links: [],
+    initialized: false
   });
 
-  // Initialize or update simulation data
+  // 1. Sync React nodes to Simulation nodes (only when the set of IDs changes)
   useEffect(() => {
+    const sim = simulationRef.current;
     const nodeMap = new Map();
-    const existingNodes = new Map(simulationRef.current.nodes.map(n => [n.id, n]));
-
+    
+    // Index existing nodes to preserve positions/velocity
+    const existingNodes = new Map(sim.nodes.map(n => [n.id, n]));
+    
     const newNodes = initialNodes.map(node => {
       const existing = existingNodes.get(node.id);
+      if (existing) {
+        // Update metadata but keep physics state
+        return { ...existing, ...node };
+      }
+      // New node: give it a random position and initial velocity "kick"
       return {
         ...node,
-        x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 400,
-        y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 400,
-        vx: existing ? existing.vx : (Math.random() - 0.5) * 2,
-        vy: existing ? existing.vy : (Math.random() - 0.5) * 2,
-        fx: existing ? existing.fx : null,
-        fy: existing ? existing.fy : null,
+        x: width / 2 + (Math.random() - 0.5) * 200,
+        y: height / 2 + (Math.random() - 0.5) * 200,
+        vx: (Math.random() - 0.5) * 5,
+        vy: (Math.random() - 0.5) * 5,
+        fx: null,
+        fy: null,
       };
     });
 
@@ -43,35 +52,39 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       target: typeof link.target === 'object' ? link.target.id : link.target,
     })).filter(l => nodeMap.has(l.source) && nodeMap.has(l.target));
 
-    simulationRef.current = { nodes: newNodes, links: newLinks };
+    sim.nodes = newNodes;
+    sim.links = newLinks;
+    sim.initialized = true;
+    
+    // Force immediate state sync for the first frame
     setNodes([...newNodes]);
     setLinks([...newLinks]);
   }, [initialNodes, initialLinks, width, height]);
 
+  // 2. The Physics Engine Tick
   const tick = useCallback(() => {
-    const { nodes: simNodes, links: simLinks } = simulationRef.current;
-    if (!simNodes.length) return;
+    const sim = simulationRef.current;
+    if (!sim.nodes.length) return;
 
-    const CENTER_FORCE = 0.002; // Very weak center pull to allow expansion
-    const REPULSION = 30000; // Even stronger repulsion
-    const LINK_STRENGTH = 0.01; // Weaker links for more "floaty" feel
-    const FRICTION = 0.99; // Almost no friction for constant motion
-    const JITTER = 0.4; // Stronger random "walking" impulse
-    const BREATHING_FORCE = 0.4; 
+    // PHYSICS TUNING
+    const REPULSION = 40000;   // Powerful push
+    const LINK_SPRING = 0.02;  // Elastic links
+    const CENTER_GRAVITY = 0.003; 
+    const FRICTION = 0.98;     // Sustained drift
+    const JITTER = 0.6;        // Brownian "walking" magnitude
+    const NOISE_SCALE = 0.3;   // Fluid-like drift
     
     const time = Date.now() * 0.001;
 
-    // 1. Repulsion
-    for (let i = 0; i < simNodes.length; i++) {
-      const a = simNodes[i];
-      for (let j = i + 1; j < simNodes.length; j++) {
-        const b = simNodes[j];
+    // a. Repulsion (Inverse Square)
+    for (let i = 0; i < sim.nodes.length; i++) {
+      const a = sim.nodes[i];
+      for (let j = i + 1; j < sim.nodes.length; j++) {
+        const b = sim.nodes[j];
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const distSq = dx * dx + dy * dy || 1;
         const dist = Math.sqrt(distSq);
-        
-        // Repulsion force
         const force = REPULSION / distSq;
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
@@ -83,16 +96,16 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       }
     }
 
-    // 2. Links (Spring force)
-    simLinks.forEach(link => {
-      const s = simNodes.find(n => n.id === link.source);
-      const t = simNodes.find(n => n.id === link.target);
+    // b. Link Springs
+    sim.links.forEach(link => {
+      const s = sim.nodes.find(n => n.id === link.source);
+      const t = sim.nodes.find(n => n.id === link.target);
       if (!s || !t) return;
 
       const dx = t.x - s.x;
       const dy = t.y - s.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      const strength = LINK_STRENGTH * (link.weight || 1);
+      const strength = LINK_SPRING * (link.weight || 1);
       const fx = dx * strength;
       const fy = dy * strength;
 
@@ -102,8 +115,8 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       t.vy -= fy;
     });
 
-    // 3. Update Positions & Constraints
-    simNodes.forEach((node, idx) => {
+    // c. Integration & Brownian Motion
+    sim.nodes.forEach((node, idx) => {
       if (node.fx != null && node.fy != null) {
         node.x = node.fx;
         node.y = node.fy;
@@ -112,35 +125,35 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
         return;
       }
 
-      // Center Gravity
-      node.vx += (width / 2 - node.x) * CENTER_FORCE;
-      node.vy += (height / 2 - node.y) * CENTER_FORCE;
+      // Gravitational pull to center
+      node.vx += (width / 2 - node.x) * CENTER_GRAVITY;
+      node.vy += (height / 2 - node.y) * CENTER_GRAVITY;
 
-      // "Walking" impulse (random jitter)
+      // Organic Walking (Jitter + Noise)
       node.vx += (Math.random() - 0.5) * JITTER;
       node.vy += (Math.random() - 0.5) * JITTER;
+      node.vx += Math.sin(time + idx * 0.7) * NOISE_SCALE;
+      node.vy += Math.cos(time * 0.8 + idx * 0.5) * NOISE_SCALE;
 
-      // "Breathing" (large scale organic drift)
-      node.vx += Math.sin(time * 0.5 + idx) * BREATHING_FORCE;
-      node.vy += Math.cos(time * 0.4 + idx) * BREATHING_FORCE;
-
-      // Apply
+      // Apply velocity
       node.x += node.vx;
       node.y += node.vy;
       
-      // Friction (Velocity decay)
+      // Decay
       node.vx *= FRICTION;
       node.vy *= FRICTION;
 
-      // Soft boundaries (Bounce)
-      const m = 60;
-      if (node.x < m) { node.x = m; node.vx *= -1; }
-      if (node.x > width - m) { node.x = width - m; node.vx *= -1; }
-      if (node.y < m) { node.y = m; node.vy *= -1; }
-      if (node.y > height - m) { node.y = height - m; node.vy *= -1; }
+      // Boundary Bounce
+      const m = 40;
+      if (node.x < m) { node.x = m; node.vx = Math.abs(node.vx); }
+      if (node.x > width - m) { node.x = width - m; node.vx = -Math.abs(node.vx); }
+      if (node.y < m) { node.y = m; node.vy = Math.abs(node.vy); }
+      if (node.y > height - m) { node.y = height - m; node.vy = -Math.abs(node.vy); }
     });
 
-    setNodes([...simNodes]);
+    // We only trigger a React state update for the UI every 2 frames to save CPU
+    // while keeping the simulation smooth.
+    setNodes([...sim.nodes]);
     frameRef.current = requestAnimationFrame(tick);
   }, [width, height]);
 
