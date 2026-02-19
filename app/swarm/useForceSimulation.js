@@ -3,14 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * ROBUST FORCE SIMULATION (v3)
+ * HIGH-ENERGY FORCE SIMULATION (v4)
  * 
- * - Decoupled from React render cycle for physics calculations.
- * - Forces React updates via requestAnimationFrame loop.
- * - Explicitly handles "fixed" nodes for dragging.
+ * - Tuned for constant, visible organic movement.
+ * - Reduced friction to prevent stopping.
+ * - Stronger jitter forces.
  */
 export function useForceSimulation({ nodes: initialNodes, links: initialLinks, width = 800, height = 600 }) {
-  // We use a ref to store the actual physics state to avoid stale closures
+  // We use a ref for the physics state to decouple it from React renders
   const state = useRef({
     nodes: [],
     links: [],
@@ -21,28 +21,28 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
   const [nodes, setNodes] = useState([]);
   const [links, setLinks] = useState([]);
 
-  // Initialization: Sync props to ref
+  // Initialization
   useEffect(() => {
     const s = state.current;
     
-    // Index existing nodes to keep positions
+    // Index existing nodes to preserve positions/velocity
     const existing = new Map(s.nodes.map(n => [n.id, n]));
-
-    s.nodes = initialNodes.map(node => {
+    
+    const newNodes = initialNodes.map(node => {
       const prev = existing.get(node.id);
       return {
         ...node,
-        x: prev ? prev.x : width / 2 + (Math.random() - 0.5) * 200,
-        y: prev ? prev.y : height / 2 + (Math.random() - 0.5) * 200,
-        vx: prev ? prev.vx : (Math.random() - 0.5) * 2,
-        vy: prev ? prev.vy : (Math.random() - 0.5) * 2,
-        // Important: preserve fixed state if it exists
+        // If it exists, keep position. If new, spawn in center with high velocity kick
+        x: prev ? prev.x : width / 2 + (Math.random() - 0.5) * 50,
+        y: prev ? prev.y : height / 2 + (Math.random() - 0.5) * 50,
+        vx: prev ? prev.vx : (Math.random() - 0.5) * 50, // Big kick
+        vy: prev ? prev.vy : (Math.random() - 0.5) * 50,
         fx: prev ? prev.fx : null,
         fy: prev ? prev.fy : null,
       };
     });
 
-    s.nodeMap = new Map(s.nodes.map(n => [n.id, n]));
+    s.nodeMap = new Map(newNodes.map(n => [n.id, n]));
 
     s.links = initialLinks.map(link => ({
       source: typeof link.source === 'object' ? link.source.id : link.source,
@@ -50,7 +50,11 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       weight: link.weight
     })).filter(l => s.nodeMap.has(l.source) && s.nodeMap.has(l.target));
 
-    setNodes(s.nodes.map(n => ({...n}))); 
+    s.nodes = newNodes;
+    s.links = newLinks;
+    
+    // Initial render sync
+    setNodes(newNodes.map(n => ({ ...n })));
     setLinks(s.links);
   }, [initialNodes, initialLinks, width, height]);
 
@@ -62,14 +66,14 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       const { nodes, links, nodeMap } = state.current;
       if (!nodes.length) return;
 
-      const REPULSION = 1000;
-      const CENTER_GRAVITY = 0.0005;
-      const LINK_STRENGTH = 0.005;
-      const FRICTION = 0.96;
-      const SPEED_LIMIT = 8;
-      const WALL_BOUNCE = 0.5;
-      const JITTER = 0.05;
-
+      const REPULSION = 80000;    // Extremely strong repulsion to force spread
+      const LINK_SPRING = 0.005;  // Very loose elastic links
+      const CENTER_GRAVITY = 0.001; // Weak gravity so they drift far
+      const FRICTION = 0.99;      // Very low friction (almost frictionless) for constant motion
+      const SPEED_CAP = 15;       // Allow higher speeds
+      const JITTER = 2.5;         // Significant random walking force
+      const WALL_BOUNCE = 0.8;    // Bouncy walls
+      
       const t = Date.now() * 0.001;
 
       // 1. Repulsion (Push apart)
@@ -80,7 +84,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
           let dx = b.x - a.x;
           let dy = b.y - a.y;
           let distSq = dx * dx + dy * dy;
-          if (distSq === 0) { dx = 0.1; dy = 0.1; distSq = 0.02; } // Prevent div by zero
+          if (distSq === 0) { dx = 0.1; dy = 0.1; distSq = 0.02; } 
           
           const dist = Math.sqrt(distSq);
           const force = REPULSION / distSq;
@@ -102,17 +106,15 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
 
         const dx = t.x - s.x;
         const dy = t.y - s.y;
-        // const dist = Math.sqrt(dx * dx + dy * dy);
-        // Hooke's Law: pull towards distance 0
-        const strength = LINK_STRENGTH * (link.weight || 1);
         
-        s.vx += dx * strength;
-        s.vy += dy * strength;
-        t.vx -= dx * strength;
-        t.vy -= dy * strength;
+        // Simple spring
+        s.vx += dx * LINK_SPRING;
+        s.vy += dy * LINK_SPRING;
+        t.vx -= dx * LINK_SPRING;
+        t.vy -= dy * LINK_SPRING;
       }
 
-      // 3. Environment (Center + Noise + Update)
+      // 3. Environment (Center + Jitter + Update)
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
 
@@ -129,15 +131,19 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
         n.vx += (width / 2 - n.x) * CENTER_GRAVITY;
         n.vy += (height / 2 - n.y) * CENTER_GRAVITY;
 
-        // Organic Jitter (The "Walking" effect)
+        // Organic Walking (Random Impulse)
         n.vx += (Math.random() - 0.5) * JITTER;
         n.vy += (Math.random() - 0.5) * JITTER;
 
+        // Large Scale Drift (Sine waves)
+        n.vx += Math.sin(t + i) * 0.2;
+        n.vy += Math.cos(t + i) * 0.2;
+
         // Velocity Cap
         const v = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
-        if (v > SPEED_LIMIT) {
-          n.vx = (n.vx / v) * SPEED_LIMIT;
-          n.vy = (n.vy / v) * SPEED_LIMIT;
+        if (v > SPEED_CAP) {
+          n.vx = (n.vx / v) * SPEED_CAP;
+          n.vy = (n.vy / v) * SPEED_CAP;
         }
 
         // Move
@@ -148,8 +154,8 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
         n.vx *= FRICTION;
         n.vy *= FRICTION;
 
-        // Boundaries
-        const m = 20;
+        // Bouncy Boundaries
+        const m = 50;
         if (n.x < m) { n.x = m; n.vx = Math.abs(n.vx) * WALL_BOUNCE; }
         if (n.x > width - m) { n.x = width - m; n.vx = -Math.abs(n.vx) * WALL_BOUNCE; }
         if (n.y < m) { n.y = m; n.vy = Math.abs(n.vy) * WALL_BOUNCE; }
@@ -157,7 +163,9 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       }
 
       // Sync to React
-      setNodes(nodes.map(n => ({...n})));
+      // We must create NEW objects to trigger re-renders
+      setNodes(nodes.map(n => ({ ...n })));
+      
       frame = requestAnimationFrame(tick);
     };
 
