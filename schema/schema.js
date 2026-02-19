@@ -826,45 +826,82 @@ export const userApproaches = pgTable('user_approaches', {
   updatedAt: text('updated_at').notNull(),
 });
 
-export const webhookDeliveries = pgTable('webhook_deliveries', {
-  id: text('id').primaryKey(),
-  webhookId: text('webhook_id').notNull(),
-  orgId: text('org_id').notNull().default('org_default'),
-  eventType: text('event_type').notNull(),
-  payload: text('payload').notNull(),
-  status: text('status').notNull().default('pending'),
-  responseStatus: integer('response_status'),
-  responseBody: text('response_body'),
-  attemptedAt: text('attempted_at').notNull(),
-  durationMs: integer('duration_ms'),
-});
-
-// --- Evaluation Framework ---
-
-export const evalScorers = pgTable('eval_scorers', {
+export const notificationPreferences = pgTable('notification_preferences', {
   id: text('id').primaryKey(),
   orgId: text('org_id').notNull(),
+  userId: text('user_id').notNull(),
+  channel: text('channel').default('email'),
+  enabled: integer('enabled').default(1),
+  signalTypes: text('signal_types').default('["all"]'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  uniqueUserChannel: uniqueIndex('notification_preferences_org_user_channel_unique').on(table.orgId, table.userId, table.channel),
+}));
+
+export const workflows = pgTable('workflows', {
+  id: serial('id').primaryKey(),
+  orgId: text('org_id').notNull(),
+  agentId: text('agent_id'),
   name: text('name').notNull(),
-  scorerType: text('scorer_type').notNull(),
-  config: text('config'),
   description: text('description'),
-  createdBy: text('created_by'),
-  createdAt: text('created_at'),
-  updatedAt: text('updated_at'),
+  enabled: integer('enabled').default(1),
+  triggerType: text('trigger_type'),
+  runCount: integer('run_count').default(0),
+  lastRun: timestamp('last_run', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => ({
+  uniqueName: uniqueIndex('workflows_org_name_unique').on(table.orgId, table.name),
+}));
+
+export const executions = pgTable('executions', {
+  id: serial('id').primaryKey(),
+  orgId: text('org_id').notNull(),
+  agentId: text('agent_id'),
+  workflowId: integer('workflow_id').references(() => workflows.id),
+  status: text('status').default('pending'),
+  startedAt: timestamp('started_at', { withTimezone: true }).defaultNow(),
+  finishedAt: timestamp('finished_at', { withTimezone: true }),
+  error: text('error'),
+});
+
+export const scheduledJobs = pgTable('scheduled_jobs', {
+  id: serial('id').primaryKey(),
+  orgId: text('org_id').notNull(),
+  workflowId: integer('workflow_id').references(() => workflows.id),
+  name: text('name'),
+  cronExpression: text('cron_expression'),
+  enabled: integer('enabled').default(1),
+  nextRun: timestamp('next_run', { withTimezone: true }),
+  lastRun: timestamp('last_run', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
 export const evalScores = pgTable('eval_scores', {
   id: text('id').primaryKey(),
   orgId: text('org_id').notNull(),
   actionId: text('action_id').notNull(),
-  scorerId: text('scorer_id'),
   scorerName: text('scorer_name').notNull(),
   score: real('score').notNull(),
   label: text('label'),
   reasoning: text('reasoning'),
-  metadata: text('metadata'),
   evaluatedBy: text('evaluated_by'),
+  metadata: text('metadata'),
   createdAt: text('created_at'),
+});
+
+export const agentSchedules = pgTable('agent_schedules', {
+  id: text('id').primaryKey(),
+  orgId: text('org_id').notNull(),
+  agentId: text('agent_id').notNull(),
+  name: text('name').notNull(),
+  cronExpression: text('cron_expression').notNull(),
+  description: text('description'),
+  active: boolean('active').default(true),
+  lastRun: timestamp('last_run', { withTimezone: true }),
+  nextRun: timestamp('next_run', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
 export const evalRuns = pgTable('eval_runs', {
