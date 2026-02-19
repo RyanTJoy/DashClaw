@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql } from '../../../lib/db.js';
 import { getOrgId } from '../../../lib/org.js';
 import { evaluatePolicy } from '../../../lib/guard.js';
+import { listActionsForSimulation } from '../../../lib/repositories/actions.repository.js';
 
 /**
  * POST /api/policies/simulate — Dry-run a policy against historical actions.
@@ -22,17 +23,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'policy_type and rules are required' }, { status: 400 });
     }
 
-    // Fetch historical actions
-    // Limit to 200 actions to avoid overloading the simulation (especially for semantic/behavioral checks)
-    const actions = await sql`
-      SELECT action_id, agent_id, agent_name, action_type, declared_goal, risk_score, 
-             systems_touched, reversible, timestamp_start, status
-      FROM action_records
-      WHERE org_id = ${orgId}
-        AND timestamp_start::timestamptz > NOW() - INTERVAL '1 day' * ${parseInt(days, 10)}
-      ORDER BY timestamp_start DESC
-      LIMIT 200
-    `;
+    // Fetch historical actions using the repository
+    const actions = await listActionsForSimulation(sql, orgId, days);
 
     if (actions.length === 0) {
       return NextResponse.json({

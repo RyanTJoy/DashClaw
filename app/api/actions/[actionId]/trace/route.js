@@ -4,6 +4,7 @@ export const revalidate = 0;
 import { NextResponse } from 'next/server';
 import { getSql as getDbSql } from '../../../../lib/db.js';
 import { getOrgId } from '../../../../lib/org.js';
+import { getActionTraceData } from '../../../../lib/repositories/actions.repository.js';
 
 let _sql;
 function getSql() {
@@ -18,65 +19,13 @@ export async function GET(request, { params }) {
     const orgId = getOrgId(request);
     const { actionId } = await params;
 
-    // Fetch the action
-    const actions = await sql`
-      SELECT * FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId}
-    `;
+    const traceData = await getActionTraceData(sql, orgId, actionId);
 
-    if (actions.length === 0) {
+    if (!traceData) {
       return NextResponse.json({ error: 'Action not found' }, { status: 404 });
     }
 
-    const action = actions[0];
-
-    // Run all trace queries in parallel
-    const [assumptions, loops, relatedActions, subActions] = await Promise.all([
-      // All assumptions for this action
-      sql`SELECT * FROM assumptions WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
-      // All loops for this action
-      sql`SELECT * FROM open_loops WHERE action_id = ${actionId} AND org_id = ${orgId} ORDER BY created_at ASC`,
-      // Related actions: same agent or overlapping systems, within 1 hour
-      sql`
-        SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
-               risk_score, timestamp_start, error_message
-        FROM action_records
-        WHERE action_id != ${actionId}
-          AND org_id = ${orgId}
-          AND (
-            agent_id = ${action.agent_id}
-            OR (systems_touched = ${action.systems_touched} AND systems_touched IS NOT NULL AND systems_touched != '[]')
-          )
-          AND timestamp_start::timestamptz > ${action.timestamp_start}::timestamptz - INTERVAL '1 hour'
-          AND timestamp_start::timestamptz < ${action.timestamp_start}::timestamptz + INTERVAL '1 hour'
-        ORDER BY timestamp_start DESC
-        LIMIT 20
-      `,
-      // Sub-actions (children)
-      sql`
-        SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
-               risk_score, timestamp_start, error_message
-        FROM action_records
-        WHERE parent_action_id = ${actionId}
-          AND org_id = ${orgId}
-        ORDER BY timestamp_start ASC
-      `
-    ]);
-
-    // Build parent chain by walking parent_action_id
-    const parentChain = [];
-    let currentParentId = action.parent_action_id;
-    const visited = new Set([actionId]);
-    while (currentParentId && !visited.has(currentParentId) && parentChain.length < 10) {
-      visited.add(currentParentId);
-      const parentResult = await sql`
-        SELECT action_id, agent_id, agent_name, action_type, declared_goal, status,
-               risk_score, timestamp_start, error_message, parent_action_id
-        FROM action_records WHERE action_id = ${currentParentId} AND org_id = ${orgId}
-      `;
-      if (parentResult.length === 0) break;
-      parentChain.push(parentResult[0]);
-      currentParentId = parentResult[0].parent_action_id;
-    }
+    const { action, assumptions, loops, relatedActions, subActions, parentChain } = traceData;
 
     // Compute summaries
     const assumptionSummary = {

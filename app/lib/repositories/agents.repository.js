@@ -158,6 +158,50 @@ export async function listAgentsForOrg(sql, orgId) {
   return agents;
 }
 
+/**
+ * Update or create an agent's presence record (heartbeat).
+ */
+export async function upsertAgentPresence(sql, orgId, payload) {
+  const { agent_id, agent_name, status, current_task_id, metadata, timestamp } = payload;
+  
+  return sql`
+    INSERT INTO agent_presence (
+      org_id, agent_id, agent_name, status, current_task_id, 
+      last_heartbeat_at, metadata, updated_at
+    ) VALUES (
+      ${orgId}, ${agent_id}, ${agent_name || null}, ${status}, ${current_task_id || null}, 
+      ${timestamp}, ${JSON.stringify(metadata || {})}, ${timestamp}
+    )
+    ON CONFLICT (org_id, agent_id) DO UPDATE SET
+      agent_name = EXCLUDED.agent_name,
+      status = EXCLUDED.status,
+      current_task_id = EXCLUDED.current_task_id,
+      last_heartbeat_at = EXCLUDED.last_heartbeat_at,
+      metadata = EXCLUDED.metadata,
+      updated_at = EXCLUDED.updated_at
+    RETURNING *
+  `;
+}
+
+/**
+ * Ensure the agent_presence table exists (lazy migration).
+ */
+export async function ensureAgentPresenceTable(sql) {
+  return sql`
+    CREATE TABLE IF NOT EXISTS agent_presence (
+      org_id TEXT NOT NULL,
+      agent_id TEXT NOT NULL,
+      agent_name TEXT,
+      status TEXT DEFAULT 'online',
+      current_task_id TEXT,
+      last_heartbeat_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      metadata TEXT,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (org_id, agent_id)
+    )
+  `;
+}
+
 export async function attachAgentConnections(sql, orgId, agents) {
   if (!Array.isArray(agents) || agents.length === 0) return agents || [];
 
