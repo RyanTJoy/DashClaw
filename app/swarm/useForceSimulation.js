@@ -44,7 +44,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
 
     s.nodeMap = new Map(newNodes.map(n => [n.id, n]));
 
-    s.links = initialLinks.map(link => ({
+    const newLinks = initialLinks.map(link => ({
       source: typeof link.source === 'object' ? link.source.id : link.source,
       target: typeof link.target === 'object' ? link.target.id : link.target,
       weight: link.weight
