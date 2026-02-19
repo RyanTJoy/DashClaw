@@ -27,8 +27,9 @@ export default function SwarmIntelligencePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Selection logic: Hover ONLY
+  // Selection Logic: Click to select, Click BG to deselect
   const [selectedAgent, setSelectedAgent] = useState(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState(null);
   
   // Interaction State
   const [zoom, setZoom] = useState(1);
@@ -64,14 +65,14 @@ export default function SwarmIntelligencePage() {
     tick: 0,
   });
 
-  // Native Scroll Lock
+  // 1. HARD FIX: Scroll Zoom Lock (Native event to prevent page scroll)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const onNativeWheel = (e) => {
       if (!isFocused) return;
-      e.preventDefault();
+      e.preventDefault(); // Stop page scroll
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       setZoom(z => Math.max(0.2, Math.min(5, z * delta)));
     };
@@ -93,9 +94,24 @@ export default function SwarmIntelligencePage() {
     if (event === 'message.created') {
       triggerPacket(payload.from_agent_id, payload.to_agent_id || 'broadcast');
     }
-    // Context updates for selected agent
+
     if (!selectedAgent?.id) return;
-    // ... (rest of realtime logic omitted for brevity, logic remains same)
+
+    if (event === 'action.created' && payload.agent_id === selectedAgent.id) {
+      setAgentContext(prev => ({
+        ...prev,
+        actions: [{
+          action_id: payload.action_id,
+          action_type: payload.action_type,
+          status: payload.status === 'running' ? 'in-progress' : payload.status,
+          timestamp_start: payload.timestamp_start,
+          risk_score: payload.risk_score
+        }, ...prev.actions].slice(0, 6),
+        pendingApprovals: payload.status === 'pending_approval'
+          ? [payload, ...prev.pendingApprovals].slice(0, 6)
+          : prev.pendingApprovals
+      }));
+    }
   });
 
   const fetchGraph = useCallback(async () => {
@@ -129,10 +145,46 @@ export default function SwarmIntelligencePage() {
     return () => clearInterval(interval);
   }, [nodes, links, demo, triggerPacket]);
 
-  // Context loading
+  const getAgentDetails = (agentId) => {
+    return nodes.find(n => n.id === agentId);
+  };
+
+  const formatTime = (ts) => {
+    if (!ts) return '--';
+    try {
+      return new Date(ts).toLocaleString('en-US', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+      });
+    } catch { return ts; }
+  };
+
+  const getRoleLabel = (agentId) => {
+    const roles = ['Ops', 'Research', 'Security', 'Growth', 'Content', 'QA', 'Support', 'Data'];
+    const s = String(agentId || '');
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return roles[h % roles.length];
+  };
+
+  const selectedPartners = useMemo(() => {
+    if (!selectedAgent?.id) return [];
+    const nodeById = Object.fromEntries(nodes.map((n) => [n.id, n]));
+    return links
+      .filter(l => l.source === selectedAgent.id || l.target === selectedAgent.id)
+      .map((link) => {
+        const partnerId = link.source === selectedAgent.id ? link.target : link.source;
+        const partner = nodeById[partnerId];
+        return {
+          partnerId,
+          partnerName: partner?.name || partnerId,
+          weight: link.weight,
+        };
+      })
+      .sort((a, b) => b.weight - a.weight);
+  }, [links, nodes, selectedAgent?.id]);
+
   useEffect(() => {
     if (!selectedAgent?.id) {
-      // Clear context if nothing selected
       setAgentContext({ loading: false, error: null, actions: [], pendingApprovals: [], messages: [], guard: [], workflows: [] });
       return;
     }
@@ -180,31 +232,23 @@ export default function SwarmIntelligencePage() {
     // Pan if clicking background (svg or rect)
     if (e.target.tagName === 'svg' || e.target.id === 'swarm-bg') {
       setIsPanning(true);
+      // DESELECTION ON BACKGROUND CLICK
+      setSelectedAgent(null);
     }
   };
 
   const handleMouseMove = (e) => {
     if (!svgRef.current) return;
     
-    // Calculate movement
     if (isPanning) {
       setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
     } else if (dragNodeId) {
-      // Convert screen pixels to SVG coordinate space
-      // 1. Get click relative to SVG element
+      // Dragging logic
       const rect = svgRef.current.getBoundingClientRect();
-      const rawX = e.clientX - rect.left;
-      const rawY = e.clientY - rect.top;
-      
-      // 2. Scale to viewBox (800x600)
-      const svgX = rawX * (800 / rect.width);
-      const svgY = rawY * (600 / rect.height);
-
-      // 3. Inverse transform (pan/zoom)
-      // Transform origin is 0,0 for simplicity in the new setup
-      const worldX = (svgX - pan.x) / zoom;
-      const worldY = (svgY - pan.y) / zoom;
-
+      const x = (e.clientX - rect.left) * (800 / rect.width);
+      const y = (e.clientY - rect.top) * (600 / rect.height);
+      const worldX = (x - 400 - pan.x) / zoom + 400;
+      const worldY = (y - 300 - pan.y) / zoom + 300;
       setNodeFixed(dragNodeId, worldX, worldY);
     }
   };
@@ -212,24 +256,10 @@ export default function SwarmIntelligencePage() {
   const handleMouseUp = () => {
     setIsPanning(false);
     if (dragNodeId) {
-      // Release node physics
       setNodeFixed(dragNodeId, null, null);
       setDragNodeId(null);
     }
   };
-
-  const handleNodeEnter = (node) => {
-    setSelectedAgent(node);
-  };
-
-  const handleNodeLeave = () => {
-    // Only clear if we aren't dragging it
-    if (!dragNodeId) {
-      setSelectedAgent(null);
-    }
-  };
-
-  // --- RENDER ---
 
   const renderGraph = () => {
     if (nodes.length === 0 && !loading) return <EmptyState icon={Users} title="Empty Fleet" description="Connect agents to see the neural web." />;
@@ -261,11 +291,10 @@ export default function SwarmIntelligencePage() {
             </filter>
           </defs>
 
-          {/* Hit area for panning */}
+          {/* Hit area for panning/deselection */}
           <rect id="swarm-bg" x="0" y="0" width="800" height="600" fill="transparent" />
 
-          {/* Transformation Layer */}
-          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
+          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '400px 300px' }}>
             {/* Links */}
             {links.map((link, i) => {
               const s = nodeMap[link.source];
@@ -280,7 +309,7 @@ export default function SwarmIntelligencePage() {
               );
             })}
 
-            {/* Neural Packets */}
+            {/* Packets */}
             {livePackets.map(p => {
               const s = nodeMap[p.from];
               const t = nodeMap[p.to === 'broadcast' ? nodes[0]?.id : p.to];
@@ -293,28 +322,30 @@ export default function SwarmIntelligencePage() {
               );
             })}
 
-            {/* Agent Nodes */}
+            {/* Nodes */}
             {nodes.map((node) => {
               const isSel = selectedAgent?.id === node.id;
+              const isHov = hoveredNodeId === node.id;
               const rCol = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
 
               return (
                 <g key={node.id} 
-                  onMouseEnter={() => handleNodeEnter(node)}
-                  onMouseLeave={handleNodeLeave}
+                  onMouseEnter={() => setHoveredNodeId(node.id)}
+                  onMouseLeave={() => setHoveredNodeId(null)}
                   onMouseDown={(e) => { 
                     e.stopPropagation(); 
                     setDragNodeId(node.id); 
-                    // Set initial fixed position immediately to prevent jump
-                    setNodeFixed(node.id, node.x, node.y); 
+                    setNodeFixed(node.id, node.x, node.y);
+                    // Click to Select
+                    setSelectedAgent(node);
                   }}
                   className="cursor-pointer"
                 >
-                  {isSel && <circle cx={node.x} cy={node.y} r={30} fill="url(#nodeGlow)" />}
+                  {(isHov || isSel) && <circle cx={node.x} cy={node.y} r={30} fill="url(#nodeGlow)" />}
                   <circle cx={node.x} cy={node.y} r={isSel ? 12 : 6}
                     fill="#111" stroke={isSel ? '#f97316' : rCol} strokeWidth={isSel ? 3 : 2}
                   />
-                  {(isSel || nodes.length < 15) && (
+                  {(isHov || isSel || nodes.length < 10) && (
                     <g>
                       <rect x={node.x - 30} y={node.y + 14} width={60} height={14} rx={4} fill="rgba(0,0,0,0.8)" />
                       <text x={node.x} y={node.y + 24} textAnchor="middle" fill={isSel ? 'white' : '#a1a1aa'} fontSize="9" className="font-mono pointer-events-none select-none">
@@ -328,7 +359,6 @@ export default function SwarmIntelligencePage() {
           </g>
         </svg>
 
-        {/* Overlays */}
         {!isFocused && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] pointer-events-none">
             <div className="flex flex-col items-center gap-2">
@@ -347,40 +377,6 @@ export default function SwarmIntelligencePage() {
         </div>
       </div>
     );
-  };
-
-  const getRoleLabel = (agentId) => {
-    const roles = ['Ops', 'Research', 'Security', 'Growth', 'Content', 'QA', 'Support', 'Data'];
-    const s = String(agentId || '');
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    return roles[h % roles.length];
-  };
-
-  const selectedPartners = useMemo(() => {
-    if (!selectedAgent?.id) return [];
-    const nodeById = Object.fromEntries(nodes.map((n) => [n.id, n]));
-    return links
-      .filter(l => l.source === selectedAgent.id || l.target === selectedAgent.id)
-      .map((link) => {
-        const partnerId = link.source === selectedAgent.id ? link.target : link.source;
-        const partner = nodeById[partnerId];
-        return {
-          partnerId,
-          partnerName: partner?.name || partnerId,
-          weight: link.weight,
-        };
-      })
-      .sort((a, b) => b.weight - a.weight);
-  }, [links, nodes, selectedAgent?.id]);
-
-  const formatTime = (ts) => {
-    if (!ts) return '--';
-    try {
-      return new Date(ts).toLocaleString('en-US', {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
-      });
-    } catch { return ts; }
   };
 
   return (
@@ -471,7 +467,7 @@ export default function SwarmIntelligencePage() {
               ) : (
                 <div className="text-center py-20 flex flex-col items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5"><Search className="text-zinc-700" size={20} /></div>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[180px]">Hover over a neural node to intercept and inspect its live telemetry stream.</p>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[180px]">Select an agent on the map to intercept and inspect its live telemetry stream.</p>
                 </div>
               )}
             </CardContent>
