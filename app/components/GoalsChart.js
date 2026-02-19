@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Target, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
