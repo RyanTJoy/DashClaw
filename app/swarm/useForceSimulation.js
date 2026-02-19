@@ -79,5 +79,22 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     if (simulation.current) simulation.current.alpha(0.1).restart();
   }, []);
 
-  return { nodesRef, linksRef, nodesMapRef, wake };
+  const setNodeFixed = useCallback((id, x, y) => {
+    const node = nodesMapRef.current.get(id);
+    if (node) {
+      if (x === null) {
+        delete node.fx;
+        delete node.fy;
+        if (simulation.current) simulation.current.alpha(0.1).restart();
+      } else {
+        node.fx = x;
+        node.fy = y;
+        if (simulation.current && simulation.current.alpha() < 0.2) {
+          simulation.current.alpha(0.2).restart();
+        }
+      }
+    }
+  }, []);
+
+  return { nodesRef, linksRef, nodesMapRef, setNodeFixed, wake };
 }
