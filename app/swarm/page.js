@@ -31,20 +31,37 @@ export default function SwarmIntelligencePage() {
   const [zoom, setZoom] = useState(0.8);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isFocused, setIsFocused] = useState(false);
-  const [livePackets, setLivePackets] = useState([]);
   
+  // Performance Refs
+  const packetsRef = useRef([]);
+  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const renderStateRef = useRef({ 
+    selectedId: null, 
+    hoveredId: null, 
+    zoom: 0.8, 
+    pan: { x: 0, y: 0 } 
+  });
+
   // Action Inspection State
   const [inspectedAction, setInspectedAction] = useState(null);
 
-  const containerRef = useRef(null);
-  const canvasRef = useRef(null);
-
-  const { nodesRef, linksRef, wake } = useForceSimulation({
+  const { nodesRef, linksRef, nodesMapRef, wake } = useForceSimulation({
     nodes: graphData.nodes,
     links: graphData.links,
     width: 800,
     height: 600
   });
+
+  // Sync React state to render ref for high-performance canvas access
+  useEffect(() => {
+    renderStateRef.current = { 
+      selectedId: selectedAgentId, 
+      hoveredId: hoveredAgentId, 
+      zoom, 
+      pan 
+    };
+  }, [selectedAgentId, hoveredAgentId, zoom, pan]);
 
   const [agentContext, setAgentContext] = useState({
     loading: false,
@@ -63,6 +80,10 @@ export default function SwarmIntelligencePage() {
     const render = () => {
       const nodes = nodesRef.current;
       const links = linksRef.current;
+      const nodesMap = nodesMapRef.current;
+      const packets = packetsRef.current;
+      const { selectedId, hoveredId, zoom: z, pan: p } = renderStateRef.current;
+      
       const width = canvas.width;
       const height = canvas.height;
 
@@ -70,53 +91,70 @@ export default function SwarmIntelligencePage() {
       ctx.save();
       
       // Apply View Transform (Zoom/Pan)
-      ctx.translate(width / 2 + pan.x, height / 2 + pan.y);
-      ctx.scale(zoom, zoom);
+      ctx.translate(width / 2 + p.x, height / 2 + p.y);
+      ctx.scale(z, z);
       ctx.translate(-400, -300);
 
       // 1. Draw Links
       ctx.beginPath();
       ctx.lineWidth = 1;
-      links.forEach(link => {
-        const s = typeof link.source === 'object' ? link.source : nodes.find(n => n.id === link.source);
-        const t = typeof link.target === 'object' ? link.target : nodes.find(n => n.id === link.target);
-        if (!s || !t) return;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      
+      for (let i = 0; i < links.length; i++) {
+        const link = links[i];
+        const s = typeof link.source === 'object' ? link.source : nodesMap.get(link.source);
+        const t = typeof link.target === 'object' ? link.target : nodesMap.get(link.target);
+        if (!s || !t) continue;
         
-        const isHighlight = selectedAgentId && (s.id === selectedAgentId || t.id === selectedAgentId);
-        ctx.strokeStyle = isHighlight ? 'rgba(249, 115, 22, 0.4)' : 'rgba(255, 255, 255, 0.05)';
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(t.x, t.y);
-        ctx.stroke();
-      });
+        // Highlight links for selected agent (separate pass for highlights would be faster but this is okay if optimized)
+        if (selectedId && (s.id === selectedId || t.id === selectedId)) {
+          ctx.stroke(); // Close current batch
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)';
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(t.x, t.y);
+          ctx.stroke();
+          ctx.beginPath(); // Start new batch
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        } else {
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(t.x, t.y);
+        }
+      }
+      ctx.stroke();
 
-      // 2. Draw Packets
-      livePackets.forEach(p => {
-        const s = nodes.find(n => n.id === p.from);
-        const t = nodes.find(n => n.id === (p.to === 'broadcast' ? nodes[0]?.id : p.to));
-        if (!s || !t) return;
+      // 2. Draw Packets (NO SHADOWS - Performance Killer)
+      const now = Date.now();
+      const activePackets = [];
+      
+      ctx.fillStyle = '#f97316';
+      for (let i = 0; i < packets.length; i++) {
+        const p = packets[i];
+        const progress = (now - p.startTime) / 800;
+        if (progress > 1) continue; // Will be cleaned up
         
-        const progress = (Date.now() - p.startTime) / 800;
-        if (progress > 1) return;
+        activePackets.push(p);
+        const s = nodesMap.get(p.from);
+        const t = nodesMap.get(p.to === 'broadcast' ? nodes[0]?.id : p.to);
+        if (!s || !t) continue;
         
         const px = s.x + (t.x - s.x) * progress;
         const py = s.y + (t.y - s.y) * progress;
         
         ctx.beginPath();
         ctx.arc(px, py, 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#f97316';
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = '#f97316';
         ctx.fill();
-        ctx.shadowBlur = 0;
-      });
+      }
+      packetsRef.current = activePackets;
 
       // 3. Draw Nodes
-      nodes.forEach(node => {
-        const isSel = selectedAgentId === node.id;
-        const isHov = hoveredAgentId === node.id;
-        const rCol = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
-
-        // Glow
+      const showLabels = nodes.length < 15;
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const isSel = selectedId === node.id;
+        const isHov = hoveredId === node.id;
+        
+        // Glow (Only for interactive nodes)
         if (isSel || isHov) {
           ctx.beginPath();
           ctx.arc(node.x, node.y, 35, 0, Math.PI * 2);
@@ -128,6 +166,7 @@ export default function SwarmIntelligencePage() {
         }
 
         // Body
+        const rCol = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
         ctx.beginPath();
         ctx.arc(node.x, node.y, isSel ? 18 : 12, 0, Math.PI * 2);
         ctx.fillStyle = '#111';
@@ -137,13 +176,13 @@ export default function SwarmIntelligencePage() {
         ctx.stroke();
 
         // Label
-        if (isSel || isHov || nodes.length < 15) {
+        if (isSel || isHov || showLabels) {
           ctx.font = '10px JetBrains Mono, monospace';
           ctx.fillStyle = isSel ? '#fff' : '#71717a';
           ctx.textAlign = 'center';
           ctx.fillText(node.name, node.x, node.y + 35);
         }
-      });
+      }
 
       ctx.restore();
       frame = requestAnimationFrame(render);
@@ -151,7 +190,7 @@ export default function SwarmIntelligencePage() {
 
     frame = requestAnimationFrame(render);
     return () => cancelAnimationFrame(frame);
-  }, [selectedAgentId, hoveredAgentId, zoom, pan, livePackets]);
+  }, []); // Run ONCE and rely on refs for state
 
   // --- INTERACTION LOGIC ---
 
@@ -161,10 +200,11 @@ export default function SwarmIntelligencePage() {
     const rect = canvas.getBoundingClientRect();
     const x = (sx - rect.left) * (canvas.width / rect.width);
     const y = (sy - rect.top) * (canvas.height / rect.height);
-    const wx = (x - canvas.width / 2 - pan.x) / zoom + 400;
-    const wy = (y - canvas.height / 2 - pan.y) / zoom + 300;
+    const { zoom: z, pan: p } = renderStateRef.current;
+    const wx = (x - canvas.width / 2 - p.x) / z + 400;
+    const wy = (y - canvas.height / 2 - p.y) / z + 300;
     return { x: wx, y: wy };
-  }, [pan, zoom]);
+  }, []);
 
   const handleMouseDown = (e) => {
     setIsFocused(true);
@@ -173,7 +213,8 @@ export default function SwarmIntelligencePage() {
     const clickedNode = nodesRef.current.find(n => {
       const dx = n.x - x;
       const dy = n.y - y;
-      return Math.sqrt(dx * dx + dy * dy) < 30 / zoom;
+      const { zoom: z } = renderStateRef.current;
+      return Math.sqrt(dx * dx + dy * dy) < 30 / z;
     });
 
     if (clickedNode) {
@@ -189,7 +230,8 @@ export default function SwarmIntelligencePage() {
     const hovNode = nodesRef.current.find(n => {
       const dx = n.x - x;
       const dy = n.y - y;
-      return Math.sqrt(dx * dx + dy * dy) < 30 / zoom;
+      const { zoom: z } = renderStateRef.current;
+      return Math.sqrt(dx * dx + dy * dy) < 30 / z;
     });
     setHoveredAgentId(hovNode?.id || null);
   };
@@ -202,19 +244,22 @@ export default function SwarmIntelligencePage() {
     if (!isFocused) return;
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.1, Math.min(10, zoom * delta));
-    if (newZoom !== zoom) {
+    const { zoom: z, pan: p } = renderStateRef.current;
+    const newZoom = Math.max(0.1, Math.min(10, z * delta));
+    
+    if (newZoom !== z) {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
       const my = (e.clientY - rect.top) * (canvas.height / rect.height);
-      const dx = (mx - canvas.width / 2 - pan.x) * (delta - 1);
-      const dy = (my - canvas.height / 2 - pan.y) * (delta - 1);
-      setPan(p => ({ x: p.x - dx, y: p.y - dy }));
+      const dx = (mx - canvas.width / 2 - p.x) * (delta - 1);
+      const dy = (my - canvas.height / 2 - p.y) * (delta - 1);
+      
+      setPan(prev => ({ x: prev.x - dx, y: prev.y - dy }));
       setZoom(newZoom);
     }
-  }, [isFocused, zoom, pan]);
+  }, [isFocused]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -226,10 +271,8 @@ export default function SwarmIntelligencePage() {
 
   const triggerPacket = useCallback((fromId, toId) => {
     const packetId = Math.random().toString(36).substring(7);
-    setLivePackets(prev => [...prev, { id: packetId, from: fromId, to: toId, startTime: Date.now() }]);
-    setTimeout(() => {
-      setLivePackets(prev => prev.filter(p => p.id !== packetId));
-    }, 1000);
+    packetsRef.current.push({ id: packetId, from: fromId, to: toId, startTime: Date.now() });
+    // No more state update here! The render loop will pick it up from the ref.
   }, []);
 
   useRealtime((event, payload) => {
