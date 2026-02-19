@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  * A zero-dependency force-directed simulation hook.
  * Uses Verlet integration for gravity, repulsion, and links.
  * 
- * Includes improved repulsion and organic breathing drift.
+ * Version 2.0: High-energy "walking" physics and sustained organic drift.
  */
 export function useForceSimulation({ nodes: initialNodes, links: initialLinks, width = 800, height = 600 }) {
   const [nodes, setNodes] = useState([]);
@@ -26,11 +26,11 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       const existing = existingNodes.get(node.id);
       return {
         ...node,
-        x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 200,
-        y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 200,
-        vx: existing ? existing.vx : 0,
-        vy: existing ? existing.vy : 0,
-        fx: existing ? existing.fx : null, // Fixed position (for dragging)
+        x: existing ? existing.x : width / 2 + (Math.random() - 0.5) * 400,
+        y: existing ? existing.y : height / 2 + (Math.random() - 0.5) * 400,
+        vx: existing ? existing.vx : (Math.random() - 0.5) * 2,
+        vy: existing ? existing.vy : (Math.random() - 0.5) * 2,
+        fx: existing ? existing.fx : null,
         fy: existing ? existing.fy : null,
       };
     });
@@ -52,11 +52,13 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     const { nodes: simNodes, links: simLinks } = simulationRef.current;
     if (!simNodes.length) return;
 
-    const CENTER_FORCE = 0.004; 
-    const REPULSION = 12000; // High repulsion to push nodes apart
-    const LINK_STRENGTH = 0.03;
-    const FRICTION = 0.94;
-    const BREATHING_FORCE = 0.08;
+    const CENTER_FORCE = 0.002; // Very weak center pull to allow expansion
+    const REPULSION = 30000; // Even stronger repulsion
+    const LINK_STRENGTH = 0.01; // Weaker links for more "floaty" feel
+    const FRICTION = 0.99; // Almost no friction for constant motion
+    const JITTER = 0.4; // Stronger random "walking" impulse
+    const BREATHING_FORCE = 0.4; 
+    
     const time = Date.now() * 0.001;
 
     // 1. Repulsion
@@ -68,6 +70,8 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
         const dy = b.y - a.y;
         const distSq = dx * dx + dy * dy || 1;
         const dist = Math.sqrt(distSq);
+        
+        // Repulsion force
         const force = REPULSION / distSq;
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
@@ -79,7 +83,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       }
     }
 
-    // 2. Links
+    // 2. Links (Spring force)
     simLinks.forEach(link => {
       const s = simNodes.find(n => n.id === link.source);
       const t = simNodes.find(n => n.id === link.target);
@@ -98,7 +102,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       t.vy -= fy;
     });
 
-    // 3. Movement & Constraints
+    // 3. Update Positions & Constraints
     simNodes.forEach((node, idx) => {
       if (node.fx != null && node.fy != null) {
         node.x = node.fx;
@@ -112,22 +116,28 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       node.vx += (width / 2 - node.x) * CENTER_FORCE;
       node.vy += (height / 2 - node.y) * CENTER_FORCE;
 
-      // Breathing / Brownian motion for organic feel
-      node.vx += Math.sin(time + idx) * BREATHING_FORCE;
-      node.vy += Math.cos(time * 0.7 + idx) * BREATHING_FORCE;
+      // "Walking" impulse (random jitter)
+      node.vx += (Math.random() - 0.5) * JITTER;
+      node.vy += (Math.random() - 0.5) * JITTER;
+
+      // "Breathing" (large scale organic drift)
+      node.vx += Math.sin(time * 0.5 + idx) * BREATHING_FORCE;
+      node.vy += Math.cos(time * 0.4 + idx) * BREATHING_FORCE;
 
       // Apply
       node.x += node.vx;
       node.y += node.vy;
+      
+      // Friction (Velocity decay)
       node.vx *= FRICTION;
       node.vy *= FRICTION;
 
-      // Boundaries
-      const m = 40;
-      if (node.x < m) { node.x = m; node.vx *= -0.5; }
-      if (node.x > width - m) { node.x = width - m; node.vx *= -0.5; }
-      if (node.y < m) { node.y = m; node.vy *= -0.5; }
-      if (node.y > height - m) { node.y = height - m; node.vy *= -0.5; }
+      // Soft boundaries (Bounce)
+      const m = 60;
+      if (node.x < m) { node.x = m; node.vx *= -1; }
+      if (node.x > width - m) { node.x = width - m; node.vx *= -1; }
+      if (node.y < m) { node.y = m; node.vy *= -1; }
+      if (node.y > height - m) { node.y = height - m; node.vy *= -1; }
     });
 
     setNodes([...simNodes]);
