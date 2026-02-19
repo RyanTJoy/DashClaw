@@ -3,48 +3,48 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
- * High-performance force simulation.
- * Optimized to prevent "freezing" and provide sustained organic motion.
+ * HIGH-ENERGY FORCE SIMULATION
+ * 
+ * Specifically tuned for high-motion "walking" and organic jitter.
+ * Uses object cloning to force React re-renders on every frame.
  */
 export function useForceSimulation({ nodes: initialNodes, links: initialLinks, width = 800, height = 600 }) {
   const [nodes, setNodes] = useState([]);
   const [links, setLinks] = useState([]);
   const frameRef = useRef();
   
-  // simulationRef holds the mutable state that the physics engine manipulates
+  // simulationRef holds the "source of truth" for physics
   const simulationRef = useRef({
     nodes: [],
     links: [],
-    initialized: false
   });
 
-  // 1. Sync React nodes to Simulation nodes (only when the set of IDs changes)
+  // 1. Sync React state to Simulation state
   useEffect(() => {
     const sim = simulationRef.current;
-    const nodeMap = new Map();
     
-    // Index existing nodes to preserve positions/velocity
+    // Maintain a map of existing nodes to preserve momentum
     const existingNodes = new Map(sim.nodes.map(n => [n.id, n]));
     
     const newNodes = initialNodes.map(node => {
       const existing = existingNodes.get(node.id);
       if (existing) {
-        // Update metadata but keep physics state
+        // Keep physics, update metadata
         return { ...existing, ...node };
       }
-      // New node: give it a random position and initial velocity "kick"
+      // New node: spawn with a "kick"
       return {
         ...node,
-        x: width / 2 + (Math.random() - 0.5) * 200,
-        y: height / 2 + (Math.random() - 0.5) * 200,
-        vx: (Math.random() - 0.5) * 5,
-        vy: (Math.random() - 0.5) * 5,
+        x: width / 2 + (Math.random() - 0.5) * 300,
+        y: height / 2 + (Math.random() - 0.5) * 300,
+        vx: (Math.random() - 0.5) * 10,
+        vy: (Math.random() - 0.5) * 10,
         fx: null,
         fy: null,
       };
     });
 
-    newNodes.forEach(n => nodeMap.set(n.id, n));
+    const nodeMap = new Map(newNodes.map(n => [n.id, n]));
 
     const newLinks = initialLinks.map(link => ({
       ...link,
@@ -54,29 +54,28 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
 
     sim.nodes = newNodes;
     sim.links = newLinks;
-    sim.initialized = true;
     
-    // Force immediate state sync for the first frame
-    setNodes([...newNodes]);
+    // Initial render
+    setNodes(newNodes.map(n => ({ ...n })));
     setLinks([...newLinks]);
   }, [initialNodes, initialLinks, width, height]);
 
-  // 2. The Physics Engine Tick
+  // 2. The Physics Engine
   const tick = useCallback(() => {
     const sim = simulationRef.current;
     if (!sim.nodes.length) return;
 
-    // PHYSICS TUNING
-    const REPULSION = 40000;   // Powerful push
-    const LINK_SPRING = 0.02;  // Elastic links
-    const CENTER_GRAVITY = 0.003; 
-    const FRICTION = 0.98;     // Sustained drift
-    const JITTER = 0.6;        // Brownian "walking" magnitude
-    const NOISE_SCALE = 0.3;   // Fluid-like drift
+    // PHYSICS CONSTANTS - CRANKED UP FOR VISIBLE MOVEMENT
+    const REPULSION = 60000;    // Aggressive spacing
+    const LINK_SPRING = 0.04;   // Snappy connections
+    const CENTER_PULL = 0.005;  // Moderate center gravity
+    const FRICTION = 0.97;      // Fluid coasting
+    const JITTER = 1.2;         // Random walking impulse (Visible!)
+    const DRIFT_FORCE = 0.5;    // Large scale organic swaying
     
     const time = Date.now() * 0.001;
 
-    // a. Repulsion (Inverse Square)
+    // a. Global Repulsion (Push everyone away)
     for (let i = 0; i < sim.nodes.length; i++) {
       const a = sim.nodes[i];
       for (let j = i + 1; j < sim.nodes.length; j++) {
@@ -96,7 +95,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       }
     }
 
-    // b. Link Springs
+    // b. Elastic Links
     sim.links.forEach(link => {
       const s = sim.nodes.find(n => n.id === link.source);
       const t = sim.nodes.find(n => n.id === link.target);
@@ -115,8 +114,9 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
       t.vy -= fy;
     });
 
-    // c. Integration & Brownian Motion
+    // c. Movement & Noise
     sim.nodes.forEach((node, idx) => {
+      // If manually dragging (fixed position)
       if (node.fx != null && node.fy != null) {
         node.x = node.fx;
         node.y = node.fy;
@@ -125,35 +125,35 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
         return;
       }
 
-      // Gravitational pull to center
-      node.vx += (width / 2 - node.x) * CENTER_GRAVITY;
-      node.vy += (height / 2 - node.y) * CENTER_GRAVITY;
+      // Gravitational center pull
+      node.vx += (width / 2 - node.x) * CENTER_PULL;
+      node.vy += (height / 2 - node.y) * CENTER_PULL;
 
-      // Organic Walking (Jitter + Noise)
+      // "Walking" Jitter
       node.vx += (Math.random() - 0.5) * JITTER;
       node.vy += (Math.random() - 0.5) * JITTER;
-      node.vx += Math.sin(time + idx * 0.7) * NOISE_SCALE;
-      node.vy += Math.cos(time * 0.8 + idx * 0.5) * NOISE_SCALE;
 
-      // Apply velocity
+      // Large Organic Drift
+      node.vx += Math.sin(time * 0.6 + idx) * DRIFT_FORCE;
+      node.vy += Math.cos(time * 0.5 + idx) * DRIFT_FORCE;
+
+      // Integration
       node.x += node.vx;
       node.y += node.vy;
-      
-      // Decay
       node.vx *= FRICTION;
       node.vy *= FRICTION;
 
-      // Boundary Bounce
-      const m = 40;
-      if (node.x < m) { node.x = m; node.vx = Math.abs(node.vx); }
-      if (node.x > width - m) { node.x = width - m; node.vx = -Math.abs(node.vx); }
-      if (node.y < m) { node.y = m; node.vy = Math.abs(node.vy); }
-      if (node.y > height - m) { node.y = height - m; node.vy = -Math.abs(node.vy); }
+      // Soft Wall Bounce
+      const m = 50;
+      if (node.x < m) { node.x = m; node.vx = Math.abs(node.vx) * 0.8; }
+      if (node.x > width - m) { node.x = width - m; node.vx = -Math.abs(node.vx) * 0.8; }
+      if (node.y < m) { node.y = m; node.vy = Math.abs(node.vy) * 0.8; }
+      if (node.y > height - m) { node.y = height - m; node.vy = -Math.abs(node.vy) * 0.8; }
     });
 
-    // We only trigger a React state update for the UI every 2 frames to save CPU
-    // while keeping the simulation smooth.
-    setNodes([...sim.nodes]);
+    // CRITICAL: Clone objects to force React to update the SVG circles
+    setNodes(sim.nodes.map(n => ({ ...n })));
+    
     frameRef.current = requestAnimationFrame(tick);
   }, [width, height]);
 

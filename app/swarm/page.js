@@ -27,7 +27,7 @@ export default function SwarmIntelligencePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [hoveredNode, setHoveredNode] = useState(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState(null);
   const [livePackets, setLivePackets] = useState([]);
   
   // Interaction State
@@ -63,18 +63,13 @@ export default function SwarmIntelligencePage() {
     tick: 0,
   });
 
-  // 1. HARD FIX: Scroll Zoom Lock
-  // React's onWheel is passive and cannot prevent page scroll. 
-  // We must use a native listener with { passive: false }.
+  // 1. HARD FIX: Scroll Zoom Lock (Native event to prevent page scroll)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const onNativeWheel = (e) => {
-      // If we aren't focused, let the page scroll naturally
-      if (!isFocused) return;
-
-      // If focused, lock the page and zoom the swarm
+      if (!isFocused) return; // Only lock scroll if focused
       e.preventDefault();
       const delta = e.deltaY > 0 ? 0.9 : 1.1;
       setZoom(z => Math.max(0.2, Math.min(5, z * delta)));
@@ -115,20 +110,6 @@ export default function SwarmIntelligencePage() {
           : prev.pendingApprovals
       }));
     }
-
-    if (event === 'message.created' && (payload.from_agent_id === selectedAgent.id || payload.to_agent_id === selectedAgent.id)) {
-      setAgentContext(prev => ({
-        ...prev,
-        messages: [payload, ...prev.messages].slice(0, 6)
-      }));
-    }
-
-    if (event === 'guard.decision.created' && payload.decision.agent_id === selectedAgent.id) {
-      setAgentContext(prev => ({
-        ...prev,
-        guard: [payload.decision, ...prev.guard].slice(0, 6)
-      }));
-    }
   });
 
   const fetchGraph = useCallback(async () => {
@@ -151,23 +132,14 @@ export default function SwarmIntelligencePage() {
     return () => clearInterval(interval);
   }, [fetchGraph]);
 
-  // Visual "Ticks" for simulated communications in demo mode
+  // Demo neural activity simulator
   useEffect(() => {
     if (!nodes.length || !demo) return;
-
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const interval = setInterval(() => {
-      const node = pick(nodes);
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
       const link = links?.length ? pick(links) : null;
-      setActivityPulse((prev) => ({
-        activeAgentId: node?.id || null,
-        activeLink: link ? { source: link.source, target: link.target } : null,
-        tick: prev.tick + 1,
-      }));
-
       if (link) triggerPacket(link.source, link.target);
     }, 2000);
-
     return () => clearInterval(interval);
   }, [nodes, links, demo, triggerPacket]);
 
@@ -248,28 +220,31 @@ export default function SwarmIntelligencePage() {
     return () => ctrl.abort();
   }, [selectedAgent?.id]);
 
-  // SVG Mouse Handlers
-  const handleMouseDown = (e) => {
-    // If user clicked background, deselect current agent
-    if (e.target.id === 'swarm-bg') {
-      setSelectedAgent(null);
-      setIsPanning(true);
-    }
-    setIsFocused(true);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!svgRef.current) return;
+  // 2. MOUSE & DRAG LOGIC
+  const getSimCoords = (e) => {
+    if (!svgRef.current) return { x: 0, y: 0 };
     const rect = svgRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (800 / rect.width);
     const y = (e.clientY - rect.top) * (600 / rect.height);
+    // Inverse transform
+    const tx = (x - 400 - pan.x) / zoom + 400;
+    const ty = (y - 300 - pan.y) / zoom + 300;
+    return { x: tx, y: ty };
+  };
 
+  const handleMouseDown = (e) => {
+    setIsFocused(true);
+    if (e.target.id === 'swarm-bg') {
+      setIsPanning(true);
+    }
+  };
+
+  const handleMouseMove = (e) => {
     if (isPanning) {
       setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
     } else if (dragNodeId) {
-      const transformedX = (x - 400 - pan.x) / zoom + 400;
-      const transformedY = (y - 300 - pan.y) / zoom + 300;
-      setNodeFixed(dragNodeId, transformedX, transformedY);
+      const coords = getSimCoords(e);
+      setNodeFixed(dragNodeId, coords.x, coords.y);
     }
   };
 
@@ -311,17 +286,17 @@ export default function SwarmIntelligencePage() {
             </filter>
           </defs>
 
-          {/* Hit area for panning and deselection */}
+          {/* Hit area for panning */}
           <rect id="swarm-bg" x="0" y="0" width="800" height="600" fill="transparent" />
 
-          {/* The Living Web */}
-          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '400px 300px' }} className="transition-transform duration-100">
+          {/* Transformation Layer */}
+          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '400px 300px' }}>
             {/* Neural Links */}
             {links.map((link, i) => {
               const s = nodeMap[link.source];
               const t = nodeMap[link.target];
               if (!s || !t) return null;
-              const isHighlight = (hoveredNode && (link.source === hoveredNode || link.target === hoveredNode)) || (selectedAgent && (link.source === selectedAgent.id || link.target === selectedAgent.id));
+              const isHighlight = (hoveredNodeId && (link.source === hoveredNodeId || link.target === hoveredNodeId)) || (selectedAgent && (link.source === selectedAgent.id || link.target === selectedAgent.id));
               return (
                 <line key={`l-${i}`} x1={s.x} y1={s.y} x2={t.x} y2={t.y}
                   stroke={isHighlight ? 'rgba(249, 115, 22, 0.5)' : 'rgba(255,255,255,0.04)'}
@@ -346,15 +321,14 @@ export default function SwarmIntelligencePage() {
             {/* Agent Nodes */}
             {nodes.map((node) => {
               const isSel = selectedAgent?.id === node.id;
-              const isHov = hoveredNode === node.id;
+              const isHov = hoveredNodeId === node.id;
               const rCol = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
 
               return (
                 <g key={node.id} 
-                  onMouseEnter={() => setHoveredNode(node.id)}
-                  onMouseLeave={() => setHoveredNode(null)}
+                  onMouseEnter={() => { setHoveredNodeId(node.id); setSelectedAgent(node); }}
+                  onMouseLeave={() => { setHoveredNodeId(null); setSelectedAgent(null); }}
                   onMouseDown={(e) => { e.stopPropagation(); setDragNodeId(node.id); }}
-                  onClick={() => setSelectedAgent(node)}
                   className="cursor-pointer"
                 >
                   {(isHov || isSel) && <circle cx={node.x} cy={node.y} r={25} fill="url(#nodeGlow)" />}
@@ -375,7 +349,7 @@ export default function SwarmIntelligencePage() {
           </g>
         </svg>
 
-        {/* Focus & Zoom Overlays */}
+        {/* Overlays */}
         {!isFocused && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] pointer-events-none">
             <div className="flex flex-col items-center gap-2">
@@ -484,7 +458,7 @@ export default function SwarmIntelligencePage() {
               ) : (
                 <div className="text-center py-20 flex flex-col items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5"><Search className="text-zinc-700" size={20} /></div>
-                  <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[180px]">Select an agent on the map to intercept and inspect its live telemetry stream.</p>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[180px]">Hover over a neural node to intercept and inspect its live telemetry stream.</p>
                 </div>
               )}
             </CardContent>
