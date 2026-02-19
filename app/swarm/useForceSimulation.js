@@ -55,7 +55,7 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     
     // Initial render sync
     setNodes(newNodes.map(n => ({ ...n })));
-    setLinks(s.links);
+    setLinks(newLinks);
   }, [initialNodes, initialLinks, width, height]);
 
   // The Physics Loop
