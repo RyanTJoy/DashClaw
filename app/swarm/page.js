@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Users, Zap, ShieldAlert, MessageSquare, ArrowRight,
-  Filter, RefreshCw, BarChart3, Maximize2, Activity
+  Filter, RefreshCw, BarChart3, Maximize2, Activity, Terminal
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -14,19 +14,27 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { useAgentFilter } from '../lib/AgentFilterContext';
 import { isDemoMode } from '../lib/isDemoMode';
 import { useRealtime } from '../hooks/useRealtime';
+import { useForceSimulation } from './useForceSimulation';
+import SwarmActivityLog from '../components/SwarmActivityLog';
 
 export default function SwarmIntelligencePage() {
   const router = useRouter();
   const { setAgentId: setGlobalAgentId } = useAgentFilter();
   const demo = isDemoMode();
 
-  const [data, setData] = useState({ nodes: [], links: [] });
+  const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
-  const nodes = data.nodes;
-  const links = data.links;
+  const [livePackets, setLivePackets] = useState([]);
+
+  const { nodes, links } = useForceSimulation({
+    nodes: graphData.nodes,
+    links: graphData.links,
+    width: 800,
+    height: 600
+  });
 
   const [agentContext, setAgentContext] = useState({
     loading: false,
@@ -44,7 +52,20 @@ export default function SwarmIntelligencePage() {
     tick: 0,
   });
 
+  const triggerPacket = useCallback((fromId, toId) => {
+    if (!fromId || !toId) return;
+    const packetId = Math.random().toString(36).substring(7);
+    setLivePackets(prev => [...prev, { id: packetId, from: fromId, to: toId }]);
+    setTimeout(() => {
+      setLivePackets(prev => prev.filter(p => p.id !== packetId));
+    }, 1000);
+  }, []);
+
   useRealtime((event, payload) => {
+    if (event === 'message.created') {
+      triggerPacket(payload.from_agent_id, payload.to_agent_id || 'broadcast');
+    }
+
     if (!selectedAgent?.id) return;
 
     if (event === 'action.created' && payload.agent_id === selectedAgent.id) {
@@ -84,7 +105,7 @@ export default function SwarmIntelligencePage() {
       const res = await fetch('/api/swarm/graph');
       if (!res.ok) throw new Error('Failed to load swarm data');
       const json = await res.json();
-      setData(json);
+      setGraphData(json);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -112,10 +133,14 @@ export default function SwarmIntelligencePage() {
         activeLink: link ? { source: link.source, target: link.target } : null,
         tick: prev.tick + 1,
       }));
+
+      if (demo && link) {
+        triggerPacket(link.source, link.target);
+      }
     }, demo ? 1800 : 3000);
 
     return () => clearInterval(interval);
-  }, [nodes, links, demo]);
+  }, [nodes, links, demo, triggerPacket]);
 
   const getAgentDetails = (agentId) => {
     return nodes.find(n => n.id === agentId);
@@ -192,10 +217,10 @@ export default function SwarmIntelligencePage() {
 
         const [actionsJson, approvalsJson, msgsJson, guardJson, wfJson] = await Promise.all([
           safeJson(actionsRes),
-          safeJson(approvalsRes),
+          safeJson(approvalsJson),
           safeJson(msgsRes),
           safeJson(guardRes),
-          safeJson(wfRes),
+          safeJson(wfJson),
         ]);
 
         setAgentContext({
@@ -221,35 +246,27 @@ export default function SwarmIntelligencePage() {
     return () => ctrl.abort();
   }, [selectedAgent?.id]);
 
-  // Simple Circle Layout for the graph (since we want zero-dep visualization)
   const renderGraph = () => {
     if (nodes.length === 0) return <EmptyState icon={Users} title="No agents found" description="Connect agents to see the swarm map." />;
 
     const width = 800;
     const height = 600;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.35;
+    const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
-    // Position nodes in a circle
-    const positionedNodes = nodes.map((node, i) => {
-      const angle = (i / nodes.length) * 2 * Math.PI;
-      return {
-        ...node,
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle)
-      };
-    });
-
-    const nodeMap = Object.fromEntries(positionedNodes.map(n => [n.id, n]));
-
-    const activeLink = activityPulse.activeLink;
     return (
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden cursor-crosshair">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden cursor-crosshair select-none">
         <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="15" refY="3.5" orientation="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255,255,255,0.1)" />
-          </marker>
+          <radialGradient id="nodeGradient">
+            <stop offset="0%" stopColor="rgba(249, 115, 22, 0.4)" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
         {/* Links */}
@@ -259,37 +276,42 @@ export default function SwarmIntelligencePage() {
           if (!s || !t) return null;
           
           const isHighlighted = (hoveredNode && (link.source === hoveredNode || link.target === hoveredNode));
-          const isActive = activeLink && activeLink.source === link.source && activeLink.target === link.target;
-          const midX = (s.x + t.x) / 2;
-          const midY = (s.y + t.y) / 2;
+          const isActive = activityPulse.activeLink && activityPulse.activeLink.source === link.source && activityPulse.activeLink.target === link.target;
           
           return (
-            <g key={`link-${i}`}>
-              <line
-                x1={s.x} y1={s.y}
-                x2={t.x} y2={t.y}
-                stroke={isActive ? 'rgba(249, 115, 22, 0.35)' : isHighlighted ? 'rgba(249, 115, 22, 0.4)' : 'rgba(255,255,255,0.05)'}
-                strokeWidth={Math.min(6, 1 + link.weight / 5) + (isActive ? 0.5 : 0)}
-                markerEnd="url(#arrowhead)"
+            <line
+              key={`link-${i}`}
+              x1={s.x} y1={s.y}
+              x2={t.x} y2={t.y}
+              stroke={isActive ? 'rgba(249, 115, 22, 0.6)' : isHighlighted ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255,255,255,0.05)'}
+              strokeWidth={isActive ? 2 : 1}
+              className="transition-all duration-500"
+            />
+          );
+        })}
+
+        {/* Data Packets */}
+        {livePackets.map(packet => {
+          const s = nodeMap[packet.from];
+          const t = nodeMap[packet.to === 'broadcast' ? nodes[0]?.id : packet.to];
+          if (!s || !t) return null;
+
+          return (
+            <circle key={packet.id} r="3" fill="#f97316" filter="url(#glow)">
+              <animateMotion
+                dur="0.8s"
+                path={`M${s.x},${s.y} L${t.x},${t.y}`}
+                fill="freeze"
               />
-              {isActive && (
-                <circle
-                  cx={midX}
-                  cy={midY}
-                  r="3"
-                  fill="rgba(249, 115, 22, 0.85)"
-                  className="animate-pulse"
-                />
-              )}
-            </g>
+              <animate attributeName="opacity" values="1;0" dur="0.8s" fill="freeze" />
+            </circle>
           );
         })}
 
         {/* Nodes */}
-        {positionedNodes.map((node) => {
+        {nodes.map((node) => {
           const isSelected = selectedAgent?.id === node.id;
           const isHovered = hoveredNode === node.id;
-          const isPulsing = activityPulse.activeAgentId === node.id && !isSelected;
           const riskColor = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
 
           return (
@@ -298,38 +320,37 @@ export default function SwarmIntelligencePage() {
               onMouseEnter={() => setHoveredNode(node.id)}
               onMouseLeave={() => setHoveredNode(null)}
               onClick={() => setSelectedAgent(node)}
-              className="transition-all duration-200 cursor-pointer"
+              className="transition-all duration-300 cursor-pointer"
             >
-              {isPulsing && (
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={18}
-                  fill="transparent"
-                  stroke="rgba(249, 115, 22, 0.12)"
-                  strokeWidth="2"
-                  className="animate-pulse"
-                />
+              {isHovered && (
+                <circle cx={node.x} cy={node.y} r={25} fill="url(#nodeGradient)" />
               )}
               <circle
                 cx={node.x}
                 cy={node.y}
-                r={isSelected ? 14 : isHovered ? 12 : 8}
+                r={isSelected ? 12 : isHovered ? 10 : 6}
                 fill="#111"
                 stroke={isSelected ? '#f97316' : riskColor}
                 strokeWidth={isSelected ? 3 : 2}
+                className="transition-all duration-300"
               />
-              {(isHovered || isSelected || nodes.length < 15) && (
-                <text
-                  x={node.x}
-                  y={node.y + 20}
-                  textAnchor="middle"
-                  fill={isSelected ? 'white' : '#71717a'}
-                  fontSize="10"
-                  className="font-medium pointer-events-none select-none"
-                >
-                  {node.name}
-                </text>
+              {(isHovered || isSelected || nodes.length < 12) && (
+                <g>
+                  <rect 
+                    x={node.x - 40} y={node.y + 12} width={80} height={16} 
+                    rx={4} fill="rgba(0,0,0,0.6)" backdropBlur="sm" 
+                  />
+                  <text
+                    x={node.x}
+                    y={node.y + 23}
+                    textAnchor="middle"
+                    fill={isSelected ? 'white' : '#a1a1aa'}
+                    fontSize="9"
+                    className="font-medium pointer-events-none select-none"
+                  >
+                    {node.name}
+                  </text>
+                </g>
               )}
             </g>
           );
@@ -341,7 +362,7 @@ export default function SwarmIntelligencePage() {
   return (
     <PageLayout
       title="Swarm Intelligence"
-      subtitle="Visualize multi-agent communication and operational risk"
+      subtitle="Living operational graph of multi-agent communication and behavior"
       breadcrumbs={['Operations', 'Swarm']}
       actions={
         <button onClick={fetchGraph} className="p-2 text-zinc-400 hover:text-white transition-colors">
@@ -349,46 +370,47 @@ export default function SwarmIntelligencePage() {
         </button>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
         
         {/* Left Column: Stats & Map */}
         <div className="lg:col-span-3 space-y-6">
           
           {/* Swarm Map */}
-          <Card className="relative overflow-hidden group">
+          <Card className="relative overflow-hidden group border-brand/5">
             <CardHeader className="flex flex-row items-center justify-between border-b border-[rgba(255,255,255,0.04)] py-3">
               <div className="flex items-center gap-2">
                 <Users size={16} className="text-brand" />
-                <span className="text-sm font-semibold">Swarm Communication Map</span>
+                <span className="text-sm font-semibold">Live Swarm Map</span>
               </div>
               <div className="flex gap-2">
-                <Badge variant="default">{data.total_agents} Agents</Badge>
-                <Badge variant="outline">{data.total_links} Links</Badge>
-                {demo && <Badge variant="outline">Demo: simulated activity</Badge>}
+                <Badge variant="default">{nodes.length} Agents</Badge>
+                <Badge variant="outline">{links.length} Neural Links</Badge>
+                {demo && <Badge variant="outline" className="text-brand border-brand/20">Demo: Neural Activity</Badge>}
               </div>
             </CardHeader>
-            <CardContent className="p-0 h-[600px] bg-[#0a0a0a]">
-              {loading ? (
-                <div className="flex items-center justify-center h-full text-sm text-zinc-500">
-                  Analyzing swarm telemetry...
+            <CardContent className="p-0 h-[500px] bg-[#050505]">
+              {loading && !nodes.length ? (
+                <div className="flex flex-col items-center justify-center h-full gap-3">
+                  <div className="w-8 h-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
+                  <div className="text-sm text-zinc-500 font-mono uppercase tracking-widest">Synchronizing swarm...</div>
                 </div>
               ) : (
                 renderGraph()
               )}
               
               {/* Legend Overlay */}
-              <div className="absolute bottom-4 left-4 p-3 rounded-lg bg-black/40 backdrop-blur-md border border-[rgba(255,255,255,0.06)] text-[10px] text-zinc-500 space-y-1.5">
+              <div className="absolute bottom-4 left-4 p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/5 text-[10px] text-zinc-500 space-y-1.5 shadow-2xl">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#ef4444]" /> High Risk
+                  <div className="w-2 h-2 rounded-full bg-[#ef4444]" /> Critical Risk
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#eab308]" /> Moderate Risk
+                  <div className="w-2 h-2 rounded-full bg-[#eab308]" /> Elevated Risk
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" /> Low Risk
+                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" /> Nominal Operation
                 </div>
-                <div className="mt-2 pt-2 border-t border-white/5 opacity-60">
-                  Click a node to drill down
+                <div className="mt-2 pt-2 border-t border-white/5 opacity-60 font-mono">
+                  FORCE-DIRECTED TOPOLOGY ACTIVE
                 </div>
               </div>
             </CardContent>
@@ -396,19 +418,19 @@ export default function SwarmIntelligencePage() {
 
           {/* Swarm Health Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
+            <Card className="bg-surface-secondary/50 border-white/5">
               <CardContent className="pt-4 pb-4">
-                <StatCompact label="Active Swarms" value="1" color="text-white" />
+                <StatCompact label="Active Goals" value={demo ? "3" : "1"} color="text-white" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-surface-secondary/50 border-white/5">
               <CardContent className="pt-4 pb-4">
-                <StatCompact label="Swarm Latency" value="12ms" color="text-brand" />
+                <StatCompact label="Neural Latency" value="12ms" color="text-brand" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="bg-surface-secondary/50 border-white/5">
               <CardContent className="pt-4 pb-4">
-                <StatCompact label="Safety Overhead" value="4.2%" color="text-blue-400" />
+                <StatCompact label="Governance Load" value="4.2%" color="text-blue-400" />
               </CardContent>
             </Card>
           </div>
@@ -416,11 +438,11 @@ export default function SwarmIntelligencePage() {
 
         {/* Right Column: Agent Detail Panel */}
         <div className="space-y-6">
-          <Card className="h-full">
+          <Card className="h-full border-brand/5">
             <CardHeader className="border-b border-[rgba(255,255,255,0.04)] py-4">
               <div className="flex items-center gap-2">
                 <Activity size={16} className="text-zinc-400" />
-                <span className="text-sm font-semibold">Agent Context</span>
+                <span className="text-sm font-semibold">Agent Core Context</span>
               </div>
             </CardHeader>
             <CardContent className="pt-6">
@@ -430,8 +452,8 @@ export default function SwarmIntelligencePage() {
                     <h3 className="text-lg font-bold text-white mb-1">{selectedAgent.name}</h3>
                     <code className="text-[10px] text-zinc-500 font-mono">{selectedAgent.id}</code>
                     <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="outline" size="xs">{getRoleLabel(selectedAgent.id)}</Badge>
-                      <Badge variant="outline" size="xs">Swarm: {data.swarm_id || 'all'}</Badge>
+                      <Badge variant="outline" size="xs" className="bg-white/5">{getRoleLabel(selectedAgent.id)}</Badge>
+                      <Badge variant="outline" size="xs" className="bg-white/5">Swarm: {graphData.swarm_id || 'all'}</Badge>
                     </div>
                   </div>
 
@@ -448,113 +470,53 @@ export default function SwarmIntelligencePage() {
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Communication Partners</h4>
-                    <div className="space-y-2">
-                      {selectedPartners.slice(0, 5).map((p, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedAgent(getAgentDetails(p.partnerId) || { id: p.partnerId, name: p.partnerName, actions: 0, risk: 0 })}
-                          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors group text-left"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-brand" />
-                            <span className="text-xs text-zinc-300">{p.partnerName}</span>
-                          </div>
-                          <span className="text-[10px] text-zinc-600 font-mono">{p.weight} msg</span>
-                        </button>
-                      ))}
-                      {selectedPartners.length === 0 && (
-                        <div className="text-xs text-zinc-600">No observed inter-agent messaging yet.</div>
-                      )}
+                  {/* Compact Partners */}
+                  {selectedPartners.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Neural Partners</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPartners.slice(0, 4).map((p, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setSelectedAgent(getAgentDetails(p.partnerId) || { id: p.partnerId, name: p.partnerName, actions: 0, risk: 0 })}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/5 hover:border-brand/30 transition-all text-[10px] text-zinc-300"
+                          >
+                            <div className="w-1 h-1 rounded-full bg-brand" />
+                            {p.partnerName}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Live-ish context */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Recent Activity</h4>
-                      {agentContext.loading && (
-                        <span className="text-[10px] text-zinc-600">Loading…</span>
-                      )}
-                    </div>
-
-                    {agentContext.error && (
-                      <div className="text-xs text-red-400">{agentContext.error}</div>
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {agentContext.pendingApprovals.length > 0 && (
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="text-[10px] text-amber-400 uppercase font-bold mb-2 flex items-center gap-1.5">
+                          <ShieldAlert size={10} /> Pending Approvals
+                        </div>
+                        {agentContext.pendingApprovals.map((a) => (
+                          <div key={a.action_id} className="text-xs text-amber-200/80 mb-1 last:mb-0">
+                            {a.action_type}: {a.declared_goal?.substring(0, 30)}...
+                          </div>
+                        ))}
+                      </div>
                     )}
 
                     <div className="space-y-2">
-                      <div className="p-3 rounded-lg bg-surface-tertiary border border-white/5">
-                        <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Recent Actions</div>
-                        {agentContext.actions.slice(0, 4).map((a) => (
-                          <div key={a.action_id} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-b-0">
-                            <div className="min-w-0">
-                              <div className="text-xs text-zinc-300 truncate">{a.action_type || 'action'} <span className="text-zinc-600">·</span> {a.status || 'running'}</div>
-                              <div className="text-[10px] text-zinc-600 font-mono">{formatTime(a.timestamp_start || a.created_at)}</div>
-                            </div>
-                            <div className="text-[10px] font-mono text-zinc-500">{(a.risk_score ?? a.risk ?? 0).toString()}%</div>
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Recent Cycles</h4>
+                      {agentContext.actions.slice(0, 3).map((a) => (
+                        <div key={a.action_id} className="p-2 rounded bg-surface-tertiary border border-white/5 flex justify-between items-center">
+                          <div className="min-w-0">
+                            <div className="text-[11px] text-zinc-300 truncate">{a.action_type}</div>
+                            <div className="text-[9px] text-zinc-600 font-mono">{formatTime(a.timestamp_start)}</div>
                           </div>
-                        ))}
-                        {agentContext.actions.length === 0 && (
-                          <div className="text-xs text-zinc-600">No actions yet.</div>
-                        )}
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-surface-tertiary border border-white/5">
-                        <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Pending Approvals</div>
-                        {agentContext.pendingApprovals.slice(0, 3).map((a) => (
-                          <div key={a.action_id} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-b-0">
-                            <div className="text-xs text-zinc-300 truncate">{a.action_type || 'action'}</div>
-                            <span className="text-[10px] text-amber-300 font-mono">needs approval</span>
+                          <div className={`text-[10px] font-mono ${a.status === 'failed' ? 'text-red-400' : 'text-zinc-500'}`}>
+                            {a.status?.substring(0, 4)}
                           </div>
-                        ))}
-                        {agentContext.pendingApprovals.length === 0 && (
-                          <div className="text-xs text-zinc-600">None.</div>
-                        )}
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-surface-tertiary border border-white/5">
-                        <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Recent Messages</div>
-                        {agentContext.messages.slice(0, 4).map((m) => (
-                          <div key={m.id} className="py-1.5 border-b border-white/5 last:border-b-0">
-                            <div className="text-xs text-zinc-300 truncate">{m.subject || '(no subject)'}</div>
-                            <div className="text-[10px] text-zinc-600 font-mono">
-                              {(m.from_agent_id || 'unknown')} → {(m.to_agent_id || 'broadcast')} · {formatTime(m.created_at)}
-                            </div>
-                          </div>
-                        ))}
-                        {agentContext.messages.length === 0 && (
-                          <div className="text-xs text-zinc-600">No messages yet.</div>
-                        )}
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-surface-tertiary border border-white/5">
-                        <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Guard Decisions</div>
-                        {agentContext.guard.slice(0, 4).map((g, idx) => (
-                          <div key={g.id || `${g.created_at}-${idx}`} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-b-0">
-                            <div className="text-xs text-zinc-300 truncate">{g.policy_name || g.rule_name || 'Guard policy'}</div>
-                            <span className={`text-[10px] font-mono ${g.decision === 'block' ? 'text-red-400' : g.decision === 'require_approval' ? 'text-amber-300' : g.decision === 'warn' ? 'text-yellow-300' : 'text-green-400'}`}>
-                              {g.decision || 'allow'}
-                            </span>
-                          </div>
-                        ))}
-                        {agentContext.guard.length === 0 && (
-                          <div className="text-xs text-zinc-600">No guard decisions yet.</div>
-                        )}
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-surface-tertiary border border-white/5">
-                        <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2">Workflows</div>
-                        {agentContext.workflows.slice(0, 3).map((w, idx) => (
-                          <div key={w.id || w.workflow_id || `${w.name}-${idx}`} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-b-0">
-                            <div className="text-xs text-zinc-300 truncate">{w.name || w.title || 'Workflow'}</div>
-                            <span className="text-[10px] text-zinc-600 font-mono">{w.status || w.schedule || ''}</span>
-                          </div>
-                        ))}
-                        {agentContext.workflows.length === 0 && (
-                          <div className="text-xs text-zinc-600">No workflows.</div>
-                        )}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -564,22 +526,26 @@ export default function SwarmIntelligencePage() {
                         setGlobalAgentId?.(selectedAgent.id);
                         router.push('/workspace');
                       }}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-brand rounded-lg text-xs font-bold text-white hover:bg-brand-hover transition-colors"
+                      className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-brand/10 border border-brand/20 rounded-lg text-xs font-bold text-brand hover:bg-brand hover:text-white transition-all"
                     >
-                      Open Agent Workspace <ArrowRight size={14} />
+                      Enter Neural Workspace <ArrowRight size={14} />
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-20">
                   <Users size={32} className="mx-auto text-zinc-800 mb-4" />
-                  <p className="text-xs text-zinc-500">Select an agent on the map to see its context within the swarm.</p>
+                  <p className="text-xs text-zinc-500">Select a neural node to engage.</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
+      </div>
 
+      {/* Bottom Panel: Live Swarm Log */}
+      <div className="h-80">
+        <SwarmActivityLog />
       </div>
     </PageLayout>
   );
