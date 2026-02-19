@@ -2,9 +2,9 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { NextResponse } from 'next/server';
-import { getSql } from '../../lib/db.js';
-import { getOrgId } from '../../lib/org.js';
-import { EVENTS, publishOrgEvent } from '../../lib/events.js';
+import { getSql } from '../../../lib/db.js';
+import { getOrgId } from '../../../lib/org.js';
+import { EVENTS, publishOrgEvent } from '../../../lib/events.js';
 
 /**
  * POST /api/agents/heartbeat — Report agent presence and health.
