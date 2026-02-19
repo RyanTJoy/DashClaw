@@ -4,30 +4,27 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import * as d3 from 'd3-force';
 
 /**
- * NEURAL FORCE SIMULATION (v5 - D3-Force Powered)
+ * NEURAL FORCE SIMULATION (v6 - Tightened for compact view)
  * 
- * - Stable, high-performance alpha-decay physics.
- * - Decoupled from React renders (operates on refs).
- * - Optimized for Canvas drawing.
+ * - Reduced charge and link distance to keep swarm focused.
+ * - Optimized for responsive layout.
  */
 export function useForceSimulation({ nodes: initialNodes, links: initialLinks, width = 800, height = 600 }) {
   const simulation = useRef(null);
   const nodesRef = useRef([]);
   const linksRef = useRef([]);
   
-  // We only sync initial data once, or when it significantly changes
   useEffect(() => {
     if (!initialNodes.length) return;
 
-    // Preserve existing positions if they exist
     const nodeMap = new Map(nodesRef.current.map(n => [n.id, n]));
     
     const nodes = initialNodes.map(node => {
       const prev = nodeMap.get(node.id);
       return {
         ...node,
-        x: prev ? prev.x : width / 2 + (Math.random() - 0.5) * 100,
-        y: prev ? prev.y : height / 2 + (Math.random() - 0.5) * 100,
+        x: prev ? prev.x : width / 2 + (Math.random() - 0.5) * 50,
+        y: prev ? prev.y : height / 2 + (Math.random() - 0.5) * 50,
         vx: prev ? prev.vx : 0,
         vy: prev ? prev.vy : 0,
       };
@@ -42,20 +39,17 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     nodesRef.current = nodes;
     linksRef.current = links;
 
-    // Initialize or restart simulation
     if (!simulation.current) {
       simulation.current = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(links).id(d => d.id).distance(150).strength(0.1))
-        .force('charge', d3.forceManyBody().strength(-300).distanceMax(500))
-        .force('center', d3.forceCenter(width / 2, height / 2).strength(0.01))
-        .force('collision', d3.forceCollide().radius(25))
-        // Organic Drift Force (Custom)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(80).strength(0.15)) // Tighter links
+        .force('charge', d3.forceManyBody().strength(-150).distanceMax(300)) // Reduced repulsion
+        .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05)) // Stronger center pull
+        .force('collision', d3.forceCollide().radius(22))
         .on('tick', () => {
-          // Add a tiny bit of random energy to keep it "alive"
           nodes.forEach(n => {
             if (n.fx === undefined) {
-              n.vx += (Math.random() - 0.5) * 0.15;
-              n.vy += (Math.random() - 0.5) * 0.15;
+              n.vx += (Math.random() - 0.5) * 0.1;
+              n.vy += (Math.random() - 0.5) * 0.1;
             }
           });
         });
@@ -70,7 +64,6 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     };
   }, [initialNodes, initialLinks, width, height]);
 
-  // Alpha re-kick for interaction
   const wake = useCallback(() => {
     if (simulation.current) simulation.current.alpha(0.3).restart();
   }, []);
