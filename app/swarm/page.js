@@ -382,14 +382,12 @@ export default function SwarmIntelligencePage() {
       breadcrumbs={['Operations', 'Swarm']}
       actions={<button onClick={fetchGraph} className="p-2 text-zinc-400 hover:text-white transition-colors"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>}
     >
-      {/* UNIFIED VIEWPORT CONTAINER */}
-      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-160px)] min-h-[600px] overflow-hidden">
-        
-        {/* LEFT COLUMN (Swarm + Log + Stats) */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0 h-full">
+      <div className="space-y-6">
+        {/* ROW 1: SWARM BOX + TELEMETRY SIDEBAR (FULL VIEWPORT HEIGHT) */}
+        <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-140px)] min-h-[600px]">
           
-          {/* TOP SECTION: SWARM CANVAS */}
-          <Card className="relative overflow-hidden group border-brand/10 bg-[#050505] shadow-2xl flex-[2] flex flex-col min-h-0">
+          {/* Swarm Box */}
+          <Card className="relative overflow-hidden group border-brand/10 bg-[#050505] shadow-2xl flex-1 flex flex-col min-h-0">
             <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 py-3 z-10 relative bg-[#050505]/80 backdrop-blur-md">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
@@ -428,95 +426,95 @@ export default function SwarmIntelligencePage() {
             </CardContent>
           </Card>
 
-          {/* MIDDLE SECTION: SWARM LOG */}
-          <div className="flex-1 min-h-[150px] max-h-[250px] overflow-hidden rounded-xl border border-white/5 bg-surface-primary/30 backdrop-blur-sm">
-            <SwarmActivityLog />
-          </div>
+          {/* Telemetry Sidebar */}
+          <div className="w-full lg:w-[400px] h-full shrink-0 relative overflow-hidden">
+            <Card className="h-full border-brand/5 bg-surface-secondary/20 shadow-xl backdrop-blur-lg flex flex-col overflow-hidden">
+              <CardHeader className="border-b border-white/5 py-4">
+                <div className="flex items-center gap-2"><Activity size={16} className="text-brand" /><span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Agent Telemetry</span></div>
+              </CardHeader>
+              <CardContent className="pt-6 flex-1 overflow-hidden relative flex flex-col min-h-0">
+                {inspectedAction && <ActionDetailOverlay action={inspectedAction} onClose={() => setInspectedAction(null)} />}
+                
+                {selectedAgent ? (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex-1 flex flex-col min-h-0">
+                    <div className="relative group shrink-0 px-1">
+                      <div className="absolute -inset-2 bg-brand/5 rounded-xl blur-xl group-hover:bg-brand/10 transition-all" />
+                      <div className="relative">
+                        <h3 className="text-lg font-bold text-white mb-0.5">{selectedAgent.name}</h3>
+                        <code className="text-[10px] text-zinc-500 font-mono">{selectedAgent.id.substring(0, 12)}...</code>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Badge variant="outline" className="text-[9px] bg-white/5 border-white/10 uppercase tracking-tighter">AGENT_CLASS_V2</Badge>
+                          <Badge variant="outline" className={`text-[9px] border-none ${selectedAgent.risk > 40 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-green-500/10 text-green-500'}`}>RISK: {selectedAgent.risk.toFixed(0)}%</Badge>
+                        </div>
+                      </div>
+                    </div>
 
-          {/* BOTTOM SECTION: STATS */}
-          <div className="grid grid-cols-3 gap-4 h-20 shrink-0">
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Neural Links" value={graphData.links.length} color="text-white" /></div>
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Sync Latency" value="12ms" color="text-brand" /></div>
-            <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Drift State" value="Nominal" color="text-blue-400" /></div>
+                    <div className="space-y-3 shrink-0 px-1">
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Zap size={10} className="text-brand" /> Live Performance</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Actions</div><div className="text-lg font-mono text-white">{selectedAgent.actions || 0}</div></div>
+                        <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Stability</div><div className="text-lg font-mono text-green-400">99.8%</div></div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 flex-1 overflow-hidden flex flex-col min-h-0 px-1">
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><History size={10} className="text-zinc-400" /> Latest Neural Loops</h4>
+                      <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
+                        {agentContext.loading ? (
+                          <div className="py-8 text-center text-[11px] text-zinc-600 animate-pulse">Syncing neural state...</div>
+                        ) : agentContext.actions.length > 0 ? (
+                          agentContext.actions.map((action, i) => (
+                            <div 
+                              key={i} 
+                              onClick={() => setInspectedAction(action)}
+                              className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2 hover:bg-white/10 hover:border-brand/20 transition-all cursor-pointer group/action"
+                            >
+                              <div className="flex justify-between items-start">
+                                <span className="text-[12px] font-bold text-white group-hover:text-brand transition-colors truncate max-w-[140px]">{action.action_type}</span>
+                                <Badge variant="outline" className={`text-[9px] py-0 px-1.5 border-none font-bold ${
+                                  action.status === 'completed' ? 'text-green-400 bg-green-400/10' : 
+                                  action.status === 'failed' ? 'text-red-400 bg-red-400/10' : 'text-yellow-400 bg-yellow-400/10'
+                                }`}>
+                                  {action.status?.toUpperCase()}
+                                </Badge>
+                              </div>
+                              <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
+                                <div className="flex items-center gap-1.5"><Target size={10} /> {action.risk_score || 0}% RISK</div>
+                                <div className="flex items-center gap-1.5">{formatTimestamp(action.timestamp_start)} <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" /></div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-8 text-center text-[11px] text-zinc-600 italic">No recent neural activity detected.</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/5 shrink-0 px-1">
+                      <button onClick={() => router.push(`/workspace?agent_id=${selectedAgent.id}`)} className="w-full flex items-center justify-center gap-2 py-3 bg-brand rounded-xl text-[11px] font-bold text-white hover:bg-brand-hover shadow-lg shadow-brand/20 transition-all active:scale-95 group">Connect to Workspace <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" /></button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-24 flex flex-col items-center gap-6">
+                    <div className="relative"><div className="absolute inset-0 bg-brand/5 blur-2xl rounded-full" /><div className="relative w-16 h-16 rounded-full bg-zinc-900/50 flex items-center justify-center border border-white/5 group-hover:border-brand/20 transition-all"><Search className="text-zinc-700" size={24} /></div></div>
+                    <div className="space-y-2"><p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">No Agent Selected</p><p className="text-[10px] text-zinc-600 leading-relaxed max-w-[200px] mx-auto">Click any node in the neural web to capture its real-time telemetry and decision stream.</p></div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 
-        {/* RIGHT COLUMN (Telemetry Sidebar) */}
-        <div className="w-full lg:w-[400px] h-full shrink-0 relative overflow-hidden">
-          <Card className="h-full border-brand/5 bg-surface-secondary/20 shadow-xl backdrop-blur-lg flex flex-col overflow-hidden">
-            <CardHeader className="border-b border-white/5 py-4">
-              <div className="flex items-center gap-2"><Activity size={16} className="text-brand" /><span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Agent Telemetry</span></div>
-            </CardHeader>
-            <CardContent className="pt-6 flex-1 overflow-hidden relative flex flex-col min-h-0">
-              {inspectedAction && <ActionDetailOverlay action={inspectedAction} onClose={() => setInspectedAction(null)} />}
-              
-              {selectedAgent ? (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex-1 flex flex-col min-h-0">
-                  <div className="relative group shrink-0 px-1">
-                    <div className="absolute -inset-2 bg-brand/5 rounded-xl blur-xl group-hover:bg-brand/10 transition-all" />
-                    <div className="relative">
-                      <h3 className="text-lg font-bold text-white mb-0.5">{selectedAgent.name}</h3>
-                      <code className="text-[10px] text-zinc-500 font-mono">{selectedAgent.id.substring(0, 12)}...</code>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Badge variant="outline" className="text-[9px] bg-white/5 border-white/10 uppercase tracking-tighter">AGENT_CLASS_V2</Badge>
-                        <Badge variant="outline" className={`text-[9px] border-none ${selectedAgent.risk > 40 ? 'bg-yellow-500/10 text-yellow-500' : 'bg-green-500/10 text-green-500'}`}>RISK: {selectedAgent.risk.toFixed(0)}%</Badge>
-                      </div>
-                    </div>
-                  </div>
+        {/* ROW 2: LIVE SWARM LOG (REQUIRES SCROLLING) */}
+        <div className="w-full h-[300px] overflow-hidden rounded-xl border border-white/5 bg-surface-primary/30 backdrop-blur-sm">
+          <SwarmActivityLog />
+        </div>
 
-                  <div className="space-y-3 shrink-0 px-1">
-                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Zap size={10} className="text-brand" /> Live Performance</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Actions</div><div className="text-lg font-mono text-white">{selectedAgent.actions || 0}</div></div>
-                      <div className="p-3 rounded-lg bg-black/40 border border-white/5"><div className="text-[9px] text-zinc-500 mb-1">Stability</div><div className="text-lg font-mono text-green-400">99.8%</div></div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 flex-1 overflow-hidden flex flex-col min-h-0 px-1">
-                    <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><History size={10} className="text-zinc-400" /> Latest Neural Loops</h4>
-                    <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
-                      {agentContext.loading ? (
-                        <div className="py-8 text-center text-[11px] text-zinc-600 animate-pulse">Syncing neural state...</div>
-                      ) : agentContext.actions.length > 0 ? (
-                        agentContext.actions.map((action, i) => (
-                          <div 
-                            key={i} 
-                            onClick={() => setInspectedAction(action)}
-                            className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2 hover:bg-white/10 hover:border-brand/20 transition-all cursor-pointer group/action"
-                          >
-                            <div className="flex justify-between items-start">
-                              <span className="text-[12px] font-bold text-white group-hover:text-brand transition-colors truncate max-w-[140px]">{action.action_type}</span>
-                              <Badge variant="outline" className={`text-[9px] py-0 px-1.5 border-none font-bold ${
-                                action.status === 'completed' ? 'text-green-400 bg-green-400/10' : 
-                                action.status === 'failed' ? 'text-red-400 bg-red-400/10' : 'text-yellow-400 bg-yellow-400/10'
-                              }`}>
-                                {action.status?.toUpperCase()}
-                              </Badge>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
-                              <div className="flex items-center gap-1.5"><Target size={10} /> {action.risk_score || 0}% RISK</div>
-                              <div className="flex items-center gap-1.5">{formatTimestamp(action.timestamp_start)} <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" /></div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="py-8 text-center text-[11px] text-zinc-600 italic">No recent neural activity detected.</div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="pt-6 border-t border-white/5 shrink-0 px-1">
-                    <button onClick={() => router.push(`/workspace?agent_id=${selectedAgent.id}`)} className="w-full flex items-center justify-center gap-2 py-3 bg-brand rounded-xl text-[11px] font-bold text-white hover:bg-brand-hover shadow-lg shadow-brand/20 transition-all active:scale-95 group">Connect to Workspace <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" /></button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-24 flex flex-col items-center gap-6">
-                  <div className="relative"><div className="absolute inset-0 bg-brand/5 blur-2xl rounded-full" /><div className="relative w-16 h-16 rounded-full bg-zinc-900/50 flex items-center justify-center border border-white/5 group-hover:border-brand/20 transition-all"><Search className="text-zinc-700" size={24} /></div></div>
-                  <div className="space-y-2"><p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">No Agent Selected</p><p className="text-[10px] text-zinc-600 leading-relaxed max-w-[200px] mx-auto">Click any node in the neural web to capture its real-time telemetry and decision stream.</p></div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        {/* ROW 3: STATS ROW */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pb-12">
+          <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Neural Links" value={graphData.links.length} color="text-white" /></div>
+          <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Sync Latency" value="12ms" color="text-brand" /></div>
+          <div className="p-4 rounded-xl bg-surface-secondary/30 border border-white/5 backdrop-blur-sm flex items-center justify-center"><StatCompact label="Drift State" value="Nominal" color="text-blue-400" /></div>
         </div>
       </div>
     </PageLayout>
