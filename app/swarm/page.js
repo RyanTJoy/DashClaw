@@ -6,7 +6,7 @@ import {
   Users, Zap, ShieldAlert, MessageSquare, ArrowRight,
   RefreshCw, Activity, Search, MousePointer2, Info,
   History, Target, Shield, Cpu, X, AlertCircle, CheckCircle2,
-  Clock, Terminal, FileText, ChevronRight
+  Clock, Terminal, FileText, ChevronRight, Maximize2
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -47,7 +47,7 @@ export default function SwarmIntelligencePage() {
   // Action Inspection State
   const [inspectedAction, setInspectedAction] = useState(null);
 
-  const { nodesRef, linksRef, nodesMapRef, setNodeFixed, wake } = useForceSimulation({
+  const { nodesRef, linksRef, nodesMapRef, setNodeFixed, wake, expand } = useForceSimulation({
     nodes: graphData.nodes,
     links: graphData.links,
     width: 800,
@@ -465,9 +465,10 @@ export default function SwarmIntelligencePage() {
                   </div>
                 )}
                 <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
-                  <button onClick={() => { setZoom(z => Math.min(10, z * 1.5)); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">+</button>
-                  <button onClick={() => { setZoom(z => Math.max(0.1, z * 0.7)); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">-</button>
-                  <button onClick={() => { setZoom(0.8); setPan({ x: 0, y: 0 }); }} className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors"><RefreshCw size={14} /></button>
+                  <button onClick={() => { setZoom(z => Math.min(10, z * 1.5)); }} title="Zoom In" className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">+</button>
+                  <button onClick={() => { setZoom(z => Math.max(0.1, z * 0.7)); }} title="Zoom Out" className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors">-</button>
+                  <button onClick={() => { setZoom(0.8); setPan({ x: 0, y: 0 }); }} title="Reset View" className="w-8 h-8 rounded-lg bg-black/80 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40 transition-colors"><RefreshCw size={14} /></button>
+                  <button onClick={expand} title="Distribute/Expand Swarm" className="w-8 h-8 rounded-lg bg-black/80 border border-brand/30 text-brand flex items-center justify-center hover:bg-brand/40 transition-all shadow-lg shadow-brand/20 active:scale-90"><Maximize2 size={14} /></button>
                 </div>
               </div>
             </CardContent>

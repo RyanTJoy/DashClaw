@@ -79,6 +79,24 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     if (simulation.current) simulation.current.alpha(0.1).restart();
   }, []);
 
+  const expand = useCallback(() => {
+    if (simulation.current) {
+      // 1. Boost forces to spread them out quickly
+      simulation.current.force('link').distance(250);
+      simulation.current.force('collision').radius(60);
+      simulation.current.alpha(1).restart();
+
+      // 2. Settle back into a more readable 'dispersed' state
+      setTimeout(() => {
+        if (simulation.current) {
+          simulation.current.force('link').distance(140);
+          simulation.current.force('collision').radius(30);
+          simulation.current.alpha(0.3).restart();
+        }
+      }, 800);
+    }
+  }, []);
+
   const setNodeFixed = useCallback((id, x, y) => {
     const node = nodesMapRef.current.get(id);
     if (node) {
@@ -96,5 +114,5 @@ export function useForceSimulation({ nodes: initialNodes, links: initialLinks, w
     }
   }, []);
 
-  return { nodesRef, linksRef, nodesMapRef, setNodeFixed, wake };
+  return { nodesRef, linksRef, nodesMapRef, setNodeFixed, wake, expand };
 }
