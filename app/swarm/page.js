@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Users, Zap, ShieldAlert, MessageSquare, ArrowRight,
-  Filter, RefreshCw, BarChart3, Maximize2, Activity, Terminal
+  Filter, RefreshCw, BarChart3, Maximize2, Activity, Terminal,
+  MousePointer2, Search
 } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
@@ -28,11 +29,16 @@ export default function SwarmIntelligencePage() {
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [livePackets, setLivePackets] = useState([]);
+  
+  // Interaction State
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [dragNodeId, setDragNodeId] = useState(null);
   const [isFocused, setIsFocused] = useState(false);
+
+  const containerRef = useRef(null);
+  const svgRef = useRef(null);
 
   const { nodes, links, setNodeFixed } = useForceSimulation({
     nodes: graphData.nodes,
@@ -40,48 +46,6 @@ export default function SwarmIntelligencePage() {
     width: 800,
     height: 600
   });
-
-  const svgRef = useRef(null);
-
-  const handleMouseDown = (e) => {
-    setIsFocused(true);
-    if (e.target.tagName === 'svg' || e.target.id === 'swarm-bg') {
-      setIsPanning(true);
-      if (e.target.id === 'swarm-bg') {
-        setSelectedAgent(null);
-      }
-    }
-  };
-
-  const handleMouseMove = (e) => {
-    if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (800 / rect.width);
-    const y = (e.clientY - rect.top) * (600 / rect.height);
-
-    if (isPanning) {
-      setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
-    } else if (dragNodeId) {
-      const transformedX = (x - 400 - pan.x) / zoom + 400;
-      const transformedY = (y - 300 - pan.y) / zoom + 300;
-      setNodeFixed(dragNodeId, transformedX, transformedY);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsPanning(false);
-    if (dragNodeId) {
-      setNodeFixed(dragNodeId, null, null);
-      setDragNodeId(null);
-    }
-  };
-
-  const handleWheel = (e) => {
-    if (!isFocused) return; // Prevent zooming unless focused
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prev => Math.max(0.2, Math.min(5, prev * delta)));
-  };
 
   const [agentContext, setAgentContext] = useState({
     loading: false,
@@ -98,6 +62,27 @@ export default function SwarmIntelligencePage() {
     activeLink: null,
     tick: 0,
   });
+
+  // 1. HARD FIX: Scroll Zoom Lock
+  // React's onWheel is passive and cannot prevent page scroll. 
+  // We must use a native listener with { passive: false }.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onNativeWheel = (e) => {
+      // If we aren't focused, let the page scroll naturally
+      if (!isFocused) return;
+
+      // If focused, lock the page and zoom the swarm
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setZoom(z => Math.max(0.2, Math.min(5, z * delta)));
+    };
+
+    el.addEventListener('wheel', onNativeWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onNativeWheel);
+  }, [isFocused]);
 
   const triggerPacket = useCallback((fromId, toId) => {
     if (!fromId || !toId) return;
@@ -166,10 +151,9 @@ export default function SwarmIntelligencePage() {
     return () => clearInterval(interval);
   }, [fetchGraph]);
 
-  // Give the graph some "life" (safe: purely visual). In demo we always animate; in real mode we only animate if there is data.
+  // Visual "Ticks" for simulated communications in demo mode
   useEffect(() => {
-    if (!nodes.length) return;
-    if (!demo && nodes.length < 2) return;
+    if (!nodes.length || !demo) return;
 
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const interval = setInterval(() => {
@@ -181,10 +165,8 @@ export default function SwarmIntelligencePage() {
         tick: prev.tick + 1,
       }));
 
-      if (demo && link) {
-        triggerPacket(link.source, link.target);
-      }
-    }, demo ? 1800 : 3000);
+      if (link) triggerPacket(link.source, link.target);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [nodes, links, demo, triggerPacket]);
@@ -197,18 +179,11 @@ export default function SwarmIntelligencePage() {
     if (!ts) return '--';
     try {
       return new Date(ts).toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
       });
-    } catch {
-      return ts;
-    }
+    } catch { return ts; }
   };
 
-  // Deterministic "role" label for extra flavor without schema changes.
   const getRoleLabel = (agentId) => {
     const roles = ['Ops', 'Research', 'Security', 'Growth', 'Content', 'QA', 'Support', 'Data'];
     const s = String(agentId || '');
@@ -220,7 +195,7 @@ export default function SwarmIntelligencePage() {
   const selectedPartners = useMemo(() => {
     if (!selectedAgent?.id) return [];
     const nodeById = Object.fromEntries(nodes.map((n) => [n.id, n]));
-    const partners = links
+    return links
       .filter(l => l.source === selectedAgent.id || l.target === selectedAgent.id)
       .map((link) => {
         const partnerId = link.source === selectedAgent.id ? link.target : link.source;
@@ -232,60 +207,40 @@ export default function SwarmIntelligencePage() {
         };
       })
       .sort((a, b) => b.weight - a.weight);
-    return partners;
   }, [links, nodes, selectedAgent?.id]);
 
-  // Load "Agent Context" from existing read-only APIs (works in both real + demo).
   useEffect(() => {
     if (!selectedAgent?.id) return;
     const agentId = selectedAgent.id;
-
     const ctrl = new AbortController();
+    
     const load = async () => {
       setAgentContext((prev) => ({ ...prev, loading: true, error: null }));
       try {
-        const qs = (extra = '') => `/api/actions?agent_id=${encodeURIComponent(agentId)}&limit=6${extra}`;
-        const qsMsgs = `/api/messages?agent_id=${encodeURIComponent(agentId)}&limit=6`;
-        const qsGuard = `/api/guard?agent_id=${encodeURIComponent(agentId)}&limit=6`;
-        const qsWorkflows = `/api/workflows?agent_id=${encodeURIComponent(agentId)}&limit=6`;
-        const qsApprovals = `/api/actions?agent_id=${encodeURIComponent(agentId)}&status=pending_approval&limit=6`;
-
-        const [actionsRes, approvalsRes, msgsRes, guardRes, wfRes] = await Promise.all([
-          fetch(qs(), { signal: ctrl.signal }),
-          fetch(qsApprovals, { signal: ctrl.signal }),
-          fetch(qsMsgs, { signal: ctrl.signal }),
-          fetch(qsGuard, { signal: ctrl.signal }),
-          fetch(qsWorkflows, { signal: ctrl.signal }),
+        const qs = (path) => `/api/${path}?agent_id=${encodeURIComponent(agentId)}&limit=6`;
+        const responses = await Promise.all([
+          fetch(qs('actions'), { signal: ctrl.signal }),
+          fetch(qs('actions') + '&status=pending_approval', { signal: ctrl.signal }),
+          fetch(qs('messages'), { signal: ctrl.signal }),
+          fetch(qs('guard'), { signal: ctrl.signal }),
+          fetch(qs('workflows'), { signal: ctrl.signal }),
         ]);
 
-        const safeJson = async (res) => {
-          try { return await res.json(); } catch { return null; }
-        };
-
-        const [actionsJson, approvalsJson, msgsJson, guardJson, wfJson] = await Promise.all([
-          safeJson(actionsRes),
-          safeJson(approvalsJson),
-          safeJson(msgsRes),
-          safeJson(guardRes),
-          safeJson(wfJson),
-        ]);
+        const [actions, approvals, msgs, guard, workflows] = await Promise.all(
+          responses.map(res => res.json().catch(() => null))
+        );
 
         setAgentContext({
-          loading: false,
-          error: null,
-          actions: actionsJson?.actions || [],
-          pendingApprovals: approvalsJson?.actions || [],
-          messages: msgsJson?.messages || [],
-          guard: guardJson?.decisions || guardJson?.guard_decisions || [],
-          workflows: wfJson?.workflows || wfJson?.items || [],
+          loading: false, error: null,
+          actions: actions?.actions || [],
+          pendingApprovals: approvals?.actions || [],
+          messages: msgs?.messages || [],
+          guard: guard?.decisions || guard?.guard_decisions || [],
+          workflows: workflows?.workflows || workflows?.items || [],
         });
       } catch (e) {
         if (e?.name === 'AbortError') return;
-        setAgentContext((prev) => ({
-          ...prev,
-          loading: false,
-          error: 'Failed to load agent context',
-        }));
+        setAgentContext(prev => ({ ...prev, loading: false, error: 'Context sync failed' }));
       }
     };
 
@@ -293,17 +248,48 @@ export default function SwarmIntelligencePage() {
     return () => ctrl.abort();
   }, [selectedAgent?.id]);
 
-  const renderGraph = () => {
-    if (nodes.length === 0) return <EmptyState icon={Users} title="No agents found" description="Connect agents to see the swarm map." />;
+  // SVG Mouse Handlers
+  const handleMouseDown = (e) => {
+    // If user clicked background, deselect current agent
+    if (e.target.id === 'swarm-bg') {
+      setSelectedAgent(null);
+      setIsPanning(true);
+    }
+    setIsFocused(true);
+  };
 
-    const width = 800;
-    const height = 600;
+  const handleMouseMove = (e) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (800 / rect.width);
+    const y = (e.clientY - rect.top) * (600 / rect.height);
+
+    if (isPanning) {
+      setPan(prev => ({ x: prev.x + e.movementX, y: prev.y + e.movementY }));
+    } else if (dragNodeId) {
+      const transformedX = (x - 400 - pan.x) / zoom + 400;
+      const transformedY = (y - 300 - pan.y) / zoom + 300;
+      setNodeFixed(dragNodeId, transformedX, transformedY);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+    if (dragNodeId) {
+      setNodeFixed(dragNodeId, null, null);
+      setDragNodeId(null);
+    }
+  };
+
+  const renderGraph = () => {
+    if (nodes.length === 0 && !loading) return <EmptyState icon={Users} title="Empty Fleet" description="Connect agents to see the neural web." />;
+
     const nodeMap = Object.fromEntries(nodes.map(n => [n.id, n]));
 
     return (
       <div 
-        className={`w-full h-full relative group/graph ${!isFocused ? 'cursor-pointer' : ''}`}
-        onWheel={handleWheel}
+        ref={containerRef}
+        className={`w-full h-full relative group/graph ${!isFocused ? 'cursor-pointer' : 'cursor-move'}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -311,108 +297,74 @@ export default function SwarmIntelligencePage() {
       >
         <svg 
           ref={svgRef}
-          viewBox={`0 0 ${width} ${height}`} 
-          className={`w-full h-full bg-[#0a0a0a] rounded-xl overflow-hidden select-none transition-opacity duration-300 ${isFocused ? 'opacity-100' : 'opacity-60'}`}
+          viewBox={`0 0 800 600`} 
+          className={`w-full h-full bg-[#050505] rounded-xl overflow-hidden select-none transition-opacity duration-500 ${isFocused ? 'opacity-100' : 'opacity-70'}`}
         >
           <defs>
-            <radialGradient id="nodeGradient">
+            <radialGradient id="nodeGlow">
               <stop offset="0%" stopColor="rgba(249, 115, 22, 0.4)" />
               <stop offset="100%" stopColor="transparent" />
             </radialGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
+            <filter id="neuralGlow">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
           </defs>
 
-          {/* Background for clicking/panning */}
-          <rect id="swarm-bg" x="0" y="0" width={width} height={height} fill="transparent" />
+          {/* Hit area for panning and deselection */}
+          <rect id="swarm-bg" x="0" y="0" width="800" height="600" fill="transparent" />
 
-          {/* Transformation Group */}
-          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center' }}>
-            {/* Links */}
+          {/* The Living Web */}
+          <g style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '400px 300px' }} className="transition-transform duration-100">
+            {/* Neural Links */}
             {links.map((link, i) => {
               const s = nodeMap[link.source];
               const t = nodeMap[link.target];
               if (!s || !t) return null;
-              
-              const isHighlighted = (hoveredNode && (link.source === hoveredNode || link.target === hoveredNode));
-              const isActive = activityPulse.activeLink && activityPulse.activeLink.source === link.source && activityPulse.activeLink.target === link.target;
-              
+              const isHighlight = (hoveredNode && (link.source === hoveredNode || link.target === hoveredNode)) || (selectedAgent && (link.source === selectedAgent.id || link.target === selectedAgent.id));
               return (
-                <line
-                  key={`link-${i}`}
-                  x1={s.x} y1={s.y}
-                  x2={t.x} y2={t.y}
-                  stroke={isActive ? 'rgba(249, 115, 22, 0.6)' : isHighlighted ? 'rgba(249, 115, 22, 0.3)' : 'rgba(255,255,255,0.05)'}
-                  strokeWidth={isActive ? 2 : 1}
-                  className="transition-all duration-500"
+                <line key={`l-${i}`} x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+                  stroke={isHighlight ? 'rgba(249, 115, 22, 0.5)' : 'rgba(255,255,255,0.04)'}
+                  strokeWidth={isHighlight ? 2 : 1}
                 />
               );
             })}
 
-            {/* Data Packets */}
-            {livePackets.map(packet => {
-              const s = nodeMap[packet.from];
-              const t = nodeMap[packet.to === 'broadcast' ? nodes[0]?.id : packet.to];
+            {/* Neural Packets */}
+            {livePackets.map(p => {
+              const s = nodeMap[p.from];
+              const t = nodeMap[p.to === 'broadcast' ? nodes[0]?.id : p.to];
               if (!s || !t) return null;
-
               return (
-                <circle key={packet.id} r="3" fill="#f97316" filter="url(#glow)">
-                  <animateMotion
-                    dur="0.8s"
-                    path={`M${s.x},${s.y} L${t.x},${t.y}`}
-                    fill="freeze"
-                  />
+                <circle key={p.id} r="3" fill="#f97316" filter="url(#neuralGlow)">
+                  <animateMotion dur="0.8s" path={`M${s.x},${s.y} L${t.x},${t.y}`} fill="freeze" />
                   <animate attributeName="opacity" values="1;0" dur="0.8s" fill="freeze" />
                 </circle>
               );
             })}
 
-            {/* Nodes */}
+            {/* Agent Nodes */}
             {nodes.map((node) => {
-              const isSelected = selectedAgent?.id === node.id;
-              const isHovered = hoveredNode === node.id;
-              const riskColor = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
+              const isSel = selectedAgent?.id === node.id;
+              const isHov = hoveredNode === node.id;
+              const rCol = node.risk > 70 ? '#ef4444' : node.risk > 40 ? '#eab308' : '#22c55e';
 
               return (
-                <g 
-                  key={node.id} 
+                <g key={node.id} 
                   onMouseEnter={() => setHoveredNode(node.id)}
                   onMouseLeave={() => setHoveredNode(null)}
                   onMouseDown={(e) => { e.stopPropagation(); setDragNodeId(node.id); }}
                   onClick={() => setSelectedAgent(node)}
-                  className="transition-all duration-300 cursor-pointer"
+                  className="cursor-pointer"
                 >
-                  {isHovered && (
-                    <circle cx={node.x} cy={node.y} r={25} fill="url(#nodeGradient)" />
-                  )}
-                  <circle
-                    cx={node.x}
-                    cy={node.y}
-                    r={isSelected ? 12 : isHovered ? 10 : 6}
-                    fill="#111"
-                    stroke={isSelected ? '#f97316' : riskColor}
-                    strokeWidth={isSelected ? 3 : 2}
-                    className="transition-all duration-300"
+                  {(isHov || isSel) && <circle cx={node.x} cy={node.y} r={25} fill="url(#nodeGlow)" />}
+                  <circle cx={node.x} cy={node.y} r={isSel ? 10 : isHov ? 8 : 5}
+                    fill="#111" stroke={isSel ? '#f97316' : rCol} strokeWidth={isSel ? 3 : 2}
                   />
-                  {(isHovered || isSelected || nodes.length < 12) && (
+                  {(isHov || isSel || nodes.length < 10) && (
                     <g>
-                      <rect 
-                        x={node.x - 40} y={node.y + 12} width={80} height={16} 
-                        rx={4} fill="rgba(0,0,0,0.6)" backdropBlur="sm" 
-                      />
-                      <text
-                        x={node.x}
-                        y={node.y + 23}
-                        textAnchor="middle"
-                        fill={isSelected ? 'white' : '#a1a1aa'}
-                        fontSize="9"
-                        className="font-medium pointer-events-none select-none"
-                      >
+                      <rect x={node.x - 30} y={node.y + 10} width={60} height={14} rx={4} fill="rgba(0,0,0,0.7)" />
+                      <text x={node.x} y={node.y + 20} textAnchor="middle" fill={isSel ? 'white' : '#a1a1aa'} fontSize="8" className="font-mono pointer-events-none">
                         {node.name}
                       </text>
                     </g>
@@ -423,36 +375,22 @@ export default function SwarmIntelligencePage() {
           </g>
         </svg>
 
-        {/* Focus Lock Overlay */}
+        {/* Focus & Zoom Overlays */}
         {!isFocused && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
-            <div className="px-4 py-2 rounded-full bg-brand/80 text-white text-xs font-bold uppercase tracking-widest animate-pulse backdrop-blur-md">
-              Click to engage neural zoom
+          <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] pointer-events-none">
+            <div className="flex flex-col items-center gap-2">
+              <MousePointer2 className="text-brand animate-bounce" size={24} />
+              <div className="px-4 py-2 rounded-full bg-brand text-white text-xs font-bold uppercase tracking-widest shadow-2xl border border-white/20">
+                Click to engage neural zoom
+              </div>
             </div>
           </div>
         )}
 
-        {/* Zoom Controls Overlay */}
-        <div className={`absolute top-4 right-4 flex flex-col gap-2 transition-opacity duration-300 ${isFocused ? 'opacity-100' : 'opacity-0'}`}>
-          <button 
-            onClick={() => setZoom(z => Math.min(5, z * 1.2))}
-            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
-          >
-            +
-          </button>
-          <button 
-            onClick={() => setZoom(z => Math.max(0.2, z * 0.8))}
-            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
-          >
-            -
-          </button>
-          <button 
-            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-brand/20 transition-colors"
-            title="Reset view"
-          >
-            <RefreshCw size={14} />
-          </button>
+        <div className={`absolute top-4 right-4 flex flex-col gap-2 transition-all duration-300 ${isFocused ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'}`}>
+          <button onClick={() => setZoom(z => Math.min(5, z * 1.2))} className="w-8 h-8 rounded-lg bg-black/60 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40">+</button>
+          <button onClick={() => setZoom(z => Math.max(0.2, z * 0.8))} className="w-8 h-8 rounded-lg bg-black/60 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40">-</button>
+          <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} className="w-8 h-8 rounded-lg bg-black/60 border border-white/10 text-white flex items-center justify-center hover:bg-brand/40"><RefreshCw size={14} /></button>
         </div>
       </div>
     );
@@ -461,101 +399,47 @@ export default function SwarmIntelligencePage() {
   return (
     <PageLayout
       title="Swarm Intelligence"
-      subtitle="Living operational graph of multi-agent communication and behavior"
+      subtitle="Neural fleet topology: 50 agents synchronized in high-energy drift"
       breadcrumbs={['Operations', 'Swarm']}
-      actions={
-        <button onClick={fetchGraph} className="p-2 text-zinc-400 hover:text-white transition-colors">
-          <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-        </button>
-      }
+      actions={<button onClick={fetchGraph} className="p-2 text-zinc-400 hover:text-white transition-colors"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>}
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-        
-        {/* Left Column: Stats & Map */}
         <div className="lg:col-span-3 space-y-6">
-          
-          {/* Swarm Map */}
-          <Card className="relative overflow-hidden group border-brand/5">
-            <CardHeader className="flex flex-row items-center justify-between border-b border-[rgba(255,255,255,0.04)] py-3">
+          <Card className="relative overflow-hidden group border-brand/10 shadow-2xl">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-white/5 py-3">
               <div className="flex items-center gap-2">
                 <Users size={16} className="text-brand" />
-                <span className="text-sm font-semibold">Live Swarm Map</span>
+                <span className="text-sm font-semibold">Real-Time Swarm Topology</span>
               </div>
               <div className="flex gap-2">
-                <Badge variant="default">{nodes.length} Agents</Badge>
-                <Badge variant="outline">{links.length} Neural Links</Badge>
-                {demo && <Badge variant="outline" className="text-brand border-brand/20">Demo: Neural Activity</Badge>}
+                <Badge variant="default" className="font-mono bg-zinc-900 border-white/10">{nodes.length} SYNCHRONIZED</Badge>
+                {demo && <Badge variant="outline" className="text-brand border-brand/30 bg-brand/5 animate-pulse">NEURAL ACTIVITY DETECTED</Badge>}
               </div>
             </CardHeader>
-            <CardContent className="p-0 h-[500px] bg-[#050505]">
-              {loading && !nodes.length ? (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <div className="w-8 h-8 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
-                  <div className="text-sm text-zinc-500 font-mono uppercase tracking-widest">Synchronizing swarm...</div>
-                </div>
-              ) : (
-                renderGraph()
-              )}
-              
-              {/* Legend Overlay */}
-              <div className="absolute bottom-4 left-4 p-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/5 text-[10px] text-zinc-500 space-y-1.5 shadow-2xl">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#ef4444]" /> Critical Risk
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#eab308]" /> Elevated Risk
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[#22c55e]" /> Nominal Operation
-                </div>
-                <div className="mt-2 pt-2 border-t border-white/5 opacity-60 font-mono flex flex-col gap-1">
-                  <div>• SCROLL TO ZOOM</div>
-                  <div>• DRAG BG TO PAN</div>
-                  <div>• DRAG AGENT TO MOVE</div>
-                  <div>• CLICK EMPTY TO DESELECT</div>
-                </div>
-              </div>
-            </CardContent>
+            <CardContent className="p-0 h-[500px]">{renderGraph()}</CardContent>
           </Card>
 
-          {/* Swarm Health Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-surface-secondary/50 border-white/5">
-              <CardContent className="pt-4 pb-4">
-                <StatCompact label="Active Goals" value={demo ? "3" : "1"} color="text-white" />
-              </CardContent>
-            </Card>
-            <Card className="bg-surface-secondary/50 border-white/5">
-              <CardContent className="pt-4 pb-4">
-                <StatCompact label="Neural Latency" value="12ms" color="text-brand" />
-              </CardContent>
-            </Card>
-            <Card className="bg-surface-secondary/50 border-white/5">
-              <CardContent className="pt-4 pb-4">
-                <StatCompact label="Governance Load" value="4.2%" color="text-blue-400" />
-              </CardContent>
-            </Card>
+            <Card className="bg-surface-secondary/50 border-white/5 shadow-lg"><CardContent className="pt-4 pb-4"><StatCompact label="Neural Links" value={links.length} color="text-white" /></CardContent></Card>
+            <Card className="bg-surface-secondary/50 border-white/5 shadow-lg"><CardContent className="pt-4 pb-4"><StatCompact label="Drift Entropy" value="0.04" color="text-brand" /></CardContent></Card>
+            <Card className="bg-surface-secondary/50 border-white/5 shadow-lg"><CardContent className="pt-4 pb-4"><StatCompact label="Active Goals" value={demo ? "3" : "1"} color="text-blue-400" /></CardContent></Card>
           </div>
         </div>
 
-        {/* Right Column: Agent Detail Panel */}
         <div className="space-y-6">
-          <Card className="h-full border-brand/5">
-            <CardHeader className="border-b border-[rgba(255,255,255,0.04)] py-4">
-              <div className="flex items-center gap-2">
-                <Activity size={16} className="text-zinc-400" />
-                <span className="text-sm font-semibold">Agent Core Context</span>
-              </div>
+          <Card className="h-full border-brand/5 shadow-xl">
+            <CardHeader className="border-b border-white/5 py-4">
+              <div className="flex items-center gap-2"><Activity size={16} className="text-zinc-400" /><span className="text-sm font-semibold">Agent Telemetry</span></div>
             </CardHeader>
             <CardContent className="pt-6">
               {selectedAgent ? (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-bold text-white mb-1">{selectedAgent.name}</h3>
-                    <code className="text-[10px] text-zinc-500 font-mono">{selectedAgent.id}</code>
+                    <code className="text-[10px] text-zinc-500 font-mono break-all">{selectedAgent.id}</code>
                     <div className="mt-2 flex items-center gap-2">
-                      <Badge variant="outline" size="xs" className="bg-white/5">{getRoleLabel(selectedAgent.id)}</Badge>
-                      <Badge variant="outline" size="xs" className="bg-white/5">Swarm: {graphData.swarm_id || 'all'}</Badge>
+                      <Badge variant="outline" size="xs" className="bg-white/5 uppercase tracking-tighter">{getRoleLabel(selectedAgent.id)}</Badge>
+                      <Badge variant="outline" size="xs" className="bg-white/5">SWARM: {graphData.swarm_id || 'all'}</Badge>
                     </div>
                   </div>
 
@@ -565,79 +449,42 @@ export default function SwarmIntelligencePage() {
                       <div className="text-xl font-mono text-white">{selectedAgent.actions}</div>
                     </div>
                     <div className="p-3 rounded-lg bg-surface-tertiary border border-white/5">
-                      <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Risk</div>
-                      <div className={`text-xl font-mono ${selectedAgent.risk > 70 ? 'text-red-400' : 'text-green-400'}`}>
-                        {selectedAgent.risk.toFixed(0)}%
-                      </div>
+                      <div className="text-[10px] text-zinc-500 uppercase font-bold mb-1">Avg Risk</div>
+                      <div className={`text-xl font-mono ${selectedAgent.risk > 70 ? 'text-red-400' : 'text-green-400'}`}>{selectedAgent.risk.toFixed(0)}%</div>
                     </div>
                   </div>
 
-                  {/* Compact Partners */}
                   {selectedPartners.length > 0 && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Neural Partners</h4>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         {selectedPartners.slice(0, 4).map((p, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setSelectedAgent(getAgentDetails(p.partnerId) || { id: p.partnerId, name: p.partnerName, actions: 0, risk: 0 })}
-                            className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/5 hover:border-brand/30 transition-all text-[10px] text-zinc-300"
-                          >
-                            <div className="w-1 h-1 rounded-full bg-brand" />
-                            {p.partnerName}
-                          </button>
+                          <button key={i} onClick={() => setSelectedAgent(getAgentDetails(p.partnerId) || p)} className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 border border-white/10 hover:border-brand/50 transition-all text-[10px] text-zinc-300">{p.partnerName}</button>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Live-ish context */}
-                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {agentContext.pendingApprovals.length > 0 && (
-                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                        <div className="text-[10px] text-amber-400 uppercase font-bold mb-2 flex items-center gap-1.5">
-                          <ShieldAlert size={10} /> Pending Approvals
-                        </div>
-                        {agentContext.pendingApprovals.map((a) => (
-                          <div key={a.action_id} className="text-xs text-amber-200/80 mb-1 last:mb-0">
-                            {a.action_type}: {a.declared_goal?.substring(0, 30)}...
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
+                  <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar border-t border-white/5 pt-4">
                     <div className="space-y-2">
-                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Recent Cycles</h4>
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Latest Neural Loops</h4>
                       {agentContext.actions.slice(0, 3).map((a) => (
-                        <div key={a.action_id} className="p-2 rounded bg-surface-tertiary border border-white/5 flex justify-between items-center">
-                          <div className="min-w-0">
-                            <div className="text-[11px] text-zinc-300 truncate">{a.action_type}</div>
-                            <div className="text-[9px] text-zinc-600 font-mono">{formatTime(a.timestamp_start)}</div>
-                          </div>
-                          <div className={`text-[10px] font-mono ${a.status === 'failed' ? 'text-red-400' : 'text-zinc-500'}`}>
-                            {a.status?.substring(0, 4)}
-                          </div>
+                        <div key={a.action_id} className="p-2 rounded bg-surface-tertiary border border-white/5 flex justify-between items-center group/item">
+                          <div className="min-w-0"><div className="text-[11px] text-zinc-300 truncate font-mono">{a.action_type}</div></div>
+                          <div className={`text-[10px] font-mono ${a.status === 'failed' ? 'text-red-400' : 'text-zinc-600'}`}>{a.status?.substring(0, 4)}</div>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div className="pt-4 border-t border-white/5">
-                    <button
-                      onClick={() => {
-                        setGlobalAgentId?.(selectedAgent.id);
-                        router.push('/workspace');
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-brand/10 border border-brand/20 rounded-lg text-xs font-bold text-brand hover:bg-brand hover:text-white transition-all"
-                    >
-                      Enter Neural Workspace <ArrowRight size={14} />
-                    </button>
+                    <button onClick={() => { setGlobalAgentId?.(selectedAgent.id); router.push('/workspace'); }} className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-brand rounded-lg text-xs font-bold text-white hover:bg-brand-hover shadow-lg transition-all active:scale-95">Open Neural Workspace <ArrowRight size={14} /></button>
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-20">
-                  <Users size={32} className="mx-auto text-zinc-800 mb-4" />
-                  <p className="text-xs text-zinc-500">Select a neural node to engage.</p>
+                <div className="text-center py-20 flex flex-col items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5"><Search className="text-zinc-700" size={20} /></div>
+                  <p className="text-[11px] text-zinc-500 leading-relaxed max-w-[180px]">Select an agent on the map to intercept and inspect its live telemetry stream.</p>
                 </div>
               )}
             </CardContent>
@@ -645,10 +492,7 @@ export default function SwarmIntelligencePage() {
         </div>
       </div>
 
-      {/* Bottom Panel: Live Swarm Log */}
-      <div className="h-80">
-        <SwarmActivityLog />
-      </div>
+      <div className="h-80"><SwarmActivityLog /></div>
     </PageLayout>
   );
 }
