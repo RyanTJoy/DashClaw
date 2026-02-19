@@ -84,6 +84,38 @@ function attachListeners(es) {
     }
   });
 
+  es.addEventListener('loop.created', (e) => {
+    try {
+      broadcast('loop.created', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('loop.updated', (e) => {
+    try {
+      broadcast('loop.updated', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('goal.created', (e) => {
+    try {
+      broadcast('goal.created', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
+  es.addEventListener('goal.updated', (e) => {
+    try {
+      broadcast('goal.updated', JSON.parse(e.data));
+    } catch (err) {
+      console.error('SSE Parse Error:', err);
+    }
+  });
+
   es.addEventListener('signal.detected', (e) => {
     try {
       broadcast('signal.detected', JSON.parse(e.data));

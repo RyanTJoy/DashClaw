@@ -6,6 +6,7 @@ import { getSql as getDbSql } from '../../../lib/db.js';
 import { validateOpenLoop } from '../../../lib/validate.js';
 import { getOrgId } from '../../../lib/org.js';
 import { scanSensitiveData } from '../../../lib/security.js';
+import { publishOrgEvent, EVENTS } from '../../../lib/events.js';
 import crypto from 'crypto';
 
 function redactAny(value, findings) {
@@ -133,7 +134,11 @@ export async function POST(request) {
     }
 
     // Verify parent action exists
-    const action = await sql`SELECT action_id FROM action_records WHERE action_id = ${data.action_id} AND org_id = ${orgId}`;
+    const action = await sql`
+      SELECT action_id, agent_id, agent_name, declared_goal, action_type 
+      FROM action_records 
+      WHERE action_id = ${data.action_id} AND org_id = ${orgId}
+    `;
     if (action.length === 0) {
       return NextResponse.json({ error: 'Parent action not found' }, { status: 404 });
     }
@@ -157,8 +162,25 @@ export async function POST(request) {
       RETURNING *
     `;
 
+    const loop = result[0];
+
+    // Publish event
+    // We attach parent action details to help frontend avoid an extra fetch
+    const eventPayload = {
+      ...loop,
+      agent_id: action[0].agent_id,
+      agent_name: action[0].agent_name || action[0].agent_id,
+      declared_goal: action[0].declared_goal,
+      action_type: action[0].action_type,
+    };
+
+    await publishOrgEvent(EVENTS.LOOP_CREATED, {
+      orgId,
+      loop: eventPayload,
+    });
+
     return NextResponse.json({
-      loop: result[0],
+      loop: eventPayload,
       loop_id,
       security: {
         clean: dlpFindings.length === 0,

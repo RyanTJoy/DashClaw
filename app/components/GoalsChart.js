@@ -9,6 +9,7 @@ import { ProgressBar } from './ui/ProgressBar';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 
 export default function GoalsChart() {
   const [goals, setGoals] = useState([]);
@@ -16,23 +17,30 @@ export default function GoalsChart() {
   const [loading, setLoading] = useState(true);
   const { agentId } = useAgentFilter();
 
-  useEffect(() => {
-    async function fetchGoals() {
-      try {
-        const res = await fetch(`/api/goals${agentId ? `?agent_id=${agentId}` : ''}`);
-        const result = await res.json();
-        setGoals(result.goals || []);
-        setStats(result.stats || {});
-      } catch (error) {
-        console.error('Failed to fetch goals:', error);
-        setGoals([]);
-        setStats({});
-      } finally {
-        setLoading(false);
-      }
+  const fetchGoals = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/goals${agentId ? `?agent_id=${agentId}` : ''}`);
+      const result = await res.json();
+      setGoals(result.goals || []);
+      setStats(result.stats || {});
+    } catch (error) {
+      console.error('Failed to fetch goals:', error);
+      setGoals([]);
+      setStats({});
+    } finally {
+      setLoading(false);
     }
-    fetchGoals();
   }, [agentId]);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
+
+  useRealtime(useCallback((event) => {
+    if (event === 'goal.created' || event === 'goal.updated') {
+      fetchGoals();
+    }
+  }, [fetchGoals]));
 
   if (loading) {
     return <CardSkeleton />;

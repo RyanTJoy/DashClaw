@@ -12,6 +12,10 @@ export const EVENTS = {
   TASK_COMPLETED: 'task.completed',
   DECISION_CREATED: 'decision.created',
   GUARD_DECISION_CREATED: 'guard.decision.created',
+  LOOP_CREATED: 'loop.created',
+  LOOP_UPDATED: 'loop.updated',
+  GOAL_CREATED: 'goal.created',
+  GOAL_UPDATED: 'goal.updated',
 };
 
 const EVENT_VERSION = 'v1';

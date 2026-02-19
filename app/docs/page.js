@@ -401,7 +401,7 @@ try {
             <MethodEntry
               id="events"
               signature="claw.events()"
-              description="Open a persistent SSE connection. Returns a chainable handle with .on(event, callback) and .close(). Supported events: action.created, action.updated, decision.created, guard.decision.created, signal.detected, token.usage, message.created, policy.updated, task.assigned, task.completed."
+              description="Open a persistent SSE connection. Returns a chainable handle with .on(event, callback) and .close(). Supported events: action.created, action.updated, loop.created, loop.updated, goal.created, goal.updated, decision.created, guard.decision.created, signal.detected, token.usage, message.created, policy.updated, task.assigned, task.completed."
               returns="{ on(eventType, callback): this, close(): void }"
               example={`const stream = dc.events();
 
@@ -410,6 +410,10 @@ stream
   .on('action.updated', (data) => {
     if (data.status === 'running') console.log('Approved:', data.action_id);
   })
+  .on('loop.created', (data) => console.log('New dependency:', data.description))
+  .on('loop.updated', (data) => console.log('Loop status changed:', data.status))
+  .on('goal.created', (data) => console.log('New goal:', data.title))
+  .on('goal.updated', (data) => console.log('Goal progress:', data.progress + '%'))
   .on('decision.created', (data) => console.log('Agent decided:', data.decision))
   .on('guard.decision.created', (data) => console.log('Guard:', data.decision))
   .on('signal.detected', (data) => console.log('Alert:', data.label))

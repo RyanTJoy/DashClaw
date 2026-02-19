@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Zap, MessageSquare, Shield, Activity,
-  Clock, ArrowRight, Terminal
+  Clock, ArrowRight, Terminal, Target
 } from 'lucide-react';
 import { Card, CardHeader, CardContent } from './ui/Card';
 import { Badge } from './ui/Badge';
@@ -81,18 +81,18 @@ export default function SwarmActivityLog() {
   useRealtime(useCallback((event, payload) => {
     let newEntry = null;
 
-    if (event === 'action.created') {
+    if (event === 'action.created' || event === 'action.updated') {
       if (agentId && payload.agent_id !== agentId) return;
       newEntry = {
         id: payload.action_id,
         type: 'action',
         agent_id: payload.agent_id,
         text: payload.declared_goal || payload.action_type,
-        timestamp: payload.timestamp_start,
+        timestamp: payload.timestamp_start || payload.timestamp_end,
         status: payload.status
       };
     } else if (event === 'message.created') {
-      const msg = payload.message || payload;
+      const msg = payload;
       if (agentId && msg.from_agent_id !== agentId && msg.to_agent_id !== agentId) return;
       newEntry = {
         id: msg.id,
@@ -102,19 +102,35 @@ export default function SwarmActivityLog() {
         timestamp: msg.created_at
       };
     } else if (event === 'guard.decision.created') {
-      const g = payload.decision;
+      const g = payload;
       if (agentId && g.agent_id !== agentId) return;
       newEntry = {
         id: g.id,
         type: 'guard',
         agent_id: g.agent_id,
-        text: `Policy check: ${g.decision.toUpperCase()} (${g.action_type})`,
+        text: `Policy check: ${g.decision.toUpperCase()} (${g.action_type || 'other'})`,
         timestamp: g.created_at
+      };
+    } else if (event === 'goal.created' || event === 'goal.updated') {
+      const g = payload;
+      if (agentId && g.agent_id !== agentId) return;
+      newEntry = {
+        id: g.id,
+        type: 'goal',
+        agent_id: g.agent_id,
+        text: `${event === 'goal.created' ? 'Created goal' : 'Updated goal'}: ${g.title} (${g.progress}%)`,
+        timestamp: g.created_at || new Date().toISOString()
       };
     }
 
     if (newEntry) {
-      setSignals(prev => [newEntry, ...prev].slice(0, 50));
+      setSignals(prev => {
+        if (event === 'action.updated' || event === 'goal.updated') {
+          return [newEntry, ...prev.filter(p => p.id !== newEntry.id)].slice(0, 50);
+        }
+        if (prev.some(p => p.id === newEntry.id)) return prev;
+        return [newEntry, ...prev].slice(0, 50);
+      });
     }
   }, [agentId]));
 
@@ -141,8 +157,8 @@ export default function SwarmActivityLog() {
           ) : (
             logs.map((log) => {
               const agentColor = getAgentColor(log.agent_id);
-              const Icon = log.type === 'action' ? Zap : log.type === 'message' ? MessageSquare : Shield;
-              const typeColor = log.type === 'action' ? 'text-blue-400' : log.type === 'message' ? 'text-purple-400' : 'text-emerald-400';
+              const Icon = log.type === 'action' ? Zap : log.type === 'message' ? MessageSquare : log.type === 'goal' ? Target : Shield;
+              const typeColor = log.type === 'action' ? 'text-blue-400' : log.type === 'message' ? 'text-purple-400' : log.type === 'goal' ? 'text-emerald-400' : 'text-emerald-400';
 
               return (
                 <div key={log.id} className="flex items-start gap-3 py-1 group border-b border-white/[0.02] last:border-0">

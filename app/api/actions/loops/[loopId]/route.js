@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { getSql as getDbSql } from '../../../../lib/db.js';
 import { getOrgId } from '../../../../lib/org.js';
 import { scanSensitiveData } from '../../../../lib/security.js';
+import { publishOrgEvent, EVENTS } from '../../../../lib/events.js';
 
 function redactAny(value, findings) {
   if (typeof value === 'string') {
@@ -105,8 +106,16 @@ export async function PATCH(request, { params }) {
       RETURNING *
     `;
 
+    const loop = result[0];
+
+    // Publish event
+    await publishOrgEvent(EVENTS.LOOP_UPDATED, {
+      orgId,
+      loop,
+    });
+
     return NextResponse.json({
-      loop: result[0],
+      loop,
       security: {
         clean: dlpFindings.length === 0,
         findings_count: dlpFindings.length,

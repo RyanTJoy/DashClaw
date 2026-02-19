@@ -12,6 +12,7 @@ import { StatCompact } from './ui/Stat';
 import { EmptyState } from './ui/EmptyState';
 import { CardSkeleton } from './ui/Skeleton';
 import { useAgentFilter } from '../lib/AgentFilterContext';
+import { useRealtime } from '../hooks/useRealtime';
 import { useTileSize, fitItems } from '../hooks/useTileSize';
 
 const LOOP_TYPE_ICONS = {
@@ -58,6 +59,39 @@ export default function OpenLoopsCard() {
     }
     fetchLoops();
   }, [agentId]);
+
+  useRealtime(useCallback((event, payload) => {
+    if (event === 'loop.created') {
+      if (agentId && payload.agent_id !== agentId) return;
+      if (payload.status !== 'open') return;
+
+      setLoops(prev => {
+        if (prev.some(l => l.loop_id === payload.loop_id)) return prev;
+        return [payload, ...prev].slice(0, 10);
+      });
+      setStats(prev => ({
+        ...prev,
+        open_count: String(parseInt(prev.open_count || '0', 10) + 1),
+        critical_open: payload.priority === 'critical' ? String(parseInt(prev.critical_open || '0', 10) + 1) : prev.critical_open,
+        high_open: payload.priority === 'high' ? String(parseInt(prev.high_open || '0', 10) + 1) : prev.high_open,
+      }));
+    } else if (event === 'loop.updated') {
+      if (payload.status !== 'open') {
+        // If resolved/cancelled, remove from list and update stats
+        setLoops(prev => prev.filter(l => l.loop_id !== payload.loop_id));
+        setStats(prev => ({
+          ...prev,
+          open_count: String(Math.max(0, parseInt(prev.open_count || '0', 10) - 1)),
+          resolved_count: payload.status === 'resolved' ? String(parseInt(prev.resolved_count || '0', 10) + 1) : prev.resolved_count,
+          critical_open: payload.priority === 'critical' ? String(Math.max(0, parseInt(prev.critical_open || '0', 10) - 1)) : prev.critical_open,
+          high_open: payload.priority === 'high' ? String(Math.max(0, parseInt(prev.high_open || '0', 10) - 1)) : prev.high_open,
+        }));
+      } else {
+        // Just update in list
+        setLoops(prev => prev.map(l => l.loop_id === payload.loop_id ? { ...l, ...payload } : l));
+      }
+    }
+  }, [agentId]));
 
   const handleResolve = useCallback(async (loopId, status) => {
     try {

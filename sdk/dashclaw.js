@@ -553,6 +553,10 @@ class DashClaw {
    * stream
    *   .on('action.created', (data) => console.log('New action:', data))
    *   .on('action.updated', (data) => console.log('Action updated:', data))
+   *   .on('loop.created', (data) => console.log('New loop:', data))
+   *   .on('loop.updated', (data) => console.log('Loop updated:', data))
+   *   .on('goal.created', (data) => console.log('New goal:', data))
+   *   .on('goal.updated', (data) => console.log('Goal updated:', data))
    *   .on('policy.updated', (data) => console.log('Policy changed:', data))
    *   .on('task.assigned', (data) => console.log('Task assigned:', data))
    *   .on('task.completed', (data) => console.log('Task done:', data))
