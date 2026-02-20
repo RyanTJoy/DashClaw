@@ -534,10 +534,13 @@ export default function SwarmIntelligencePage() {
               {context.messages.length > 0 ? (
                 context.messages.map((msg, i) => {
                   const isFromSource = msg.sender_agent_id === link.source;
+                  const senderNode = nodesMapRef.current.get(msg.sender_agent_id);
+                  const senderName = senderNode?.name || msg.sender_agent_id;
+                  
                   return (
                     <div key={i} className={`flex flex-col ${isFromSource ? 'items-start' : 'items-end'}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[9px] font-bold text-zinc-500">{isFromSource ? sourceNode.name : targetNode.name}</span>
+                        <span className="text-[9px] font-bold text-zinc-500">{senderName}</span>
                         <span className="text-[8px] text-zinc-600 font-mono">{formatTimestamp(msg.created_at)}</span>
                       </div>
                       <div className={`p-3 rounded-2xl text-[11px] max-w-[85%] leading-relaxed ${
