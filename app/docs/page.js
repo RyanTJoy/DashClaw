@@ -215,6 +215,9 @@ const navItems = [
   { href: '#agent-messaging', label: 'Agent Messaging' },
   { href: '#sendMessage', label: 'sendMessage', indent: true },
   { href: '#getInbox', label: 'getInbox', indent: true },
+  { href: '#getSentMessages', label: 'getSentMessages', indent: true },
+  { href: '#getMessages', label: 'getMessages', indent: true },
+  { href: '#getMessage', label: 'getMessage', indent: true },
   { href: '#markRead', label: 'markRead', indent: true },
   { href: '#archiveMessages', label: 'archiveMessages', indent: true },
   { href: '#broadcast', label: 'broadcast', indent: true },
@@ -252,7 +255,10 @@ const navItems = [
   { href: '#createAgentSchedule', label: 'createAgentSchedule', indent: true },
   { href: '#agent-pairing', label: 'Agent Pairing' },
   { href: '#createPairing', label: 'createPairing', indent: true },
+  { href: '#getPairing', label: 'getPairing', indent: true },
   { href: '#createPairingFromPrivateJwk', label: 'createPairingFromPrivateJwk', indent: true },
+  { href: '#approveAction', label: 'approveAction', indent: true },
+  { href: '#getPendingApprovals', label: 'getPendingApprovals', indent: true },
   { href: '#waitForPairing', label: 'waitForPairing', indent: true },
   { href: '#identity-binding', label: 'Identity Binding' },
   { href: '#registerIdentity', label: 'registerIdentity', indent: true },
@@ -1784,6 +1790,12 @@ if (result.recommendation === 'block') {
             <MethodEntry id="getInbox" signature="getInbox({ type?, unread?, threadId?, limit? })" description="Get inbox messages for this agent (direct + broadcasts, excluding archived)." params={[{ name: 'type', type: 'string', required: false, desc: 'Filter by message type' }, { name: 'unread', type: 'boolean', required: false, desc: 'Only unread messages' }, { name: 'threadId', type: 'string', required: false, desc: 'Filter by thread' }, { name: 'limit', type: 'number', required: false, desc: 'Max messages (default: 50)' }]} returns="Promise<{messages: Object[], total: number, unread_count: number}>" example={`const { messages, unread_count } = await claw.getInbox({ unread: true });
 console.log(\`\${unread_count} unread messages\`);`} />
 
+            <MethodEntry id="getSentMessages" signature="getSentMessages({ type?, threadId?, limit? })" description="Get messages sent by this agent." params={[{ name: 'type', type: 'string', required: false, desc: 'Filter by message type' }, { name: 'threadId', type: 'string', required: false, desc: 'Filter by thread' }, { name: 'limit', type: 'number', required: false, desc: 'Max messages (default: 50)' }]} returns="Promise<{messages: Object[], total: number}>" example={`const { messages } = await claw.getSentMessages({ type: 'action' });`} />
+
+            <MethodEntry id="getMessages" signature="getMessages({ direction?, type?, unread?, threadId?, limit? })" description="Flexible message query. direction: 'inbox' (default), 'sent', or 'all'." params={[{ name: 'direction', type: 'string', required: false, desc: "'inbox' (default), 'sent', or 'all'" }, { name: 'type', type: 'string', required: false, desc: 'Filter by message type' }, { name: 'unread', type: 'boolean', required: false, desc: 'Only unread messages (inbox direction only)' }, { name: 'threadId', type: 'string', required: false, desc: 'Filter by thread' }, { name: 'limit', type: 'number', required: false, desc: 'Max messages (default: 50)' }]} returns="Promise<{messages: Object[], total: number, unread_count: number}>" example={`const { messages } = await claw.getMessages({ direction: 'all', type: 'question' });`} />
+
+            <MethodEntry id="getMessage" signature="getMessage(messageId)" description="Fetch a single message by ID." params={[{ name: 'messageId', type: 'string', required: true, desc: 'Message ID' }]} returns="Promise<{message: Object}>" example={`const { message } = await claw.getMessage('msg_abc123');`} />
+
             <MethodEntry id="markRead" signature="markRead(messageIds)" description="Mark one or more messages as read." params={[{ name: 'messageIds', type: 'string[]', required: true, desc: 'Array of message IDs' }]} returns="Promise<{updated: number}>" example={`await claw.markRead(['msg_abc123', 'msg_def456']);`} />
 
             <MethodEntry id="archiveMessages" signature="archiveMessages(messageIds)" description="Archive messages (removes from inbox)." params={[{ name: 'messageIds', type: 'string[]', required: true, desc: 'Array of message IDs' }]} returns="Promise<{updated: number}>" example={`await claw.archiveMessages(['msg_abc123']);`} />
@@ -2230,6 +2242,16 @@ schedules.forEach(s => console.log(s.name, s.cron_expression));`}
             />
 
             <MethodEntry
+              id="getPairing"
+              signature="claw.getPairing(pairingId)"
+              description="Fetch a pairing request by ID."
+              params={[
+                { name: 'pairingId', type: 'string', required: true, desc: 'Pairing ID' },
+              ]}
+              returns="Promise<{ pairing: Object }>"
+            />
+
+            <MethodEntry
               id="createPairingFromPrivateJwk"
               signature="claw.createPairingFromPrivateJwk(privateJwk, options?)"
               description="Convenience method: derive a public PEM from a private JWK and create a pairing request in one step."
@@ -2238,6 +2260,31 @@ schedules.forEach(s => console.log(s.name, s.cron_expression));`}
                 { name: 'options.agentName', type: 'string', required: false, desc: 'Agent display name' },
               ]}
               returns="Promise<{ pairing: Object, pairing_url: string }>"
+            />
+
+            <MethodEntry
+              id="approveAction"
+              signature="claw.approveAction(actionId, decision, reasoning?)"
+              description="Approve or deny a pending action as a human operator."
+              params={[
+                { name: 'actionId', type: 'string', required: true, desc: 'Action ID to approve or deny' },
+                { name: 'decision', type: 'string', required: true, desc: "'allow' or 'deny'" },
+                { name: 'reasoning', type: 'string', required: false, desc: 'Optional explanation for the decision' },
+              ]}
+              returns="Promise<{ action: Object }>"
+              example={`await claw.approveAction('act_abc123', 'allow', 'Reviewed and safe to proceed');`}
+            />
+
+            <MethodEntry
+              id="getPendingApprovals"
+              signature="claw.getPendingApprovals({ limit?, offset? })"
+              description="Get all actions currently waiting for human approval."
+              params={[
+                { name: 'limit', type: 'number', required: false, desc: 'Max results (default: 20)' },
+                { name: 'offset', type: 'number', required: false, desc: 'Pagination offset' },
+              ]}
+              returns="Promise<{ actions: Object[], total: number }>"
+              example={`const { actions } = await claw.getPendingApprovals({ limit: 10 });`}
             />
 
             <MethodEntry

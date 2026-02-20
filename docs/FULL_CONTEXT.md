@@ -1,6 +1,6 @@
 # DashClaw — Complete AI Context Document
 
-> **Generated:** 2026-02-17
+> **Generated:** 2026-02-19
 > **Purpose:** Give any AI model full context about the DashClaw platform in a single file.
 > **Source of truth:** `PROJECT_DETAILS.md`, `CLAUDE.md`, `sdk/README.md`, `docs/client-setup-guide.md`
 
@@ -110,11 +110,11 @@ app/
 └── api/                       # All API routes (see Section 5)
 
 sdk/
-├── dashclaw.js                # Node SDK (98+ methods, 23 categories, ESM)
+├── dashclaw.js                # Node SDK (177+ methods, 26 categories, ESM)
 ├── index.cjs                  # CJS wrapper
 
 sdk-python/
-├── dashclaw/client.py         # Python SDK (98+ methods, zero deps)
+├── dashclaw/client.py         # Python SDK (177+ methods, zero deps)
 ├── dashclaw/__init__.py       # Exports: DashClaw, OpenClawAgent, ApprovalDeniedError
 
 middleware.js                  # Auth + rate limiting + org context injection
@@ -603,6 +603,8 @@ const claw = new DashClaw({
 |--------|-------------|
 | `createAction(action)` | Create action record. If `hitlMode: 'wait'`, blocks until approved. |
 | `waitForApproval(actionId, opts?)` | Poll for HITL approval. `opts.useEvents` for SSE mode. |
+| `approveAction(actionId, decision, reasoning?)` | Approve or deny a pending action as operator. decision: 'allow'\|'deny' |
+| `getPendingApprovals({ limit?, offset? })` | Query actions with status=pending_approval |
 | `updateOutcome(actionId, outcome)` | Update status, output, side_effects, cost, etc. |
 | `track(actionDef, asyncFn)` | Wrapper: creates action, runs fn, auto-updates outcome. |
 | `getActions(filters?)` | List actions with filters (agent_id, status, action_type, risk_min). |
@@ -785,12 +787,13 @@ const claw = new DashClaw({
 | `listAgentSchedules(filters?)` | agent_id? filter |
 | `createAgentSchedule(schedule)` | agent_id*, name*, cron_expression*, description?, enabled? |
 
-### Agent Pairing (3 methods)
+### Agent Pairing (4 methods)
 
 | Method | Description |
 |--------|-------------|
 | `createPairing(opts)` | publicKeyPem*, algorithm?, agentName? — returns pairing_url |
 | `createPairingFromPrivateJwk(privateJwk, opts?)` | Derives public PEM from JWK |
+| `getPairing(pairingId)` | Fetch a pairing request by ID |
 | `waitForPairing(pairingId, opts?)` | Poll until approved or expired |
 
 ### Identity Binding (2 methods)
@@ -869,7 +872,7 @@ claw.create_action(
 )
 ```
 
-**Python SDK parity:** 100% (98+ methods across 22 categories). Only `events()` is Node-only (no async generator in Python).
+**Python SDK parity:** 100% (177+ methods across 26 categories). Only `events()` is Node-only (no async generator in Python).
 
 ---
 

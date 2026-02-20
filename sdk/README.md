@@ -1489,6 +1489,42 @@ Get inbox messages for this agent.
 
 **Returns:** `Promise<{messages: Object[], total: number, unread_count: number}>`
 
+### claw.getSentMessages(params?)
+Get messages sent by this agent.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| type | string | No | Filter by message type |
+| threadId | string | No | Filter by thread |
+| limit | number | No | Max messages to return (default: 50) |
+
+**Returns:** `Promise<{messages: Object[], total: number}>`
+
+### claw.getMessages(params?)
+Flexible message query supporting inbox, sent, or all directions.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| direction | string | No | 'inbox' (default), 'sent', or 'all' |
+| type | string | No | Filter by message type |
+| unread | boolean | No | Only unread messages (inbox direction only) |
+| threadId | string | No | Filter by thread |
+| limit | number | No | Max messages to return (default: 50) |
+
+**Returns:** `Promise<{messages: Object[], total: number, unread_count: number}>`
+
+### claw.getMessage(messageId)
+Fetch a single message by ID.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| messageId | string | Yes | Message ID |
+
+**Returns:** `Promise<{message: Object}>`
+
 ### claw.markRead(messageIds)
 Mark messages as read.
 
@@ -1616,6 +1652,16 @@ Create an agent pairing request. Returns a link the user can click to approve th
 
 **Returns:** `Promise<{pairing: Object, pairing_url: string}>`
 
+### claw.getPairing(pairingId)
+Fetch a pairing request by ID.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| pairingId | string | Yes | Pairing ID |
+
+**Returns:** `Promise<{pairing: Object}>`
+
 ### claw.createPairingFromPrivateJwk(privateJwk, options?)
 Convenience method that derives the public PEM from a private JWK and creates a pairing request.
 
@@ -1626,6 +1672,29 @@ Convenience method that derives the public PEM from a private JWK and creates a 
 | options.agentName | string | No | Agent name override |
 
 **Returns:** `Promise<{pairing: Object, pairing_url: string}>`
+
+### claw.approveAction(actionId, decision, reasoning?)
+Approve or deny a pending action as a human operator.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| actionId | string | Yes | Action ID to approve or deny |
+| decision | string | Yes | 'allow' or 'deny' |
+| reasoning | string | No | Optional explanation for the decision |
+
+**Returns:** `Promise<{action: Object}>`
+
+### claw.getPendingApprovals(params?)
+Get all actions currently waiting for human approval.
+
+**Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| limit | number | No | Max results (default: 20) |
+| offset | number | No | Pagination offset |
+
+**Returns:** `Promise<{actions: Object[], total: number}>`
 
 ### claw.waitForPairing(pairingId, options?)
 Poll a pairing request until it is approved or expired.

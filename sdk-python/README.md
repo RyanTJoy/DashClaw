@@ -490,6 +490,9 @@ claw.save_shared_doc(name="Ops Runbook", content="Updated checklist")
 |--------|-------------|
 | `send_message(body, to=None, message_type="info", **kwargs)` | Send a message. Optional: subject, thread_id, attachments (`[{filename, mime_type, data}]`, base64, max 3) |
 | `get_inbox(**filters)` | Get inbox messages. Filters: unread, limit |
+| `get_sent_messages(message_type=None, thread_id=None, limit=None)` | Get messages sent by this agent |
+| `get_messages(direction=None, message_type=None, unread=None, thread_id=None, limit=None)` | Flexible query: direction is 'inbox', 'sent', or 'all' |
+| `get_message(message_id)` | Fetch a single message by ID |
 | `mark_read(message_ids)` | Mark messages as read |
 | `archive_messages(message_ids)` | Archive messages |
 | `broadcast(body, message_type="info", subject=None, thread_id=None)` | Broadcast to all agents |
@@ -855,6 +858,7 @@ status = claw.get_pairing(pairing_id)
 | Method | Description |
 |--------|-------------|
 | `create_pairing(public_key_pem, algorithm="RSASSA-PKCS1-v1_5", agent_name=None)` | Create an agent pairing request |
+| `create_pairing_from_private_jwk(private_jwk, agent_name=None)` | Derive public PEM from JWK dict and create a pairing request |
 | `wait_for_pairing(pairing_id, timeout=300, interval=2)` | Poll a pairing until approved or expired |
 | `get_pairing(pairing_id)` | Get a pairing request by ID |
 

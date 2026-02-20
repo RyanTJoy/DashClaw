@@ -1,7 +1,7 @@
 ---
 source-of-truth: false
 owner: SDK Lead
-last-verified: 2026-02-14
+last-verified: 2026-02-19
 doc-type: architecture
 ---
 
@@ -14,9 +14,25 @@ Baseline parity for critical SDK capabilities, derived from:
 
 ## Snapshot Summary
 
-- Node public methods: `125+`
-- Python public methods: `125+`
+- Node public methods: `177+`
+- Python public methods: `177+`
 - Current parity (method-level, normalized by Node surface): `100%`
+
+## Parity Fix (February 19, 2026)
+
+Four methods were missing from one SDK or the other. Identified by running a normalized camelCase/snake_case diff across both SDK source files.
+
+Node SDK additions:
+- Agent Pairing:
+  - `getPairing` (was missing; Python had `get_pairing`)
+- Actions/Approvals:
+  - `approveAction` (was missing; Python had `approve_action`)
+  - `getPendingApprovals` (was missing; Python had `get_pending_approvals`)
+
+Python SDK additions:
+- Agent Pairing:
+  - `create_pairing_from_private_jwk` (was missing; Node had `createPairingFromPrivateJwk`)
+  - Derives public PEM from JWK dict. Tries `jwcrypto` first, falls back to manual RSA component extraction via `cryptography` hazmat layer.
 
 ## WS5 M2 Critical Domain Delta (February 14, 2026)
 
@@ -106,7 +122,7 @@ Current shared contract cases covered by the harness:
 | Security Scanning | 3 | 3 | Full parity |
 | Agent Messaging | 11 | 11 | Full parity |
 | Behavior Guard | 2 | 2 | Full parity |
-| Agent Pairing | 3 | 3 | Full parity |
+| Agent Pairing | 4 | 4 | Full parity |
 | Identity Binding | 2 | 2 | Full parity |
 | Organization Management | 5 | 5 | Full parity |
 | Activity Logs | 1 | 1 | Full parity |
@@ -122,7 +138,7 @@ Current shared contract cases covered by the harness:
 
 ## Confirmed Missing Python Methods
 
-None — full parity achieved as of February 15, 2026.
+None — full parity confirmed as of February 19, 2026.
 
 ## Full Parity Milestone (February 15, 2026)
 
