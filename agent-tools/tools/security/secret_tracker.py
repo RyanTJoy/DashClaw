@@ -78,7 +78,7 @@ def add_secret(name: str, secret_type: str, service: str = None, location: str =
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (name, secret_type, service, location, created_date, created_date, rotation_days, notes))
         conn.commit()
-        print(f"[OK] Added secret: {name} ({secret_type}) - rotate every {rotation_days} days")
+        print(f"[OK] Added secret '{name}' - rotation interval: {rotation_days} days")
     except sqlite3.IntegrityError:
         print(f"[X] Secret '{name}' already exists. Use 'update' to modify.")
     finally:
