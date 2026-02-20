@@ -28,6 +28,7 @@ export default function SwarmIntelligencePage() {
   // UI State
   const [selectedAgentId, setSelectedAgentId] = useState(null);
   const [hoveredAgentId, setHoveredAgentId] = useState(null);
+  const [selectedLink, setSelectedLink] = useState(null); // { source: nodeId, target: nodeId }
   const [zoom, setZoom] = useState(0.8);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isFocused, setIsFocused] = useState(false);
@@ -37,9 +38,12 @@ export default function SwarmIntelligencePage() {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const dragRef = useRef({ isDragging: false, node: null, hasMoved: false });
+  const hoveredLinkRef = useRef(null);
+  const selectedLinkRef = useRef(null);
   const renderStateRef = useRef({ 
     selectedId: null, 
     hoveredId: null, 
+    selectedLink: null,
     zoom: 0.8, 
     pan: { x: 0, y: 0 } 
   });
@@ -56,17 +60,25 @@ export default function SwarmIntelligencePage() {
 
   // Sync React state to render ref for high-performance canvas access
   useEffect(() => {
+    selectedLinkRef.current = selectedLink;
     renderStateRef.current = { 
       selectedId: selectedAgentId, 
       hoveredId: hoveredAgentId, 
+      selectedLink,
       zoom, 
       pan 
     };
-  }, [selectedAgentId, hoveredAgentId, zoom, pan]);
+  }, [selectedAgentId, hoveredAgentId, selectedLink, zoom, pan]);
 
   const [agentContext, setAgentContext] = useState({
     loading: false,
     actions: [],
+    messages: [],
+  });
+
+  const [linkContext, setLinkContext] = useState({
+    loading: false,
+    shared_actions: [],
     messages: [],
   });
 
@@ -97,9 +109,7 @@ export default function SwarmIntelligencePage() {
       ctx.translate(-400, -300);
 
       // 1. Draw Links
-      ctx.beginPath();
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      const sLink = renderStateRef.current.selectedLink;
       
       for (let i = 0; i < links.length; i++) {
         const link = links[i];
@@ -107,22 +117,37 @@ export default function SwarmIntelligencePage() {
         const t = typeof link.target === 'object' ? link.target : nodesMap.get(link.target);
         if (!s || !t) continue;
         
-        // Highlight links for selected agent (separate pass for highlights would be faster but this is okay if optimized)
-        if (selectedId && (s.id === selectedId || t.id === selectedId)) {
-          ctx.stroke(); // Close current batch
-          ctx.beginPath();
-          ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)';
-          ctx.moveTo(s.x, s.y);
-          ctx.lineTo(t.x, t.y);
-          ctx.stroke();
-          ctx.beginPath(); // Start new batch
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        const isSelectedLink = sLink && (
+          (s.id === sLink.source && t.id === sLink.target) || 
+          (s.id === sLink.target && t.id === sLink.source)
+        );
+        const isHoveredLink = hoveredLinkRef.current && (
+          (s.id === hoveredLinkRef.current.source && t.id === hoveredLinkRef.current.target) || 
+          (s.id === hoveredLinkRef.current.target && t.id === hoveredLinkRef.current.source)
+        );
+
+        ctx.beginPath();
+        if (isSelectedLink) {
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
+        } else if (isHoveredLink) {
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
         } else {
-          ctx.moveTo(s.x, s.y);
-          ctx.lineTo(t.x, t.y);
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
         }
+
+        // Additional highlight for selected agent's links
+        if (!isSelectedLink && !isHoveredLink && selectedId && (s.id === selectedId || t.id === selectedId)) {
+          ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)';
+          ctx.lineWidth = 2;
+        }
+        
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(t.x, t.y);
+        ctx.stroke();
       }
-      ctx.stroke();
 
       // 2. Draw Packets (NO SHADOWS - Performance Killer)
       const now = Date.now();
@@ -207,6 +232,16 @@ export default function SwarmIntelligencePage() {
     return { x: wx, y: wy };
   }, []);
 
+  const pointToLineDistance = (px, py, x1, y1, x2, y2) => {
+    const l2 = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    if (l2 === 0) return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+    let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    const dx = px - (x1 + t * (x2 - x1));
+    const dy = py - (y1 + t * (y2 - y1));
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   const handleMouseDown = (e) => {
     setIsFocused(true);
     const { x, y } = screenToWorld(e.clientX, e.clientY);
@@ -221,9 +256,15 @@ export default function SwarmIntelligencePage() {
     if (clickedNode) {
       dragRef.current = { isDragging: true, node: clickedNode, hasMoved: false };
       setSelectedAgentId(clickedNode.id);
+      setSelectedLink(null);
+    } else if (hoveredLinkRef.current) {
+      dragRef.current = { isDragging: true, node: null, hasMoved: false };
+      setSelectedLink(hoveredLinkRef.current);
+      setSelectedAgentId(null);
     } else {
       dragRef.current = { isDragging: true, node: null, hasMoved: false };
       setSelectedAgentId(null);
+      setSelectedLink(null);
     }
   };
 
@@ -246,6 +287,29 @@ export default function SwarmIntelligencePage() {
         return Math.sqrt(dx * dx + dy * dy) < 30 / z;
       });
       setHoveredAgentId(hovNode?.id || null);
+
+      if (!hovNode) {
+        // Check links
+        let bestLink = null;
+        let minDist = 6; // 6 world-space pixels
+        const links = linksRef.current;
+        const nodesMap = nodesMapRef.current;
+
+        for (const link of links) {
+          const s = typeof link.source === 'object' ? link.source : nodesMap.get(link.source);
+          const t = typeof link.target === 'object' ? link.target : nodesMap.get(link.target);
+          if (!s || !t) continue;
+          
+          const dist = pointToLineDistance(x, y, s.x, s.y, t.x, t.y);
+          if (dist < minDist) {
+            minDist = dist;
+            bestLink = { source: s.id, target: t.id };
+          }
+        }
+        hoveredLinkRef.current = bestLink;
+      } else {
+        hoveredLinkRef.current = null;
+      }
     }
   };
 
@@ -344,6 +408,31 @@ export default function SwarmIntelligencePage() {
     return () => ctrl.abort();
   }, [selectedAgentId]);
 
+  useEffect(() => {
+    if (!selectedLink) {
+      setLinkContext({ loading: false, shared_actions: [], messages: [] });
+      return;
+    }
+    const ctrl = new AbortController();
+    const load = async () => {
+      setLinkContext(prev => ({ ...prev, loading: true }));
+      try {
+        const url = `/api/swarm/link?source=${encodeURIComponent(selectedLink.source)}&target=${encodeURIComponent(selectedLink.target)}`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        const json = await res.json();
+        setLinkContext({ 
+          loading: false, 
+          shared_actions: json.shared_actions || [], 
+          messages: json.messages || [] 
+        });
+      } catch (e) {
+        if (e.name !== 'AbortError') setLinkContext(prev => ({ ...prev, loading: false }));
+      }
+    };
+    load();
+    return () => ctrl.abort();
+  }, [selectedLink]);
+
   const selectedAgent = useMemo(() => 
     nodesRef.current.find(n => n.id === selectedAgentId),
   [selectedAgentId, nodesRef]);
@@ -360,6 +449,114 @@ export default function SwarmIntelligencePage() {
         return { id: pId, name: pNode?.name || pId };
       });
   }, [selectedAgentId, linksRef, nodesRef]);
+
+  const LinkInspectorPanel = ({ link, context, onClose }) => {
+    const [activeTab, setActiveTab] = useState('activity');
+    const sourceNode = nodesMapRef.current.get(link.source);
+    const targetNode = nodesMapRef.current.get(link.target);
+
+    if (!sourceNode || !targetNode) return null;
+
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex-1 flex flex-col min-h-0">
+        <div className="flex justify-between items-start px-1">
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white">
+                {sourceNode.name[0]}
+              </div>
+              <span className="text-[9px] text-zinc-500 mt-1 truncate max-w-[60px]">{sourceNode.name}</span>
+            </div>
+            <ArrowRight size={14} className="text-brand" />
+            <div className="flex flex-col items-center">
+              <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-[10px] font-bold text-white">
+                {targetNode.name[0]}
+              </div>
+              <span className="text-[9px] text-zinc-500 mt-1 truncate max-w-[60px]">{targetNode.name}</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-zinc-500 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex border-b border-white/5 px-1">
+          <button 
+            onClick={() => setActiveTab('activity')}
+            className={`pb-2 px-4 text-[10px] font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'activity' ? 'border-brand text-brand' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+          >
+            Shared Activity
+          </button>
+          <button 
+            onClick={() => setActiveTab('messages')}
+            className={`pb-2 px-4 text-[10px] font-bold uppercase tracking-widest transition-colors border-b-2 ${activeTab === 'messages' ? 'border-brand text-brand' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}
+          >
+            Messages
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-1">
+          {context.loading ? (
+            <div className="py-12 text-center text-[11px] text-zinc-600 animate-pulse">Analyzing neural bridge...</div>
+          ) : activeTab === 'activity' ? (
+            <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
+              {context.shared_actions.length > 0 ? (
+                context.shared_actions.map((action, i) => (
+                  <div 
+                    key={i} 
+                    onClick={() => setInspectedAction(action)}
+                    className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2 hover:bg-white/10 hover:border-brand/20 transition-all cursor-pointer group/action"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span className="text-[12px] font-bold text-white group-hover:text-brand transition-colors truncate max-w-[140px]">{action.action_type}</span>
+                        <span className="text-[9px] text-zinc-500 font-mono mt-0.5">{action.agent_id === link.source ? sourceNode.name : targetNode.name}</span>
+                      </div>
+                      <Badge variant="outline" className={`text-[9px] py-0 px-1.5 border-none font-bold ${
+                        action.status === 'completed' ? 'text-green-400 bg-green-400/10' : 
+                        action.status === 'failed' ? 'text-red-400 bg-red-400/10' : 'text-yellow-400 bg-yellow-400/10'
+                      }`}>
+                        {action.status?.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-zinc-500 font-mono">
+                      <div className="flex items-center gap-1.5"><Target size={10} /> {action.risk_score || 0}% RISK</div>
+                      <div className="flex items-center gap-1.5">{formatTimestamp(action.timestamp_start)} <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" /></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 text-center text-[11px] text-zinc-600 italic">No shared neural activity within sync windows.</div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-0">
+              {context.messages.length > 0 ? (
+                context.messages.map((msg, i) => {
+                  const isFromSource = msg.sender_agent_id === link.source;
+                  return (
+                    <div key={i} className={`flex flex-col ${isFromSource ? 'items-start' : 'items-end'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[9px] font-bold text-zinc-500">{isFromSource ? sourceNode.name : targetNode.name}</span>
+                        <span className="text-[8px] text-zinc-600 font-mono">{formatTimestamp(msg.created_at)}</span>
+                      </div>
+                      <div className={`p-3 rounded-2xl text-[11px] max-w-[85%] leading-relaxed ${
+                        isFromSource ? 'bg-zinc-800/50 rounded-tl-none border border-white/5 text-zinc-300' : 'bg-brand/10 rounded-tr-none border border-brand/20 text-brand-foreground text-zinc-200'
+                      }`}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-12 text-center text-[11px] text-zinc-600 italic">No direct messages recorded between these agents.</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const formatTimestamp = (ts) => {
     if (!ts) return '';
@@ -483,7 +680,13 @@ export default function SwarmIntelligencePage() {
               <CardContent className="pt-6 flex-1 overflow-hidden relative flex flex-col min-h-0">
                 {inspectedAction && <ActionDetailOverlay action={inspectedAction} onClose={() => setInspectedAction(null)} />}
                 
-                {selectedAgent ? (
+                {selectedLink ? (
+                  <LinkInspectorPanel 
+                    link={selectedLink} 
+                    context={linkContext} 
+                    onClose={() => setSelectedLink(null)} 
+                  />
+                ) : selectedAgent ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 flex-1 flex flex-col min-h-0">
                     <div className="relative group shrink-0 px-1">
                       <div className="absolute -inset-2 bg-brand/5 rounded-xl blur-xl group-hover:bg-brand/10 transition-all" />

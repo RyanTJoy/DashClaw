@@ -46,10 +46,10 @@
     ]
   },
   "summary": {
-    "total_routes": 142,
+    "total_routes": 143,
     "stable_routes": 44,
     "beta_routes": 16,
-    "experimental_routes": 82
+    "experimental_routes": 83
   },
   "routes": [
     {
@@ -1310,6 +1310,15 @@
       "maturity": "experimental",
       "matched_prefix": "/api/swarm",
       "file": "app/api/swarm/graph/route.js"
+    },
+    {
+      "path": "/api/swarm/link",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "/api/swarm",
+      "file": "app/api/swarm/link/route.js"
     },
     {
       "path": "/api/sync",

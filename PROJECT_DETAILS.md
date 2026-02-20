@@ -154,6 +154,7 @@ app/
     ├── prompts/               # Prompt management: templates, versions, runs, stats
     ├── scoring/               # Scoring profiles API (GET/POST/PATCH/DELETE) (Phase 7)
     ├── swarm/graph            # Swarm graph data (nodes + links)
+    ├── swarm/link             # Link context: shared activity + messages
     ├── preferences/           # User preferences (observations, prefs, moods, approaches)
     ├── digest/                # Daily digest aggregation (GET only)
     ├── security/scan/         # Content security scanning (POST only)
