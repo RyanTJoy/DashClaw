@@ -132,7 +132,22 @@ export async function listAgentsForOrg(sql, orgId) {
       presenceMap[p.agent_id] = p;
     }
 
-    // Supplemental merge: Add agents that exist in agent_presence but not in other tables
+    // First pass: attach presence to agents already in the list
+    for (const agent of agents) {
+      const p = presenceMap[agent.agent_id];
+      if (p) {
+        agent.status = p.status;
+        agent.last_heartbeat_at = p.last_heartbeat_at;
+        agent.current_task_id = p.current_task_id;
+        try {
+          agent.presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
+        } catch { agent.presence_metadata = {}; }
+      } else {
+        agent.status = 'unknown';
+      }
+    }
+
+    // Second pass: add agents that only exist in agent_presence (heartbeat-only, no actions yet)
     for (const p of presence || []) {
       if (!byId.has(p.agent_id)) {
         let presence_metadata = {};
@@ -150,20 +165,6 @@ export async function listAgentsForOrg(sql, orgId) {
           current_task_id: p.current_task_id,
           presence_metadata,
         });
-      }
-    }
-
-    for (const agent of agents) {
-      const p = presenceMap[agent.agent_id];
-      if (p && !agent.last_heartbeat_at) { // Only fill if not already filled by supplemental merge
-        agent.status = p.status;
-        agent.last_heartbeat_at = p.last_heartbeat_at;
-        agent.current_task_id = p.current_task_id;
-        try {
-          agent.presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
-        } catch { agent.presence_metadata = {}; }
-      } else if (!p) {
-        agent.status = 'unknown';
       }
     }
   } catch (err) {
