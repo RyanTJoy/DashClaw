@@ -25,20 +25,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Incorrect password.' }, { status: 401 });
     }
 
-    if (!crypto.subtle.timingSafeEqual) {
-      // Fallback if timingSafeEqual is not available in the environment (unlikely in Next.js 15 Edge/Node)
-      // but the instruction specifically mentioned timingSafeEqual.
-      // In Web Crypto API it is crypto.subtle.timingSafeEqual but it's for ArrayBuffers.
-      // Actually, crypto.timingSafeEqual is available in Node.js.
-      // Next.js Edge Runtime might have different availability.
-      // However, instruction says "using crypto.timingSafeEqual".
-      // Let's use it as if it's available (it is in Node.js crypto module).
-    }
-
-    // Since we are in a Route Handler, it's likely Node.js runtime unless specified.
-    // Next.js 15 uses Node.js by default for Route Handlers.
-    const crypto = await import('node:crypto');
-    if (!crypto.timingSafeEqual(submittedBuf, actualBuf)) {
+    const nodeCrypto = await import('node:crypto');
+    if (!nodeCrypto.timingSafeEqual(submittedBuf, actualBuf)) {
       await new Promise(r => setTimeout(r, 500));
       return NextResponse.json({ error: 'Incorrect password.' }, { status: 401 });
     }
