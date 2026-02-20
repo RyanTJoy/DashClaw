@@ -55,37 +55,27 @@ The setup script will ask you:
 
 ---
 
-## Step 3: Set Your Admin Password (Recommended)
+## Step 3: Choose How to Sign In
 
-The easiest way to sign in is by setting a local admin password. This avoids the need to set up a GitHub or Google OAuth app.
+### Option A: Admin Password (recommended for solo use — no setup required)
 
-1. Open your `.env.local` file (created by the setup script).
-2. Add this line:
-   ```
-   DASHCLAW_LOCAL_ADMIN_PASSWORD=your-strong-password-here
-   ```
-3. Save the file. You can now sign in using this password on the login page.
+In your `.env.local`, add:
 
----
+    DASHCLAW_LOCAL_ADMIN_PASSWORD=your-strong-password-here
 
-## Step 4: Set Up OAuth (Optional — for inviting teams)
+Start the dashboard and sign in with your password on the login page. Done.
 
-If you want to invite teammates later, you can set up an OAuth provider.
+### Option B: GitHub OAuth (recommended for teams)
 
-### GitHub OAuth
-
-1. Go to [github.com/settings/developers](https://github.com/settings/developers)
-2. Click **New OAuth App**
+1. Go to github.com/settings/developers
+2. Click New OAuth App
 3. Fill in:
-   - **Application name**: `DashClaw`
-   - **Homepage URL**: `http://localhost:3000`
-   - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
-4. Copy the **Client ID** and **Client Secret**
-5. Add to your `.env.local`:
-   ```
+   - Homepage URL: http://localhost:3000 (or your Vercel URL)
+   - Authorization callback URL: http://localhost:3000/api/auth/callback/github
+4. Copy the Client ID and Client Secret
+5. Add to your .env.local:
    GITHUB_ID=your-client-id
    GITHUB_SECRET=your-client-secret
-   ```
 
 ---
 
@@ -144,7 +134,7 @@ Node.js isn't installed. Download it from [nodejs.org](https://nodejs.org/).
 Double-check your connection string. For Docker, make sure Docker Desktop is running.
 
 ### Login page spins forever
-Check that `NEXTAUTH_URL` matches your actual URL and that the GitHub OAuth callback URL is correct.
+If using OAuth: check that `NEXTAUTH_URL` matches your actual URL and that the GitHub OAuth callback URL is correct. If using admin password: check that `DASHCLAW_LOCAL_ADMIN_PASSWORD` is set and the deployment has been restarted after adding it.
 
 ### "Port 3000 is already in use"
 Another app is using that port. Close it, or add `PORT=3001` to `.env.local`.

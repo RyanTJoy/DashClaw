@@ -190,11 +190,10 @@ The fastest path: **Vercel free tier + Neon free tier**. Accessible from any dev
    | `DASHCLAW_API_KEY` | From step 4 (`oc_live_` prefix required) |
    | `ENCRYPTION_KEY` | From step 4 |
    | `CRON_SECRET` | From step 4 |
-   | `DASHCLAW_LOCAL_ADMIN_PASSWORD` | Optional. Enables password login so OAuth is not required. Use a strong password. |
-   | `GITHUB_ID` + `GITHUB_SECRET` | From [OAuth setup](#oauth-setup) |
+   | `DASHCLAW_LOCAL_ADMIN_PASSWORD` | A strong password — lets you sign in without OAuth |
 
 6. Deploy. Tables are created automatically on first request.
-7. Visit your app -> **Dashboard** -> sign in with your Password or GitHub
+7. Visit your app -> **Dashboard** -> sign in with your admin password or OAuth
 
 > Also works on Railway, Fly.io, Render, or any host that runs Node.js.
 
@@ -215,7 +214,7 @@ Mix and match: Vercel + self-hosted Postgres, or local + Neon. DashClaw auto-det
 
 ## OAuth Setup
 
-The dashboard requires at least one OAuth provider.
+OAuth is optional if you set `DASHCLAW_LOCAL_ADMIN_PASSWORD`. You can add an OAuth provider later when you want to invite teammates.
 
 <details>
 <summary><strong>GitHub OAuth</strong></summary>

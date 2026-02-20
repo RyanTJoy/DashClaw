@@ -45,24 +45,13 @@ Go to your dashboard:
 - Visit `YOUR_BASE_URL/dashboard`
 - If auth is enabled, you will be redirected to `YOUR_BASE_URL/login`.
 
-### Authentication Options
-
-**1. Admin Password (Easiest)**
-Set the `DASHCLAW_LOCAL_ADMIN_PASSWORD` environment variable. You can then sign in immediately using this password on the login page. No OAuth setup required.
-
-**2. OAuth (GitHub/Google/OIDC)**
-Configure at least one provider callback URL:
-- GitHub: `http://localhost:3000/api/auth/callback/github`
-- Google: `http://localhost:3000/api/auth/callback/google`
+You can sign in with a local admin password (no OAuth setup required) or with GitHub/Google OAuth. To use admin password mode, set `DASHCLAW_LOCAL_ADMIN_PASSWORD` in your env and restart. To set up OAuth, configure at least one provider callback URL: GitHub at `http://localhost:3000/api/auth/callback/github` or Google at `http://localhost:3000/api/auth/callback/google`.
 
 If you see "redirect_uri is not associated with this application", your OAuth app is missing the callback URL above.
 
 If you only want to preview the UI without login, use the demo sandbox: `YOUR_BASE_URL/demo` (fake data, read-only).
 
-You can sign in with:
-- **Admin Password**
-- **GitHub** (recommended for developers)
-- **Google**
+You can sign in with a local admin password, GitHub, or Google.
 
 After signing in, you'll land on the **Dashboard** with a guided onboarding checklist.
 

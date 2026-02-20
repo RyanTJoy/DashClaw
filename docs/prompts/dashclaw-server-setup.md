@@ -58,9 +58,17 @@ Platform-specific wrappers (check for Node.js first):
 - Windows: `./install-windows.bat`
 - Mac/Linux: `bash ./install-mac.sh`
 
-## Step 4: Set Up OAuth
+## Step 4: Choose How to Sign In
 
-The dashboard requires GitHub or Google OAuth for login.
+### Option A: Admin Password (fastest — no OAuth app required)
+
+Add to `.env.local`:
+
+    DASHCLAW_LOCAL_ADMIN_PASSWORD=your-strong-password-here
+
+Visit the login page and sign in with your password.
+
+### Option B: GitHub OAuth (required for team access)
 
 1. Go to https://github.com/settings/developers → New OAuth App
 2. Callback URL:
