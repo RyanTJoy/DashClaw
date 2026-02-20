@@ -89,11 +89,13 @@ class CostEstimator:
         # URL-based adjustments
         if "url" in kwargs and kwargs["url"]:
             try:
-                domain = urlparse(kwargs["url"]).netloc.lower()
-                if "linkedin.com" in domain:
-                    base_cost = max(base_cost, 50000)
-                elif "github.com" in domain:
-                    base_cost = max(base_cost, 15000)
+                hostname = urlparse(kwargs["url"]).hostname
+                if hostname:
+                    hostname = hostname.lower()
+                    if hostname == "linkedin.com" or hostname.endswith(".linkedin.com"):
+                        base_cost = max(base_cost, 50000)
+                    elif hostname == "github.com" or hostname.endswith(".github.com"):
+                        base_cost = max(base_cost, 15000)
             except Exception:
                 pass
         
