@@ -921,6 +921,38 @@ class DashClaw:
         query = urllib.parse.urlencode({k: v for k, v in filters.items() if v is not None})
         return self._request(f"/api/messages?{query}")
 
+    def get_sent_messages(self, message_type=None, thread_id=None, limit=None):
+        """Get messages sent by this agent."""
+        params = {"agent_id": self.agent_id, "direction": "sent"}
+        if message_type is not None:
+            params["type"] = message_type
+        if thread_id is not None:
+            params["thread_id"] = thread_id
+        if limit is not None:
+            params["limit"] = limit
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+        return self._request(f"/api/messages?{query}")
+
+    def get_messages(self, direction=None, message_type=None, unread=None, thread_id=None, limit=None):
+        """Get messages with full filter control. direction: 'inbox' | 'sent' | 'all'"""
+        params = {"agent_id": self.agent_id}
+        if direction is not None:
+            params["direction"] = direction
+        if message_type is not None:
+            params["type"] = message_type
+        if unread:
+            params["unread"] = "true"
+        if thread_id is not None:
+            params["thread_id"] = thread_id
+        if limit is not None:
+            params["limit"] = limit
+        query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+        return self._request(f"/api/messages?{query}")
+
+    def get_message(self, message_id):
+        """Get a single message by ID."""
+        return self._request(f"/api/messages/{urllib.parse.quote(message_id)}")
+
     def mark_read(self, message_ids):
         return self._request("/api/messages", method="PATCH", body={
             "message_ids": message_ids,
@@ -1175,6 +1207,57 @@ class DashClaw:
             "algorithm": algorithm,
         }
         return self._request("/api/pairings", method="POST", body=payload)
+
+    def create_pairing_from_private_jwk(self, private_jwk, agent_name=None):
+        """Derive a public PEM from a private JWK dict and create a pairing request.
+        Requires the 'cryptography' package (pip install cryptography).
+        """
+        try:
+            from cryptography.hazmat.primitives.serialization import (
+                Encoding, PublicFormat, load_der_private_key
+            )
+            from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
+            import json as json_mod
+
+            # cryptography can load JWK via the jwcrypto or manually; use DER round-trip
+            # The simplest path: serialize JWK -> PEM via cryptography's JWT support isn't
+            # built-in, so use the private key object if already provided, else try jwcrypto.
+            try:
+                from jwcrypto import jwk as jwcrypto_jwk
+                key = jwcrypto_jwk.JWK(**private_jwk)
+                public_pem = key.export_to_pem(private_key=False, password=None).decode("utf-8")
+            except ImportError:
+                # Fallback: try loading via cryptography's hazmat directly from JWK components
+                from cryptography.hazmat.primitives.asymmetric.rsa import (
+                    RSAPrivateNumbers, RSAPublicNumbers, rsa_crt_iqmp, rsa_crt_dmp1, rsa_crt_dmq1
+                )
+                from cryptography.hazmat.backends import default_backend
+
+                def b64url_to_int(s):
+                    import base64
+                    padded = s + '=' * (4 - len(s) % 4)
+                    return int.from_bytes(base64.urlsafe_b64decode(padded), 'big')
+
+                n = b64url_to_int(private_jwk['n'])
+                e = b64url_to_int(private_jwk['e'])
+                d = b64url_to_int(private_jwk['d'])
+                p = b64url_to_int(private_jwk['p'])
+                q = b64url_to_int(private_jwk['q'])
+                dp = b64url_to_int(private_jwk.get('dp') or private_jwk.get('dmp1'))
+                dq = b64url_to_int(private_jwk.get('dq') or private_jwk.get('dmq1'))
+                qi = b64url_to_int(private_jwk.get('qi') or private_jwk.get('iqmp'))
+
+                pub_numbers = RSAPublicNumbers(e, n)
+                priv_numbers = RSAPrivateNumbers(p, q, d, dp, dq, qi, pub_numbers)
+                private_key = priv_numbers.private_key(default_backend())
+                public_pem = private_key.public_key().public_bytes(
+                    Encoding.PEM, PublicFormat.SubjectPublicKeyInfo
+                ).decode("utf-8")
+
+        except Exception as e:
+            raise DashClawError(f"create_pairing_from_private_jwk failed: {e}")
+
+        return self.create_pairing(public_pem, agent_name=agent_name)
 
     def wait_for_pairing(self, pairing_id, timeout=300, interval=2):
         """Poll a pairing until it is approved or expired."""

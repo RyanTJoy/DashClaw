@@ -14,7 +14,7 @@
  * - User Preferences (6)
  * - Daily Digest (1)
  * - Security Scanning (3)
- * - Agent Messaging (9)
+ * - Agent Messaging (12)
  * - Behavior Guard (2)
  * - Agent Pairing (3)
  * - Identity Binding (2)
@@ -223,6 +223,15 @@ class DashClaw {
       await new Promise((r) => setTimeout(r, interval));
     }
     throw new Error('Timed out waiting for pairing approval');
+  }
+
+  /**
+   * Get a pairing request by ID.
+   * @param {string} pairingId
+   * @returns {Promise<{pairing: Object}>}
+   */
+  async getPairing(pairingId) {
+    return this._request(`/api/pairings/${encodeURIComponent(pairingId)}`, 'GET');
   }
 
   /**
@@ -560,6 +569,33 @@ class DashClaw {
     }
 
     throw new Error(`[DashClaw] Timed out waiting for approval of action ${actionId}`);
+  }
+
+  /**
+   * Approve or deny a pending action as a human operator.
+   * @param {string} actionId - The action ID to approve or deny
+   * @param {'allow'|'deny'} decision - The approval decision
+   * @param {string} [reasoning] - Optional reasoning for the decision
+   * @returns {Promise<{action: Object}>}
+   */
+  async approveAction(actionId, decision, reasoning) {
+    if (!['allow', 'deny'].includes(decision)) {
+      throw new Error("decision must be either 'allow' or 'deny'");
+    }
+    const payload = { decision };
+    if (reasoning !== undefined) payload.reasoning = reasoning;
+    return this._request(`/api/actions/${encodeURIComponent(actionId)}/approve`, 'POST', payload);
+  }
+
+  /**
+   * Get all actions currently pending human approval.
+   * @param {Object} [params]
+   * @param {number} [params.limit=20]
+   * @param {number} [params.offset=0]
+   * @returns {Promise<{actions: Object[], total: number}>}
+   */
+  async getPendingApprovals({ limit = 20, offset = 0 } = {}) {
+    return this.getActions({ status: 'pending_approval', limit, offset });
   }
 
   // ══════════════════════════════════════════════
@@ -1746,6 +1782,59 @@ class DashClaw {
     if (threadId) params.set('thread_id', threadId);
     if (limit) params.set('limit', String(limit));
     return this._request(`/api/messages?${params}`, 'GET');
+  }
+
+  /**
+   * Mark messages as read.
+   * @param {string[]} messageIds - Array of message IDs to mark read
+   * @returns {Promise<{updated: number}>}
+   */
+  /**
+   * Get sent messages from this agent.
+   * @param {Object} [params]
+   * @param {string} [params.type] - Filter by message type
+   * @param {string} [params.threadId] - Filter by thread
+   * @param {number} [params.limit=50] - Max messages to return
+   * @returns {Promise<{messages: Object[], total: number}>}
+   */
+  async getSentMessages({ type, threadId, limit } = {}) {
+    const params = new URLSearchParams({
+      agent_id: this.agentId,
+      direction: 'sent',
+    });
+    if (type) params.set('type', type);
+    if (threadId) params.set('thread_id', threadId);
+    if (limit) params.set('limit', String(limit));
+    return this._request(`/api/messages?${params}`, 'GET');
+  }
+
+  /**
+   * Get all messages (inbox + sent) with full filter control.
+   * @param {Object} [params]
+   * @param {string} [params.direction='all'] - 'inbox' | 'sent' | 'all'
+   * @param {string} [params.type] - Filter by message type
+   * @param {boolean} [params.unread] - Only unread messages
+   * @param {string} [params.threadId] - Filter by thread
+   * @param {number} [params.limit=50] - Max messages to return
+   * @returns {Promise<{messages: Object[], total: number, unread_count: number}>}
+   */
+  async getMessages({ direction, type, unread, threadId, limit } = {}) {
+    const params = new URLSearchParams({ agent_id: this.agentId });
+    if (direction) params.set('direction', direction);
+    if (type) params.set('type', type);
+    if (unread) params.set('unread', 'true');
+    if (threadId) params.set('thread_id', threadId);
+    if (limit) params.set('limit', String(limit));
+    return this._request(`/api/messages?${params}`, 'GET');
+  }
+
+  /**
+   * Get a single message by ID.
+   * @param {string} messageId - The message ID (msg_*)
+   * @returns {Promise<{message: Object}>}
+   */
+  async getMessage(messageId) {
+    return this._request(`/api/messages/${encodeURIComponent(messageId)}`, 'GET');
   }
 
   /**
