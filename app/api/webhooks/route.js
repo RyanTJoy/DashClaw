@@ -29,7 +29,7 @@ export async function GET(request) {
     // Mask secrets: show only last 4 chars
     const masked = webhooks.map(wh => ({
       ...wh,
-      secret: wh.secret ? `${'•'.repeat(28)}${wh.secret.slice(-4)}` : null,
+      secret: wh.secret ? `${'•'.repeat(28)}${wh.secret.slice(-6, -2)}` : null,
     }));
 
     return NextResponse.json({ webhooks: masked });
@@ -130,3 +130,5 @@ export async function DELETE(request) {
     return NextResponse.json({ error: 'Failed to delete webhook' }, { status: 500 });
   }
 }
+
+

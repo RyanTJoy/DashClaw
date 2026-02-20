@@ -127,7 +127,7 @@ export async function addDimension(sql, orgId, profileId, data) {
   `;
 
   // Touch parent profile
-  await sql`UPDATE scoring_profiles SET updated_at = now() WHERE id = ${profileId}`;
+  await sql`UPDATE scoring_profiles SET updated_at = now() WHERE id = ${profileId} AND org_id = ${orgId}`;
 
   return { id, profile_id: profileId, name, description, weight, data_source, data_config, scale, sort_order };
 }
@@ -146,7 +146,7 @@ export async function updateDimension(sql, orgId, dimensionId, updates) {
     RETURNING *
   `;
   if (updated) {
-    await sql`UPDATE scoring_profiles SET updated_at = now() WHERE id = ${updated.profile_id}`;
+    await sql`UPDATE scoring_profiles SET updated_at = now() WHERE id = ${updated.profile_id} AND org_id = ${orgId}`;
   }
   return updated || null;
 }
@@ -156,7 +156,7 @@ export async function deleteDimension(sql, orgId, dimensionId) {
     DELETE FROM scoring_dimensions WHERE id = ${dimensionId} AND org_id = ${orgId} RETURNING profile_id
   `;
   if (deleted) {
-    await sql`UPDATE scoring_profiles SET updated_at = now() WHERE id = ${deleted.profile_id}`;
+    await sql`UPDATE scoring_profiles SET updated_at = now() WHERE id = ${deleted.profile_id} AND org_id = ${orgId}`;
   }
   return !!deleted;
 }

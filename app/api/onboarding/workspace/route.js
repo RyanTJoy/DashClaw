@@ -66,7 +66,7 @@ export async function POST(request) {
 
     // Update user to new org as admin
     await sql`
-      UPDATE users SET org_id = ${orgId}, role = 'admin' WHERE id = ${userId}
+      UPDATE users SET org_id = ${orgId}, role = 'admin' WHERE id = ${userId} AND org_id = 'org_default'
     `;
 
     return NextResponse.json({

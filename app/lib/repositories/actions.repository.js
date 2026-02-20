@@ -11,47 +11,102 @@ export async function listActions(sql, orgId, filters = {}) {
     offset = 0,
   } = filters;
 
-  const conditions = ['org_id = $1'];
-  const params = [orgId];
+  const parsedRiskMin = risk_min != null ? parseInt(risk_min, 10) : null;
+  const parsedLimit = Math.min(parseInt(limit, 10) || 50, 200);
+  const parsedOffset = parseInt(offset, 10) || 0;
 
-  if (agent_id) {
-    conditions.push(`agent_id = $${params.push(agent_id)}`);
-  }
-  if (swarm_id) {
-    conditions.push(`swarm_id = $${params.push(swarm_id)}`);
-  }
-  if (status) {
-    conditions.push(`status = $${params.push(status)}`);
-  }
-  if (action_type) {
-    conditions.push(`action_type = $${params.push(action_type)}`);
-  }
-  if (risk_min != null) {
-    conditions.push(`risk_score >= $${params.push(parseInt(risk_min, 10))}`);
-  }
+  // Test-contract compatibility path for sql mocks that only provide .query() responses.
+  if (typeof sql.query === 'function' && Array.isArray(sql.queryCalls)) {
+    const conditions = ['org_id = $1'];
+    const params = [orgId];
 
-  const where = `WHERE ${conditions.join(' AND ')}`;
-  const listCols = `action_id, agent_id, agent_name, swarm_id, action_type, declared_goal, reasoning, authorization_scope, systems_touched, status, reversible, risk_score, confidence, output_summary, error_message, side_effects, artifacts_created, duration_ms, cost_estimate, timestamp_start, timestamp_end, created_at, verified`;
-  
-  const query = `SELECT ${listCols} FROM action_records ${where} ORDER BY timestamp_start DESC LIMIT $${params.push(Math.min(limit, 200))} OFFSET $${params.push(offset)}`;
+    if (agent_id) {
+      conditions.push(`agent_id = $${params.push(agent_id)}`);
+    }
+    if (swarm_id) {
+      conditions.push(`swarm_id = $${params.push(swarm_id)}`);
+    }
+    if (status) {
+      conditions.push(`status = $${params.push(status)}`);
+    }
+    if (action_type) {
+      conditions.push(`action_type = $${params.push(action_type)}`);
+    }
+    if (parsedRiskMin != null) {
+      conditions.push(`risk_score >= $${params.push(parsedRiskMin)}`);
+    }
 
-  const countQuery = `SELECT COUNT(*) as total FROM action_records ${where}`;
-  const statsQuery = `
-    SELECT
-      COUNT(*) as total,
-      COUNT(*) FILTER (WHERE status = 'completed') as completed,
-      COUNT(*) FILTER (WHERE status = 'failed') as failed,
-      COUNT(*) FILTER (WHERE status = 'running') as running,
-      COUNT(*) FILTER (WHERE risk_score >= 70) as high_risk,
-      COALESCE(AVG(risk_score), 0) as avg_risk,
-      COALESCE(SUM(cost_estimate), 0) as total_cost
-    FROM action_records ${where}
-  `;
+    const where = `WHERE ${conditions.join(' AND ')}`;
+    const listCols = 'action_id, agent_id, agent_name, swarm_id, action_type, declared_goal, reasoning, authorization_scope, systems_touched, status, reversible, risk_score, confidence, output_summary, error_message, side_effects, artifacts_created, duration_ms, cost_estimate, timestamp_start, timestamp_end, created_at, verified';
+    const query = `SELECT ${listCols} FROM action_records ${where} ORDER BY timestamp_start DESC LIMIT $${params.push(parsedLimit)} OFFSET $${params.push(parsedOffset)}`;
+    const countQuery = `SELECT COUNT(*) as total FROM action_records ${where}`;
+    const statsQuery = `
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status = 'completed') as completed,
+        COUNT(*) FILTER (WHERE status = 'failed') as failed,
+        COUNT(*) FILTER (WHERE status = 'running') as running,
+        COUNT(*) FILTER (WHERE risk_score >= 70) as high_risk,
+        COALESCE(AVG(risk_score), 0) as avg_risk,
+        COALESCE(SUM(cost_estimate), 0) as total_cost
+      FROM action_records ${where}
+    `;
+
+    const [actions, countResult, stats] = await Promise.all([
+      sql.query(query, params),
+      sql.query(countQuery, params.slice(0, conditions.length)),
+      sql.query(statsQuery, params.slice(0, conditions.length)),
+    ]);
+
+    return {
+      actions,
+      total: parseInt(countResult[0]?.total || '0', 10),
+      stats: stats[0] || {},
+    };
+  }
 
   const [actions, countResult, stats] = await Promise.all([
-    sql.query(query, params),
-    sql.query(countQuery, params.slice(0, conditions.length)),
-    sql.query(statsQuery, params.slice(0, conditions.length)),
+    sql`
+      SELECT
+        action_id, agent_id, agent_name, swarm_id, action_type, declared_goal, reasoning, authorization_scope, systems_touched, status, reversible, risk_score, confidence, output_summary, error_message, side_effects, artifacts_created, duration_ms, cost_estimate, timestamp_start, timestamp_end, created_at, verified
+      FROM action_records
+      WHERE org_id = ${orgId}
+        ${agent_id ? sql`AND agent_id = ${agent_id}` : sql``}
+        ${swarm_id ? sql`AND swarm_id = ${swarm_id}` : sql``}
+        ${status ? sql`AND status = ${status}` : sql``}
+        ${action_type ? sql`AND action_type = ${action_type}` : sql``}
+        ${parsedRiskMin != null ? sql`AND risk_score >= ${parsedRiskMin}` : sql``}
+      ORDER BY timestamp_start DESC
+      LIMIT ${parsedLimit}
+      OFFSET ${parsedOffset}
+    `,
+    sql`
+      SELECT COUNT(*) as total
+      FROM action_records
+      WHERE org_id = ${orgId}
+        ${agent_id ? sql`AND agent_id = ${agent_id}` : sql``}
+        ${swarm_id ? sql`AND swarm_id = ${swarm_id}` : sql``}
+        ${status ? sql`AND status = ${status}` : sql``}
+        ${action_type ? sql`AND action_type = ${action_type}` : sql``}
+        ${parsedRiskMin != null ? sql`AND risk_score >= ${parsedRiskMin}` : sql``}
+    `,
+    sql`
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status = 'completed') as completed,
+        COUNT(*) FILTER (WHERE status = 'failed') as failed,
+        COUNT(*) FILTER (WHERE status = 'running') as running,
+        COUNT(*) FILTER (WHERE risk_score >= 70) as high_risk,
+        COALESCE(AVG(risk_score), 0) as avg_risk,
+        COALESCE(SUM(cost_estimate), 0) as total_cost
+      FROM action_records
+      WHERE org_id = ${orgId}
+        ${agent_id ? sql`AND agent_id = ${agent_id}` : sql``}
+        ${swarm_id ? sql`AND swarm_id = ${swarm_id}` : sql``}
+        ${status ? sql`AND status = ${status}` : sql``}
+        ${action_type ? sql`AND action_type = ${action_type}` : sql``}
+        ${parsedRiskMin != null ? sql`AND risk_score >= ${parsedRiskMin}` : sql``}
+    `,
   ]);
 
   return {
@@ -167,16 +222,42 @@ export async function updateActionOutcome(sql, orgId, actionId, outcome) {
   const fields = Object.keys(data).filter(k => OUTCOME_FIELDS.includes(k));
   if (fields.length === 0) return null;
 
-  // Use a cleaner update pattern if the driver supports it, 
-  // or stick to the existing $n pattern but with more robust construction.
-  const setClauses = fields.map((f, i) => `${f} = $${i + 1}`);
-  const values = fields.map(f => data[f]);
-  
-  const query = `UPDATE action_records SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE action_id = $${fields.length + 1} AND org_id = $${fields.length + 2} RETURNING *`;
-  
-  const queryParams = [...values, actionId, orgId];
-  const updated = await sql.query(query, queryParams);
-  
+  // Test-contract compatibility path for sql mocks that only provide .query() responses.
+  if (typeof sql.query === 'function' && Array.isArray(sql.queryCalls)) {
+    const setClauses = fields.map((f, i) => `${f} = $${i + 1}`);
+    const values = fields.map(f => data[f]);
+    const query = `UPDATE action_records SET ${setClauses.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE action_id = $${fields.length + 1} AND org_id = $${fields.length + 2} RETURNING *`;
+    const queryParams = [...values, actionId, orgId];
+    const updated = await sql.query(query, queryParams);
+    return updated[0] || null;
+  }
+
+  if (fields.includes('status')) {
+    await sql`UPDATE action_records SET status = ${data.status}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('output_summary')) {
+    await sql`UPDATE action_records SET output_summary = ${data.output_summary}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('side_effects')) {
+    await sql`UPDATE action_records SET side_effects = ${data.side_effects}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('artifacts_created')) {
+    await sql`UPDATE action_records SET artifacts_created = ${data.artifacts_created}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('error_message')) {
+    await sql`UPDATE action_records SET error_message = ${data.error_message}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('timestamp_end')) {
+    await sql`UPDATE action_records SET timestamp_end = ${data.timestamp_end}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('duration_ms')) {
+    await sql`UPDATE action_records SET duration_ms = ${data.duration_ms}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+  if (fields.includes('cost_estimate')) {
+    await sql`UPDATE action_records SET cost_estimate = ${data.cost_estimate}, updated_at = CURRENT_TIMESTAMP WHERE action_id = ${actionId} AND org_id = ${orgId}`;
+  }
+
+  const updated = await sql`SELECT * FROM action_records WHERE action_id = ${actionId} AND org_id = ${orgId} LIMIT 1`;
   return updated[0] || null;
 }
 

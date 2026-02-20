@@ -10,44 +10,39 @@ export async function listEvalScores(sql, orgId, filters = {}) {
     offset = 0,
   } = filters;
 
-  let conditions = [`es.org_id = $1`];
-  const params = [orgId];
-
-  if (actionId) {
-    conditions.push(`es.action_id = $${params.push(actionId)}`);
-  }
-  if (scorerName) {
-    conditions.push(`es.scorer_name = $${params.push(scorerName)}`);
-  }
-  if (evaluatedBy) {
-    conditions.push(`es.evaluated_by = $${params.push(evaluatedBy)}`);
-  }
-  if (minScore != null) {
-    conditions.push(`es.score >= $${params.push(parseFloat(minScore))}`);
-  }
-  if (maxScore != null) {
-    conditions.push(`es.score <= $${params.push(parseFloat(maxScore))}`);
-  }
-
-  let joinClause = '';
-  if (agentId) {
-    joinClause = 'LEFT JOIN action_records ar ON es.action_id = ar.action_id';
-    conditions.push(`ar.agent_id = $${params.push(agentId)}`);
-  }
-
-  const where = `WHERE ${conditions.join(' AND ')}`;
-  const query = `
-    SELECT es.* FROM eval_scores es ${joinClause}
-    ${where}
-    ORDER BY es.created_at DESC
-    LIMIT $${params.push(Math.min(limit, 200))} OFFSET $${params.push(offset)}
-  `;
-
-  const countQuery = `SELECT COUNT(*) as total FROM eval_scores es ${joinClause} ${where}`;
+  const parsedMinScore = minScore != null ? parseFloat(minScore) : null;
+  const parsedMaxScore = maxScore != null ? parseFloat(maxScore) : null;
+  const parsedLimit = Math.min(parseInt(limit, 10) || 50, 200);
+  const parsedOffset = parseInt(offset, 10) || 0;
 
   const [scores, countResult] = await Promise.all([
-    sql.query(query, params.slice(0, -2)), // slice off limit/offset for count
-    sql.query(countQuery, params.slice(0, -2)),
+    sql`
+      SELECT es.*
+      FROM eval_scores es
+      ${agentId ? sql`LEFT JOIN action_records ar ON es.action_id = ar.action_id AND ar.org_id = es.org_id` : sql``}
+      WHERE es.org_id = ${orgId}
+        ${actionId ? sql`AND es.action_id = ${actionId}` : sql``}
+        ${scorerName ? sql`AND es.scorer_name = ${scorerName}` : sql``}
+        ${evaluatedBy ? sql`AND es.evaluated_by = ${evaluatedBy}` : sql``}
+        ${parsedMinScore != null ? sql`AND es.score >= ${parsedMinScore}` : sql``}
+        ${parsedMaxScore != null ? sql`AND es.score <= ${parsedMaxScore}` : sql``}
+        ${agentId ? sql`AND ar.agent_id = ${agentId}` : sql``}
+      ORDER BY es.created_at DESC
+      LIMIT ${parsedLimit}
+      OFFSET ${parsedOffset}
+    `,
+    sql`
+      SELECT COUNT(*) as total
+      FROM eval_scores es
+      ${agentId ? sql`LEFT JOIN action_records ar ON es.action_id = ar.action_id AND ar.org_id = es.org_id` : sql``}
+      WHERE es.org_id = ${orgId}
+        ${actionId ? sql`AND es.action_id = ${actionId}` : sql``}
+        ${scorerName ? sql`AND es.scorer_name = ${scorerName}` : sql``}
+        ${evaluatedBy ? sql`AND es.evaluated_by = ${evaluatedBy}` : sql``}
+        ${parsedMinScore != null ? sql`AND es.score >= ${parsedMinScore}` : sql``}
+        ${parsedMaxScore != null ? sql`AND es.score <= ${parsedMaxScore}` : sql``}
+        ${agentId ? sql`AND ar.agent_id = ${agentId}` : sql``}
+    `,
   ]);
 
   return {
@@ -148,8 +143,8 @@ export async function getEvalScorer(sql, orgId, scorerId) {
 export async function listEvalScorers(sql, orgId) {
   return sql`
     SELECT s.*,
-      (SELECT COUNT(*) FROM eval_scores WHERE scorer_id = s.id) AS total_scores,
-      (SELECT AVG(score) FROM eval_scores WHERE scorer_id = s.id) AS avg_score
+      (SELECT COUNT(*) FROM eval_scores WHERE scorer_id = s.id AND org_id = s.org_id) AS total_scores,
+      (SELECT AVG(score) FROM eval_scores WHERE scorer_id = s.id AND org_id = s.org_id) AS avg_score
     FROM eval_scorers s
     WHERE s.org_id = ${orgId}
     ORDER BY s.created_at DESC
@@ -170,19 +165,20 @@ export async function createEvalScorer(sql, orgId, data) {
 
 export async function updateEvalScorer(sql, orgId, scorerId, updates) {
   if (Object.keys(updates).length === 0) return;
-  
-  const fields = [];
-  const values = [orgId, scorerId];
-  
-  Object.entries(updates).forEach(([k, v]) => {
-    if (k === 'config' && typeof v !== 'string') {
-      v = JSON.stringify(v);
-    }
-    fields.push(`${k} = $${values.push(v)}`);
-  });
-  
-  const query = `UPDATE eval_scorers SET ${fields.join(', ')} WHERE org_id = $1 AND id = $2`;
-  await sql.query(query, values);
+
+  if (Object.prototype.hasOwnProperty.call(updates, 'name')) {
+    await sql`UPDATE eval_scorers SET name = ${updates.name}, updated_at = ${new Date().toISOString()} WHERE org_id = ${orgId} AND id = ${scorerId}`;
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'scorer_type')) {
+    await sql`UPDATE eval_scorers SET scorer_type = ${updates.scorer_type}, updated_at = ${new Date().toISOString()} WHERE org_id = ${orgId} AND id = ${scorerId}`;
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'config')) {
+    const configValue = typeof updates.config === 'string' ? updates.config : JSON.stringify(updates.config);
+    await sql`UPDATE eval_scorers SET config = ${configValue}, updated_at = ${new Date().toISOString()} WHERE org_id = ${orgId} AND id = ${scorerId}`;
+  }
+  if (Object.prototype.hasOwnProperty.call(updates, 'description')) {
+    await sql`UPDATE eval_scorers SET description = ${updates.description}, updated_at = ${new Date().toISOString()} WHERE org_id = ${orgId} AND id = ${scorerId}`;
+  }
 }
 
 export async function deleteEvalScorer(sql, orgId, scorerId) {

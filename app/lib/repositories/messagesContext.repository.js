@@ -115,8 +115,8 @@ export async function createMessage(sql, payload) {
   return rows[0] || null;
 }
 
-export async function touchMessageThread(sql, threadId, now) {
-  await sql`UPDATE message_threads SET updated_at = ${now} WHERE id = ${threadId}`;
+export async function touchMessageThread(sql, orgId, threadId, now) {
+  await sql`UPDATE message_threads SET updated_at = ${now} WHERE id = ${threadId} AND org_id = ${orgId}`;
 }
 
 export async function getMessageForUpdate(sql, orgId, messageId) {
@@ -124,16 +124,16 @@ export async function getMessageForUpdate(sql, orgId, messageId) {
   return rows[0] || null;
 }
 
-export async function updateMessageReadBy(sql, messageId, readBy) {
-  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId}`;
+export async function updateMessageReadBy(sql, orgId, messageId, readBy) {
+  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId} AND org_id = ${orgId}`;
 }
 
-export async function markBroadcastRead(sql, messageId, readBy) {
-  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId}`;
+export async function markBroadcastRead(sql, orgId, messageId, readBy) {
+  await sql`UPDATE agent_messages SET read_by = ${JSON.stringify(readBy)} WHERE id = ${messageId} AND org_id = ${orgId}`;
 }
 
-export async function markMessageRead(sql, messageId, now) {
-  await sql`UPDATE agent_messages SET status = 'read', read_at = ${now} WHERE id = ${messageId} AND status = 'sent'`;
+export async function markMessageRead(sql, orgId, messageId, now) {
+  await sql`UPDATE agent_messages SET status = 'read', read_at = ${now} WHERE id = ${messageId} AND org_id = ${orgId} AND status = 'sent'`;
 }
 
 export async function archiveMessage(sql, orgId, messageId, now) {
@@ -150,11 +150,11 @@ export async function getMessagesForUpdate(sql, orgId, messageIds) {
   return sql`SELECT id, to_agent_id, read_by FROM agent_messages WHERE id = ANY(${messageIds}) AND org_id = ${orgId}`;
 }
 
-export async function batchMarkMessagesRead(sql, messageIds, now) {
+export async function batchMarkMessagesRead(sql, orgId, messageIds, now) {
   if (!messageIds || messageIds.length === 0) return 0;
   const rows = await sql`
     UPDATE agent_messages SET status = 'read', read_at = ${now}
-    WHERE id = ANY(${messageIds}) AND status = 'sent'
+    WHERE id = ANY(${messageIds}) AND org_id = ${orgId} AND status = 'sent'
     RETURNING id
   `;
   return rows.length;

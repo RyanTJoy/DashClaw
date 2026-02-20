@@ -232,7 +232,7 @@ export async function executeEvalRun(sql, orgId, runId) {
         status = 'failed',
         error_message = 'AI provider not configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_AI_API_KEY to enable LLM-as-judge scoring.',
         completed_at = ${new Date().toISOString()}
-      WHERE id = ${runId}
+      WHERE id = ${runId} AND org_id = ${orgId}
     `;
     return { success: false, scored: 0, errors: 1, avgScore: null };
   }
@@ -240,7 +240,7 @@ export async function executeEvalRun(sql, orgId, runId) {
   // Mark as running
   await sql`
     UPDATE eval_runs SET status = 'running', started_at = ${new Date().toISOString()}
-    WHERE id = ${runId}
+    WHERE id = ${runId} AND org_id = ${orgId}
   `;
 
   // Build action query from filter_criteria
@@ -278,7 +278,7 @@ export async function executeEvalRun(sql, orgId, runId) {
   const now = new Date().toISOString();
 
   // Update total
-  await sql`UPDATE eval_runs SET total_actions = ${actions.length} WHERE id = ${runId}`;
+  await sql`UPDATE eval_runs SET total_actions = ${actions.length} WHERE id = ${runId} AND org_id = ${orgId}`;
 
   for (const action of actions) {
     let result;
@@ -312,7 +312,7 @@ export async function executeEvalRun(sql, orgId, runId) {
     if (scored % 10 === 0) {
       await sql`
         UPDATE eval_runs SET scored_count = ${scored}
-        WHERE id = ${runId}
+        WHERE id = ${runId} AND org_id = ${orgId}
       `;
     }
   }
@@ -327,7 +327,7 @@ export async function executeEvalRun(sql, orgId, runId) {
       avg_score = ${avgScore},
       summary = ${JSON.stringify({ scored, errors, avg_score: avgScore })},
       completed_at = ${new Date().toISOString()}
-    WHERE id = ${runId}
+    WHERE id = ${runId} AND org_id = ${orgId}
   `;
 
   return { success: true, scored, errors, avgScore };

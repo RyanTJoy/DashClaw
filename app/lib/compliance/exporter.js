@@ -27,7 +27,7 @@ export async function generateExport(request, exportId) {
   if (!exportRecord) throw new Error('Export not found');
 
   // Mark as running
-  await sql`UPDATE compliance_exports SET status = 'running', started_at = NOW() WHERE id = ${exportId}`;
+  await sql`UPDATE compliance_exports SET status = 'running', started_at = NOW() WHERE id = ${exportId} AND org_id = ${orgId}`;
 
   try {
     const frameworks = JSON.parse(typeof exportRecord.frameworks === 'string' ? exportRecord.frameworks : JSON.stringify(exportRecord.frameworks));
@@ -148,12 +148,12 @@ Estimated Total Effort: ${gapAnalysis.summary.estimated_total_effort}
       SET status = 'completed', report_content = ${fullReport}, evidence_summary = ${JSON.stringify(evidenceSummary)},
           snapshot_ids = ${JSON.stringify(snapshotIds)}, file_size_bytes = ${Buffer.byteLength(fullReport, 'utf8')},
           completed_at = NOW()
-      WHERE id = ${exportId}
+      WHERE id = ${exportId} AND org_id = ${orgId}
     `;
 
     return { id: exportId, status: 'completed', file_size_bytes: Buffer.byteLength(fullReport, 'utf8') };
   } catch (err) {
-    await sql`UPDATE compliance_exports SET status = 'failed', error_message = ${err.message}, completed_at = NOW() WHERE id = ${exportId}`;
+    await sql`UPDATE compliance_exports SET status = 'failed', error_message = ${err.message}, completed_at = NOW() WHERE id = ${exportId} AND org_id = ${orgId}`;
     throw err;
   }
 }

@@ -133,3 +133,11 @@ DashClaw supports Vercel Web Analytics (`@vercel/analytics`), but it is intentio
 ## Reporting Security Issues
 
 Please do not open a public issue for security vulnerabilities. Email `practicalsystems@gmail.com` or open a private GitHub security advisory.
+
+## Recent Hardening (2026-02)
+
+- Added org-scoped guard to team member removal update (`/api/team/[userId]`) to prevent cross-tenant race-condition evictions.
+- Added production guard on settings writes: when `NODE_ENV=production` and `ENCRYPTION_KEY` is missing, `/api/settings` POST now returns `503` with a clear misconfiguration error.
+- Added org scoping in prompt version creation paths (`prompt_versions` max-version lookup and parent `prompt_templates` touch update).
+- Added missing `org_id` guards to several `UPDATE`/`DELETE` statements in compliance/export, eval run updates, message/context thread updates, webhook failure counters, scoring profile touch updates, and onboarding user move.
+- Normalized repository SQL in actions/evaluations repositories to Neon tagged-template style where non-standard placeholder/query patterns were used.

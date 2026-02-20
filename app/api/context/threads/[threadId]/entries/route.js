@@ -46,7 +46,7 @@ export async function POST(request, { params }) {
     `;
 
     // Update thread's updated_at
-    await sql`UPDATE context_threads SET updated_at = ${now} WHERE id = ${threadId}`;
+    await sql`UPDATE context_threads SET updated_at = ${now} WHERE id = ${threadId} AND org_id = ${orgId}`;
 
     return NextResponse.json({ entry: result[0], entry_id: id }, { status: 201 });
   } catch (error) {

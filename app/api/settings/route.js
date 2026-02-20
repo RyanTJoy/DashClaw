@@ -77,6 +77,13 @@ export async function GET(request) {
 // Accepts optional agent_id in body for per-agent settings
 export async function POST(request) {
   try {
+    if (process.env.NODE_ENV === 'production' && !process.env.ENCRYPTION_KEY) {
+      return NextResponse.json(
+        { error: 'Server misconfigured: ENCRYPTION_KEY is required in production to protect sensitive settings.' },
+        { status: 503 }
+      );
+    }
+
     const sql = getSql();
     await ensureSettingsTable(sql);
     const orgId = getOrgId(request);

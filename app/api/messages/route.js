@@ -189,7 +189,7 @@ export async function POST(request) {
     }
 
     if (thread_id) {
-      await touchMessageThread(sql, thread_id, now);
+      await touchMessageThread(sql, orgId, thread_id, now);
     }
 
     const messageWithAttachments = { ...created, attachments: createdAttachments };
@@ -253,12 +253,12 @@ export async function PATCH(request) {
       }
 
       // Batch update targeted messages in one query
-      const directCount = await batchMarkMessagesRead(sql, directReadIds, now);
+      const directCount = await batchMarkMessagesRead(sql, orgId, directReadIds, now);
       updated += directCount;
 
       // Broadcast read_by updates must remain per-message (each has unique read_by array)
       for (const { id, readBy } of broadcastUpdates) {
-        await markBroadcastRead(sql, id, readBy);
+        await markBroadcastRead(sql, orgId, id, readBy);
         updated++;
       }
     } else {

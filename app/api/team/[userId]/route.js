@@ -134,7 +134,7 @@ export async function DELETE(request, { params }) {
 
     // Move user back to org_default with role member
     await sql`
-      UPDATE users SET org_id = 'org_default', role = 'member' WHERE id = ${userId}
+      UPDATE users SET org_id = 'org_default', role = 'member' WHERE id = ${userId} AND org_id = ${orgId}
     `;
 
     // Fire-and-forget meter decrement

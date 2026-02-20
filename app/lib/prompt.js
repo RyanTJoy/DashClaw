@@ -135,7 +135,7 @@ export async function createVersion(request, templateId, { content, model_hint, 
 
   // Get next version number
   const maxRows = await sql`
-    SELECT COALESCE(MAX(version), 0) AS max_version FROM prompt_versions WHERE template_id = ${templateId}
+    SELECT COALESCE(MAX(version), 0) AS max_version FROM prompt_versions WHERE template_id = ${templateId} AND org_id = ${orgId}
   `;
   const nextVersion = (maxRows[0]?.max_version || 0) + 1;
 
@@ -145,7 +145,7 @@ export async function createVersion(request, templateId, { content, model_hint, 
   `;
 
   // Update template updated_at
-  await sql`UPDATE prompt_templates SET updated_at = NOW() WHERE id = ${templateId}`;
+  await sql`UPDATE prompt_templates SET updated_at = NOW() WHERE id = ${templateId} AND org_id = ${orgId}`;
 
   return { id, template_id: templateId, version: nextVersion, content, is_active: false };
 }
