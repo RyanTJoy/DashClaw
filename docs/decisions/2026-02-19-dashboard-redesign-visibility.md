@@ -27,7 +27,7 @@ doc-type: decision
     - Used `localStorage` (`dashclaw_hidden_tiles`) for persistent visibility state.
     - Filtered both the grid items and the layout configurations to maintain grid integrity when tiles are hidden.
 3.  **Versioned Layout State:**
-    - Incremented `LAYOUT_VERSION` to `4` in `dashboardLayoutState.js` to force-refresh all client dashboards to the new redesigned and fixed layout.
+    - Incremented `LAYOUT_VERSION` to `5` in `dashboardLayoutState.js` to force-refresh all client dashboards to the new redesigned and fixed layout.
 
 ## Fixes Included
 1.  **ScoringProfileCard Structural Fix:** Corrected a bug where the card would render `null` during loading, causing the grid cell to collapse and the resize handle to float. It now uses `CardSkeleton` for proper layout preservation and `h-full` to correctly fill the grid cell.

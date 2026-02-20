@@ -131,17 +131,38 @@ export async function listAgentsForOrg(sql, orgId) {
     for (const p of presence || []) {
       presenceMap[p.agent_id] = p;
     }
+
+    // Supplemental merge: Add agents that exist in agent_presence but not in other tables
+    for (const p of presence || []) {
+      if (!byId.has(p.agent_id)) {
+        let presence_metadata = {};
+        try {
+          presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
+        } catch { presence_metadata = {}; }
+
+        agents.push({
+          agent_id: p.agent_id,
+          agent_name: p.agent_name || p.agent_id,
+          action_count: 0,
+          last_active: p.last_heartbeat_at,
+          status: p.status,
+          last_heartbeat_at: p.last_heartbeat_at,
+          current_task_id: p.current_task_id,
+          presence_metadata,
+        });
+      }
+    }
+
     for (const agent of agents) {
       const p = presenceMap[agent.agent_id];
-      if (p) {
+      if (p && !agent.last_heartbeat_at) { // Only fill if not already filled by supplemental merge
         agent.status = p.status;
         agent.last_heartbeat_at = p.last_heartbeat_at;
         agent.current_task_id = p.current_task_id;
-        // metadata is a string in the DB if we use sql.query, or we might need to parse it
         try {
           agent.presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
         } catch { agent.presence_metadata = {}; }
-      } else {
+      } else if (!p) {
         agent.status = 'unknown';
       }
     }

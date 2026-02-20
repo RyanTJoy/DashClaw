@@ -41,9 +41,14 @@ export default function FleetPresenceCard() {
   if (loading) return <CardSkeleton />;
 
   const isOnline = (agent) => {
-    if (!agent.last_heartbeat_at) return false;
-    const diff = Date.now() - new Date(agent.last_heartbeat_at).getTime();
-    return diff < 10 * 60 * 1000; // 10 minutes
+    const tenMin = 10 * 60 * 1000;
+    if (agent.last_heartbeat_at) {
+      return Date.now() - new Date(agent.last_heartbeat_at).getTime() < tenMin;
+    }
+    if (agent.status === 'online' && agent.last_active) {
+      return Date.now() - new Date(agent.last_active).getTime() < tenMin;
+    }
+    return false;
   };
 
   const onlineAgents = agents.filter(isOnline);
