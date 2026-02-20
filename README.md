@@ -190,6 +190,7 @@ The fastest path: **Vercel free tier + Neon free tier**. Accessible from any dev
    | `DASHCLAW_API_KEY` | From step 4 (`oc_live_` prefix required) |
    | `ENCRYPTION_KEY` | From step 4 |
    | `CRON_SECRET` | From step 4 |
+   | `DASHCLAW_LOCAL_ADMIN_PASSWORD` | Optional. Enables password login so OAuth is not required. Use a strong password. |
    | `GITHUB_ID` + `GITHUB_SECRET` | From [OAuth setup](#oauth-setup) |
 
 6. Deploy. Tables are created automatically on first request.

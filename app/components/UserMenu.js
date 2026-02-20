@@ -26,9 +26,7 @@ export default function UserMenu() {
     return <div className="w-8 h-8 rounded-full bg-zinc-800 animate-pulse" />;
   }
 
-  if (!session?.user) return null;
-
-  const { user } = session;
+  const { user } = session || { user: { name: 'Local Admin', email: 'Admin Mode' } };
 
   return (
     <div className="relative" ref={menuRef}>
@@ -61,7 +59,10 @@ export default function UserMenu() {
           {!isDemo && (
             <div className="p-1.5">
               <button
-                onClick={() => signOut({ callbackUrl: '/' })}
+                onClick={async () => {
+                  await fetch('/api/auth/local', { method: 'DELETE' });
+                  signOut({ callbackUrl: '/' });
+                }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white hover:bg-[rgba(255,255,255,0.06)] rounded-md transition-colors"
               >
                 <LogOut size={14} />

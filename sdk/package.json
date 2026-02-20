@@ -1,6 +1,6 @@
 {
   "name": "dashclaw",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Full-featured agent toolkit for the DashClaw platform. 178+ methods across 30+ categories for governance and orchestration.",
   "type": "module",
   "publishConfig": {

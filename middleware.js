@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { jwtVerify } from 'jose';
 import { neon } from '@neondatabase/serverless';
 import { getDemoFixtures } from './app/lib/demo/demoFixtures.js';
 
@@ -22,6 +23,21 @@ const PUBLIC_ROUTES = [
   '/api/prompts',
   '/practical-systems',
 ];
+
+const LOCAL_SESSION_COOKIE = 'dashclaw-local-session';
+
+async function getLocalAdminSession(request) {
+  const cookie = request.cookies.get(LOCAL_SESSION_COOKIE);
+  if (!cookie?.value) return null;
+  try {
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
+    const { payload } = await jwtVerify(cookie.value, secret);
+    if (payload.provider !== 'local') return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
 
 function getDashclawMode() {
   return process.env.DASHCLAW_MODE || 'self_host';
@@ -1473,7 +1489,10 @@ export async function middleware(request) {
 
     // All other matched page routes — require session
     if (!token) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      const localSession = await getLocalAdminSession(request);
+      if (!localSession) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
     }
     return NextResponse.next();
   }
@@ -1588,14 +1607,19 @@ export async function middleware(request) {
 
       if (isSameOrigin) {
         // Resolve org from NextAuth session token
-        const sessionToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+        let sessionToken = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
         
         if (!sessionToken) {
-          return NextResponse.json({ error: 'Unauthorized - Session required' }, { status: 401 });
+          const localSession = await getLocalAdminSession(request);
+          if (!localSession) {
+            return NextResponse.json({ error: 'Unauthorized - Session required' }, { status: 401 });
+          }
+          sessionToken = localSession;
         }
 
         const orgId = sessionToken.orgId || 'org_default';
         const role = sessionToken.role || 'member';
+        const userId = sessionToken.userId || (sessionToken.sub === 'local-admin' ? 'usr_local_admin' : '');
 
 
         // SECURITY: Users on org_default are only allowed to access onboarding and health APIs
