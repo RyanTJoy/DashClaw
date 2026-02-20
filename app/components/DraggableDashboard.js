@@ -87,54 +87,71 @@ const SHARED_CONSTRAINTS = { maxW: 4, maxH: 8, minW: 1, minH: 2 };
 
 const DEFAULT_LAYOUTS = {
   lg: [
+    // Row 1: Fleet status full width
     { i: 'fleet-presence',    x: 0, y: 0,  w: 4, h: 2, ...SHARED_CONSTRAINTS },
+
+    // Row 2: Primary ops
     { i: 'risk-signals',      x: 0, y: 2,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
     { i: 'recent-actions',    x: 2, y: 2,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
+
+    // Row 3: Timeline + secondary ops
     { i: 'activity-timeline', x: 0, y: 5,  w: 2, h: 4, ...SHARED_CONSTRAINTS, minW: 2 },
     { i: 'open-loops',        x: 2, y: 5,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'follow-ups',        x: 3, y: 5,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+
+    // Row 4: Intelligence
     { i: 'velocity',          x: 2, y: 7,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'learning',          x: 3, y: 7,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+
+    // Row 5: Quality and evaluation
     { i: 'eval-scores',       x: 0, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'feedback',          x: 1, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'drift',             x: 2, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'scoring',           x: 3, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+
+    // Row 6: Communication
     { i: 'prompt-stats',      x: 0, y: 11, w: 2, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'recent-messages',   x: 2, y: 11, w: 2, h: 2, ...SHARED_CONSTRAINTS },
+
+    // Row 7: Goals and projects
     { i: 'goals',             x: 0, y: 13, w: 2, h: 3, ...SHARED_CONSTRAINTS },
     { i: 'projects',          x: 2, y: 13, w: 2, h: 3, ...SHARED_CONSTRAINTS },
+
+    // Row 8: Supporting tools
     { i: 'context',           x: 0, y: 16, w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'token-budget',      x: 1, y: 16, w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'memory-health',     x: 2, y: 16, w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'calendar',          x: 3, y: 16, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+
+    // Row 9: Supplemental
     { i: 'token-chart',       x: 0, y: 18, w: 2, h: 2, ...SHARED_CONSTRAINTS, minW: 2 },
     { i: 'inspiration',       x: 2, y: 18, w: 1, h: 2, ...SHARED_CONSTRAINTS },
     { i: 'integrations',      x: 3, y: 18, w: 1, h: 2, ...SHARED_CONSTRAINTS },
   ],
   md: [
     { i: 'fleet-presence',    x: 0, y: 0,  w: 2, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'risk-signals',      x: 0, y: 2,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
-    { i: 'recent-actions',    x: 0, y: 5,  w: 2, h: 3, ...SHARED_CONSTRAINTS },
-    { i: 'activity-timeline', x: 0, y: 8,  w: 2, h: 4, ...SHARED_CONSTRAINTS, minW: 2 },
-    { i: 'open-loops',        x: 0, y: 12, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'follow-ups',        x: 1, y: 12, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'velocity',          x: 0, y: 14, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'learning',          x: 1, y: 14, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'eval-scores',       x: 0, y: 16, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'feedback',          x: 1, y: 16, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'drift',             x: 0, y: 18, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'scoring',           x: 1, y: 18, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'prompt-stats',      x: 0, y: 20, w: 2, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'recent-messages',   x: 0, y: 22, w: 2, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'goals',             x: 0, y: 24, w: 2, h: 3, ...SHARED_CONSTRAINTS },
-    { i: 'projects',          x: 0, y: 27, w: 2, h: 3, ...SHARED_CONSTRAINTS },
-    { i: 'context',           x: 0, y: 30, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'token-budget',      x: 1, y: 30, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'memory-health',     x: 0, y: 32, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'calendar',          x: 1, y: 32, w: 1, h: 3, ...SHARED_CONSTRAINTS },
-    { i: 'token-chart',       x: 0, y: 35, w: 2, h: 2, ...SHARED_CONSTRAINTS, minW: 2 },
-    { i: 'inspiration',       x: 0, y: 37, w: 1, h: 2, ...SHARED_CONSTRAINTS },
-    { i: 'integrations',      x: 1, y: 37, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'risk-signals',      x: 0, y: 2,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'recent-actions',    x: 1, y: 2,  w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'activity-timeline', x: 0, y: 5,  w: 2, h: 4, ...SHARED_CONSTRAINTS, minW: 2 },
+    { i: 'open-loops',        x: 0, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'follow-ups',        x: 1, y: 9,  w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'velocity',          x: 0, y: 11, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'learning',          x: 1, y: 11, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'eval-scores',       x: 0, y: 13, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'feedback',          x: 1, y: 13, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'drift',             x: 0, y: 15, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'scoring',           x: 1, y: 15, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'prompt-stats',      x: 0, y: 17, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'recent-messages',   x: 1, y: 17, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'goals',             x: 0, y: 19, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'projects',          x: 1, y: 19, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'context',           x: 0, y: 22, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'token-budget',      x: 1, y: 22, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'memory-health',     x: 0, y: 24, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'calendar',          x: 1, y: 24, w: 1, h: 3, ...SHARED_CONSTRAINTS },
+    { i: 'token-chart',       x: 0, y: 27, w: 2, h: 2, ...SHARED_CONSTRAINTS, minW: 2 },
+    { i: 'inspiration',       x: 0, y: 29, w: 1, h: 2, ...SHARED_CONSTRAINTS },
+    { i: 'integrations',      x: 1, y: 29, w: 1, h: 2, ...SHARED_CONSTRAINTS },
   ],
   sm: [
     { i: 'fleet-presence',    x: 0, y: 0,  w: 1, h: 2, ...SHARED_CONSTRAINTS },

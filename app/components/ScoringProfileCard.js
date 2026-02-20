@@ -1,10 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card } from './ui/Card';
+import Link from 'next/link';
+import { Target, ArrowRight } from 'lucide-react';
+import { Card, CardHeader, CardContent } from './ui/Card';
+import { StatCompact } from './ui/Stat';
+import { CardSkeleton } from './ui/Skeleton';
 
 export default function ScoringProfileCard() {
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch('/api/scoring/profiles')
@@ -18,27 +23,30 @@ export default function ScoringProfileCard() {
           });
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  if (!data) return null;
+  if (loading) return <CardSkeleton />;
 
   return (
-    <Card className="p-4">
-      <h3 className="text-sm font-medium text-zinc-400 mb-3">Scoring Profiles</h3>
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <div className="text-2xl font-bold text-white">{data.active}</div>
-          <div className="text-xs text-zinc-500">Active profiles</div>
+    <Card className="h-full">
+      <CardHeader 
+        title="Scoring Profiles" 
+        icon={Target}
+        action={
+          <Link href="/scoring" className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors">
+            Manage <ArrowRight size={12} />
+          </Link>
+        }
+      />
+      <CardContent className="flex flex-col h-full justify-center">
+        <div className="flex items-center justify-around">
+          <StatCompact label="Active" value={data?.active || 0} color="text-brand" />
+          <StatCompact label="Dimensions" value={data?.totalDimensions || 0} />
+          <StatCompact label="Total" value={data?.total || 0} />
         </div>
-        <div>
-          <div className="text-2xl font-bold text-white">{data.totalDimensions}</div>
-          <div className="text-xs text-zinc-500">Dimensions</div>
-        </div>
-        <div>
-          <a href="/scoring" className="text-xs text-brand hover:text-brand/80">Manage &rarr;</a>
-        </div>
-      </div>
+      </CardContent>
     </Card>
   );
 }
