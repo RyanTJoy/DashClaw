@@ -1,7 +1,8 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.local') });
 const postgres = require('postgres');
 
 async function fix() {
-  const sql = postgres("postgresql://neondb_owner:REDACTED@ep-polished-smoke-c4.us-east-1.aws.neon.tech/neondb?sslmode=require");
+  const sql = postgres(process.env.DATABASE_URL);
   
   try {
     console.log('Dropping problematic columns to allow type change...');

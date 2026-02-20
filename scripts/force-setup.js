@@ -1,7 +1,8 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../.env.local') });
 const postgres = require('postgres');
 
 async function setup() {
-  const sql = postgres('postgresql://neondb_owner:REDACTED@ep-polished-smoke-c4.us-east-1.aws.neon.tech/neondb?sslmode=require');
+  const sql = postgres(process.env.DATABASE_URL);
   
   try {
     const orgId = 'org_home';
