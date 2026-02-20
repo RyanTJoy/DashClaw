@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-import { createHash } from 'node:crypto';
+import { scryptSync } from 'node:crypto';
 import { createSqlFromEnv } from './_db.mjs';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -147,7 +147,8 @@ async function run() {
   const keyTargetOrg = configuredOrgId || 'org_default';
   if (dashboardKey) {
     console.log('Step 4: Seeding admin API key from DASHCLAW_API_KEY...');
-    const keyHash = createHash('sha256').update(dashboardKey).digest('hex');
+    // Use a computationally expensive KDF (scrypt) instead of a single fast hash
+    const keyHash = scryptSync(dashboardKey, 'dashclaw_api_key_salt', 64).toString('hex');
     const keyPrefix = dashboardKey.substring(0, 8);
     const keyId = 'key_default_admin';
 
