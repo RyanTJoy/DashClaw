@@ -160,7 +160,7 @@ async function run() {
         key_hash = EXCLUDED.key_hash,
         key_prefix = EXCLUDED.key_prefix
     `;
-    log('✅', `Admin key seeded for ${keyTargetOrg} (prefix: ${keyPrefix.substring(0, 4)}****...)`);
+    log('✅', 'Admin key seeded');
   } else {
     console.log('Step 4: No DASHCLAW_API_KEY set — skipping admin key seed');
     log('⚠️', 'Set DASHCLAW_API_KEY and re-run to seed admin key');
