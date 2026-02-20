@@ -139,7 +139,7 @@ async function run() {
       VALUES (${configuredOrgId}, 'DashClaw Instance', ${slug}, 'pro')
       ON CONFLICT (id) DO NOTHING
     `;
-    log('✅', `${configuredOrgId} exists`);
+    log('✅', 'DASHCLAW_API_KEY_ORG organization exists');
   }
 
   // Step 4: Seed admin key from DASHCLAW_API_KEY (if set)
@@ -160,7 +160,7 @@ async function run() {
         key_hash = EXCLUDED.key_hash,
         key_prefix = EXCLUDED.key_prefix
     `;
-    log('✅', `Admin key seeded for ${keyTargetOrg} (prefix: ${keyPrefix}...)`);
+    log('✅', `Admin key seeded for ${keyTargetOrg} (prefix: ${keyPrefix.substring(0, 4)}****...)`);
   } else {
     console.log('Step 4: No DASHCLAW_API_KEY set — skipping admin key seed');
     log('⚠️', 'Set DASHCLAW_API_KEY and re-run to seed admin key');
