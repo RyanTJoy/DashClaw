@@ -1072,7 +1072,7 @@ async function testMessageThreadsAndDocs() {
 async function main() {
   console.log(`\n🧪 ActionRecord Control Plane - Integration Tests`);
   console.log(`   Target: ${BASE_URL}`);
-  console.log(`   API Key: ${API_KEY ? '***' + API_KEY.slice(-4) : '(none - dev mode)'}\n`);
+  console.log(`   API Key: ${API_KEY ? '(configured)' : '(none - dev mode)'}\n`);
 
   // Verify server is running
   try {
