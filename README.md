@@ -150,7 +150,7 @@ DashClaw is a single Next.js codebase that serves two roles:
 | | **dashclaw.io** (marketing) | **Your deployment** (self-hosted) |
 |---|---|---|
 | **Landing page** | Marketing site with demo | Same page, "Dashboard" goes to your real dashboard |
-| **Dashboard** | Demo with fixture data, no login | Real dashboard with GitHub/Google/OIDC OAuth |
+| **Dashboard** | Demo with fixture data, no login | Real dashboard with Password or GitHub/Google/OIDC OAuth |
 | **Data** | Hardcoded fixtures | Your Postgres database |
 | **`DASHCLAW_MODE`** | `demo` | `self_host` (default) |
 
@@ -194,7 +194,7 @@ The fastest path: **Vercel free tier + Neon free tier**. Accessible from any dev
    | `GITHUB_ID` + `GITHUB_SECRET` | From [OAuth setup](#oauth-setup) |
 
 6. Deploy. Tables are created automatically on first request.
-7. Visit your app -> **Dashboard** -> sign in with GitHub
+7. Visit your app -> **Dashboard** -> sign in with your Password or GitHub
 
 > Also works on Railway, Fly.io, Render, or any host that runs Node.js.
 

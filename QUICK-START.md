@@ -55,17 +55,30 @@ The setup script will ask you:
 
 ---
 
-## Step 3: Set Up OAuth (for dashboard login)
+## Step 3: Set Your Admin Password (Recommended)
 
-You need at least one OAuth provider to sign into the dashboard.
+The easiest way to sign in is by setting a local admin password. This avoids the need to set up a GitHub or Google OAuth app.
 
-### GitHub OAuth (recommended)
+1. Open your `.env.local` file (created by the setup script).
+2. Add this line:
+   ```
+   DASHCLAW_LOCAL_ADMIN_PASSWORD=your-strong-password-here
+   ```
+3. Save the file. You can now sign in using this password on the login page.
+
+---
+
+## Step 4: Set Up OAuth (Optional — for inviting teams)
+
+If you want to invite teammates later, you can set up an OAuth provider.
+
+### GitHub OAuth
 
 1. Go to [github.com/settings/developers](https://github.com/settings/developers)
 2. Click **New OAuth App**
 3. Fill in:
-   - **Application name**: `DashClaw` (or anything)
-   - **Homepage URL**: `http://localhost:3000` (or your Vercel URL)
+   - **Application name**: `DashClaw`
+   - **Homepage URL**: `http://localhost:3000`
    - **Authorization callback URL**: `http://localhost:3000/api/auth/callback/github`
 4. Copy the **Client ID** and **Client Secret**
 5. Add to your `.env.local`:
@@ -74,21 +87,19 @@ You need at least one OAuth provider to sign into the dashboard.
    GITHUB_SECRET=your-client-secret
    ```
 
-For cloud deployments, use your Vercel URL instead of localhost in both the callback URL and Vercel env vars.
-
 ---
 
-## Step 4: Start the Dashboard
+## Step 5: Start the Dashboard
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000` — you'll be redirected to login. Sign in with GitHub and you're in!
+Open `http://localhost:3000` — you'll be redirected to login. Sign in with your **Admin Password** or **GitHub** and you're in!
 
 ---
 
-## Step 5: Deploy to Cloud (Optional — access from anywhere)
+## Step 6: Deploy to Cloud (Optional — access from anywhere)
 
 Want to check on your agents from your phone?
 
@@ -96,15 +107,16 @@ Want to check on your agents from your phone?
    - Choose **Cloud** deployment and enter your Vercel URL
    - It prints all the env vars you need
 2. Push to GitHub and import into [Vercel](https://vercel.com)
-3. Paste the env vars into Vercel's Settings → Environment Variables
-4. Update your GitHub OAuth callback URL to use the Vercel domain
+3. Paste the env vars into Vercel's Settings → Environment Variables.
+   - **Tip**: Set `DASHCLAW_LOCAL_ADMIN_PASSWORD` to sign in immediately without setting up GitHub OAuth.
+4. Update your GitHub OAuth callback URL to use the Vercel domain (if using OAuth)
 5. Deploy!
 
 For the database, use [Neon](https://neon.tech) (free) — optimized for Vercel.
 
 ---
 
-## Step 6: Import Your Agent (Optional)
+## Step 7: Import Your Agent (Optional)
 
 Already have an AI agent with a workspace? Import everything into the dashboard:
 

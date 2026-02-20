@@ -45,8 +45,13 @@ Go to your dashboard:
 - Visit `YOUR_BASE_URL/dashboard`
 - If auth is enabled, you will be redirected to `YOUR_BASE_URL/login`.
 
-Local dev note (current): the dashboard UI uses NextAuth (OAuth) on localhost. Configure at least one provider callback URL:
+### Authentication Options
 
+**1. Admin Password (Easiest)**
+Set the `DASHCLAW_LOCAL_ADMIN_PASSWORD` environment variable. You can then sign in immediately using this password on the login page. No OAuth setup required.
+
+**2. OAuth (GitHub/Google/OIDC)**
+Configure at least one provider callback URL:
 - GitHub: `http://localhost:3000/api/auth/callback/github`
 - Google: `http://localhost:3000/api/auth/callback/google`
 
@@ -55,6 +60,7 @@ If you see "redirect_uri is not associated with this application", your OAuth ap
 If you only want to preview the UI without login, use the demo sandbox: `YOUR_BASE_URL/demo` (fake data, read-only).
 
 You can sign in with:
+- **Admin Password**
 - **GitHub** (recommended for developers)
 - **Google**
 

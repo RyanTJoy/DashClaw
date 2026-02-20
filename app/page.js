@@ -174,8 +174,8 @@ export default function LandingPage() {
             <span className="text-brand">and why</span>.
           </h1>
           <p className="mt-6 text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Your agents are making decisions right now. Can you prove what they decided,
-            what they assumed, and whether they followed policy? Guard what they do before they do it.
+            Set a password, deploy to Vercel, paste one env var into your agent. No OAuth app
+            required. Your first governed decision shows up in the dashboard in under 10 minutes.
           </p>
           <div className="mt-4 flex items-center justify-center gap-6 text-sm text-zinc-500 font-medium">
             <span className="flex items-center gap-1.5"><Zap size={14} className="text-brand" /> 177+ SDK methods</span>
@@ -191,11 +191,11 @@ export default function LandingPage() {
             <span className="rounded-full border border-[rgba(255,255,255,0.12)] bg-[#111] px-3 py-1 text-zinc-300">Human-in-the-loop</span>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
-              Dashboard <ArrowRight size={16} />
+            <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
+              Deploy Free <ArrowRight size={16} />
             </Link>
-            <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
-              <Terminal size={16} /> Get Started
+            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
+              <Terminal size={16} /> Live Demo
             </Link>
           </div>
         </div>
@@ -665,14 +665,15 @@ export default function LandingPage() {
             Govern your first agent in 5 minutes
           </h2>
           <p className="mt-3 text-zinc-400">
-            Install the SDK, enforce your first policy, and see decision signals on the dashboard. Open-source and self-hosted.
+            No OAuth setup required to get started. Set one environment variable, deploy, and
+            connect your first agent. Open-source and self-hosted.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
-              Dashboard <ArrowRight size={16} />
+            <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-brand text-white text-sm font-medium hover:bg-brand-hover transition-colors inline-flex items-center gap-2">
+              Deploy Free <ArrowRight size={16} />
             </Link>
-            <Link href="/self-host" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
-              <Terminal size={16} /> Get Started
+            <Link href="/dashboard" className="px-6 py-2.5 rounded-lg bg-[#1a1a1a] border border-[rgba(255,255,255,0.1)] text-zinc-300 text-sm font-medium hover:bg-[#222] hover:text-white transition-colors inline-flex items-center gap-2">
+              <Terminal size={16} /> Live Demo
             </Link>
           </div>
         </div>
