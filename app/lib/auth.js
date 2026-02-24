@@ -45,7 +45,7 @@ if (hasGoogle) {
 }
 
 if (hasOIDC) {
-  providers.push({
+  const oidcProvider = {
     id: 'oidc',
     name: process.env.OIDC_DISPLAY_NAME || 'OIDC',
     type: 'oidc',
@@ -53,7 +53,26 @@ if (hasOIDC) {
     clientId: process.env.OIDC_CLIENT_ID,
     clientSecret: process.env.OIDC_CLIENT_SECRET,
     authorization: { params: { scope: 'openid email profile' } },
-  });
+  };
+
+  // Authentik and some other providers use a global authorization endpoint
+  // that differs from what NextAuth constructs via {issuer}/authorize/.
+  // Set OIDC_AUTHORIZATION_URL, OIDC_TOKEN_URL, and OIDC_USERINFO_URL to
+  // override discovery-based endpoint resolution when needed.
+  if (process.env.OIDC_AUTHORIZATION_URL) {
+    oidcProvider.authorization = {
+      url: process.env.OIDC_AUTHORIZATION_URL,
+      params: { scope: 'openid email profile' },
+    };
+  }
+  if (process.env.OIDC_TOKEN_URL) {
+    oidcProvider.token = process.env.OIDC_TOKEN_URL;
+  }
+  if (process.env.OIDC_USERINFO_URL) {
+    oidcProvider.userinfo = process.env.OIDC_USERINFO_URL;
+  }
+
+  providers.push(oidcProvider);
 }
 
 export const authOptions = {

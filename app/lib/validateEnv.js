@@ -48,6 +48,16 @@ if (isProd) {
     if (!process.env.OIDC_ISSUER_URL) errors.push('OIDC_ISSUER_URL is required when OIDC is partially configured');
   }
 
+  // Warn if OIDC endpoint overrides are partially set (all three should be set together)
+  const oidcEndpointOverrides = [
+    process.env.OIDC_AUTHORIZATION_URL,
+    process.env.OIDC_TOKEN_URL,
+    process.env.OIDC_USERINFO_URL,
+  ].filter(Boolean);
+  if (oidcEndpointOverrides.length > 0 && oidcEndpointOverrides.length < 3) {
+    warnings.push('Only some OIDC endpoint overrides are set. For Authentik, set all three: OIDC_AUTHORIZATION_URL, OIDC_TOKEN_URL, and OIDC_USERINFO_URL');
+  }
+
   // Recommended in production
   if (!process.env.CRON_SECRET) {
     warnings.push('CRON_SECRET is not set — cron endpoints will return 503');

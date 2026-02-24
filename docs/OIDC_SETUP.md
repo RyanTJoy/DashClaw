@@ -12,6 +12,11 @@ Add the following environment variables to your `.env` file or container environ
 | `OIDC_CLIENT_ID` | The Client ID provided by your identity provider |
 | `OIDC_CLIENT_SECRET` | The Client Secret provided by your identity provider |
 | `OIDC_DISPLAY_NAME` | (Optional) The name to display on the login button (e.g., "Authentik"). Defaults to "OIDC". |
+| `OIDC_AUTHORIZATION_URL` | (Optional) Explicit authorization endpoint. Required for Authentik — see note below. |
+| `OIDC_TOKEN_URL` | (Optional) Explicit token endpoint. Required for Authentik — see note below. |
+| `OIDC_USERINFO_URL` | (Optional) Explicit userinfo endpoint. Required for Authentik — see note below. |
+
+> **Note on Authentik:** Authentik uses a single global authorization endpoint (`/application/o/authorize/`) shared across all applications, rather than a per-application path. NextAuth does not correctly infer this from the discovery document and instead constructs `{issuer}/authorize/`, which results in a 404. Setting all three endpoint overrides bypasses discovery for the URL construction step while still using the issuer for token validation.
 
 ## Authentik Setup Guide
 
@@ -32,6 +37,9 @@ Add the following environment variables to your `.env` file or container environ
     *   `OIDC_CLIENT_ID`: `<your-client-id>`
     *   `OIDC_CLIENT_SECRET`: `<your-client-secret>`
     *   `OIDC_DISPLAY_NAME`: "Authentik"
+    *   `OIDC_AUTHORIZATION_URL`: `https://<authentik-url>/application/o/authorize/`
+    *   `OIDC_TOKEN_URL`: `https://<authentik-url>/application/o/token/`
+    *   `OIDC_USERINFO_URL`: `https://<authentik-url>/application/o/userinfo/`
 
 ## Keycloak Setup Guide
 
