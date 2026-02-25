@@ -46,10 +46,10 @@
     ]
   },
   "summary": {
-    "total_routes": 144,
+    "total_routes": 145,
     "stable_routes": 44,
     "beta_routes": 17,
-    "experimental_routes": 83
+    "experimental_routes": 84
   },
   "routes": [
     {
@@ -982,6 +982,15 @@
       "maturity": "experimental",
       "matched_prefix": "(default)",
       "file": "app/api/prompts/runs/route.js"
+    },
+    {
+      "path": "/api/prompts/sdk-coverage/raw",
+      "methods": [
+        "GET"
+      ],
+      "maturity": "experimental",
+      "matched_prefix": "(default)",
+      "file": "app/api/prompts/sdk-coverage/raw/route.js"
     },
     {
       "path": "/api/prompts/server-setup/raw",

@@ -132,51 +132,60 @@ export async function listAgentsForOrg(sql, orgId) {
       presenceMap[p.agent_id] = p;
     }
 
-    const now = new Date();
-    const ONLINE_WINDOW_MS = (process.env.AGENT_ONLINE_WINDOW_MS ? parseInt(process.env.AGENT_ONLINE_WINDOW_MS) : 10 * 60 * 1000);
+    const now = Date.now();
+    const ONLINE_WINDOW_MS = (parseInt(process.env.AGENT_ONLINE_WINDOW_MS) || 10 * 60 * 1000); // Default 10m
+    const STALE_WINDOW_MS = ONLINE_WINDOW_MS * 3; // 30m considered stale before offline
 
-    const calculatePresence = (lastHeartbeat, lastActive) => {
-      const lastSeen = lastHeartbeat ? new Date(lastHeartbeat) : (lastActive ? new Date(lastActive) : null);
-      if (!lastSeen) return { state: 'unknown', seconds_since: null, last_seen_at: null };
-
-      const diff = now.getTime() - lastSeen.getTime();
-      const seconds_since = Math.floor(diff / 1000);
-      
-      let state = 'offline';
-      if (diff < ONLINE_WINDOW_MS) {
-        state = 'online';
-      } else if (diff < ONLINE_WINDOW_MS * 3) {
-        state = 'stale'; // e.g. 10-30 mins
+    // Helper: compute status from timestamps
+    const calculatePresence = (lastHeartbeat, lastActive, reportedStatus) => {
+      if (reportedStatus === 'offline' || reportedStatus === 'error') {
+        const lastSeenStr = maxIso(lastHeartbeat, lastActive);
+        const seconds = lastSeenStr ? Math.floor((now - new Date(lastSeenStr).getTime()) / 1000) : null;
+        return { state: 'offline', seconds, last_seen: lastSeenStr };
       }
 
-      return { state, seconds_since, last_seen_at: lastSeen.toISOString() };
+      // Prefer heartbeat, then last_active
+      const lastSeenStr = maxIso(lastHeartbeat, lastActive);
+      if (!lastSeenStr) return { state: 'unknown', seconds: null, last_seen: null };
+      
+      const lastSeenMs = new Date(lastSeenStr).getTime();
+      const diff = now - lastSeenMs;
+      const seconds = Math.floor(diff / 1000);
+
+      let state = 'offline';
+      if (diff < ONLINE_WINDOW_MS) state = 'online';
+      else if (diff < STALE_WINDOW_MS) state = 'stale';
+
+      return { state, seconds, last_seen: lastSeenStr };
     };
 
     // First pass: attach presence to agents already in the list
     for (const agent of agents) {
       const p = presenceMap[agent.agent_id];
-      // Use heartbeat if available, otherwise fall back to last_active
-      const heartbeatAt = p ? p.last_heartbeat_at : null;
-      const { state, seconds_since, last_seen_at } = calculatePresence(heartbeatAt, agent.last_active);
-
-      agent.presence_state = state;
-      agent.seconds_since_seen = seconds_since;
-      agent.last_seen_at = last_seen_at;
+      let lastHeartbeat = null;
+      let reportedStatus = 'unknown';
 
       if (p) {
-        // If we have a presence record, use its explicit status as a base, but override if timed out
-        // (unless it's already set to offline/invisible by the agent)
-        if (p.status === 'offline') agent.presence_state = 'offline';
-        
-        agent.status = p.status; // Raw reported status
+        agent.reported_status = p.status;
         agent.last_heartbeat_at = p.last_heartbeat_at;
         agent.current_task_id = p.current_task_id;
         try {
           agent.presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
         } catch { agent.presence_metadata = {}; }
+        lastHeartbeat = p.last_heartbeat_at;
+        reportedStatus = p.status;
       } else {
-        agent.status = 'unknown';
+        agent.reported_status = 'unknown';
       }
+
+      // Calculate derived presence state
+      const { state, seconds, last_seen } = calculatePresence(lastHeartbeat, agent.last_active, reportedStatus);
+      agent.presence_state = state;
+      agent.seconds_since_seen = seconds;
+      agent.last_seen_at = last_seen;
+      
+      // Legacy compat
+      agent.status = (reportedStatus === 'offline' ? 'offline' : state);
     }
 
     // Second pass: add agents that only exist in agent_presence (heartbeat-only, no actions yet)
@@ -187,17 +196,18 @@ export async function listAgentsForOrg(sql, orgId) {
           presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
         } catch { presence_metadata = {}; }
 
-        const { state, seconds_since, last_seen_at } = calculatePresence(p.last_heartbeat_at, null);
+        const { state, seconds, last_seen } = calculatePresence(p.last_heartbeat_at, null, p.status);
 
         agents.push({
           agent_id: p.agent_id,
           agent_name: p.agent_name || p.agent_id,
           action_count: 0,
           last_active: p.last_heartbeat_at,
-          status: p.status, // Raw status
-          presence_state: p.status === 'offline' ? 'offline' : state, // Computed state
-          seconds_since_seen: seconds_since,
-          last_seen_at: last_seen_at,
+          reported_status: p.status,
+          status: (p.status === 'offline' ? 'offline' : state), // legacy compat
+          presence_state: state,
+          seconds_since_seen: seconds,
+          last_seen_at: last_seen,
           last_heartbeat_at: p.last_heartbeat_at,
           current_task_id: p.current_task_id,
           presence_metadata,
@@ -209,9 +219,13 @@ export async function listAgentsForOrg(sql, orgId) {
   }
 
   agents.sort((a, b) => {
-    // Sort online/recent heartbeat agents to the top
-    const aTime = a.last_heartbeat_at || a.last_active || '';
-    const bTime = b.last_heartbeat_at || b.last_active || '';
+    // Sort online agents to top
+    if (a.presence_state === 'online' && b.presence_state !== 'online') return -1;
+    if (b.presence_state === 'online' && a.presence_state !== 'online') return 1;
+    
+    // Then by recency
+    const aTime = a.last_seen_at || '';
+    const bTime = b.last_seen_at || '';
     return String(bTime).localeCompare(String(aTime));
   });
   return agents;
@@ -289,4 +303,3 @@ export async function attachAgentConnections(sql, orgId, agents) {
 
   return agents;
 }
-

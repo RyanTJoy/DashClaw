@@ -27,7 +27,9 @@ export async function GET(request) {
       meta: debug ? {
         org_id: orgId,
         server_time: new Date().toISOString(),
-        agent_count: agents.length
+        agent_count: agents.length,
+        heartbeat_source: 'agent_presence',
+        online_window_ms: process.env.AGENT_ONLINE_WINDOW_MS || 'default(600000)'
       } : undefined
     });
   } catch (error) {

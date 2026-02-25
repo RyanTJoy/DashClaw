@@ -25,6 +25,10 @@ export async function POST(request) {
 
     const now = new Date().toISOString();
 
+    // Diagnostic logging for org mismatch troubleshooting
+    // Use standard console.log so it appears in Vercel/container logs
+    console.log(`[Heartbeat] Received from agent=${agent_id} for org=${orgId} (status=${status})`);
+
     // Upsert presence record using repository
     await upsertAgentPresence(sql, orgId, {
       agent_id,

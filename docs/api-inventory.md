@@ -13,10 +13,10 @@ doc-type: architecture
 
 ## Summary
 
-- Total routes: `144`
+- Total routes: `145`
 - Stable routes: `44`
 - Beta routes: `17`
-- Experimental routes: `83`
+- Experimental routes: `84`
 
 ## Routes
 
@@ -119,6 +119,7 @@ doc-type: architecture
 | `/api/prompts/agent-connect/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/agent-connect/raw/route.js` |
 | `/api/prompts/render` | `POST` | `experimental` | `(default)` | `app/api/prompts/render/route.js` |
 | `/api/prompts/runs` | `GET` | `experimental` | `(default)` | `app/api/prompts/runs/route.js` |
+| `/api/prompts/sdk-coverage/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/sdk-coverage/raw/route.js` |
 | `/api/prompts/server-setup/raw` | `GET` | `experimental` | `(default)` | `app/api/prompts/server-setup/raw/route.js` |
 | `/api/prompts/stats` | `GET` | `experimental` | `(default)` | `app/api/prompts/stats/route.js` |
 | `/api/prompts/templates` | `GET, POST` | `experimental` | `(default)` | `app/api/prompts/templates/route.js` |

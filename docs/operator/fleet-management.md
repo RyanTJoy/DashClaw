@@ -47,9 +47,14 @@ Agents are scoped to an **Organization** via their API Key. If an agent appears 
 
 If you suspect heartbeats are being sent but not received:
 
-1.  Check the agent's logs for network errors.
-2.  Use the browser network inspector on the Dashboard to check the `/api/agents` response.
-3.  Admins can append `?debug=true` to the `/api/agents` endpoint to see server-side metadata (e.g. `meta.org_id`) to confirm the request context.
+1.  **Server Logs:** Check the DashClaw server logs for `[Heartbeat]` entries. They will show exactly which agent ID and Org ID received the heartbeat.
+    ```
+    [Heartbeat] Received from agent=moltfire for org=org_home (status=online)
+    ```
+2.  **API Inspection:** Admins can append `?debug=true` to the `/api/agents` endpoint to see server-side metadata:
+    *   `_debug.org_id`: The organization ID the request was authenticated against.
+    *   `_debug.heartbeat_source`: Confirmation that the `agent_presence` table is being read.
+    *   `_debug.online_window_ms`: The currently configured timeout window.
 
 ## SDK Best Practices
 
@@ -80,13 +85,13 @@ await claw.heartbeat({ status: 'offline' });
 ### Python SDK
 
 ```python
-# Start background heartbeat
+// Start background heartbeat
 claw.start_heartbeat(interval_seconds=60)
 
-# Update status
+// Update status
 claw.heartbeat(status="busy", current_task_id="task_123")
 
-# Shutdown
+// Shutdown
 claw.stop_heartbeat()
 claw.heartbeat(status="offline")
 ```
