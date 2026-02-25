@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import { Terminal, Check } from 'lucide-react';
-import { generateConnectPrompt } from '../lib/connectPrompt';
+import { generateConnectPrompt, generateCoveragePrompt } from '../lib/connectPrompt';
 
-export default function ConnectAgentButton({ className = '', label = 'Copy Agent Prompt' }) {
+export default function ConnectAgentButton({
+  className = '',
+  label = 'Copy Agent Prompt',
+  promptType = 'connect',
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleClick = async () => {
@@ -20,7 +24,9 @@ export default function ConnectAgentButton({ className = '', label = 'Copy Agent
       } catch {
         // Fall back to default name
       }
-      const prompt = generateConnectPrompt(baseUrl, orgName);
+      const prompt = promptType === 'coverage'
+        ? generateCoveragePrompt(baseUrl, orgName)
+        : generateConnectPrompt(baseUrl, orgName);
       await navigator.clipboard.writeText(prompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

@@ -337,7 +337,10 @@ await claw.createAction({
                   copied={copied}
                   onCopy={copyToClipboard}
                 />
-                <ConnectAgentButton label="Copy Full Setup Prompt" />
+                <div className="flex flex-wrap gap-2">
+                  <ConnectAgentButton label="Copy Full Setup Prompt" />
+                  <ConnectAgentButton label="Copy SDK Coverage Prompt" promptType="coverage" />
+                </div>
               </div>
             )}
           </StepRow>

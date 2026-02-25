@@ -396,6 +396,30 @@ const { signals, counts } = await claw.getSignals();
 // counts = { red: 2, amber: 5, total: 7 }
 ```
 
+### Heartbeats & Presence (2 methods)
+
+Keep your agent visible on the dashboard by sending periodic heartbeats.
+
+```javascript
+// Start automatic background heartbeat (Recommended)
+// Sends a heartbeat every 60 seconds (default).
+const stopHeartbeat = claw.startHeartbeat({
+  interval: 60000,    // optional (ms)
+  status: 'online',   // optional
+  metadata: { version: '1.2.0', env: 'prod' } // optional extra data
+});
+
+// Update status manually during long tasks
+await claw.heartbeat({
+  status: 'busy',
+  current_task_id: 'task_123'
+});
+
+// Mark as offline on shutdown
+stopHeartbeat();
+await claw.heartbeat({ status: 'offline' });
+```
+
 ### Dashboard Data (12 methods)
 
 ```javascript
@@ -1238,7 +1262,15 @@ The scanner detects:
 
 ### Option C: Copy Agent Prompt (One-Click)
 
-On the **API Keys** page or the onboarding checklist, click **Copy Agent Prompt**. This copies a markdown prompt to your clipboard that you can paste into any AI agent session (Claude Code, Cursor, etc.). The prompt includes your dashboard URL, SDK install instructions, and a smoke test. It never includes your API key. The agent will ask you to set `DASHCLAW_API_KEY` in your environment.
+On the **API Keys** page, onboarding checklist, or `/docs` quick start, use one of these buttons:
+- **Copy Full Setup Prompt**: connect an agent and run a smoke test.
+- **Copy SDK Coverage Prompt**: run a full SDK/API/dashboard/docs coverage pass.
+
+Both prompts are safe to share with your coding agent and never include your API key. The agent will ask you to set `DASHCLAW_API_KEY` in your environment.
+
+You can also fetch raw markdown directly (outside the UI):
+- Setup prompt: `/api/prompts/agent-connect/raw`
+- Coverage prompt: `/api/prompts/sdk-coverage/raw`
 
 ### Option D: Self-Discovery Prompt
 

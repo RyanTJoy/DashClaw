@@ -132,11 +132,43 @@ export async function listAgentsForOrg(sql, orgId) {
       presenceMap[p.agent_id] = p;
     }
 
+    const now = new Date();
+    const ONLINE_WINDOW_MS = (process.env.AGENT_ONLINE_WINDOW_MS ? parseInt(process.env.AGENT_ONLINE_WINDOW_MS) : 10 * 60 * 1000);
+
+    const calculatePresence = (lastHeartbeat, lastActive) => {
+      const lastSeen = lastHeartbeat ? new Date(lastHeartbeat) : (lastActive ? new Date(lastActive) : null);
+      if (!lastSeen) return { state: 'unknown', seconds_since: null, last_seen_at: null };
+
+      const diff = now.getTime() - lastSeen.getTime();
+      const seconds_since = Math.floor(diff / 1000);
+      
+      let state = 'offline';
+      if (diff < ONLINE_WINDOW_MS) {
+        state = 'online';
+      } else if (diff < ONLINE_WINDOW_MS * 3) {
+        state = 'stale'; // e.g. 10-30 mins
+      }
+
+      return { state, seconds_since, last_seen_at: lastSeen.toISOString() };
+    };
+
     // First pass: attach presence to agents already in the list
     for (const agent of agents) {
       const p = presenceMap[agent.agent_id];
+      // Use heartbeat if available, otherwise fall back to last_active
+      const heartbeatAt = p ? p.last_heartbeat_at : null;
+      const { state, seconds_since, last_seen_at } = calculatePresence(heartbeatAt, agent.last_active);
+
+      agent.presence_state = state;
+      agent.seconds_since_seen = seconds_since;
+      agent.last_seen_at = last_seen_at;
+
       if (p) {
-        agent.status = p.status;
+        // If we have a presence record, use its explicit status as a base, but override if timed out
+        // (unless it's already set to offline/invisible by the agent)
+        if (p.status === 'offline') agent.presence_state = 'offline';
+        
+        agent.status = p.status; // Raw reported status
         agent.last_heartbeat_at = p.last_heartbeat_at;
         agent.current_task_id = p.current_task_id;
         try {
@@ -155,12 +187,17 @@ export async function listAgentsForOrg(sql, orgId) {
           presence_metadata = typeof p.metadata === 'string' ? JSON.parse(p.metadata) : p.metadata;
         } catch { presence_metadata = {}; }
 
+        const { state, seconds_since, last_seen_at } = calculatePresence(p.last_heartbeat_at, null);
+
         agents.push({
           agent_id: p.agent_id,
           agent_name: p.agent_name || p.agent_id,
           action_count: 0,
           last_active: p.last_heartbeat_at,
-          status: p.status,
+          status: p.status, // Raw status
+          presence_state: p.status === 'offline' ? 'offline' : state, // Computed state
+          seconds_since_seen: seconds_since,
+          last_seen_at: last_seen_at,
           last_heartbeat_at: p.last_heartbeat_at,
           current_task_id: p.current_task_id,
           presence_metadata,

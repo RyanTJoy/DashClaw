@@ -88,4 +88,16 @@ describe('/api/agents GET', () => {
     const data = await res.json();
     expect(data.agents).toEqual([]);
   });
+
+  it('returns debug metadata when debug=true', async () => {
+    mockListAgentsForOrg.mockResolvedValue([]);
+    const res = await GET(makeRequest('http://localhost/api/agents?debug=true', {
+      headers: { 'x-org-id': 'org_debug' },
+    }));
+
+    const data = await res.json();
+    expect(data.meta).toBeDefined();
+    expect(data.meta.org_id).toBe('org_debug');
+    expect(data.meta.server_time).toBeDefined();
+  });
 });

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import DashClawLogo from '../components/DashClawLogo';
 import CopyDocsButton from '../components/CopyDocsButton';
+import ConnectAgentButton from '../components/ConnectAgentButton';
 import PublicNavbar from '../components/PublicNavbar';
 import PublicFooter from '../components/PublicFooter';
 
@@ -379,6 +380,16 @@ await claw.updateOutcome(action_id, {
                 <p className="text-sm text-zinc-400 mt-3 pl-10">
                   Or use <a href="#track" className="text-brand hover:underline">track()</a> to wrap it in a single call that auto-records success/failure.
                 </p>
+              </div>
+
+              <div className="pl-10 pt-1">
+                <p className="text-sm text-zinc-400 mb-3">
+                  Prefer to let your coding agent do setup and coverage automatically?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <ConnectAgentButton label="Copy Full Setup Prompt" />
+                  <ConnectAgentButton label="Copy SDK Coverage Prompt" promptType="coverage" />
+                </div>
               </div>
             </div>
           </section>

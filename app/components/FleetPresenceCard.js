@@ -40,19 +40,17 @@ export default function FleetPresenceCard() {
 
   if (loading) return <CardSkeleton />;
 
-  const isOnline = (agent) => {
-    const tenMin = 10 * 60 * 1000;
-    if (agent.last_heartbeat_at) {
-      return Date.now() - new Date(agent.last_heartbeat_at).getTime() < tenMin;
-    }
-    if (agent.status === 'online' && agent.last_active) {
-      return Date.now() - new Date(agent.last_active).getTime() < tenMin;
-    }
-    return false;
-  };
+  const onlineAgents = agents.filter(a => a.presence_state === 'online');
+  const staleAgents = agents.filter(a => a.presence_state === 'stale');
+  const offlineAgents = agents.filter(a => a.presence_state === 'offline' || a.presence_state === 'unknown');
 
-  const onlineAgents = agents.filter(isOnline);
-  const totalAgents = agents.length;
+  const formatTimeSince = (seconds) => {
+    if (!seconds && seconds !== 0) return 'Never';
+    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  };
 
   return (
     <Card className="h-full">
@@ -69,21 +67,36 @@ export default function FleetPresenceCard() {
               <div className="text-[10px] text-zinc-500 uppercase font-semibold">Online</div>
             </div>
             <div className="p-3 rounded-lg bg-zinc-500/5 border border-zinc-500/10">
-              <div className="text-xl font-bold text-zinc-400 tabular-nums">{totalAgents - onlineAgents.length}</div>
+              <div className="text-xl font-bold text-zinc-400 tabular-nums">{agents.length - onlineAgents.length}</div>
               <div className="text-[10px] text-zinc-500 uppercase font-semibold">Inactive</div>
             </div>
           </div>
 
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
             {agents.map((agent) => {
-              const online = isOnline(agent);
+              const isOnline = agent.presence_state === 'online';
+              const isStale = agent.presence_state === 'stale';
+              
+              let statusColor = 'text-zinc-600';
+              let dotColor = 'bg-zinc-600';
+              if (isOnline) {
+                statusColor = 'text-brand';
+                dotColor = 'bg-emerald-500';
+              } else if (isStale) {
+                statusColor = 'text-amber-500/70';
+                dotColor = 'bg-amber-500';
+              }
+
               return (
                 <div key={agent.agent_id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`relative`}>
-                      <Cpu size={16} className={online ? 'text-brand' : 'text-zinc-600'} />
-                      {online && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-[#0a0a0a]" />
+                      <Cpu size={16} className={statusColor} />
+                      {isOnline && (
+                        <span className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${dotColor} ring-2 ring-[#0a0a0a]`} />
+                      )}
+                      {isStale && (
+                        <span className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${dotColor} ring-2 ring-[#0a0a0a]`} />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -97,12 +110,12 @@ export default function FleetPresenceCard() {
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end">
-                    <div className={`text-[10px] font-medium flex items-center gap-1 ${online ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                      {online ? <Wifi size={10} /> : <WifiOff size={10} />}
-                      {online ? 'Online' : 'Offline'}
+                    <div className={`text-[10px] font-medium flex items-center gap-1 ${isOnline ? 'text-emerald-400' : (isStale ? 'text-amber-500' : 'text-zinc-500')}`}>
+                      {isOnline ? <Wifi size={10} /> : <WifiOff size={10} />}
+                      {agent.presence_state ? (agent.presence_state.charAt(0).toUpperCase() + agent.presence_state.slice(1)) : 'Unknown'}
                     </div>
-                    <div className="text-[9px] text-zinc-600 mt-0.5">
-                      {agent.last_heartbeat_at ? new Date(agent.last_heartbeat_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+                    <div className="text-[9px] text-zinc-600 mt-0.5" title={agent.last_seen_at}>
+                      {formatTimeSince(agent.seconds_since_seen)}
                     </div>
                   </div>
                 </div>

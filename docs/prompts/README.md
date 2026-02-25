@@ -85,3 +85,13 @@ DashClaw provides aggregate statistics for prompts:
 - **Avg Tokens**: Mean cost per render.
 - **Unique Templates**: Breadth of registry usage.
 - **Usage by Template**: Identify your most-used (and most expensive) prompts.
+
+## Built-In Agent Bootstrap Prompts
+
+DashClaw also ships copy-ready markdown prompts for onboarding and coverage workflows:
+- `dashclaw-agent-connect.md` — quick connect + smoke test prompt
+- `dashclaw-sdk-coverage.md` — full SDK/API/dashboard/docs coverage prompt
+
+Raw endpoints:
+- `/api/prompts/agent-connect/raw`
+- `/api/prompts/sdk-coverage/raw`

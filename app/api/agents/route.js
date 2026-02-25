@@ -15,6 +15,8 @@ export async function GET(request) {
 
     const url = new URL(request.url);
     const includeConnections = url.searchParams.get('include_connections') === 'true';
+    const debug = url.searchParams.get('debug') === 'true';
+
     if (includeConnections) {
       await attachAgentConnections(sql, orgId, agents);
     }
@@ -22,6 +24,11 @@ export async function GET(request) {
     return NextResponse.json({
       agents,
       lastUpdated: new Date().toISOString(),
+      meta: debug ? {
+        org_id: orgId,
+        server_time: new Date().toISOString(),
+        agent_count: agents.length
+      } : undefined
     });
   } catch (error) {
     console.error('Agents API error:', error);
