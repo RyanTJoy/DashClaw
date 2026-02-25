@@ -37,13 +37,20 @@ export default function SelfHostPage() {
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
+            <a
+              href="/downloads/dashclaw-platform-intelligence.zip"
+              download
+              className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-hover transition-colors"
+            >
+              <Download size={16} /> Download Skill
+            </a>
             <Link href="/demo" className="inline-flex items-center gap-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.08)] px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-[#181818] hover:text-white transition-colors">
               View Live Demo
             </Link>
             <Link href="/docs" className="inline-flex items-center gap-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.08)] px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-[#181818] hover:text-white transition-colors">
               SDK Docs
             </Link>
-            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium hover:bg-brand-hover transition-colors">
+            <a href="https://github.com/ucsandman/DashClaw" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-[#111] border border-[rgba(255,255,255,0.08)] px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-[#181818] hover:text-white transition-colors">
               Open Source Repo <ArrowRight size={16} />
             </a>
           </div>
