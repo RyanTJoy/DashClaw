@@ -1,0 +1,113 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeRequest } from '../helpers.js';
+
+const {
+  mockSql,
+  mockIsEmbeddingsEnabled,
+  mockGetRealtimeHealth,
+} = vi.hoisted(() => ({
+  mockSql: Object.assign(vi.fn(async () => [{ health_check: 1 }]), { query: vi.fn(async () => []) }),
+  mockIsEmbeddingsEnabled: vi.fn(),
+  mockGetRealtimeHealth: vi.fn(),
+}));
+
+vi.mock('@/lib/db.js', () => ({ getSql: () => mockSql }));
+vi.mock('@/lib/embeddings.js', () => ({ isEmbeddingsEnabled: mockIsEmbeddingsEnabled }));
+vi.mock('@/lib/events.js', () => ({ getRealtimeHealth: mockGetRealtimeHealth }));
+
+// Health route uses createRequire for package.json — mock the module version
+vi.mock('../../../package.json', () => ({ version: '1.0.0-test' }), { virtual: true });
+
+import { GET } from '@/api/health/route.js';
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  process.env.DATABASE_URL = 'postgres://unit-test';
+  process.env.NEXTAUTH_SECRET = 'test-secret';
+  mockSql.mockImplementation(async () => [{ health_check: 1 }]);
+  mockIsEmbeddingsEnabled.mockReturnValue(false);
+  mockGetRealtimeHealth.mockResolvedValue({ status: 'healthy', backend: 'redis' });
+});
+
+describe('/api/health GET', () => {
+  it('returns 200 and healthy status when all checks pass', async () => {
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.status).toBe('healthy');
+    expect(data.checks.database.status).toBe('healthy');
+    expect(data.checks.environment.status).toBe('healthy');
+    expect(data.checks.realtime.status).toBe('healthy');
+  });
+
+  it('returns 503 when database is unhealthy', async () => {
+    mockSql.mockRejectedValue(new Error('connection refused'));
+
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.status).toBe('degraded');
+    expect(data.checks.database.status).toBe('unhealthy');
+    // Should not leak backend error details on a public endpoint
+    expect(JSON.stringify(data.checks.database)).not.toContain('connection refused');
+  });
+
+  it('returns 503 when realtime backend is unhealthy', async () => {
+    mockGetRealtimeHealth.mockResolvedValue({ status: 'unhealthy', backend: 'redis' });
+
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.status).toBe('degraded');
+  });
+
+  it('returns 503 when required env vars are missing', async () => {
+    delete process.env.NEXTAUTH_SECRET;
+
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.checks.environment.status).toBe('unhealthy');
+    // Should not list the actual missing variable names in detail
+    expect(data.checks.environment.missing).toBeGreaterThan(0);
+  });
+
+  it('includes behavioral AI check with correct engine', async () => {
+    mockIsEmbeddingsEnabled.mockReturnValue(true);
+
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+    const data = await res.json();
+    expect(data.checks.behavioral_ai.active).toBe(true);
+    expect(data.checks.behavioral_ai.engine).toContain('text-embedding');
+  });
+
+  it('includes runtime checks', async () => {
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+    const data = await res.json();
+    expect(data.checks.runtime).toBeDefined();
+    expect(data.checks.runtime.node_env).toBeDefined();
+  });
+
+  it('includes timestamp and version', async () => {
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+    const data = await res.json();
+    expect(data.timestamp).toBeDefined();
+    expect(data.version).toBeDefined();
+  });
+
+  it('degrades gracefully when realtime health check throws', async () => {
+    mockGetRealtimeHealth.mockRejectedValue(new Error('redis timeout'));
+
+    const res = await GET(makeRequest('http://localhost/api/health', {}));
+
+    expect(res.status).toBe(503);
+    const data = await res.json();
+    expect(data.checks.realtime.status).toBe('unhealthy');
+    // Should not leak the redis timeout error message
+    expect(JSON.stringify(data.checks.realtime)).not.toContain('redis timeout');
+  });
+});
