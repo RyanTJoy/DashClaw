@@ -46,7 +46,7 @@ export async function GET(request) {
       const sensitive = s.encrypted || shouldAutoEncrypt(s.key, false);
       const shouldMask = !canDecrypt && (sensitive || role !== 'admin');
 
-      if (val) {
+      if (val !== undefined && val !== null) {
         if (s.encrypted && canDecrypt) {
           try {
             val = decrypt(val);
@@ -95,11 +95,13 @@ export async function POST(request) {
     const body = await request.json();
     let { key, value, category = 'general', encrypted = false, agent_id = null } = body;
 
+    const shouldEncrypt = encrypted === true || encrypted === 'true';
+
     // SECURITY: Force encryption for sensitive keys if not already requested
-    encrypted = shouldAutoEncrypt(key, encrypted);
+    const isEncrypted = shouldAutoEncrypt(key, shouldEncrypt);
 
     let finalValue = value;
-    if (encrypted && value) {
+    if (isEncrypted && value !== undefined && value !== null) {
       try {
         finalValue = encrypt(value);
       } catch (err) {
@@ -108,7 +110,7 @@ export async function POST(request) {
       }
     }
 
-    await upsertSetting(sql, orgId, { key, value: finalValue, category, encrypted, agent_id });
+    await upsertSetting(sql, orgId, { key, value: finalValue, category, encrypted: isEncrypted, agent_id });
 
     logActivity({
       orgId, actorId: getUserId(request) || 'unknown', action: 'setting.updated',

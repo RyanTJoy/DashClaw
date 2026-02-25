@@ -55,11 +55,10 @@ async function syncConnections(sql, orgId, agentId, connections) {
       const authType = conn.auth_type || 'api_key';
       const status = conn.status || 'active';
       await sql`
-        INSERT INTO agent_connections (id, org_id, agent_id, provider, auth_type, plan_name, status, metadata, reported_at, updated_at)
-        VALUES (${id}, ${orgId}, ${agentId}, ${conn.provider}, ${authType}, ${conn.plan_name || null}, ${status}, ${conn.metadata || null}, ${now}, ${now})
+        INSERT INTO agent_connections (id, org_id, agent_id, provider, auth_type, status, metadata, reported_at, updated_at)
+        VALUES (${id}, ${orgId}, ${agentId}, ${conn.provider}, ${authType}, ${status}, ${conn.metadata || null}, ${now}, ${now})
         ON CONFLICT (org_id, agent_id, provider) DO UPDATE SET
           auth_type = EXCLUDED.auth_type,
-          plan_name = EXCLUDED.plan_name,
           status = EXCLUDED.status,
           metadata = EXCLUDED.metadata,
           updated_at = EXCLUDED.updated_at

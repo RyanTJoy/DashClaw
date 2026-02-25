@@ -49,7 +49,7 @@ async function assertSafeWebhookUrl(url) {
   const ipKind = net.isIP(host);
   if (ipKind) {
     if (isPrivateIp(host)) throw new Error('Webhook URL cannot target private or loopback IPs');
-    return;
+    return host;
   }
 
   // Resolve DNS and block any private/loopback/link-local targets.
@@ -59,6 +59,8 @@ async function assertSafeWebhookUrl(url) {
     const addr = a?.address;
     if (isPrivateIp(addr)) throw new Error('Webhook hostname resolves to a private or loopback IP');
   }
+  
+  return addrs[0].address;
 }
 
 /**
@@ -95,11 +97,15 @@ export async function deliverWebhook({ webhookId, orgId, url, secret, eventType,
   let responseBody = null;
 
   try {
-    await assertSafeWebhookUrl(url);
+    const safeIp = await assertSafeWebhookUrl(url);
+    const parsedUrl = new URL(url);
+    const ipHost = safeIp.includes(':') ? `[${safeIp}]` : safeIp;
+    const fetchUrl = `${parsedUrl.protocol}//${ipHost}${parsedUrl.pathname}${parsedUrl.search}`;
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    const res = await fetch(url, {
+    const res = await fetch(fetchUrl, {
       method: 'POST',
       redirect: 'manual', // SECURITY: prevent SSRF via redirects
       headers: {
@@ -108,6 +114,7 @@ export async function deliverWebhook({ webhookId, orgId, url, secret, eventType,
         'X-DashClaw-Event': eventType,
         'X-DashClaw-Delivery': deliveryId,
         'User-Agent': 'DashClaw-Webhooks/1.0',
+        'Host': parsedUrl.hostname,
       },
       body: payloadStr,
       signal: controller.signal,
@@ -162,7 +169,11 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
   let parsedResponse = null;
 
   try {
-    await assertSafeWebhookUrl(url);
+    const safeIp = await assertSafeWebhookUrl(url);
+    const parsedUrl = new URL(url);
+    const ipHost = safeIp.includes(':') ? `[${safeIp}]` : safeIp;
+    const fetchUrl = `${parsedUrl.protocol}//${ipHost}${parsedUrl.pathname}${parsedUrl.search}`;
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs || 5000);
 
@@ -173,7 +184,7 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
       ? signGuardWebhookPayload({ timestamp: guardTs, payload: payloadStr, secret: guardSecret })
       : null;
 
-    const res = await fetch(url, {
+    const res = await fetch(fetchUrl, {
       method: 'POST',
       redirect: 'manual', // SECURITY: prevent SSRF via redirects
       headers: {
@@ -182,6 +193,7 @@ export async function deliverGuardWebhook({ url, policyId, orgId, payload, timeo
         'X-DashClaw-Delivery': deliveryId,
         ...(guardSig ? { 'X-DashClaw-Timestamp': guardTs, 'X-DashClaw-Signature': `v1=${guardSig}` } : {}),
         'User-Agent': 'DashClaw-Guard/1.0',
+        'Host': parsedUrl.hostname,
       },
       body: payloadStr,
       signal: controller.signal,

@@ -136,6 +136,9 @@ Please do not open a public issue for security vulnerabilities. Email `practical
 
 ## Recent Hardening (2026-02)
 
+- Fixed SSRF via DNS Rebinding TOCTOU in `app/lib/webhooks.js` by resolving IP once and forcing fetch to use the resolved IP.
+- Fixed false encryption condition in `app/api/settings/route.js` handling falsy values and string booleans properly.
+- Removed `plan_name` from bulk sync payload parsing and database upserts to prevent privilege escalation via spoofed plans.
 - Added org-scoped guard to team member removal update (`/api/team/[userId]`) to prevent cross-tenant race-condition evictions.
 - Added production guard on settings writes: when `NODE_ENV=production` and `ENCRYPTION_KEY` is missing, `/api/settings` POST now returns `503` with a clear misconfiguration error.
 - Added org scoping in prompt version creation paths (`prompt_versions` max-version lookup and parent `prompt_templates` touch update).
