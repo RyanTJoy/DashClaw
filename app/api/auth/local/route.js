@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 
 export async function POST(request) {
+  const isHTTPS = (process.env.NEXTAUTH_URL || '').startsWith('https');
   const password = process.env.DASHCLAW_LOCAL_ADMIN_PASSWORD;
   if (!password) {
     return new NextResponse(null, { status: 404 });
@@ -48,7 +49,7 @@ export async function POST(request) {
     const response = NextResponse.json({ ok: true });
     response.cookies.set('dashclaw-local-session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isHTTPS,
       sameSite: 'lax',
       maxAge: 604800,
       path: '/'
@@ -62,10 +63,11 @@ export async function POST(request) {
 }
 
 export async function DELETE() {
+  const isHTTPS = (process.env.NEXTAUTH_URL || '').startsWith('https');
   const response = NextResponse.json({ ok: true });
   response.cookies.set('dashclaw-local-session', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isHTTPS,
     sameSite: 'lax',
     maxAge: 0,
     path: '/'
