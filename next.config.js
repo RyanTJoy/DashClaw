@@ -10,6 +10,11 @@ const nextConfig = {
   },
   // Security headers
   async headers() {
+    // Only enforce HTTPS upgrade when behind TLS (Vercel, reverse proxy, etc.)
+    // Self-hosted LAN instances on plain HTTP break when the browser upgrades
+    // fetches to https:// for a host that has no TLS certificate.
+    const isTLS = (process.env.NEXTAUTH_URL || '').startsWith('https');
+
     const csp = [
       "default-src 'self'",
       // In dev mode, Next.js needs 'unsafe-eval' for hot reloading
@@ -24,43 +29,48 @@ const nextConfig = {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      'upgrade-insecure-requests',
-      'block-all-mixed-content',
+      ...(isTLS ? ['upgrade-insecure-requests', 'block-all-mixed-content'] : []),
     ].join('; ');
+
+    const securityHeaders = [
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        key: 'X-XSS-Protection',
+        value: '1; mode=block',
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=()',
+      },
+      {
+        key: 'Content-Security-Policy',
+        value: csp,
+      },
+    ];
+
+    // Only send HSTS when behind TLS
+    if (isTLS) {
+      securityHeaders.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      });
+    }
 
     return [
       {
         source: '/:path*',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: csp,
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
-        ],
+        headers: securityHeaders,
       },
     ];
   },
