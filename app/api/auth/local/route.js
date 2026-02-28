@@ -36,7 +36,7 @@ export async function POST(request) {
     const token = await new SignJWT({
       sub: 'local-admin',
       userId: 'usr_local_admin',
-      orgId: 'org_default',
+      orgId: process.env.DASHCLAW_API_KEY_ORG || 'org_default',
       role: 'admin',
       plan: 'free',
       provider: 'local'

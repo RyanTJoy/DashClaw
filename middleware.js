@@ -807,6 +807,16 @@ async function verifyOrgExists(orgId) {
   if (cached && now - cached.timestamp < ORG_EXISTS_CACHE_TTL) {
     return cached.exists;
   }
+  // For non-Neon (local/self-hosted) deployments, the Neon WebSocket driver
+  // cannot connect to local PostgreSQL via TCP. Trust the org exists if we're
+  // in self_host mode (migrations already created org_default on startup).
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isNeon = /\.neon\.tech(?:[/:?]|$)/i.test(dbUrl);
+  if (!isNeon && process.env.DASHCLAW_MODE === 'self_host') {
+    const exists = true; // Trust org exists; migrations ensured org_default was created
+    orgExistsCache.set(orgId, { timestamp: now, exists });
+    return exists;
+  }
   try {
     const sql = neon(process.env.DATABASE_URL);
     const rows = await sql`SELECT 1 FROM organizations WHERE id = ${orgId} LIMIT 1`;
@@ -1623,10 +1633,12 @@ export async function middleware(request) {
 
 
         // SECURITY: Users on org_default are only allowed to access onboarding and health APIs
+        // PATCHED: Allow org_default full access in self-hosted mode (DASHCLAW_MODE=self_host)
+        const isSelfHosted = process.env.DASHCLAW_MODE === 'self_host';
         const ONBOARDING_PREFIXES = ['/api/onboarding', '/api/setup', '/api/health'];
         const isAllowedForOnboarding = ONBOARDING_PREFIXES.some(p => pathname.startsWith(p));
 
-        if (orgId === 'org_default' && !isAllowedForOnboarding) {
+        if (orgId === 'org_default' && !isAllowedForOnboarding && !isSelfHosted) {
           console.warn(`[SECURITY] Blocked org_default access to: ${pathname} from user ${sessionToken.userId}`);
           return NextResponse.json(
             { error: 'Forbidden - Complete onboarding to access this resource', needsOnboarding: true },
@@ -1637,6 +1649,36 @@ export async function middleware(request) {
         requestHeaders.set('x-org-id', orgId);
         requestHeaders.set('x-org-role', role);
         requestHeaders.set('x-user-id', sessionToken.userId || '');
+        const response = NextResponse.next({ request: { headers: requestHeaders } });
+        response.headers.set('X-Content-Type-Options', 'nosniff');
+        response.headers.set('X-Frame-Options', 'DENY');
+        response.headers.set('X-XSS-Protection', '1; mode=block');
+        for (const [k, v] of Object.entries(getCorsHeaders(request))) response.headers.set(k, v);
+        return response;
+      }
+
+      // Not same-origin per Sec-Fetch-Site, but still check for a valid
+      // local admin cookie — mobile browsers and hard navigates may not send
+      // Sec-Fetch-Site: same-origin on subsequent API fetches.
+      const localFallback = await getLocalAdminSession(request);
+      if (localFallback) {
+        const orgId = localFallback.orgId || 'org_default';
+        const role = localFallback.role || 'admin';
+        const userId = localFallback.userId || 'usr_local_admin';
+
+        const isSelfHosted = process.env.DASHCLAW_MODE === 'self_host';
+        const ONBOARDING_PREFIXES = ['/api/onboarding', '/api/setup', '/api/health'];
+        const isAllowedForOnboarding = ONBOARDING_PREFIXES.some(p => pathname.startsWith(p));
+        if (orgId === 'org_default' && !isAllowedForOnboarding && !isSelfHosted) {
+          return NextResponse.json(
+            { error: 'Forbidden - Complete onboarding to access this resource', needsOnboarding: true },
+            { status: 403 }
+          );
+        }
+
+        requestHeaders.set('x-org-id', orgId);
+        requestHeaders.set('x-org-role', role);
+        requestHeaders.set('x-user-id', userId);
         const response = NextResponse.next({ request: { headers: requestHeaders } });
         response.headers.set('X-Content-Type-Options', 'nosniff');
         response.headers.set('X-Frame-Options', 'DENY');

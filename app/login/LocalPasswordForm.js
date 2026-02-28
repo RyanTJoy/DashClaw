@@ -22,7 +22,11 @@ export default function LocalPasswordForm() {
       });
 
       if (res.ok) {
-        router.push('/dashboard');
+        // Hard redirect so the browser includes the freshly-set cookie
+        // in the initial /dashboard request. Next.js client-side router
+        // navigation doesn't trigger a full page load, so the cookie
+        // may not be sent on the first server request.
+        window.location.href = '/dashboard';
       } else {
         const data = await res.json();
         setError(data.error || 'Login failed.');
